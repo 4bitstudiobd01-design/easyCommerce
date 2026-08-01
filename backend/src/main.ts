@@ -1,0 +1,41 @@
+import { NestFactory } from '@nestjs/core';
+import { ValidationPipe, Logger } from '@nestjs/common';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { AppModule } from './app.module';
+import { ResponseInterceptor } from './common/interceptors/response.interceptor';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+
+  app.enableCors();
+
+  app.setGlobalPrefix('api/v1');
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: true,
+    }),
+  );
+
+  app.useGlobalInterceptors(new ResponseInterceptor());
+
+  const config = new DocumentBuilder()
+    .setTitle('EasyCommerce API Documentation')
+    .setDescription('Enterprise Multi-Tenant eCommerce SaaS API Documentation')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('swagger', app, document);
+
+  const port = process.env.PORT || 5001;
+  await app.listen(port);
+
+  const logger = new Logger('Bootstrap');
+  logger.log(`🚀 EasyCommerce Backend API running on http://localhost:${port}/api/v1`);
+  logger.log(`📖 Swagger API Documentation available on http://localhost:${port}/swagger`);
+}
+bootstrap();
