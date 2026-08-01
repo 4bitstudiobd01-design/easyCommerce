@@ -4,6 +4,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { typeOrmConfig } from './config/database.config';
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { TenantModule } from './modules/tenant/tenant.module';
+import { CatalogModule } from './modules/catalog/catalog.module';
+import { InventoryModule } from './modules/inventory/inventory.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { APP_FILTER } from '@nestjs/core';
 
@@ -19,6 +22,9 @@ import { APP_FILTER } from '@nestjs/core';
     }),
     UserModule,
     AuthModule,
+    TenantModule,
+    CatalogModule,
+    InventoryModule,
   ],
   controllers: [],
   providers: [

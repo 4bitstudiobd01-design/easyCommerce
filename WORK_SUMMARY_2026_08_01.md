@@ -1,88 +1,75 @@
 # EasyCommerce Work Summary
 
 **Date:** August 01, 2026  
-**Scope:** Backend Architecture Restructuring, Single Responsibility Services (SRP) Implementation, Infrastructure Setup, TypeORM Migration System & Documentation Updates.
+**Scope:** Backend Architecture Restructuring, Single Responsibility Services (SRP), TypeORM Migration System, Tenant & Store Onboarding (Slice 1), Catalog & Product Management (Slice 2), Decoupled Inventory Domain (Slice 3).
 
 ---
 
 ## 🎯 Executive Summary
 
-Today, the `EasyCommerce/backend` application was completely restructured to align with the enterprise architecture of `swapnokutir` while enforcing **Single Responsibility Principle (SRP)** service design, production-grade exception handling, response standardization, and CLI-based database migrations.
+Today, the `EasyCommerce` fullstack platform was built and restructured following **Single Responsibility Principle (SRP)** service design, production-grade exception handling, response standardization, CLI-based TypeORM migrations, and Vertical Slice Co-Development.
 
 ---
 
 ## 🏛️ 1. Architecture Restructuring (swapnokutir Pattern)
 
-The backend was reorganized into a modular, clean NestJS directory layout:
+The backend was reorganized into a modular NestJS directory layout:
 
 ```text
 EasyCommerce/backend/src/
 ├── common/             # Shared filters, interceptors, guards, decorators, errors
+│   ├── decorators/     # CurrentUser decorator
 │   ├── errors/         # ApiError custom exception
 │   ├── filters/        # GlobalExceptionFilter (standardized error responses)
+│   ├── guards/         # JwtAuthGuard
 │   └── interceptors/   # ResponseInterceptor ({ statusCode, success, message, data })
 ├── config/             # Dynamic configuration factories (database.config.ts)
 ├── database/           # TypeORM Data Source (data-source.ts) & Migrations
 └── modules/
     ├── auth/           # Authentication domain (Register, Login, JWT tokens)
-    └── user/           # User domain (User entities, Session management, Profiles)
+    ├── user/           # User domain (User entities, Session management, Profiles)
+    ├── tenant/         # Tenant & Store domain (Multi-tenant Onboarding & Isolation)
+    ├── catalog/        # Catalog domain (Products, Variants, Images, Categories)
+    └── inventory/      # Decoupled Inventory domain (Warehouses, Physical Stock, Reorder Alerts)
 ```
 
 ---
 
-## 🧩 2. Single Responsibility Services (SRP)
+## 🧩 2. Implemented Vertical Slices
 
-Inside every module's `services/` directory, **each service file handles exactly one focused responsibility/use-case** (1 File = 1 Task):
+### Slice 0: Identity & Auth Module
+- **Backend:** `RegisterMerchantService`, `LoginService`, `FindUserByEmailService`, `CreateUserService`, `FindUserByIdService`.
+- **Frontend:** RTK Query `authApi.ts`, `LoginForm.tsx`, `RegisterForm.tsx`.
 
-### User Module (`src/modules/user`)
-- [find-user-by-email.service.ts](file:///Users/sumon/Desktop/EasyCommerce/backend/src/modules/user/services/find-user-by-email.service.ts): Finds a user entity by email.
-- [find-user-by-id.service.ts](file:///Users/sumon/Desktop/EasyCommerce/backend/src/modules/user/services/find-user-by-id.service.ts): Retrieves user profile by UUID or throws `NotFoundException`.
-- [create-user.service.ts](file:///Users/sumon/Desktop/EasyCommerce/backend/src/modules/user/services/create-user.service.ts): Creates and persists a user entity.
-- [user.controller.ts](file:///Users/sumon/Desktop/EasyCommerce/backend/src/modules/user/user.controller.ts) & [user.module.ts](file:///Users/sumon/Desktop/EasyCommerce/backend/src/modules/user/user.module.ts).
+### Slice 1: Tenant & Store Onboarding Module
+- **Backend:** `TenantEntity`, `StoreEntity`, `CreateStoreService`, `FindStoreByUserService`, `FindStoreBySlugService`.
+- **Database Migration:** `AddTenantsAndStores1785597412552` (Created `tenants` and `stores` tables in PostgreSQL).
+- **Frontend:** RTK Query `tenantApi.ts`, `CreateStoreModal.tsx` Onboarding Wizard, Dynamic Dashboard layout.
 
-### Auth Module (`src/modules/auth`)
-- [register-merchant.service.ts](file:///Users/sumon/Desktop/EasyCommerce/backend/src/modules/auth/services/register-merchant.service.ts): Merchant registration, password hashing, and JWT token issuance.
-- [login.service.ts](file:///Users/sumon/Desktop/EasyCommerce/backend/src/modules/auth/services/login.service.ts): User authentication credential verification and JWT token issuance.
-- [auth.controller.ts](file:///Users/sumon/Desktop/EasyCommerce/backend/src/modules/auth/auth.controller.ts) & [auth.module.ts](file:///Users/sumon/Desktop/EasyCommerce/backend/src/modules/auth/auth.module.ts).
+### Slice 2: Catalog & Product Management Module
+- **Backend:** `CategoryEntity`, `ProductEntity`, `ProductVariantEntity`, `ProductImageEntity`, `CreateCategoryService`, `ListCategoriesService`, `CreateProductService`, `ListProductsService`, `FindProductByIdService`.
+- **Database Migration:** `AddCatalogAndProducts1785598349495` (Created `categories`, `products`, `product_variants`, `product_images` tables in PostgreSQL).
+- **Frontend:** RTK Query `catalogApi.ts`, `CreateProductModal.tsx`, `ProductListTable.tsx`.
+
+### Slice 3: Decoupled Inventory Domain Module
+- **Backend:** `WarehouseEntity`, `InventoryStockEntity`, `CreateWarehouseService`, `ListWarehousesService`, `AdjustStockService`, `GetInventoryStockService`.
+- **Database Migration:** `AddInventoryAndWarehouses1785599186825` (Created `warehouses` and `inventory_stocks` tables in PostgreSQL).
+- **Frontend:** RTK Query `inventoryApi.ts`, `AdjustStockModal.tsx`, `InventoryStockTable.tsx`, Dashboard **Inventory Control** Tab Integration.
 
 ---
 
 ## 🗄️ 3. TypeORM Database Migration System
 
-Configured complete CLI-based TypeORM migration infrastructure in `backend/package.json` and `backend/scripts/`:
+Configured complete CLI-based TypeORM migration infrastructure:
 
 - **CLI DataSource:** [data-source.ts](file:///Users/sumon/Desktop/EasyCommerce/backend/src/database/data-source.ts)
 - **Generator Helper:** [generate-migration.js](file:///Users/sumon/Desktop/EasyCommerce/backend/scripts/generate-migration.js)
-
-### Available Migration Commands:
-- `npm run migration:generate -- <MigrationName>` (Generate auto schema migration)
-- `npm run migration:run` (Execute pending migrations)
-- `npm run migration:revert` (Rollback last migration)
-- `npm run migration:show` (Check migration execution status)
+- **Executed Migrations:** `InitialSchema`, `AddTenantsAndStores`, `AddCatalogAndProducts`, `AddInventoryAndWarehouses`.
 
 ---
 
-## 🌐 4. Infrastructure & Global Settings
+## 🧪 4. Verification Results
 
-- **Global Prefix:** `/api/v1`
-- **Swagger Documentation:** Configured at `/swagger`
-- **Global ValidationPipe:** `whitelist: true`, `transform: true`, `forbidNonWhitelisted: true`
-- **Response Envelope Interceptor:** Wraps all API responses into a unified JSON format.
-- **Global Exception Filter:** Intercepts uncaught errors and custom `ApiError` instances.
-
----
-
-## 📝 5. Documentation & Agent Rules Updated
-
-All changes have been synchronized with the single source of truth documentation files:
-
-1. [.agents/02_ARCHITECTURE.md](file:///Users/sumon/Desktop/EasyCommerce/.agents/02_ARCHITECTURE.md): Updated backend structure tree & SRP guidelines.
-2. [docs/05_SYSTEM_ARCHITECTURE.md](file:///Users/sumon/Desktop/EasyCommerce/docs/05_SYSTEM_ARCHITECTURE.md): Updated NestJS API modules breakdown.
-3. [docs/08_DEVELOPMENT_GUIDE.md](file:///Users/sumon/Desktop/EasyCommerce/docs/08_DEVELOPMENT_GUIDE.md): Updated directory tree and added **Section 4: Database Migration Workflow**.
-
----
-
-## 🧪 6. Verification Results
-
-- **Build Test:** Ran `npm run build` inside `backend/`
-- **Status:** **SUCCESS (0 TypeScript compile errors)**
+- **Backend Build:** `npm run build` inside `backend/` — **SUCCESS (0 errors)**
+- **Frontend Build:** `npm run build` inside `frontend/` — **SUCCESS (0 errors)**
+- **PostgreSQL Migrations:** `npm run migration:run` — **SUCCESS**

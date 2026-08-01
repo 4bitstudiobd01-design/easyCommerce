@@ -1,25 +1,40 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState } from '@/store';
+import { logout } from '@/features/auth/slices/authSlice';
 import {
   Store,
   ArrowRight,
   LogIn,
+  LogOut,
+  LayoutDashboard,
   ChevronDown,
   Layers,
   Palette,
   ShieldCheck,
-  Smartphone,
-  Truck,
-  Download,
   Building2,
   Mail,
   HelpCircle,
+  User as UserIcon,
 } from 'lucide-react';
 
 export function Navbar() {
   const [activeMenu, setActiveMenu] = useState<'features' | 'company' | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  const dispatch = useDispatch();
+  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const handleLogout = () => {
+    dispatch(logout());
+  };
 
   return (
     <header className="w-full bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
@@ -116,66 +131,6 @@ export function Navbar() {
                     </div>
                   </Link>
                 </div>
-
-                {/* Column 2: Ecosystem & Product Types */}
-                <div className="space-y-3">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block px-3">
-                    Integrations & Products
-                  </span>
-                  <Link
-                    href="/#ecosystem"
-                    onClick={() => setActiveMenu(null)}
-                    className="p-2.5 rounded-xl hover:bg-slate-50 transition-colors flex items-start gap-3 group block"
-                  >
-                    <div className="p-2 bg-purple-50 text-purple-600 rounded-lg group-hover:bg-purple-600 group-hover:text-white transition-colors mt-0.5">
-                      <Smartphone className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <span className="font-bold text-slate-900 text-xs block group-hover:text-blue-600 transition-colors">
-                        bKash & Nagad Gateways
-                      </span>
-                      <span className="text-[11px] text-slate-500 block leading-tight">
-                        Instant MFS checkout.
-                      </span>
-                    </div>
-                  </Link>
-
-                  <Link
-                    href="/#ecosystem"
-                    onClick={() => setActiveMenu(null)}
-                    className="p-2.5 rounded-xl hover:bg-slate-50 transition-colors flex items-start gap-3 group block"
-                  >
-                    <div className="p-2 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors mt-0.5">
-                      <Truck className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <span className="font-bold text-slate-900 text-xs block group-hover:text-blue-600 transition-colors">
-                        Steadfast & Pathao APIs
-                      </span>
-                      <span className="text-[11px] text-slate-500 block leading-tight">
-                        Automated courier booking.
-                      </span>
-                    </div>
-                  </Link>
-
-                  <Link
-                    href="/#compare-features"
-                    onClick={() => setActiveMenu(null)}
-                    className="p-2.5 rounded-xl hover:bg-slate-50 transition-colors flex items-start gap-3 group block"
-                  >
-                    <div className="p-2 bg-amber-50 text-amber-600 rounded-lg group-hover:bg-amber-600 group-hover:text-white transition-colors mt-0.5">
-                      <Download className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <span className="font-bold text-slate-900 text-xs block group-hover:text-blue-600 transition-colors">
-                        Digital Goods & Resell
-                      </span>
-                      <span className="text-[11px] text-slate-500 block leading-tight">
-                        Sell physical, files or dropship.
-                      </span>
-                    </div>
-                  </Link>
-                </div>
               </div>
             )}
           </div>
@@ -232,23 +187,54 @@ export function Navbar() {
           </div>
         </nav>
 
-        {/* Clean Action Buttons */}
+        {/* Clean Dynamic Action Buttons (Logged In vs Logged Out) */}
         <div className="flex items-center gap-3 shrink-0">
-          <Link
-            href="/login"
-            className="px-4 py-2 text-slate-700 hover:text-blue-600 font-semibold text-sm flex items-center gap-1.5 transition-colors"
-          >
-            <LogIn className="w-4 h-4" />
-            <span>Sign In</span>
-          </Link>
+          {mounted && isAuthenticated && user ? (
+            <>
+              {/* Dashboard Button */}
+              <Link
+                href="/dashboard"
+                className="px-4 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-xs rounded-xl border border-blue-200 flex items-center gap-2 transition-all"
+              >
+                <LayoutDashboard className="w-4 h-4 text-blue-600" />
+                <span>Control Panel</span>
+              </Link>
 
-          <Link
-            href="/register"
-            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl shadow-md shadow-blue-600/20 flex items-center gap-2 transition-all active:scale-95"
-          >
-            <span>Launch Store</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
+              {/* User Badge / Logout */}
+              <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-800 font-bold text-xs rounded-xl">
+                  <UserIcon className="w-3.5 h-3.5 text-slate-500" />
+                  <span className="max-w-[120px] truncate">{user.fullName || user.email}</span>
+                </div>
+
+                <button
+                  onClick={handleLogout}
+                  title="Sign Out"
+                  className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="px-4 py-2 text-slate-700 hover:text-blue-600 font-semibold text-sm flex items-center gap-1.5 transition-colors"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>Sign In</span>
+              </Link>
+
+              <Link
+                href="/register"
+                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl shadow-md shadow-blue-600/20 flex items-center gap-2 transition-all active:scale-95"
+              >
+                <span>Launch Store</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>

@@ -22,7 +22,7 @@ export interface AuthResponse {
 export const authApi = createApi({
   reducerPath: 'authApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/v1/auth',
+    baseUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1/auth',
   }),
   endpoints: (builder) => ({
     registerMerchant: builder.mutation<AuthResponse, RegisterRequest>({
@@ -31,6 +31,7 @@ export const authApi = createApi({
         method: 'POST',
         body: credentials,
       }),
+      transformResponse: (response: { data: AuthResponse }) => response.data,
     }),
     login: builder.mutation<AuthResponse, LoginRequest>({
       query: (credentials) => ({
@@ -38,6 +39,7 @@ export const authApi = createApi({
         method: 'POST',
         body: credentials,
       }),
+      transformResponse: (response: { data: AuthResponse }) => response.data,
     }),
   }),
 });
