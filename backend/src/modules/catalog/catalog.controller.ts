@@ -15,6 +15,7 @@ import { ListCategoriesService } from './services/list-categories.service';
 import { CreateProductService } from './services/create-product.service';
 import { ListProductsService } from './services/list-products.service';
 import { FindProductByIdService } from './services/find-product-by-id.service';
+import { FindPublicStoreProductsService, PublicStoreProductsResponse } from './services/find-public-store-products.service';
 import { FindStoreByUserService } from '../tenant/services/find-store-by-user.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -30,6 +31,7 @@ export class CatalogController {
     private readonly createProductService: CreateProductService,
     private readonly listProductsService: ListProductsService,
     private readonly findProductByIdService: FindProductByIdService,
+    private readonly findPublicStoreProductsService: FindPublicStoreProductsService,
     private readonly findStoreByUserService: FindStoreByUserService,
   ) {}
 
@@ -40,6 +42,17 @@ export class CatalogController {
     }
     return store.tenantId;
   }
+
+  // --- PUBLIC UNPROTECTED STOREFRONT ENDPOINTS ---
+
+  @Get('public/store/:slug/products')
+  @ApiOperation({ summary: 'Get public storefront details & products by store slug' })
+  @ApiResponse({ status: 200, description: 'Storefront details and published catalog products' })
+  async getPublicStoreProducts(@Param('slug') slug: string): Promise<PublicStoreProductsResponse> {
+    return this.findPublicStoreProductsService.execute(slug);
+  }
+
+  // --- PROTECTED MERCHANT DASHBOARD ENDPOINTS ---
 
   @Post('categories')
   @UseGuards(JwtAuthGuard)

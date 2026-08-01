@@ -8,6 +8,7 @@ import { UserModule } from '../user/user.module';
 import { CreateStoreService } from './services/create-store.service';
 import { FindStoreByUserService } from './services/find-store-by-user.service';
 import { FindStoreBySlugService } from './services/find-store-by-slug.service';
+import { UpdateStoreService } from './services/update-store.service';
 import { TenantController } from './tenant.controller';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
@@ -29,12 +30,14 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     CreateStoreService,
     FindStoreByUserService,
     FindStoreBySlugService,
+    UpdateStoreService,
     JwtAuthGuard,
   ],
   exports: [
     CreateStoreService,
     FindStoreByUserService,
     FindStoreBySlugService,
+    UpdateStoreService,
     TypeOrmModule,
   ],
 })

@@ -3,6 +3,7 @@
 import React from 'react';
 import { useGetInventoryStocksQuery, InventoryStock } from '../api/inventoryApi';
 import { Boxes, Warehouse, AlertTriangle, CheckCircle2, XCircle, SlidersHorizontal } from 'lucide-react';
+import { TableRowSkeleton } from '@/components/ui/Skeleton';
 
 interface InventoryStockTableProps {
   onAdjustStockClick?: (productId?: string) => void;
@@ -13,9 +14,22 @@ export function InventoryStockTable({ onAdjustStockClick }: InventoryStockTableP
 
   if (isLoading) {
     return (
-      <div className="p-8 bg-white rounded-2xl border border-slate-200 text-center">
-        <div className="animate-spin w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto mb-3"></div>
-        <p className="text-xs font-bold text-slate-600">Fetching inventory stock levels...</p>
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6 space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+          <div className="space-y-2">
+            <div className="h-5 w-48 bg-slate-200 animate-pulse rounded-lg" />
+            <div className="h-3 w-32 bg-slate-200 animate-pulse rounded-lg" />
+          </div>
+          <div className="h-9 w-32 bg-slate-200 animate-pulse rounded-xl" />
+        </div>
+        <table className="w-full text-left text-xs">
+          <tbody>
+            <TableRowSkeleton columns={7} />
+            <TableRowSkeleton columns={7} />
+            <TableRowSkeleton columns={7} />
+            <TableRowSkeleton columns={7} />
+          </tbody>
+        </table>
       </div>
     );
   }

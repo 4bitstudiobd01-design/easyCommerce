@@ -1,36 +1,42 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// Protected routes requiring authentication
-const protectedRoutes = ['/dashboard'];
+export function middleware(req: NextRequest) {
+  const url = req.nextUrl;
+  const hostname = req.headers.get('host') || '';
 
-// Auth routes (inaccessible if already logged in)
-const authRoutes = ['/login', '/register'];
+  // Standard root domains to ignore from subdomain rewriting
+  const rootDomains = ['localhost:3000', 'localhost:3001', 'easycommerce.app', 'www.easycommerce.app'];
 
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  const token = request.cookies.get('easycommerce_token')?.value;
+  // Extract potential subdomain (e.g. sumon-fashion from sumon-fashion.localhost:3000)
+  let subdomain: string | null = null;
 
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    pathname.startsWith(route)
-  );
-  const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
-
-  // 1. Unauthenticated user trying to access protected dashboard -> Redirect to /login
-  if (isProtectedRoute && !token) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
+  if (hostname.includes('.localhost')) {
+    subdomain = hostname.split('.localhost')[0];
+  } else if (hostname.includes('.easycommerce.app')) {
+    subdomain = hostname.split('.easycommerce.app')[0];
   }
 
-  // 2. Authenticated user trying to access login/register pages -> Redirect to /dashboard
-  if (isAuthRoute && token) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+  // If valid subdomain exists and is not www / app / admin
+  if (subdomain && !['www', 'app', 'admin', 'api'].includes(subdomain.toLowerCase())) {
+    // Prevent double rewriting if path already starts with /store
+    if (!url.pathname.startsWith('/store/')) {
+      return NextResponse.rewrite(new URL(`/store/${subdomain}${url.pathname}`, req.url));
+    }
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/login', '/register'],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+  ],
 };

@@ -15,6 +15,13 @@ export interface ProductImage {
   isPrimary: boolean;
 }
 
+export interface ProductVariant {
+  id: string;
+  sku: string;
+  price: number;
+  compareAtPrice?: number;
+}
+
 export interface Product {
   id: string;
   title: string;
@@ -26,6 +33,7 @@ export interface Product {
   categoryId?: string;
   category?: Category;
   images?: ProductImage[];
+  variants?: ProductVariant[];
   tenantId: string;
   createdAt: string;
 }

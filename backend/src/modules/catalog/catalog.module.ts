@@ -12,6 +12,7 @@ import { ListCategoriesService } from './services/list-categories.service';
 import { CreateProductService } from './services/create-product.service';
 import { ListProductsService } from './services/list-products.service';
 import { FindProductByIdService } from './services/find-product-by-id.service';
+import { FindPublicStoreProductsService } from './services/find-public-store-products.service';
 import { CatalogController } from './catalog.controller';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
@@ -40,6 +41,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     CreateProductService,
     ListProductsService,
     FindProductByIdService,
+    FindPublicStoreProductsService,
     JwtAuthGuard,
   ],
   exports: [
@@ -48,6 +50,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     CreateProductService,
     ListProductsService,
     FindProductByIdService,
+    FindPublicStoreProductsService,
     TypeOrmModule,
   ],
 })

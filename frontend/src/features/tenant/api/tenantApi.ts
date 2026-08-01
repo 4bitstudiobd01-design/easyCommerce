@@ -10,6 +10,10 @@ export interface Store {
   address?: string;
   logo?: string;
   currency: string;
+  steadfastApiKey?: string;
+  steadfastSecretKey?: string;
+  pathaoClientId?: string;
+  pathaoClientSecret?: string;
   ownerId: string;
   tenantId: string;
 }
@@ -21,6 +25,17 @@ export interface CreateStoreRequest {
   phone?: string;
   address?: string;
   logo?: string;
+}
+
+export interface UpdateStoreRequest {
+  name?: string;
+  phone?: string;
+  address?: string;
+  currency?: string;
+  steadfastApiKey?: string;
+  steadfastSecretKey?: string;
+  pathaoClientId?: string;
+  pathaoClientSecret?: string;
 }
 
 export const tenantApi = createApi({
@@ -55,7 +70,21 @@ export const tenantApi = createApi({
       invalidatesTags: ['Store'],
       transformResponse: (response: { data: Store }) => response.data,
     }),
+    updateStore: builder.mutation<Store, UpdateStoreRequest>({
+      query: (storeData) => ({
+        url: '/me',
+        method: 'PUT',
+        body: storeData,
+      }),
+      invalidatesTags: ['Store'],
+      transformResponse: (response: { data: Store }) => response.data,
+    }),
   }),
 });
 
-export const { useGetMyStoreQuery, useGetStoreBySlugQuery, useCreateStoreMutation } = tenantApi;
+export const {
+  useGetMyStoreQuery,
+  useGetStoreBySlugQuery,
+  useCreateStoreMutation,
+  useUpdateStoreMutation,
+} = tenantApi;

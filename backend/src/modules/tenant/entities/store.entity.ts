@@ -38,6 +38,19 @@ export class StoreEntity {
   @Column({ type: 'varchar', length: 10, default: 'BDT' })
   currency: string;
 
+  // Courier Provider API Keys
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  steadfastApiKey?: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  steadfastSecretKey?: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  pathaoClientId?: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  pathaoClientSecret?: string;
+
   @Column({ type: 'uuid' })
   ownerId: string;
 

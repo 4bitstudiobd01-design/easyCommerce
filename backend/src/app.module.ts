@@ -7,6 +7,10 @@ import { AuthModule } from './modules/auth/auth.module';
 import { TenantModule } from './modules/tenant/tenant.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
+import { OrderModule } from './modules/order/order.module';
+import { PaymentModule } from './modules/payment/payment.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { LogisticsModule } from './modules/logistics/logistics.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { APP_FILTER } from '@nestjs/core';
 
@@ -25,6 +29,10 @@ import { APP_FILTER } from '@nestjs/core';
     TenantModule,
     CatalogModule,
     InventoryModule,
+    OrderModule,
+    PaymentModule,
+    AnalyticsModule,
+    LogisticsModule,
   ],
   controllers: [],
   providers: [

@@ -8,11 +8,18 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useGetMyStoreQuery } from '@/features/tenant/api/tenantApi';
 import { useGetProductsQuery, useGetCategoriesQuery } from '@/features/catalog/api/catalogApi';
+import { useGetMerchantOrdersQuery, Order } from '@/features/order/api/orderApi';
 import { CreateStoreModal } from '@/features/tenant/components/CreateStoreModal';
 import { CreateProductModal } from '@/features/catalog/components/CreateProductModal';
 import { ProductListTable } from '@/features/catalog/components/ProductListTable';
 import { AdjustStockModal } from '@/features/inventory/components/AdjustStockModal';
 import { InventoryStockTable } from '@/features/inventory/components/InventoryStockTable';
+import { OrderListTable } from '@/features/order/components/OrderListTable';
+import { RevenueChart } from '@/features/analytics/components/RevenueChart';
+import { TopProductsCard } from '@/features/analytics/components/TopProductsCard';
+import { BookCourierModal } from '@/features/logistics/components/BookCourierModal';
+import { ConsignmentListTable } from '@/features/logistics/components/ConsignmentListTable';
+import { StoreSettingsForm } from '@/features/tenant/components/StoreSettingsForm';
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -51,10 +58,13 @@ export default function DashboardPage() {
   const dispatch = useDispatch();
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'inventory' | 'customers' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'logistics' | 'inventory' | 'customers' | 'settings'>('overview');
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isAdjustStockModalOpen, setIsAdjustStockModalOpen] = useState(false);
   const [selectedProductIdForStock, setSelectedProductIdForStock] = useState<string | undefined>(undefined);
+
+  const [selectedOrderForCourier, setSelectedOrderForCourier] = useState<Order | null>(null);
+  const [isBookCourierModalOpen, setIsBookCourierModalOpen] = useState(false);
 
   useEffect(() => {
     if (!token && !isAuthenticated) {
@@ -69,12 +79,20 @@ export default function DashboardPage() {
     isSuccess: isStoreSuccess,
     refetch: refetchStore,
   } = useGetMyStoreQuery();
+
   const { data: products = [] } = useGetProductsQuery(undefined, {
     skip: !store,
   });
+
   const { data: categories = [] } = useGetCategoriesQuery(undefined, {
     skip: !store,
   });
+
+  const { data: orders = [], refetch: refetchOrders } = useGetMerchantOrdersQuery(undefined, {
+    skip: !store,
+  });
+
+  const totalSales = orders.reduce((acc, order) => acc + Number(order.grandTotal), 0);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -84,6 +102,11 @@ export default function DashboardPage() {
   const handleOpenStockModal = (prodId?: string) => {
     setSelectedProductIdForStock(prodId);
     setIsAdjustStockModalOpen(true);
+  };
+
+  const handleOpenCourierModal = (order: Order) => {
+    setSelectedOrderForCourier(order);
+    setIsBookCourierModalOpen(true);
   };
 
   const showOnboardingModal = Boolean(isStoreSuccess && !isStoreLoading && !isStoreFetching && !store);
@@ -107,6 +130,14 @@ export default function DashboardPage() {
         isOpen={isAdjustStockModalOpen}
         onClose={() => setIsAdjustStockModalOpen(false)}
         initialProductId={selectedProductIdForStock}
+      />
+
+      {/* Book Courier Modal */}
+      <BookCourierModal
+        order={selectedOrderForCourier}
+        isOpen={isBookCourierModalOpen}
+        onClose={() => setIsBookCourierModalOpen(false)}
+        onSuccess={() => refetchOrders()}
       />
 
       {/* 1. Left Sidebar Navigation */}
@@ -198,9 +229,23 @@ export default function DashboardPage() {
               <ShoppingCart className="w-4 h-4" />
               <span>Orders & Sales</span>
             </div>
-            <span className="px-2 py-0.5 bg-blue-500/20 text-blue-300 text-[10px] font-bold rounded-full">
-              0
-            </span>
+            {orders.length > 0 && (
+              <span className="px-2 py-0.5 bg-blue-500/20 text-blue-300 text-[10px] font-bold rounded-full">
+                {orders.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setActiveTab('logistics')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
+              activeTab === 'logistics'
+                ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/20'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <Truck className="w-4 h-4" />
+            <span>Logistics & Shipments</span>
           </button>
 
           <button
@@ -285,7 +330,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-4">
             {store && (
               <Link
-                href={`/#${store.slug}`}
+                href={`/store/${store.slug}`}
                 target="_blank"
                 className="px-3.5 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-xs rounded-xl border border-blue-200/80 flex items-center gap-1.5 transition-all"
               >
@@ -356,8 +401,8 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="mt-4 flex items-baseline justify-between">
-                    <span className="text-2xl font-extrabold text-slate-900">৳0.00</span>
-                    <span className="text-xs font-bold text-slate-400">New Store</span>
+                    <span className="text-2xl font-extrabold text-slate-900">৳{totalSales.toLocaleString()}</span>
+                    <span className="text-xs font-bold text-emerald-600">Revenue</span>
                   </div>
                   <p className="text-[11px] text-slate-400 font-medium mt-1">Currency: {store?.currency || 'BDT (৳)'}</p>
                 </div>
@@ -371,10 +416,10 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="mt-4 flex items-baseline justify-between">
-                    <span className="text-2xl font-extrabold text-slate-900">0</span>
+                    <span className="text-2xl font-extrabold text-slate-900">{orders.length}</span>
                     <span className="text-xs font-bold text-blue-600">Active</span>
                   </div>
-                  <p className="text-[11px] text-slate-400 font-medium mt-1">Completed purchases</p>
+                  <p className="text-[11px] text-slate-400 font-medium mt-1">Completed & pending purchases</p>
                 </div>
 
                 {/* Card 3: Active Products */}
@@ -401,10 +446,20 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="mt-4 flex items-baseline justify-between">
-                    <span className="text-2xl font-extrabold text-slate-900">0</span>
+                    <span className="text-2xl font-extrabold text-slate-900">{orders.length > 0 ? new Set(orders.map(o => o.customerPhone)).size : 0}</span>
                     <span className="text-xs font-bold text-emerald-600">Isolated</span>
                   </div>
                   <p className="text-[11px] text-slate-400 font-medium mt-1">Row-level security context</p>
+                </div>
+              </div>
+
+              {/* 7-Day Revenue Trend Chart & Top Selling Products Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div className="lg:col-span-8">
+                  <RevenueChart />
+                </div>
+                <div className="lg:col-span-4">
+                  <TopProductsCard />
                 </div>
               </div>
 
@@ -454,22 +509,26 @@ export default function DashboardPage() {
             <div className="space-y-6">
               <div>
                 <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Orders & Sales Pipeline</h1>
-                <p className="text-xs text-slate-500 mt-1">Track storefront purchases, customer invoices, and checkout status.</p>
+                <p className="text-xs text-slate-500 mt-1">Track storefront purchases, customer invoices, and order statuses for {store?.name}.</p>
               </div>
 
-              <div className="p-12 bg-white rounded-2xl border border-slate-200 text-center max-w-md mx-auto my-8">
-                <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-blue-100">
-                  <ShoppingCart className="w-6 h-6" />
-                </div>
-                <h3 className="font-extrabold text-base text-slate-900">No Orders Received Yet</h3>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                  Share your storefront link <span className="font-bold text-blue-600">{store?.slug}.easycommerce.app</span> with customers to start receiving orders.
-                </p>
-              </div>
+              <OrderListTable onDispatchCourierClick={(order) => handleOpenCourierModal(order)} />
             </div>
           )}
 
-          {/* TAB 4: INVENTORY CONTROL */}
+          {/* TAB 4: LOGISTICS & SHIPMENTS */}
+          {activeTab === 'logistics' && (
+            <div className="space-y-6">
+              <div>
+                <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Logistics & Parcel Shipments</h1>
+                <p className="text-xs text-slate-500 mt-1">Manage Steadfast & Pathao courier parcel bookings, waybill tracking, and COD collections for {store?.name}.</p>
+              </div>
+
+              <ConsignmentListTable />
+            </div>
+          )}
+
+          {/* TAB 5: INVENTORY CONTROL */}
           {activeTab === 'inventory' && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
@@ -491,7 +550,7 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* TAB 5: CUSTOMERS */}
+          {/* TAB 6: CUSTOMERS */}
           {activeTab === 'customers' && (
             <div className="space-y-6">
               <div>
@@ -499,47 +558,49 @@ export default function DashboardPage() {
                 <p className="text-xs text-slate-500 mt-1">Row-level isolated customer profiles for {store?.name}.</p>
               </div>
 
-              <div className="p-12 bg-white rounded-2xl border border-slate-200 text-center max-w-md mx-auto my-8">
-                <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-purple-100">
-                  <Users className="w-6 h-6" />
+              {orders.length === 0 ? (
+                <div className="p-12 bg-white rounded-2xl border border-slate-200 text-center max-w-md mx-auto my-8">
+                  <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-purple-100">
+                    <Users className="w-6 h-6" />
+                  </div>
+                  <h3 className="font-extrabold text-base text-slate-900">No Customers Registered Yet</h3>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                    As buyers place orders on your storefront, their customer profiles will be saved here automatically.
+                  </p>
                 </div>
-                <h3 className="font-extrabold text-base text-slate-900">No Customers Registered Yet</h3>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                  As buyers register or place orders on your storefront, their customer profiles will be saved here automatically.
-                </p>
-              </div>
+              ) : (
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6">
+                  <h3 className="font-bold text-base text-slate-900 mb-4">Customer Directory</h3>
+                  <div className="divide-y divide-slate-100">
+                    {Array.from(new Set(orders.map((o) => o.customerPhone))).map((phone) => {
+                      const custOrder = orders.find((o) => o.customerPhone === phone);
+                      return (
+                        <div key={phone} className="py-3 flex items-center justify-between">
+                          <div>
+                            <span className="font-bold text-slate-900 text-sm block">{custOrder?.customerName}</span>
+                            <span className="text-xs text-slate-500">{phone} • {custOrder?.shippingAddress}</span>
+                          </div>
+                          <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 font-bold text-xs rounded-full">
+                            Active Buyer
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
-          {/* TAB 6: STORE SETTINGS */}
+          {/* TAB 7: STORE SETTINGS */}
           {activeTab === 'settings' && (
             <div className="space-y-6">
               <div>
                 <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Store Settings & Configuration</h1>
-                <p className="text-xs text-slate-500 mt-1">Configure tenant properties, currency, phone number, and custom domain.</p>
+                <p className="text-xs text-slate-500 mt-1">Configure tenant properties, currency, phone number, and courier API keys.</p>
               </div>
 
-              <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm space-y-6 max-w-2xl">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Store Name</label>
-                  <p className="font-bold text-slate-900 text-base">{store?.name}</p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Store Subdomain</label>
-                  <p className="font-mono text-sm font-bold text-blue-600">{store?.slug}.easycommerce.app</p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Store Currency</label>
-                  <p className="font-bold text-slate-900 text-sm">{store?.currency || 'BDT (৳)'}</p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Tenant ID Context</label>
-                  <p className="font-mono text-xs text-slate-600 bg-slate-100 p-3 rounded-xl border border-slate-200">{store?.tenantId}</p>
-                </div>
-              </div>
+              <StoreSettingsForm store={store || null} />
             </div>
           )}
         </main>
