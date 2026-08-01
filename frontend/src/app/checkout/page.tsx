@@ -6,6 +6,7 @@ import { RootState } from '@/store';
 import { clearCart } from '@/features/storefront/slices/cartSlice';
 import { useCreatePublicOrderMutation, Order } from '@/features/order/api/orderApi';
 import { useInitiatePaymentMutation } from '@/features/payment/api/paymentApi';
+import { useValidatePublicCouponMutation } from '@/features/coupon/api/couponApi';
 import Link from 'next/link';
 import {
   ShoppingBag,
@@ -22,6 +23,7 @@ import {
   Sparkles,
   Globe,
   Lock,
+  Tag,
 } from 'lucide-react';
 
 export default function CheckoutPage() {
@@ -36,16 +38,45 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<'COD' | 'SSLCOMMERZ'>('SSLCOMMERZ');
   const [errorMsg, setErrorMsg] = useState('');
 
+  // Promo Coupon state
+  const [promoCodeInput, setPromoCodeInput] = useState('');
+  const [appliedDiscount, setAppliedDiscount] = useState<number>(0);
+  const [promoSuccessMsg, setPromoSuccessMsg] = useState('');
+  const [promoErrorMsg, setPromoErrorMsg] = useState('');
+
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
 
   const [createOrder, { isLoading: isCreatingOrder }] = useCreatePublicOrderMutation();
   const [initiatePayment, { isLoading: isInitiatingPayment }] = useInitiatePaymentMutation();
+  const [validateCoupon, { isLoading: isValidatingCoupon }] = useValidatePublicCouponMutation();
 
   const isSubmitting = isCreatingOrder || isInitiatingPayment;
 
   const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const deliveryFee = city.toLowerCase().includes('dhaka') ? 60 : 120;
-  const grandTotal = subtotal + deliveryFee;
+  const grandTotal = Math.max(0, subtotal + deliveryFee - appliedDiscount);
+
+  const handleApplyPromoCode = async () => {
+    if (!promoCodeInput.trim()) return;
+    setPromoErrorMsg('');
+    setPromoSuccessMsg('');
+
+    const storeSlug = new URLSearchParams(window.location.search).get('storeSlug') || localStorage.getItem('easycommerce_store_slug') || 'demo-store';
+
+    try {
+      const result = await validateCoupon({
+        storeSlug,
+        code: promoCodeInput,
+        subtotal,
+      }).unwrap();
+
+      setAppliedDiscount(result.calculatedDiscount);
+      setPromoSuccessMsg(result.message);
+    } catch (err: any) {
+      setAppliedDiscount(0);
+      setPromoErrorMsg(err?.data?.message || 'Invalid promo coupon code.');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -359,6 +390,46 @@ export default function CheckoutPage() {
                 ))}
               </div>
 
+              {/* Promo Coupon Code Box */}
+              <div className="pt-4 border-t border-slate-100 space-y-2">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  Have a Promo Code / Coupon?
+                </label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Tag className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                    <input
+                      type="text"
+                      value={promoCodeInput}
+                      onChange={(e) => setPromoCodeInput(e.target.value.toUpperCase())}
+                      placeholder="e.g. EASY20"
+                      className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleApplyPromoCode}
+                    disabled={isValidatingCoupon || !promoCodeInput.trim()}
+                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition-colors disabled:opacity-50"
+                  >
+                    {isValidatingCoupon ? 'Checking...' : 'Apply'}
+                  </button>
+                </div>
+
+                {promoSuccessMsg && (
+                  <p className="text-[11px] font-bold text-emerald-600 flex items-center gap-1 mt-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>{promoSuccessMsg}</span>
+                  </p>
+                )}
+
+                {promoErrorMsg && (
+                  <p className="text-[11px] font-bold text-red-600 mt-1">
+                    {promoErrorMsg}
+                  </p>
+                )}
+              </div>
+
               <div className="pt-4 border-t border-slate-200 space-y-2 text-xs font-semibold">
                 <div className="flex justify-between text-slate-500">
                   <span>Subtotal</span>
@@ -369,6 +440,13 @@ export default function CheckoutPage() {
                   <span>Delivery Charge ({city})</span>
                   <span className="font-bold text-slate-900">৳{deliveryFee}</span>
                 </div>
+
+                {appliedDiscount > 0 && (
+                  <div className="flex justify-between text-emerald-600 font-bold">
+                    <span>Promo Coupon Discount</span>
+                    <span>-৳{appliedDiscount.toLocaleString()}</span>
+                  </div>
+                )}
 
                 <div className="pt-3 border-t border-slate-200 flex justify-between font-black text-lg text-slate-900">
                   <span>Grand Total</span>

@@ -9,6 +9,19 @@ import {
 } from 'typeorm';
 import { TenantEntity } from './tenant.entity';
 
+export enum SmsDriverEnum {
+  BULKSMSBD = 'BULKSMSBD',
+  GREENWEB = 'GREENWEB',
+  TWILIO = 'TWILIO',
+  DISABLED = 'DISABLED',
+}
+
+export enum EmailDriverEnum {
+  SMTP = 'SMTP',
+  SENDGRID = 'SENDGRID',
+  DISABLED = 'DISABLED',
+}
+
 @Entity('stores')
 export class StoreEntity {
   @PrimaryGeneratedColumn('uuid')
@@ -50,6 +63,34 @@ export class StoreEntity {
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   pathaoClientSecret?: string;
+
+  // Pluggable Notification Drivers (SMS & Email)
+  @Column({ type: 'enum', enum: SmsDriverEnum, default: SmsDriverEnum.BULKSMSBD })
+  smsDriver: SmsDriverEnum;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  smsApiKey?: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  smsSenderId?: string;
+
+  @Column({ type: 'enum', enum: EmailDriverEnum, default: EmailDriverEnum.SMTP })
+  emailDriver: EmailDriverEnum;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  smtpHost?: string;
+
+  @Column({ type: 'int', nullable: true, default: 587 })
+  smtpPort?: number;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  smtpUser?: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  smtpPass?: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  fromEmail?: string;
 
   @Column({ type: 'uuid' })
   ownerId: string;

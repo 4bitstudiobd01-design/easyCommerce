@@ -15,6 +15,8 @@ import { paymentApi } from '@/features/payment/api/paymentApi';
 import { analyticsApi } from '@/features/analytics/api/analyticsApi';
 import { logisticsApi } from '@/features/logistics/api/logisticsApi';
 import { adminApi } from '@/features/admin/api/adminApi';
+import { smsApi } from '@/features/sms/api/smsApi';
+import { couponApi } from '@/features/coupon/api/couponApi';
 
 export const store = configureStore({
   reducer: {
@@ -34,6 +36,8 @@ export const store = configureStore({
     [analyticsApi.reducerPath]: analyticsApi.reducer,
     [logisticsApi.reducerPath]: logisticsApi.reducer,
     [adminApi.reducerPath]: adminApi.reducer,
+    [smsApi.reducerPath]: smsApi.reducer,
+    [couponApi.reducerPath]: couponApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -47,6 +51,8 @@ export const store = configureStore({
       analyticsApi.middleware,
       logisticsApi.middleware,
       adminApi.middleware,
+      smsApi.middleware,
+      couponApi.middleware,
     ),
 });
 

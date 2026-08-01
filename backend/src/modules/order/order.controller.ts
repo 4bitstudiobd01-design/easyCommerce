@@ -17,6 +17,8 @@ import { ListMerchantOrdersService } from './services/list-merchant-orders.servi
 import { FindOrderByIdService } from './services/find-order-by-id.service';
 import { UpdateOrderStatusService } from './services/update-order-status.service';
 import { TrackPublicOrderService } from './services/track-public-order.service';
+import { GenerateOrderInvoiceService } from './services/generate-order-invoice.service';
+import { GenerateThermalLabelService } from './services/generate-thermal-label.service';
 import { FindStoreByUserService } from '../tenant/services/find-store-by-user.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
@@ -30,6 +32,8 @@ export class OrderController {
     private readonly findOrderByIdService: FindOrderByIdService,
     private readonly updateOrderStatusService: UpdateOrderStatusService,
     private readonly trackPublicOrderService: TrackPublicOrderService,
+    private readonly generateOrderInvoiceService: GenerateOrderInvoiceService,
+    private readonly generateThermalLabelService: GenerateThermalLabelService,
     private readonly findStoreByUserService: FindStoreByUserService,
   ) {}
 
@@ -73,6 +77,30 @@ export class OrderController {
   async listMerchantOrders(@CurrentUser('sub') userId: string) {
     const tenantId = await this.getMerchantTenantId(userId);
     return this.listMerchantOrdersService.execute(tenantId);
+  }
+
+  @Get(':id/invoice')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Generate printable cash memo customer invoice' })
+  @ApiResponse({ status: 200, description: 'Order Cash Memo Invoice' })
+  async getOrderInvoice(
+    @CurrentUser('sub') userId: string,
+    @Param('id') id: string,
+  ) {
+    return this.generateOrderInvoiceService.execute(id, userId);
+  }
+
+  @Get(':id/thermal-label')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Generate 4x6 thermal shipping sticker label' })
+  @ApiResponse({ status: 200, description: 'Thermal Sticker Label' })
+  async getThermalLabel(
+    @CurrentUser('sub') userId: string,
+    @Param('id') id: string,
+  ) {
+    return this.generateThermalLabelService.execute(id, userId);
   }
 
   @Get(':id')

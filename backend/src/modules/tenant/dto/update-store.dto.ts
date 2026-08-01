@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsNumber } from 'class-validator';
+import { SmsDriverEnum, EmailDriverEnum } from '../entities/store.entity';
 
 export class UpdateStoreDto {
   @ApiProperty({ example: 'My Online Fashion Store', required: false })
@@ -46,4 +47,50 @@ export class UpdateStoreDto {
   @IsOptional()
   @IsString()
   pathaoClientSecret?: string;
+
+  // Notification Drivers (SMS & Email)
+  @ApiProperty({ enum: SmsDriverEnum, required: false })
+  @IsOptional()
+  @IsEnum(SmsDriverEnum)
+  smsDriver?: SmsDriverEnum;
+
+  @ApiProperty({ example: 'sms_api_key_123', required: false })
+  @IsOptional()
+  @IsString()
+  smsApiKey?: string;
+
+  @ApiProperty({ example: 'EASYSTORE', required: false })
+  @IsOptional()
+  @IsString()
+  smsSenderId?: string;
+
+  @ApiProperty({ enum: EmailDriverEnum, required: false })
+  @IsOptional()
+  @IsEnum(EmailDriverEnum)
+  emailDriver?: EmailDriverEnum;
+
+  @ApiProperty({ example: 'smtp.mailtrap.io', required: false })
+  @IsOptional()
+  @IsString()
+  smtpHost?: string;
+
+  @ApiProperty({ example: 587, required: false })
+  @IsOptional()
+  @IsNumber()
+  smtpPort?: number;
+
+  @ApiProperty({ example: 'smtp_user', required: false })
+  @IsOptional()
+  @IsString()
+  smtpUser?: string;
+
+  @ApiProperty({ example: 'smtp_pass', required: false })
+  @IsOptional()
+  @IsString()
+  smtpPass?: string;
+
+  @ApiProperty({ example: 'no-reply@store.com', required: false })
+  @IsOptional()
+  @IsString()
+  fromEmail?: string;
 }

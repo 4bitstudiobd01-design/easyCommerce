@@ -20,6 +20,9 @@ import { TopProductsCard } from '@/features/analytics/components/TopProductsCard
 import { BookCourierModal } from '@/features/logistics/components/BookCourierModal';
 import { ConsignmentListTable } from '@/features/logistics/components/ConsignmentListTable';
 import { StoreSettingsForm } from '@/features/tenant/components/StoreSettingsForm';
+import { SmsLogsTable } from '@/features/sms/components/SmsLogsTable';
+import { NotificationBellDrawer } from '@/features/sms/components/NotificationBellDrawer';
+import { CouponManagementTable } from '@/features/coupon/components/CouponManagementTable';
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -27,6 +30,8 @@ import {
   ShoppingCart,
   Users,
   Settings,
+  MessageSquare,
+  Tag,
   LogOut,
   Search,
   Bell,
@@ -46,7 +51,6 @@ import {
   ChevronDown,
   Layers,
   Globe,
-  Tag,
   Boxes,
   SlidersHorizontal,
   FileText,
@@ -58,7 +62,7 @@ export default function DashboardPage() {
   const dispatch = useDispatch();
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'logistics' | 'inventory' | 'customers' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'logistics' | 'inventory' | 'sms' | 'coupons' | 'customers' | 'settings'>('overview');
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isAdjustStockModalOpen, setIsAdjustStockModalOpen] = useState(false);
   const [selectedProductIdForStock, setSelectedProductIdForStock] = useState<string | undefined>(undefined);
@@ -261,6 +265,30 @@ export default function DashboardPage() {
           </button>
 
           <button
+            onClick={() => setActiveTab('sms')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
+              activeTab === 'sms'
+                ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/20'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <MessageSquare className="w-4 h-4" />
+            <span>SMS Alerts</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('coupons')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
+              activeTab === 'coupons'
+                ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/20'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <Tag className="w-4 h-4" />
+            <span>Promo Coupons</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('customers')}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
               activeTab === 'customers'
@@ -339,10 +367,7 @@ export default function DashboardPage() {
               </Link>
             )}
 
-            <button className="p-2 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-xl transition-colors relative">
-              <Bell className="w-4 h-4" />
-              <span className="w-2 h-2 bg-blue-600 rounded-full absolute top-2 right-2 border border-white"></span>
-            </button>
+            <NotificationBellDrawer />
 
             <div className="h-6 w-px bg-slate-200"></div>
 
@@ -592,7 +617,13 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* TAB 7: STORE SETTINGS */}
+          {/* TAB 6: SMS ALERTS */}
+          {activeTab === 'sms' && <SmsLogsTable />}
+
+          {/* TAB 7: PROMO COUPONS */}
+          {activeTab === 'coupons' && <CouponManagementTable />}
+
+          {/* TAB 8: STORE SETTINGS */}
           {activeTab === 'settings' && (
             <div className="space-y-6">
               <div>

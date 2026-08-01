@@ -8,6 +8,7 @@ import { FindStoreBySlugService } from '../../tenant/services/find-store-by-slug
 import { ProductEntity } from '../../catalog/entities/product.entity';
 import { AdjustStockService } from '../../inventory/services/adjust-stock.service';
 import { StockAdjustmentAction } from '../../inventory/dto/adjust-stock.dto';
+import { TriggerOrderStatusSmsService } from '../../sms/services/trigger-order-status-sms.service';
 
 @Injectable()
 export class CreateOrderService {
@@ -20,6 +21,7 @@ export class CreateOrderService {
     private readonly productRepository: Repository<ProductEntity>,
     private readonly findStoreBySlugService: FindStoreBySlugService,
     private readonly adjustStockService: AdjustStockService,
+    private readonly triggerOrderStatusSmsService: TriggerOrderStatusSmsService,
   ) {}
 
   async execute(dto: CreateOrderDto): Promise<OrderEntity> {
@@ -99,6 +101,23 @@ export class CreateOrderService {
       items: orderItems,
     });
 
-    return this.orderRepository.save(order);
+    const savedOrder = await this.orderRepository.save(order);
+
+    // Trigger Order Placement SMS
+    try {
+      await this.triggerOrderStatusSmsService.execute({
+        orderNumber: savedOrder.orderNumber,
+        customerPhone: savedOrder.customerPhone,
+        customerName: savedOrder.customerName,
+        storeName: store.name,
+        grandTotal: Number(savedOrder.grandTotal),
+        orderStatus: 'PENDING',
+        tenantId: savedOrder.tenantId,
+      });
+    } catch (err) {
+      // Non-blocking SMS trigger
+    }
+
+    return savedOrder;
   }
 }

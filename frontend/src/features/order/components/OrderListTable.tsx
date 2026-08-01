@@ -1,7 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useGetMerchantOrdersQuery, useUpdateOrderStatusMutation, Order } from '../api/orderApi';
+import { InvoiceModal } from './InvoiceModal';
+import { ThermalLabelModal } from './ThermalLabelModal';
 import {
   ShoppingCart,
   Phone,
@@ -13,6 +15,8 @@ import {
   XCircle,
   CreditCard,
   ChevronDown,
+  Printer,
+  Tag,
 } from 'lucide-react';
 import { TableRowSkeleton } from '@/components/ui/Skeleton';
 
@@ -23,6 +27,9 @@ interface OrderListTableProps {
 export function OrderListTable({ onDispatchCourierClick }: OrderListTableProps) {
   const { data: orders = [], isLoading, refetch } = useGetMerchantOrdersQuery();
   const [updateOrderStatus, { isLoading: isUpdating }] = useUpdateOrderStatusMutation();
+
+  const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState<Order | null>(null);
+  const [selectedThermalOrder, setSelectedThermalOrder] = useState<Order | null>(null);
 
   const handleStatusChange = async (orderId: string, newStatus: any) => {
     try {
@@ -44,9 +51,9 @@ export function OrderListTable({ onDispatchCourierClick }: OrderListTableProps) 
         </div>
         <table className="w-full text-left text-xs">
           <tbody>
-            <TableRowSkeleton columns={8} />
-            <TableRowSkeleton columns={8} />
-            <TableRowSkeleton columns={8} />
+            <TableRowSkeleton columns={9} />
+            <TableRowSkeleton columns={9} />
+            <TableRowSkeleton columns={9} />
           </tbody>
         </table>
       </div>
@@ -69,6 +76,18 @@ export function OrderListTable({ onDispatchCourierClick }: OrderListTableProps) 
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <InvoiceModal
+        isOpen={Boolean(selectedInvoiceOrder)}
+        onClose={() => setSelectedInvoiceOrder(null)}
+        order={selectedInvoiceOrder}
+      />
+
+      <ThermalLabelModal
+        isOpen={Boolean(selectedThermalOrder)}
+        onClose={() => setSelectedThermalOrder(null)}
+        order={selectedThermalOrder}
+      />
+
       <div className="p-6 border-b border-slate-200 flex items-center justify-between">
         <div>
           <h3 className="font-bold text-base text-slate-900">Merchant Sales Orders</h3>
@@ -96,7 +115,7 @@ export function OrderListTable({ onDispatchCourierClick }: OrderListTableProps) 
               <th className="px-6 py-3.5">Payment</th>
               <th className="px-6 py-3.5">Order Status</th>
               <th className="px-6 py-3.5">Courier Dispatch</th>
-              <th className="px-6 py-3.5 text-right">Placed On</th>
+              <th className="px-6 py-3.5 text-right">Print Invoice & Label</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 font-medium">
@@ -204,9 +223,25 @@ export function OrderListTable({ onDispatchCourierClick }: OrderListTableProps) 
                   )}
                 </td>
 
-                {/* Date */}
-                <td className="px-6 py-4 text-right text-slate-400 text-[11px]">
-                  {new Date(order.createdAt).toLocaleDateString()}
+                {/* Print Invoice & Thermal Label Buttons */}
+                <td className="px-6 py-4 text-right">
+                  <div className="flex items-center justify-end gap-1.5">
+                    <button
+                      onClick={() => setSelectedInvoiceOrder(order)}
+                      className="p-1.5 bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-700 rounded-xl transition-all"
+                      title="Print Cash Memo Invoice"
+                    >
+                      <Printer className="w-3.5 h-3.5" />
+                    </button>
+
+                    <button
+                      onClick={() => setSelectedThermalOrder(order)}
+                      className="p-1.5 bg-slate-100 hover:bg-emerald-600 hover:text-white text-slate-700 rounded-xl transition-all"
+                      title="Print 4x6 Thermal Sticker Label"
+                    >
+                      <Tag className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

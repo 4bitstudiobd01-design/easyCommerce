@@ -9,11 +9,14 @@ import { ConsignmentEntity } from '../logistics/entities/consignment.entity';
 import { TenantModule } from '../tenant/tenant.module';
 import { CatalogModule } from '../catalog/catalog.module';
 import { InventoryModule } from '../inventory/inventory.module';
+import { SmsModule } from '../sms/sms.module';
 import { CreateOrderService } from './services/create-order.service';
 import { ListMerchantOrdersService } from './services/list-merchant-orders.service';
 import { FindOrderByIdService } from './services/find-order-by-id.service';
 import { UpdateOrderStatusService } from './services/update-order-status.service';
 import { TrackPublicOrderService } from './services/track-public-order.service';
+import { GenerateOrderInvoiceService } from './services/generate-order-invoice.service';
+import { GenerateThermalLabelService } from './services/generate-thermal-label.service';
 import { OrderController } from './order.controller';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
@@ -28,6 +31,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     TenantModule,
     CatalogModule,
     InventoryModule,
+    SmsModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -44,6 +48,8 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     FindOrderByIdService,
     UpdateOrderStatusService,
     TrackPublicOrderService,
+    GenerateOrderInvoiceService,
+    GenerateThermalLabelService,
     JwtAuthGuard,
   ],
   exports: [
