@@ -1,7 +1,7 @@
 # EasyCommerce Work Summary
 
 **Date:** August 01, 2026  
-**Scope:** Backend Architecture Restructuring, Single Responsibility Services (SRP), TypeORM Migration System, Tenant & Store Onboarding (Slice 1), Catalog & Product Management (Slice 2), Decoupled Inventory Domain (Slice 3), Public Storefront & Cart System (Slice 4), Sales Order Pipeline & Checkout System (Slice 5), SSLCommerz Online Payment Gateway Integration (Slice 6), Real-Time Merchant Analytics & Revenue Charts (Slice 7A), Courier Logistics Integration & In-Dashboard Courier API Key Manager (Slice 7B & Option 2), Customer Live Order & Parcel Tracking Portal (Option B), Subdomain Wildcard Routing Middleware & Storefront Dynamic SEO Metadata System (Option C).
+**Scope:** Backend Architecture Restructuring, Single Responsibility Services (SRP), TypeORM Migration System, Tenant & Store Onboarding (Slice 1), Catalog & Product Management (Slice 2), Decoupled Inventory Domain (Slice 3), Public Storefront & Cart System (Slice 4), Sales Order Pipeline & Checkout System (Slice 5), SSLCommerz Online Payment Gateway Integration (Slice 6), Real-Time Merchant Analytics & Revenue Charts (Slice 7A), Courier Logistics Integration & In-Dashboard Courier API Key Manager (Slice 7B & Option 2), Customer Live Order & Parcel Tracking Portal (Option B), Subdomain Wildcard Routing Middleware & Dynamic SEO System (Option C), Platform Super-Admin Control Panel System (`/admin` Route & Tenant Store Controls).
 
 ---
 
@@ -34,7 +34,8 @@ EasyCommerce/backend/src/
     ├── order/          # Sales Order domain (Public Checkout, Order Tracking Portal, Order Invoices)
     ├── payment/        # Payment domain (SSLCommerz Gateway, Callbacks, IPN Webhooks)
     ├── analytics/      # Analytics domain (7-Day Sales Curves, AOV, Payment Method Ratio, Top Products)
-    └── logistics/      # Logistics domain (Courier Adapters, Waybill Tracking, Steadfast/Pathao Integration)
+    ├── logistics/      # Logistics domain (Courier Adapters, Waybill Tracking, Steadfast/Pathao Integration)
+    └── admin/          # Platform Super-Admin domain (Global Revenue Stats, Store Directory, Suspension Overrides)
 ```
 
 ---
@@ -87,9 +88,13 @@ EasyCommerce/backend/src/
 - **Backend:** `TrackPublicOrderService`, Controller Endpoint (`GET /api/v1/orders/public/track?query=:query&storeSlug=:storeSlug`).
 - **Frontend:** Dynamic route `/track` and `/store/[slug]/track`, 5-step progress timeline, Steadfast/Pathao waybill tracking card, and itemized invoice receipt.
 
-### Option C: Subdomain Wildcard Routing Middleware & Storefront Dynamic SEO System
+### Option C: Subdomain Wildcard Routing Middleware & Dynamic SEO System
 - **Frontend Middleware:** [middleware.ts](file:///Users/sumon/Desktop/EasyCommerce/frontend/src/middleware.ts) (Subdomain wildcard URL rewrite to `/store/[slug]`).
 - **Frontend Dynamic SEO:** [layout.tsx](file:///Users/sumon/Desktop/EasyCommerce/frontend/src/app/store/%5Bslug%5D/layout.tsx) (`generateMetadata` creating OpenGraph and Twitter Cards preview metadata).
+
+### 👑 Platform Super-Admin Control Panel System (`/admin` Route)
+- **Backend:** `GetPlatformStatsService`, `ListAllStoresService`, `ToggleStoreStatusService`, Controller Endpoints (`GET /api/v1/admin/stats`, `GET /api/v1/admin/stores`, `PATCH /api/v1/admin/stores/:id/toggle-status`).
+- **Frontend Route:** `/admin` Super-Admin Control Panel (Platform Total Sales ৳, Total Merchants, Total Stores Directory Table with Active / Suspend Store Toggle).
 
 ---
 

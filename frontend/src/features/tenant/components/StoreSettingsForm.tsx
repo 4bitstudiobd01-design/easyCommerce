@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Store, useUpdateStoreMutation } from '../api/tenantApi';
-import { Settings, Truck, Key, CheckCircle2, Save, Store as StoreIcon, ShieldCheck } from 'lucide-react';
+import { Settings, Truck, Key, CheckCircle2, Save, Store as StoreIcon, ShieldCheck, Globe, ExternalLink } from 'lucide-react';
+import Link from 'next/link';
 
 interface StoreSettingsFormProps {
   store: Store | null;
@@ -12,6 +13,7 @@ export function StoreSettingsForm({ store }: StoreSettingsFormProps) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
+  const [domain, setDomain] = useState('');
   const [steadfastApiKey, setSteadfastApiKey] = useState('');
   const [steadfastSecretKey, setSteadfastSecretKey] = useState('');
   const [pathaoClientId, setPathaoClientId] = useState('');
@@ -27,6 +29,7 @@ export function StoreSettingsForm({ store }: StoreSettingsFormProps) {
       setName(store.name || '');
       setPhone(store.phone || '');
       setAddress(store.address || '');
+      setDomain(store.domain || '');
       setSteadfastApiKey(store.steadfastApiKey || '');
       setSteadfastSecretKey(store.steadfastSecretKey || '');
       setPathaoClientId(store.pathaoClientId || '');
@@ -44,13 +47,14 @@ export function StoreSettingsForm({ store }: StoreSettingsFormProps) {
         name,
         phone,
         address,
+        domain: domain || undefined,
         steadfastApiKey: steadfastApiKey || undefined,
         steadfastSecretKey: steadfastSecretKey || undefined,
         pathaoClientId: pathaoClientId || undefined,
         pathaoClientSecret: pathaoClientSecret || undefined,
       }).unwrap();
 
-      setSuccessMsg('Store settings and Courier API Keys updated successfully!');
+      setSuccessMsg('Store settings, Subdomain & Courier API Keys updated successfully!');
       setTimeout(() => setSuccessMsg(''), 4000);
     } catch (err: any) {
       setErrorMsg(err?.data?.message || 'Failed to update store settings.');
@@ -72,7 +76,79 @@ export function StoreSettingsForm({ store }: StoreSettingsFormProps) {
         </div>
       )}
 
-      {/* 1. General Store Settings */}
+      {/* 1. Subdomain & Custom Domain Card */}
+      <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-6">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-50 text-blue-600 rounded-xl border border-blue-100">
+              <Globe className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-base text-slate-900">Subdomain & Custom Domain Routing</h3>
+              <p className="text-xs text-slate-400">Live Store Address & Custom CNAME setup</p>
+            </div>
+          </div>
+
+          <span className="px-3 py-1 bg-emerald-50 text-emerald-700 font-bold text-[10px] rounded-full border border-emerald-200 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>Subdomain Active</span>
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-xs font-semibold">
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+              Assigned Store Subdomain
+            </label>
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+              <span className="font-mono font-bold text-blue-600 text-xs">
+                {store?.slug ? `${store.slug}.easycommerce.app` : 'setting-up...'}
+              </span>
+              {store?.slug && (
+                <Link
+                  href={`/store/${store.slug}`}
+                  target="_blank"
+                  className="text-blue-600 hover:text-blue-700 p-1 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                  title="Test Storefront"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </Link>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+              Custom Domain (Optional CNAME)
+            </label>
+            <input
+              type="text"
+              value={domain}
+              onChange={(e) => setDomain(e.target.value)}
+              placeholder="e.g. www.sumonfashion.com"
+              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-blue-600"
+            />
+          </div>
+        </div>
+
+        {/* Local Subdomain Test Hint */}
+        <div className="p-3.5 bg-blue-50/60 border border-blue-100 rounded-2xl text-xs text-slate-700 flex items-center justify-between">
+          <span className="font-medium">Local Subdomain Test: <code className="font-mono font-bold text-blue-700 bg-white px-2 py-0.5 rounded-md border border-blue-200">http://{store?.slug || 'store'}.localhost:3000</code></span>
+          {store?.slug && (
+            <a
+              href={`http://${store.slug}.localhost:3000`}
+              target="_blank"
+              rel="noreferrer"
+              className="font-bold text-blue-600 hover:underline text-xs flex items-center gap-1"
+            >
+              <span>Test Now</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          )}
+        </div>
+      </div>
+
+      {/* 2. General Store Settings */}
       <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-6">
         <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
           <div className="p-2 bg-blue-50 text-blue-600 rounded-xl border border-blue-100">
@@ -128,7 +204,7 @@ export function StoreSettingsForm({ store }: StoreSettingsFormProps) {
             <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
               Store Subdomain Slug
             </label>
-            <p className="font-mono text-sm font-bold text-blue-600 p-3 bg-slate-100 rounded-xl border border-slate-200">
+            <p className="font-mono text-xs font-bold text-blue-600 p-3 bg-slate-50 rounded-xl border border-slate-200">
               {store?.slug}.easycommerce.app
             </p>
           </div>
@@ -137,14 +213,14 @@ export function StoreSettingsForm({ store }: StoreSettingsFormProps) {
             <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
               Tenant ID
             </label>
-            <p className="font-mono text-xs text-slate-500 p-3 bg-slate-100 rounded-xl border border-slate-200 truncate">
+            <p className="font-mono text-xs text-slate-500 p-3 bg-slate-50 rounded-xl border border-slate-200 truncate">
               {store?.tenantId}
             </p>
           </div>
         </div>
       </div>
 
-      {/* 2. Courier API Credentials Section */}
+      {/* 3. Courier API Credentials Section */}
       <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-6">
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div className="flex items-center gap-3">
@@ -170,7 +246,7 @@ export function StoreSettingsForm({ store }: StoreSettingsFormProps) {
             <span className="px-2 py-0.5 bg-blue-600 text-white font-bold text-[9px] rounded-full">Primary</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-semibold">
             <div>
               <label className="block font-bold text-slate-700 mb-1">Steadfast Api-Key</label>
               <input
@@ -201,7 +277,7 @@ export function StoreSettingsForm({ store }: StoreSettingsFormProps) {
             <span className="font-extrabold text-xs text-red-900">Pathao Express Credentials</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-semibold">
             <div>
               <label className="block font-bold text-slate-700 mb-1">Pathao Client ID</label>
               <input

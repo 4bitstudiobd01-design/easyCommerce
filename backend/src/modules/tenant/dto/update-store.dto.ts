@@ -17,6 +17,11 @@ export class UpdateStoreDto {
   @IsString()
   address?: string;
 
+  @ApiProperty({ example: 'www.sumonfashion.com', required: false })
+  @IsOptional()
+  @IsString()
+  domain?: string;
+
   @ApiProperty({ example: 'BDT', required: false })
   @IsOptional()
   @IsString()

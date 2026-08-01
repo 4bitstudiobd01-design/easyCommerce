@@ -5,10 +5,22 @@ export function middleware(req: NextRequest) {
   const url = req.nextUrl;
   const hostname = req.headers.get('host') || '';
 
-  // Standard root domains to ignore from subdomain rewriting
-  const rootDomains = ['localhost:3000', 'localhost:3001', 'easycommerce.app', 'www.easycommerce.app'];
+  // 1. Server-Side Route Guard for Protected Routes (/dashboard and /admin)
+  const protectedRoutes = ['/dashboard', '/admin'];
+  const isProtectedRoute = protectedRoutes.some((route) => url.pathname.startsWith(route));
 
-  // Extract potential subdomain (e.g. sumon-fashion from sumon-fashion.localhost:3000)
+  if (isProtectedRoute) {
+    const token = req.cookies.get('easycommerce_token')?.value || req.headers.get('authorization');
+
+    // If no token exists on protected routes, redirect to login page server-side
+    if (!token) {
+      const loginUrl = new URL('/login', req.url);
+      loginUrl.searchParams.set('redirect', url.pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
+  // 2. Subdomain Wildcard Routing Rewrite (e.g. sumon-fashion.localhost:3000 -> /store/sumon-fashion)
   let subdomain: string | null = null;
 
   if (hostname.includes('.localhost')) {
@@ -17,9 +29,8 @@ export function middleware(req: NextRequest) {
     subdomain = hostname.split('.easycommerce.app')[0];
   }
 
-  // If valid subdomain exists and is not www / app / admin
+  // If valid subdomain exists and is not www / app / admin / api
   if (subdomain && !['www', 'app', 'admin', 'api'].includes(subdomain.toLowerCase())) {
-    // Prevent double rewriting if path already starts with /store
     if (!url.pathname.startsWith('/store/')) {
       return NextResponse.rewrite(new URL(`/store/${subdomain}${url.pathname}`, req.url));
     }

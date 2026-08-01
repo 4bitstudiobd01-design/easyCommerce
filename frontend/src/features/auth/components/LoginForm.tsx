@@ -31,7 +31,11 @@ export function LoginForm() {
         })
       );
 
-      router.push('/dashboard');
+      if (response.user?.role === 'SUPER_ADMIN') {
+        router.push('/admin');
+      } else {
+        router.push('/dashboard');
+      }
     } catch (err: any) {
       setErrorMsg(
         err?.data?.message || 'Invalid credentials. Please try again.'

@@ -14,6 +14,7 @@ import orderReducer from '@/features/order/slices/orderSlice';
 import { paymentApi } from '@/features/payment/api/paymentApi';
 import { analyticsApi } from '@/features/analytics/api/analyticsApi';
 import { logisticsApi } from '@/features/logistics/api/logisticsApi';
+import { adminApi } from '@/features/admin/api/adminApi';
 
 export const store = configureStore({
   reducer: {
@@ -32,6 +33,7 @@ export const store = configureStore({
     [paymentApi.reducerPath]: paymentApi.reducer,
     [analyticsApi.reducerPath]: analyticsApi.reducer,
     [logisticsApi.reducerPath]: logisticsApi.reducer,
+    [adminApi.reducerPath]: adminApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -44,6 +46,7 @@ export const store = configureStore({
       paymentApi.middleware,
       analyticsApi.middleware,
       logisticsApi.middleware,
+      adminApi.middleware,
     ),
 });
 

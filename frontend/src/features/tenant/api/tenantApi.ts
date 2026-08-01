@@ -5,6 +5,7 @@ export interface Store {
   id: string;
   name: string;
   slug: string;
+  domain?: string;
   category?: string;
   phone?: string;
   address?: string;
@@ -31,6 +32,7 @@ export interface UpdateStoreRequest {
   name?: string;
   phone?: string;
   address?: string;
+  domain?: string;
   currency?: string;
   steadfastApiKey?: string;
   steadfastSecretKey?: string;

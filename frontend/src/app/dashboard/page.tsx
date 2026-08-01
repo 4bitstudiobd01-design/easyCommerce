@@ -109,7 +109,7 @@ export default function DashboardPage() {
     setIsBookCourierModalOpen(true);
   };
 
-  const showOnboardingModal = Boolean(isStoreSuccess && !isStoreLoading && !isStoreFetching && !store);
+  const showOnboardingModal = Boolean(user?.role !== 'SUPER_ADMIN' && isStoreSuccess && !isStoreLoading && !isStoreFetching && !store);
 
   return (
     <div className="min-h-screen bg-slate-900/5 text-slate-900 flex font-sans">

@@ -11,6 +11,7 @@ import { OrderModule } from './modules/order/order.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { LogisticsModule } from './modules/logistics/logistics.module';
+import { AdminModule } from './modules/admin/admin.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { APP_FILTER } from '@nestjs/core';
 
@@ -33,6 +34,7 @@ import { APP_FILTER } from '@nestjs/core';
     PaymentModule,
     AnalyticsModule,
     LogisticsModule,
+    AdminModule,
   ],
   controllers: [],
   providers: [
