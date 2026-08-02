@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { OrderEntity } from './entities/order.entity';
 import { OrderItemEntity } from './entities/order-item.entity';
+import { AbandonedCartEntity } from './entities/abandoned-cart.entity';
 import { ProductEntity } from '../catalog/entities/product.entity';
 import { ConsignmentEntity } from '../logistics/entities/consignment.entity';
 import { TenantModule } from '../tenant/tenant.module';
@@ -17,7 +18,9 @@ import { UpdateOrderStatusService } from './services/update-order-status.service
 import { TrackPublicOrderService } from './services/track-public-order.service';
 import { GenerateOrderInvoiceService } from './services/generate-order-invoice.service';
 import { GenerateThermalLabelService } from './services/generate-thermal-label.service';
+import { AbandonedCartService } from './services/abandoned-cart.service';
 import { OrderController } from './order.controller';
+import { AbandonedCartController } from './controllers/abandoned-cart.controller';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 @Module({
@@ -25,6 +28,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     TypeOrmModule.forFeature([
       OrderEntity,
       OrderItemEntity,
+      AbandonedCartEntity,
       ProductEntity,
       ConsignmentEntity,
     ]),
@@ -41,7 +45,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
       }),
     }),
   ],
-  controllers: [OrderController],
+  controllers: [OrderController, AbandonedCartController],
   providers: [
     CreateOrderService,
     ListMerchantOrdersService,
@@ -50,6 +54,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     TrackPublicOrderService,
     GenerateOrderInvoiceService,
     GenerateThermalLabelService,
+    AbandonedCartService,
     JwtAuthGuard,
   ],
   exports: [
@@ -58,6 +63,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     FindOrderByIdService,
     UpdateOrderStatusService,
     TrackPublicOrderService,
+    AbandonedCartService,
     TypeOrmModule,
   ],
 })

@@ -6,6 +6,7 @@ import { CategoryEntity } from './entities/category.entity';
 import { ProductEntity } from './entities/product.entity';
 import { ProductVariantEntity } from './entities/product-variant.entity';
 import { ProductImageEntity } from './entities/product-image.entity';
+import { ReviewEntity } from './entities/review.entity';
 import { TenantModule } from '../tenant/tenant.module';
 import { CreateCategoryService } from './services/create-category.service';
 import { ListCategoriesService } from './services/list-categories.service';
@@ -14,6 +15,9 @@ import { ListProductsService } from './services/list-products.service';
 import { FindProductByIdService } from './services/find-product-by-id.service';
 import { FindPublicStoreProductsService } from './services/find-public-store-products.service';
 import { ProductFeedService } from './services/product-feed.service';
+import { CreateReviewService } from './services/create-review.service';
+import { ListProductReviewsService } from './services/list-product-reviews.service';
+import { ModerateReviewService } from './services/moderate-review.service';
 import { CatalogController } from './catalog.controller';
 import { ProductFeedController } from './controllers/product-feed.controller';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -25,6 +29,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
       ProductEntity,
       ProductVariantEntity,
       ProductImageEntity,
+      ReviewEntity,
     ]),
     TenantModule,
     JwtModule.registerAsync({
@@ -45,6 +50,9 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     FindProductByIdService,
     FindPublicStoreProductsService,
     ProductFeedService,
+    CreateReviewService,
+    ListProductReviewsService,
+    ModerateReviewService,
     JwtAuthGuard,
   ],
   exports: [
@@ -55,6 +63,9 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     FindProductByIdService,
     FindPublicStoreProductsService,
     ProductFeedService,
+    CreateReviewService,
+    ListProductReviewsService,
+    ModerateReviewService,
     TypeOrmModule,
   ],
 })

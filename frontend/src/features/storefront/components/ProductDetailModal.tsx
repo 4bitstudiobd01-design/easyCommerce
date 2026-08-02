@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Product } from '@/features/catalog/api/catalogApi';
 import { useDispatch } from 'react-redux';
 import { addToCart } from '../slices/cartSlice';
+import { ProductReviewsSection } from './ProductReviewsSection';
 import { ShoppingBag, X, Plus, Minus, CheckCircle2, ShieldCheck, Image as ImageIcon } from 'lucide-react';
 
 interface ProductDetailModalProps {
@@ -131,6 +132,9 @@ export function ProductDetailModal({ product, onClose }: ProductDetailModalProps
                 <span>Add {quantity} to Cart • ৳{(Number(product.basePrice) * quantity).toLocaleString()}</span>
               </button>
             </div>
+
+            {/* PRODUCT REVIEWS & 5-STAR RATINGS SECTION */}
+            <ProductReviewsSection productId={product.id} />
           </div>
         </div>
       </div>

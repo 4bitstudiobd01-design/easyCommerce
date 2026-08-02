@@ -65,11 +65,21 @@ export const tenantApi = createApi({
       if (token) {
         headers.set('authorization', `Bearer ${token}`);
       }
+      const activeStoreId = localStorage.getItem('easycommerce_active_store_id');
+      if (activeStoreId) {
+        headers.set('x-store-id', activeStoreId);
+      }
       return headers;
     },
   }),
   tagTypes: ['Store'],
   endpoints: (builder) => ({
+    getMyStores: builder.query<Store[], void>({
+      query: () => '/my-stores',
+      providesTags: ['Store'],
+      transformResponse: (response: { data: Store[] } | Store[]) =>
+        Array.isArray(response) ? response : (response as any).data || [],
+    }),
     getMyStore: builder.query<Store | null, void>({
       query: () => '/me',
       providesTags: ['Store'],
@@ -101,6 +111,7 @@ export const tenantApi = createApi({
 });
 
 export const {
+  useGetMyStoresQuery,
   useGetMyStoreQuery,
   useGetStoreBySlugQuery,
   useCreateStoreMutation,

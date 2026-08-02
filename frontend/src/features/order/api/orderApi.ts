@@ -73,6 +73,21 @@ export interface Order {
   createdAt: string;
 }
 
+export interface AbandonedCart {
+  id: string;
+  customerName?: string;
+  customerPhone: string;
+  customerEmail?: string;
+  shippingAddress?: string;
+  itemsJson: any[];
+  totalAmount: number;
+  recoveryToken: string;
+  isRecovered: boolean;
+  lastRemindedAt?: string;
+  tenantId: string;
+  createdAt: string;
+}
+
 export interface CreateOrderItemRequest {
   productId: string;
   quantity: number;
@@ -103,10 +118,14 @@ export const orderApi = createApi({
       if (token) {
         headers.set('authorization', `Bearer ${token}`);
       }
+      const activeStoreId = localStorage.getItem('easycommerce_active_store_id');
+      if (activeStoreId) {
+        headers.set('x-store-id', activeStoreId);
+      }
       return headers;
     },
   }),
-  tagTypes: ['Order'],
+  tagTypes: ['Order', 'AbandonedCart'],
   endpoints: (builder) => ({
     createPublicOrder: builder.mutation<Order, CreateOrderRequest>({
       query: (orderData) => ({
@@ -139,6 +158,39 @@ export const orderApi = createApi({
       invalidatesTags: ['Order'],
       transformResponse: (response: { data: Order }) => response.data,
     }),
+
+    // --- ABANDONED CART RECOVERY ENDPOINTS ---
+    getMerchantAbandonedCarts: builder.query<AbandonedCart[], void>({
+      query: () => ({
+        url: 'http://localhost:5001/api/v1/orders/abandoned-carts/merchant',
+        method: 'GET',
+      }),
+      providesTags: ['AbandonedCart'],
+      transformResponse: (response: { data: AbandonedCart[] } | AbandonedCart[]) =>
+        Array.isArray(response) ? response : response.data || [],
+    }),
+    sendRecoverySms: builder.mutation<{ message: string }, string>({
+      query: (cartId) => ({
+        url: `http://localhost:5001/api/v1/orders/abandoned-carts/${cartId}/send-recovery-sms`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['AbandonedCart'],
+    }),
+    trackAbandonedCart: builder.mutation<AbandonedCart, {
+      storeSlug: string;
+      customerPhone: string;
+      customerName?: string;
+      customerEmail?: string;
+      shippingAddress?: string;
+      itemsJson: any[];
+      totalAmount: number;
+    }>({
+      query: (body) => ({
+        url: 'http://localhost:5001/api/v1/orders/abandoned-carts/track',
+        method: 'POST',
+        body,
+      }),
+    }),
   }),
 });
 
@@ -148,4 +200,7 @@ export const {
   useLazyTrackPublicOrderQuery,
   useGetMerchantOrdersQuery,
   useUpdateOrderStatusMutation,
+  useGetMerchantAbandonedCartsQuery,
+  useSendRecoverySmsMutation,
+  useTrackAbandonedCartMutation,
 } = orderApi;

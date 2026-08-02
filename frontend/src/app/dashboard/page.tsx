@@ -20,10 +20,15 @@ import { TopProductsCard } from '@/features/analytics/components/TopProductsCard
 import { BookCourierModal } from '@/features/logistics/components/BookCourierModal';
 import { ConsignmentListTable } from '@/features/logistics/components/ConsignmentListTable';
 import { StoreSettingsForm } from '@/features/tenant/components/StoreSettingsForm';
+import { StoreSwitcherDropdown } from '@/features/tenant/components/StoreSwitcherDropdown';
 import { SmsLogsTable } from '@/features/sms/components/SmsLogsTable';
 import { NotificationBellDrawer } from '@/features/sms/components/NotificationBellDrawer';
 import { CouponManagementTable } from '@/features/coupon/components/CouponManagementTable';
 import { CategoryManagementApp } from '@/features/catalog/components/CategoryManagementApp';
+import { ReviewManagementTable } from '@/features/catalog/components/ReviewManagementTable';
+import { AbandonedCartsTable } from '@/features/order/components/AbandonedCartsTable';
+import { NetProfitAnalyticsCard } from '@/features/analytics/components/NetProfitAnalyticsCard';
+import { WarehouseTransferModal } from '@/features/inventory/components/WarehouseTransferModal';
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -33,6 +38,7 @@ import {
   Settings,
   MessageSquare,
   Tag,
+  Star,
   LogOut,
   Search,
   Bell,
@@ -57,6 +63,7 @@ import {
   FileText,
   UserCheck,
   FolderTree,
+  ArrowRightLeft,
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -64,8 +71,9 @@ export default function DashboardPage() {
   const dispatch = useDispatch();
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'categories' | 'orders' | 'logistics' | 'inventory' | 'sms' | 'coupons' | 'customers' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'categories' | 'orders' | 'abandoned-carts' | 'logistics' | 'inventory' | 'warehouse-transfers' | 'net-profit' | 'sms' | 'coupons' | 'reviews' | 'customers' | 'settings'>('overview');
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [isCreateStoreModalOpen, setIsCreateStoreModalOpen] = useState(false);
   const [isAdjustStockModalOpen, setIsAdjustStockModalOpen] = useState(false);
   const [selectedProductIdForStock, setSelectedProductIdForStock] = useState<string | undefined>(undefined);
 
@@ -123,10 +131,13 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-slate-900/5 text-slate-900 flex font-sans">
-      {/* Onboarding Store Creation Modal */}
+      {/* Onboarding / Multi-Store Creation Modal */}
       <CreateStoreModal
-        isOpen={showOnboardingModal}
-        onSuccess={() => refetchStore()}
+        isOpen={showOnboardingModal || isCreateStoreModalOpen}
+        onSuccess={() => {
+          refetchStore();
+          setIsCreateStoreModalOpen(false);
+        }}
       />
 
       {/* Add Product Modal */}
@@ -169,25 +180,9 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        {/* Active Store Switcher */}
+        {/* Active Store Switcher Dropdown (Matching Reference Screenshot) */}
         <div className="p-4 border-b border-slate-800/60">
-          <div className="p-3 bg-slate-800/80 rounded-xl border border-slate-700/60 flex items-center justify-between">
-            <div className="flex items-center gap-2.5 overflow-hidden">
-              <div className="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-400 font-bold text-xs flex items-center justify-center shrink-0">
-                {store?.name ? store.name[0].toUpperCase() : 'S'}
-              </div>
-              <div className="truncate">
-                <p className="text-xs font-bold text-white truncate">
-                  {store?.name || 'No Active Store'}
-                </p>
-                <p className="text-[10px] text-slate-400 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                  <span className="truncate">{store?.slug ? `${store.slug}.easycommerce.app` : 'Setting up...'}</span>
-                </p>
-              </div>
-            </div>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-          </div>
+          <StoreSwitcherDropdown onCreateNewStore={() => setIsCreateStoreModalOpen(true)} />
         </div>
 
         {/* Navigation Section Links */}
@@ -274,7 +269,19 @@ export default function DashboardPage() {
             }`}
           >
             <Truck className="w-4 h-4" />
-            <span>Logistics & Shipments</span>
+            <span>Logistics &amp; Shipments</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('abandoned-carts')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
+              activeTab === 'abandoned-carts'
+                ? 'bg-orange-600 text-white font-bold shadow-md shadow-orange-600/20'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <ShoppingCart className="w-4 h-4 text-orange-400" />
+            <span>Abandoned Carts</span>
           </button>
 
           <button
@@ -287,6 +294,30 @@ export default function DashboardPage() {
           >
             <Layers className="w-4 h-4" />
             <span>Inventory Control</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('warehouse-transfers')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
+              activeTab === 'warehouse-transfers'
+                ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/20'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <ArrowRightLeft className="w-4 h-4 text-blue-400" />
+            <span>Warehouse Transfers</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('net-profit')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
+              activeTab === 'net-profit'
+                ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-600/20'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <TrendingUp className="w-4 h-4 text-emerald-400" />
+            <span>Net Profit Analytics</span>
           </button>
 
           <button
@@ -326,6 +357,18 @@ export default function DashboardPage() {
           >
             <TrendingUp className="w-4 h-4 text-purple-400" />
             <span>Marketing & Pixels</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('reviews')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
+              activeTab === 'reviews'
+                ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/20'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <Star className="w-4 h-4 text-amber-400" />
+            <span>Customer Reviews</span>
           </button>
 
           <button
@@ -666,7 +709,19 @@ export default function DashboardPage() {
           {/* TAB 7: PROMO COUPONS */}
           {activeTab === 'coupons' && <CouponManagementTable />}
 
-          {/* TAB 8: STORE SETTINGS */}
+          {/* TAB 8: CUSTOMER REVIEWS */}
+          {activeTab === 'reviews' && <ReviewManagementTable />}
+
+          {/* TAB 9: ABANDONED CARTS RECOVERY */}
+          {activeTab === 'abandoned-carts' && <AbandonedCartsTable />}
+
+          {/* TAB 10: WAREHOUSE STOCK TRANSFERS */}
+          {activeTab === 'warehouse-transfers' && <WarehouseTransferModal />}
+
+          {/* TAB 11: NET PROFIT ANALYTICS */}
+          {activeTab === 'net-profit' && <NetProfitAnalyticsCard />}
+
+          {/* TAB 12: STORE SETTINGS */}
           {activeTab === 'settings' && (
             <div className="space-y-6">
               <div>

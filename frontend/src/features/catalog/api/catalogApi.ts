@@ -44,6 +44,20 @@ export interface Product {
   createdAt: string;
 }
 
+export interface Review {
+  id: string;
+  rating: number;
+  reviewerName: string;
+  reviewerEmail?: string;
+  comment: string;
+  images?: string[];
+  isVerifiedBuyer: boolean;
+  isApproved: boolean;
+  productId: string;
+  product?: Product;
+  createdAt: string;
+}
+
 export interface CreateProductRequest {
   title: string;
   description?: string;
@@ -63,6 +77,15 @@ export interface CreateCategoryRequest {
   isFeatured?: boolean;
 }
 
+export interface CreateReviewRequest {
+  productId: string;
+  rating: number;
+  reviewerName: string;
+  reviewerEmail?: string;
+  comment: string;
+  images?: string[];
+}
+
 export const catalogApi = createApi({
   reducerPath: 'catalogApi',
   baseQuery: fetchBaseQuery({
@@ -72,10 +95,14 @@ export const catalogApi = createApi({
       if (token) {
         headers.set('authorization', `Bearer ${token}`);
       }
+      const activeStoreId = localStorage.getItem('easycommerce_active_store_id');
+      if (activeStoreId) {
+        headers.set('x-store-id', activeStoreId);
+      }
       return headers;
     },
   }),
-  tagTypes: ['Product', 'Category'],
+  tagTypes: ['Product', 'Category', 'Review'],
   endpoints: (builder) => ({
     getProducts: builder.query<Product[], void>({
       query: () => '/products',
@@ -105,6 +132,43 @@ export const catalogApi = createApi({
       invalidatesTags: ['Category'],
       transformResponse: (response: { data: Category }) => response.data,
     }),
+
+    // --- REVIEWS ENDPOINTS ---
+    getApprovedReviews: builder.query<{ reviews: Review[]; avgRating: number; totalCount: number }, string>({
+      query: (productId) => `/products/${productId}/reviews`,
+      providesTags: ['Review'],
+      transformResponse: (response: { data: { reviews: Review[]; avgRating: number; totalCount: number } }) => response.data,
+    }),
+    getMerchantReviews: builder.query<Review[], void>({
+      query: () => '/reviews/merchant',
+      providesTags: ['Review'],
+      transformResponse: (response: { data: Review[] }) => response.data,
+    }),
+    createReview: builder.mutation<Review, CreateReviewRequest>({
+      query: ({ productId, ...body }) => ({
+        url: `/products/${productId}/reviews`,
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Review'],
+      transformResponse: (response: { data: Review }) => response.data,
+    }),
+    toggleReviewApproval: builder.mutation<Review, { id: string; isApproved: boolean }>({
+      query: ({ id, isApproved }) => ({
+        url: `/reviews/${id}/approve`,
+        method: 'PATCH',
+        body: { isApproved },
+      }),
+      invalidatesTags: ['Review'],
+      transformResponse: (response: { data: Review }) => response.data,
+    }),
+    deleteReview: builder.mutation<{ message: string }, string>({
+      query: (id) => ({
+        url: `/reviews/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Review'],
+    }),
   }),
 });
 
@@ -113,4 +177,9 @@ export const {
   useGetCategoriesQuery,
   useCreateProductMutation,
   useCreateCategoryMutation,
+  useGetApprovedReviewsQuery,
+  useGetMerchantReviewsQuery,
+  useCreateReviewMutation,
+  useToggleReviewApprovalMutation,
+  useDeleteReviewMutation,
 } = catalogApi;

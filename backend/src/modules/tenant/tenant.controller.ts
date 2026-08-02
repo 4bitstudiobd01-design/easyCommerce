@@ -5,9 +5,8 @@ import {
   Put,
   Body,
   Param,
+  Headers,
   UseGuards,
-  HttpCode,
-  HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { CreateStoreService } from './services/create-store.service';
@@ -43,13 +42,25 @@ export class TenantController {
     return this.createStoreService.execute(userId, dto);
   }
 
+  @Get('my-stores')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List all stores owned by logged-in merchant' })
+  @ApiResponse({ status: 200, description: 'List of merchant stores' })
+  async getMyStores(@CurrentUser('sub') userId: string): Promise<StoreEntity[]> {
+    return this.findStoreByUserService.findAllStoresByUser(userId);
+  }
+
   @Get('me')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get active store profile of current logged-in merchant' })
   @ApiResponse({ status: 200, description: 'Store profile details' })
-  async getMyStore(@CurrentUser('sub') userId: string): Promise<StoreEntity | null> {
-    return this.findStoreByUserService.execute(userId);
+  async getMyStore(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') storeId?: string,
+  ): Promise<StoreEntity | null> {
+    return this.findStoreByUserService.execute(userId, storeId);
   }
 
   @Put('me')

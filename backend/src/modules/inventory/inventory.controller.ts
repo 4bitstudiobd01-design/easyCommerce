@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Body,
+  Headers,
   UseGuards,
   BadRequestException,
 } from '@nestjs/common';
@@ -28,8 +29,8 @@ export class InventoryController {
     private readonly findStoreByUserService: FindStoreByUserService,
   ) {}
 
-  private async getMerchantTenantId(userId: string): Promise<string> {
-    const store = await this.findStoreByUserService.execute(userId);
+  private async getMerchantTenantId(userId: string, storeId?: string): Promise<string> {
+    const store = await this.findStoreByUserService.execute(userId, storeId);
     if (!store) {
       throw new BadRequestException('Merchant must create a store before managing inventory stock.');
     }
@@ -44,8 +45,9 @@ export class InventoryController {
   async createWarehouse(
     @CurrentUser('sub') userId: string,
     @Body() dto: CreateWarehouseDto,
+    @Headers('x-store-id') storeId?: string,
   ) {
-    const tenantId = await this.getMerchantTenantId(userId);
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
     return this.createWarehouseService.execute(tenantId, dto);
   }
 
@@ -54,8 +56,11 @@ export class InventoryController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List all warehouses for merchant store' })
   @ApiResponse({ status: 200, description: 'List of store warehouses' })
-  async listWarehouses(@CurrentUser('sub') userId: string) {
-    const tenantId = await this.getMerchantTenantId(userId);
+  async listWarehouses(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
     return this.listWarehousesService.execute(tenantId);
   }
 
@@ -67,8 +72,9 @@ export class InventoryController {
   async adjustStock(
     @CurrentUser('sub') userId: string,
     @Body() dto: AdjustStockDto,
+    @Headers('x-store-id') storeId?: string,
   ) {
-    const tenantId = await this.getMerchantTenantId(userId);
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
     return this.adjustStockService.execute(tenantId, dto);
   }
 
@@ -77,8 +83,23 @@ export class InventoryController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get stock inventory levels across products for merchant' })
   @ApiResponse({ status: 200, description: 'Inventory stock list' })
-  async getInventoryStocks(@CurrentUser('sub') userId: string) {
-    const tenantId = await this.getMerchantTenantId(userId);
+  async getInventoryStocks(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
+    return this.getInventoryStockService.execute(tenantId);
+  }
+
+  @Get('stock')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get stock inventory alias route for frontend' })
+  async getInventoryStockAlias(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
     return this.getInventoryStockService.execute(tenantId);
   }
 }

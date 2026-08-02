@@ -6,6 +6,7 @@ import {
   Body,
   Param,
   Query,
+  Headers,
   UseGuards,
   BadRequestException,
 } from '@nestjs/common';
@@ -37,8 +38,8 @@ export class OrderController {
     private readonly findStoreByUserService: FindStoreByUserService,
   ) {}
 
-  private async getMerchantTenantId(userId: string): Promise<string> {
-    const store = await this.findStoreByUserService.execute(userId);
+  private async getMerchantTenantId(userId: string, storeId?: string): Promise<string> {
+    const store = await this.findStoreByUserService.execute(userId, storeId);
     if (!store) {
       throw new BadRequestException('Merchant must create a store before managing orders.');
     }
@@ -74,8 +75,11 @@ export class OrderController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List all sales orders for merchant store' })
   @ApiResponse({ status: 200, description: 'List of store orders' })
-  async listMerchantOrders(@CurrentUser('sub') userId: string) {
-    const tenantId = await this.getMerchantTenantId(userId);
+  async listMerchantOrders(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
     return this.listMerchantOrdersService.execute(tenantId);
   }
 
@@ -111,8 +115,9 @@ export class OrderController {
   async getOrderById(
     @CurrentUser('sub') userId: string,
     @Param('id') id: string,
+    @Headers('x-store-id') storeId?: string,
   ) {
-    const tenantId = await this.getMerchantTenantId(userId);
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
     return this.findOrderByIdService.execute(id, tenantId);
   }
 
@@ -125,8 +130,9 @@ export class OrderController {
     @CurrentUser('sub') userId: string,
     @Param('id') id: string,
     @Body() dto: UpdateOrderStatusDto,
+    @Headers('x-store-id') storeId?: string,
   ) {
-    const tenantId = await this.getMerchantTenantId(userId);
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
     return this.updateOrderStatusService.execute(id, tenantId, dto);
   }
 }

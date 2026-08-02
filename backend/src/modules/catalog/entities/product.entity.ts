@@ -33,6 +33,9 @@ export class ProductEntity {
   @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
   compareAtPrice?: number;
 
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
+  costPrice?: number;
+
   @Column({ type: 'boolean', default: true })
   isPublished: boolean;
 
