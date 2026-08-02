@@ -4,14 +4,15 @@ import React from 'react';
 import { Product } from '@/features/catalog/api/catalogApi';
 import { useDispatch } from 'react-redux';
 import { addToCart } from '../slices/cartSlice';
-import { ShoppingBag, Eye, Image as ImageIcon, Tag } from 'lucide-react';
+import { ShoppingBag, Eye, Image as ImageIcon, Star, Check } from 'lucide-react';
 
 interface ProductCardProps {
   product: Product;
   onOpenDetail?: (product: Product) => void;
+  primaryColor?: string;
 }
 
-export function ProductCard({ product, onOpenDetail }: ProductCardProps) {
+export function ProductCard({ product, onOpenDetail, primaryColor = '#2563eb' }: ProductCardProps) {
   const dispatch = useDispatch();
 
   const primaryImage =
@@ -36,7 +37,7 @@ export function ProductCard({ product, onOpenDetail }: ProductCardProps) {
   return (
     <div
       onClick={() => onOpenDetail && onOpenDetail(product)}
-      className="bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group cursor-pointer flex flex-col justify-between"
+      className="bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-2xl hover:border-slate-300 transition-all duration-300 overflow-hidden group cursor-pointer flex flex-col justify-between"
     >
       <div>
         {/* Product Image Frame */}
@@ -56,16 +57,23 @@ export function ProductCard({ product, onOpenDetail }: ProductCardProps) {
 
           {/* Discount Badge */}
           {hasDiscount && (
-            <div className="absolute top-3 left-3 px-2.5 py-1 bg-red-600 text-white font-extrabold text-[10px] rounded-xl shadow-lg shadow-red-600/30">
+            <div className="absolute top-3 left-3 px-2.5 py-1 bg-red-600 text-white font-extrabold text-[10px] rounded-xl shadow-lg shadow-red-600/30 animate-pulse">
               -{discountPercent}% OFF
             </div>
           )}
+
+          {/* In Stock Badge */}
+          <div className="absolute top-3 right-3 px-2.5 py-1 bg-slate-900/80 backdrop-blur-md text-white font-bold text-[10px] rounded-xl flex items-center gap-1">
+            <Check className="w-3 h-3 text-emerald-400" />
+            <span>In Stock</span>
+          </div>
 
           {/* Hover Quick Action Overlay */}
           <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-4">
             <button
               onClick={handleAddToCart}
-              className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-lg flex items-center gap-1.5 transition-all"
+              style={{ backgroundColor: primaryColor }}
+              className="px-5 py-3 text-white font-extrabold text-xs rounded-2xl shadow-xl flex items-center gap-2 transition-transform active:scale-95"
             >
               <ShoppingBag className="w-4 h-4" />
               <span>Add to Cart</span>
@@ -74,20 +82,21 @@ export function ProductCard({ product, onOpenDetail }: ProductCardProps) {
         </div>
 
         {/* Card Body Details */}
-        <div className="p-5">
-          {/* Category Tag */}
-          {product.category?.name ? (
-            <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 block mb-1.5">
-              {product.category.name}
+        <div className="p-5 space-y-2">
+          {/* Category & Star Rating */}
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-wider block" style={{ color: primaryColor }}>
+              {product.category?.name || 'Catalog Item'}
             </span>
-          ) : (
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
-              General Catalog
-            </span>
-          )}
+
+            <div className="flex items-center gap-1 text-amber-400 text-xs font-extrabold">
+              <Star className="w-3.5 h-3.5 fill-amber-400" />
+              <span>5.0</span>
+            </div>
+          </div>
 
           {/* Product Title */}
-          <h3 className="font-extrabold text-sm text-slate-900 line-clamp-2 leading-snug group-hover:text-blue-600 transition-colors">
+          <h3 className="font-extrabold text-sm text-slate-900 line-clamp-2 leading-snug group-hover:text-slate-700 transition-colors">
             {product.title}
           </h3>
         </div>
@@ -97,7 +106,7 @@ export function ProductCard({ product, onOpenDetail }: ProductCardProps) {
       <div className="p-5 pt-0 flex items-center justify-between">
         <div>
           <div className="flex items-baseline gap-1.5">
-            <span className="text-lg font-extrabold text-slate-900">
+            <span className="text-lg font-black text-slate-900">
               ৳{Number(product.basePrice).toLocaleString()}
             </span>
           </div>
@@ -110,7 +119,8 @@ export function ProductCard({ product, onOpenDetail }: ProductCardProps) {
 
         <button
           onClick={handleAddToCart}
-          className="p-2.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-2xl border border-blue-200/80 transition-colors"
+          style={{ backgroundColor: `${primaryColor}15`, color: primaryColor, borderColor: `${primaryColor}30` }}
+          className="p-3 rounded-2xl border transition-colors hover:bg-slate-100"
           title="Add to Cart"
         >
           <ShoppingBag className="w-4 h-4" />

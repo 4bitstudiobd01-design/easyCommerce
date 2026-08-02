@@ -18,15 +18,24 @@ export class ValidateSslCommerzPaymentService {
   ) {}
 
   async execute(dto: SslCommerzCallbackDto): Promise<{ success: boolean; orderNumber?: string }> {
-    const payment = await this.paymentRepository.findOne({
+    let payment = await this.paymentRepository.findOne({
       where: { tranId: dto.tran_id },
     });
+
+    if (!payment && dto.tran_id) {
+      payment = await this.paymentRepository.findOne({
+        where: { status: PaymentTransactionStatusEnum.PENDING },
+        order: { createdAt: 'DESC' },
+      });
+    }
 
     if (!payment) {
       return { success: false };
     }
 
-    if (dto.status === 'VALID' || dto.status === 'VALIDATED' || dto.status === 'SUCCESS') {
+    const statusUpper = (dto.status || '').toUpperCase();
+
+    if (statusUpper === 'VALID' || statusUpper === 'VALIDATED' || statusUpper === 'SUCCESS') {
       const storeId =
         this.configService.get<string>('SSL_STORE_ID') ||
         this.configService.get<string>('SSLCOMMERZ_STORE_ID', 'testbox');

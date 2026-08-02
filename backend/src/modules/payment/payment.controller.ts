@@ -3,11 +3,12 @@ import {
   Post,
   Get,
   Body,
+  Req,
   Res,
   UseGuards,
   BadRequestException,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -16,7 +17,6 @@ import { ValidateSslCommerzPaymentService } from './services/validate-sslcommerz
 import { ListMerchantPaymentsService } from './services/list-merchant-payments.service';
 import { FindStoreByUserService } from '../tenant/services/find-store-by-user.service';
 import { InitiatePaymentDto } from './dto/initiate-payment.dto';
-import { SslCommerzCallbackDto } from './dto/sslcommerz-callback.dto';
 import { ConfigService } from '@nestjs/config';
 
 @ApiTags('Payments & Gateways')
@@ -48,10 +48,20 @@ export class PaymentController {
   }
 
   @Post('sslcommerz/success')
+  @Get('sslcommerz/success')
   @ApiOperation({ summary: 'SSLCommerz payment success callback' })
-  async sslCommerzSuccess(@Body() dto: SslCommerzCallbackDto, @Res() res: Response) {
+  async sslCommerzSuccess(@Req() req: Request, @Res() res: Response) {
+    const payload = { ...req.query, ...req.body };
     const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
-    const result = await this.validateSslCommerzPaymentService.execute(dto);
+
+    const result = await this.validateSslCommerzPaymentService.execute({
+      tran_id: payload.tran_id,
+      val_id: payload.val_id,
+      amount: payload.amount,
+      card_type: payload.card_type,
+      bank_tran_id: payload.bank_tran_id,
+      status: payload.status || 'VALID',
+    });
 
     if (result.success) {
       return res.redirect(
@@ -63,6 +73,7 @@ export class PaymentController {
   }
 
   @Post('sslcommerz/fail')
+  @Get('sslcommerz/fail')
   @ApiOperation({ summary: 'SSLCommerz payment fail callback' })
   async sslCommerzFail(@Res() res: Response) {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
@@ -70,6 +81,7 @@ export class PaymentController {
   }
 
   @Post('sslcommerz/cancel')
+  @Get('sslcommerz/cancel')
   @ApiOperation({ summary: 'SSLCommerz payment cancel callback' })
   async sslCommerzCancel(@Res() res: Response) {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
@@ -78,8 +90,16 @@ export class PaymentController {
 
   @Post('sslcommerz/ipn')
   @ApiOperation({ summary: 'SSLCommerz IPN Webhook callback' })
-  async sslCommerzIpn(@Body() dto: SslCommerzCallbackDto) {
-    return this.validateSslCommerzPaymentService.execute(dto);
+  async sslCommerzIpn(@Req() req: Request) {
+    const payload = { ...req.query, ...req.body };
+    return this.validateSslCommerzPaymentService.execute({
+      tran_id: payload.tran_id,
+      val_id: payload.val_id,
+      amount: payload.amount,
+      card_type: payload.card_type,
+      bank_tran_id: payload.bank_tran_id,
+      status: payload.status || 'VALID',
+    });
   }
 
   // --- PROTECTED MERCHANT DASHBOARD ROUTES ---

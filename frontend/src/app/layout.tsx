@@ -1,6 +1,7 @@
 import './globals.css';
 import { ReduxProvider } from '@/store/provider';
 import { Metadata } from 'next';
+import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
   title: 'EasyCommerce | Enterprise Multi-Tenant eCommerce Platform',
@@ -20,7 +21,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <ReduxProvider>{children}</ReduxProvider>
+        <ReduxProvider>
+          {children}
+          <Toaster position="top-right" richColors closeButton />
+        </ReduxProvider>
       </body>
     </html>
   );

@@ -30,6 +30,10 @@ export class CreateCategoryService {
       name: dto.name,
       slug,
       description: dto.description,
+      parentId: dto.parentId || undefined,
+      icon: dto.icon || undefined,
+      image: dto.image || undefined,
+      isFeatured: dto.isFeatured ?? false,
       tenantId,
     });
 

@@ -23,6 +23,7 @@ import { StoreSettingsForm } from '@/features/tenant/components/StoreSettingsFor
 import { SmsLogsTable } from '@/features/sms/components/SmsLogsTable';
 import { NotificationBellDrawer } from '@/features/sms/components/NotificationBellDrawer';
 import { CouponManagementTable } from '@/features/coupon/components/CouponManagementTable';
+import { CategoryManagementApp } from '@/features/catalog/components/CategoryManagementApp';
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -55,6 +56,7 @@ import {
   SlidersHorizontal,
   FileText,
   UserCheck,
+  FolderTree,
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -62,13 +64,17 @@ export default function DashboardPage() {
   const dispatch = useDispatch();
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'logistics' | 'inventory' | 'sms' | 'coupons' | 'customers' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'categories' | 'orders' | 'logistics' | 'inventory' | 'sms' | 'coupons' | 'customers' | 'settings'>('overview');
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isAdjustStockModalOpen, setIsAdjustStockModalOpen] = useState(false);
   const [selectedProductIdForStock, setSelectedProductIdForStock] = useState<string | undefined>(undefined);
 
   const [selectedOrderForCourier, setSelectedOrderForCourier] = useState<Order | null>(null);
   const [isBookCourierModalOpen, setIsBookCourierModalOpen] = useState(false);
+
+  // Sidebar Nested Sub-Menu States
+  const [isSettingsSubMenuOpen, setIsSettingsSubMenuOpen] = useState(false);
+  const [settingsTargetSection, setSettingsTargetSection] = useState<string>('domain');
 
   useEffect(() => {
     if (!token && !isAuthenticated) {
@@ -222,6 +228,25 @@ export default function DashboardPage() {
           </button>
 
           <button
+            onClick={() => setActiveTab('categories')}
+            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
+              activeTab === 'categories'
+                ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/20'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <FolderTree className="w-4 h-4" />
+              <span>Categories</span>
+            </div>
+            {categories.length > 0 && (
+              <span className="px-2 py-0.5 bg-blue-500/20 text-blue-300 text-[10px] font-bold rounded-full">
+                {categories.length}
+              </span>
+            )}
+          </button>
+
+          <button
             onClick={() => setActiveTab('orders')}
             className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
               activeTab === 'orders'
@@ -289,6 +314,21 @@ export default function DashboardPage() {
           </button>
 
           <button
+            onClick={() => {
+              setActiveTab('settings');
+              setSettingsTargetSection('seo');
+            }}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
+              activeTab === 'settings' && settingsTargetSection === 'seo'
+                ? 'bg-purple-600 text-white font-bold shadow-md shadow-purple-600/20'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <TrendingUp className="w-4 h-4 text-purple-400" />
+            <span>Marketing & Pixels</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('customers')}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
               activeTab === 'customers'
@@ -305,9 +345,12 @@ export default function DashboardPage() {
           </div>
 
           <button
-            onClick={() => setActiveTab('settings')}
+            onClick={() => {
+              setActiveTab('settings');
+              setSettingsTargetSection('');
+            }}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
-              activeTab === 'settings'
+              activeTab === 'settings' && !settingsTargetSection
                 ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/20'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
             }`}
@@ -529,16 +572,16 @@ export default function DashboardPage() {
             </div>
           )}
 
+          {/* TAB: CATEGORIES & SUBCATEGORIES */}
+          {activeTab === 'categories' && (
+            <CategoryManagementApp />
+          )}
+
           {/* TAB 3: ORDERS & SALES */}
           {activeTab === 'orders' && (
-            <div className="space-y-6">
-              <div>
-                <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Orders & Sales Pipeline</h1>
-                <p className="text-xs text-slate-500 mt-1">Track storefront purchases, customer invoices, and order statuses for {store?.name}.</p>
-              </div>
-
-              <OrderListTable onDispatchCourierClick={(order) => handleOpenCourierModal(order)} />
-            </div>
+            <OrderListTable
+              onDispatchCourierClick={(order) => handleOpenCourierModal(order)}
+            />
           )}
 
           {/* TAB 4: LOGISTICS & SHIPMENTS */}
@@ -631,7 +674,10 @@ export default function DashboardPage() {
                 <p className="text-xs text-slate-500 mt-1">Configure tenant properties, currency, phone number, and courier API keys.</p>
               </div>
 
-              <StoreSettingsForm store={store || null} />
+              <StoreSettingsForm
+                store={store || null}
+                initialActiveCard={(settingsTargetSection as any) || null}
+              />
             </div>
           )}
         </main>

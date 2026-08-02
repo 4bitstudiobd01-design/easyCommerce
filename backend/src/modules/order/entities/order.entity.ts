@@ -10,11 +10,16 @@ import { OrderItemEntity } from './order-item.entity';
 
 export enum OrderStatusEnum {
   PENDING = 'PENDING',
+  ON_HOLD = 'ON_HOLD',
   CONFIRMED = 'CONFIRMED',
   PROCESSING = 'PROCESSING',
   SHIPPED = 'SHIPPED',
   DELIVERED = 'DELIVERED',
+  COMPLETED = 'COMPLETED',
   CANCELLED = 'CANCELLED',
+  RETURNED = 'RETURNED',
+  PAYMENT_ON_PROCESS = 'PAYMENT_ON_PROCESS',
+  PAYMENT_FAILED = 'PAYMENT_FAILED',
 }
 
 export enum PaymentMethodEnum {
@@ -68,7 +73,7 @@ export class OrderEntity {
   @Column({ type: 'enum', enum: PaymentStatusEnum, default: PaymentStatusEnum.UNPAID })
   paymentStatus: PaymentStatusEnum;
 
-  @Column({ type: 'enum', enum: OrderStatusEnum, default: OrderStatusEnum.PENDING })
+  @Column({ type: 'varchar', length: 50, default: OrderStatusEnum.PENDING })
   orderStatus: OrderStatusEnum;
 
   @Column({ type: 'varchar', length: 100 })

@@ -13,6 +13,8 @@ interface StorefrontNavbarProps {
   category?: string;
   phone?: string;
   address?: string;
+  logo?: string;
+  primaryColor?: string;
 }
 
 export function StorefrontNavbar({
@@ -21,6 +23,8 @@ export function StorefrontNavbar({
   category,
   phone,
   address,
+  logo,
+  primaryColor = '#2563eb',
 }: StorefrontNavbarProps) {
   const dispatch = useDispatch();
   const cartItems = useSelector((state: RootState) => state.cart.items);
@@ -55,14 +59,22 @@ export function StorefrontNavbar({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
         {/* Brand Logo & Name */}
         <Link href={`/store/${slug}`} className="flex items-center gap-3 shrink-0">
-          <div className="w-11 h-11 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-2xl text-white font-extrabold text-lg flex items-center justify-center shadow-lg shadow-blue-600/20">
-            {storeName ? storeName[0].toUpperCase() : 'S'}
-          </div>
+          {logo ? (
+            <img src={logo} alt={storeName} className="w-11 h-11 object-contain rounded-2xl border border-slate-200 shadow-sm" />
+          ) : (
+            <div
+              className="w-11 h-11 rounded-2xl text-white font-extrabold text-lg flex items-center justify-center shadow-lg"
+              style={{ backgroundColor: primaryColor }}
+            >
+              {storeName ? storeName[0].toUpperCase() : 'S'}
+            </div>
+          )}
+
           <div>
             <span className="font-extrabold text-lg sm:text-xl text-slate-900 tracking-tight block leading-tight">
               {storeName}
             </span>
-            <span className="text-[11px] font-bold text-blue-600 block">
+            <span className="text-[11px] font-bold block" style={{ color: primaryColor }}>
               {slug}.easycommerce.app
             </span>
           </div>
@@ -74,28 +86,29 @@ export function StorefrontNavbar({
           <input
             type="text"
             placeholder={`Search items in ${storeName}...`}
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-100/80 border border-slate-200 rounded-2xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all"
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-100/80 border border-slate-200 rounded-2xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:bg-white transition-all"
           />
         </div>
 
-        {/* Action Items: Track Order, Currency & Cart Button */}
+        {/* Action Items: Track Order & Cart Button */}
         <div className="flex items-center gap-3">
           <Link
             href={slug !== 'main' ? `/store/${slug}/track` : '/track'}
             className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 flex items-center gap-1.5 transition-all"
           >
-            <Truck className="w-3.5 h-3.5 text-blue-600" />
+            <Truck className="w-3.5 h-3.5" style={{ color: primaryColor }} />
             <span className="hidden sm:inline">Track Order</span>
           </Link>
 
           <button
             onClick={() => dispatch(toggleCartDrawer(true))}
-            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-600/20 flex items-center gap-2.5 transition-all active:scale-95 relative"
+            style={{ backgroundColor: primaryColor }}
+            className="px-4 py-2.5 text-white font-bold text-xs rounded-xl shadow-lg flex items-center gap-2.5 transition-all active:scale-95 relative"
           >
             <ShoppingBag className="w-4 h-4" />
             <span className="hidden sm:inline">My Cart</span>
             {totalItemCount > 0 && (
-              <span className="px-2 py-0.5 bg-white text-blue-700 text-[11px] font-extrabold rounded-full shadow-sm">
+              <span className="px-2 py-0.5 bg-white text-slate-900 text-[11px] font-extrabold rounded-full shadow-sm">
                 {totalItemCount}
               </span>
             )}

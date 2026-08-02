@@ -2,38 +2,69 @@
 
 import React, { useState, useEffect } from 'react';
 import { Store, useUpdateStoreMutation } from '../api/tenantApi';
+import { ThemeCustomizerApp } from './ThemeCustomizerApp';
 import {
-  Settings,
-  Truck,
-  Key,
-  CheckCircle2,
-  Save,
   Store as StoreIcon,
-  ShieldCheck,
+  Link2,
+  FileText,
+  Truck,
+  CreditCard,
   Globe,
-  ExternalLink,
   MessageSquare,
   Mail,
-  ChevronRight,
-  Smartphone,
+  Share2,
+  ShieldBan,
+  Sliders,
+  ArrowLeft,
+  CheckCircle2,
+  Save,
+  ExternalLink,
+  ShieldCheck,
+  Palette,
   Sparkles,
-  X,
 } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 interface StoreSettingsFormProps {
   store: Store | null;
+  initialActiveCard?: ManageShopCardType | null;
 }
 
-type ConfigAppType = 'domain' | 'profile' | 'courier' | 'sms' | 'email';
+type ManageShopCardType =
+  | 'settings'
+  | 'domain'
+  | 'policy'
+  | 'delivery'
+  | 'payment'
+  | 'seo'
+  | 'sms'
+  | 'email'
+  | 'theme'
+  | 'blocklist'
+  | 'limits';
 
-export function StoreSettingsForm({ store }: StoreSettingsFormProps) {
-  const [activeApp, setActiveApp] = useState<ConfigAppType | null>('domain');
+export function StoreSettingsForm({ store, initialActiveCard }: StoreSettingsFormProps) {
+  const [activeCard, setActiveCard] = useState<ManageShopCardType | null>(initialActiveCard || null);
+
+  useEffect(() => {
+    if (initialActiveCard !== undefined) {
+      setActiveCard(initialActiveCard);
+    }
+  }, [initialActiveCard]);
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [domain, setDomain] = useState('');
+  const [facebookPixelId, setFacebookPixelId] = useState('');
+  const [facebookCapiToken, setFacebookCapiToken] = useState('');
+  const [facebookTestEventCode, setFacebookTestEventCode] = useState('');
+  const [tiktokPixelId, setTiktokPixelId] = useState('');
+  const [googleTagManagerId, setGoogleTagManagerId] = useState('');
+  const [googleAnalyticsId, setGoogleAnalyticsId] = useState('');
+  const [snapchatPixelId, setSnapchatPixelId] = useState('');
+  const [pinterestTagId, setPinterestTagId] = useState('');
   const [steadfastApiKey, setSteadfastApiKey] = useState('');
   const [steadfastSecretKey, setSteadfastSecretKey] = useState('');
   const [pathaoClientId, setPathaoClientId] = useState('');
@@ -50,9 +81,6 @@ export function StoreSettingsForm({ store }: StoreSettingsFormProps) {
   const [smtpPass, setSmtpPass] = useState('');
   const [fromEmail, setFromEmail] = useState('');
 
-  const [successMsg, setSuccessMsg] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
-
   const [updateStore, { isLoading }] = useUpdateStoreMutation();
 
   useEffect(() => {
@@ -61,6 +89,14 @@ export function StoreSettingsForm({ store }: StoreSettingsFormProps) {
       setPhone(store.phone || '');
       setAddress(store.address || '');
       setDomain(store.domain || '');
+      setFacebookPixelId(store.facebookPixelId || '');
+      setFacebookCapiToken(store.facebookCapiToken || '');
+      setFacebookTestEventCode(store.facebookTestEventCode || '');
+      setTiktokPixelId(store.tiktokPixelId || '');
+      setGoogleTagManagerId(store.googleTagManagerId || '');
+      setGoogleAnalyticsId((store as any).googleAnalyticsId || '');
+      setSnapchatPixelId((store as any).snapchatPixelId || '');
+      setPinterestTagId((store as any).pinterestTagId || '');
       setSteadfastApiKey(store.steadfastApiKey || '');
       setSteadfastSecretKey(store.steadfastSecretKey || '');
       setPathaoClientId(store.pathaoClientId || '');
@@ -80,8 +116,6 @@ export function StoreSettingsForm({ store }: StoreSettingsFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSuccessMsg('');
-    setErrorMsg('');
 
     try {
       await updateStore({
@@ -89,6 +123,14 @@ export function StoreSettingsForm({ store }: StoreSettingsFormProps) {
         phone,
         address,
         domain: domain || undefined,
+        facebookPixelId: facebookPixelId || undefined,
+        facebookCapiToken: facebookCapiToken || undefined,
+        facebookTestEventCode: facebookTestEventCode || undefined,
+        tiktokPixelId: tiktokPixelId || undefined,
+        googleTagManagerId: googleTagManagerId || undefined,
+        googleAnalyticsId: googleAnalyticsId || undefined,
+        snapchatPixelId: snapchatPixelId || undefined,
+        pinterestTagId: pinterestTagId || undefined,
         steadfastApiKey: steadfastApiKey || undefined,
         steadfastSecretKey: steadfastSecretKey || undefined,
         pathaoClientId: pathaoClientId || undefined,
@@ -104,464 +146,748 @@ export function StoreSettingsForm({ store }: StoreSettingsFormProps) {
         fromEmail: fromEmail || undefined,
       } as any).unwrap();
 
-      setSuccessMsg('Configurations saved successfully!');
-      setTimeout(() => setSuccessMsg(''), 4000);
+      toast.success('Configurations saved successfully!');
     } catch (err: any) {
-      setErrorMsg(err?.data?.message || 'Failed to save configurations.');
+      toast.error(err?.data?.message || 'Failed to save configurations.');
     }
   };
 
-  const appIcons = [
+  const shopCards = [
+    {
+      id: 'settings',
+      title: 'Shop Settings',
+      description: "General shop configurations customize your shop's core settings for a seamless experience.",
+      icon: StoreIcon,
+      badge: null,
+      iconColor: 'text-purple-600 bg-purple-50',
+    },
     {
       id: 'domain',
-      name: 'Subdomain & Domain',
-      subtitle: store?.slug ? `${store.slug}.easycommerce.app` : 'Domain Router',
-      icon: Globe,
-      color: 'from-blue-600 to-indigo-600',
-      badge: 'Active',
-      badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      title: 'Shop Domain',
+      description: "Manage your shop's core configurations, including domain setup and general settings.",
+      icon: Link2,
+      badge: null,
+      iconColor: 'text-blue-600 bg-blue-50',
     },
     {
-      id: 'profile',
-      name: 'Store Profile',
-      subtitle: store?.name || 'Merchant Identity',
-      icon: StoreIcon,
-      color: 'from-purple-600 to-indigo-600',
-      badge: 'Verified',
-      badgeColor: 'bg-purple-50 text-purple-700 border-purple-200',
+      id: 'theme',
+      title: 'Theme & Branding',
+      description: 'Customize primary accent colors, font typography, logo, favicon, and hero slider banners.',
+      icon: Palette,
+      badge: 'New',
+      iconColor: 'text-pink-600 bg-pink-50',
     },
     {
-      id: 'courier',
-      name: 'Courier Partners',
-      subtitle: 'Steadfast & Pathao API Keys',
+      id: 'delivery',
+      title: 'Delivery Support',
+      description: 'Manage your shop delivery settings to ensure smooth and efficient order fulfillment.',
       icon: Truck,
-      color: 'from-emerald-600 to-teal-600',
-      badge: '2 Drivers',
-      badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      badge: null,
+      iconColor: 'text-indigo-600 bg-indigo-50',
+    },
+    {
+      id: 'payment',
+      title: 'Payment Gateway',
+      description: 'Integrate and manage payment options to provide customers with secure and flexible transaction methods.',
+      icon: CreditCard,
+      badge: null,
+      iconColor: 'text-emerald-600 bg-emerald-50',
+    },
+    {
+      id: 'seo',
+      title: 'SEO & Marketing Integrations',
+      description: 'Enhance your shop visibility by Google Tag Manager, Facebook Pixel, TikTok Pixel, and SEO tools.',
+      icon: Globe,
+      badge: 'New',
+      iconColor: 'text-purple-600 bg-purple-50',
     },
     {
       id: 'sms',
-      name: 'SMS Notifications',
-      subtitle: `${smsDriver} Driver`,
+      title: 'SMS Support',
+      description: 'Enable SMS notifications and support to keep your customers informed with real-time updates.',
       icon: MessageSquare,
-      color: 'from-blue-500 to-cyan-600',
-      badge: smsDriver,
-      badgeColor: 'bg-blue-50 text-blue-700 border-blue-200',
+      badge: null,
+      iconColor: 'text-blue-600 bg-blue-50',
     },
     {
       id: 'email',
-      name: 'Email Gateway',
-      subtitle: `${emailDriver} Driver`,
+      title: 'Email Gateway',
+      description: 'Provide instant communication and transactional invoice assistance with SMTP & SendGrid.',
       icon: Mail,
-      color: 'from-amber-500 to-orange-600',
-      badge: emailDriver,
-      badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
+      badge: null,
+      iconColor: 'text-amber-600 bg-amber-50',
+    },
+    {
+      id: 'policy',
+      title: 'Shop Policy',
+      description: 'Define and customize policies for your shop, including returns, refunds, and customer service guidelines.',
+      icon: FileText,
+      badge: null,
+      iconColor: 'text-slate-700 bg-slate-100',
+    },
+    {
+      id: 'blocklist',
+      title: 'Blocklist',
+      description: 'Block abusive visitors by IP address, IP range, device, country, phone, or email to stop fraud.',
+      icon: ShieldBan,
+      badge: 'New',
+      iconColor: 'text-red-600 bg-red-50',
+    },
+    {
+      id: 'limits',
+      title: 'Order Limits',
+      description: 'Limit repeat and duplicate orders, choose how they are handled, and review protected attempts.',
+      icon: Sliders,
+      badge: 'New',
+      iconColor: 'text-indigo-600 bg-indigo-50',
     },
   ];
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 max-w-4xl">
-      {/* Alert Notifications */}
-      {successMsg && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold text-xs rounded-2xl flex items-center gap-2 animate-in fade-in">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-          <span>{successMsg}</span>
-        </div>
-      )}
-
-      {errorMsg && (
-        <div className="p-4 bg-red-50 border border-red-200 text-red-700 font-bold text-xs rounded-2xl">
-          {errorMsg}
-        </div>
-      )}
-
-      {/* 📱 SMARTPHONE APP STORE GRID SECTION */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Smartphone className="w-5 h-5 text-blue-600" />
-            <h3 className="font-extrabold text-base text-slate-900">Control Center Mobile App Store</h3>
+    <form onSubmit={handleSubmit} className="space-y-6 max-w-6xl">
+      {/* HUB GRID VIEW (WHEN NO CARD IS SELECTED) */}
+      {!activeCard ? (
+        <div className="space-y-6">
+          {/* Top Title Banner */}
+          <div className="space-y-1">
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight">Manage Shop</h2>
+            <p className="text-xs text-slate-500 font-normal">
+              Set up and customize your shop to ensure a smooth and efficient experience.
+            </p>
           </div>
-          <span className="text-xs text-slate-400 font-medium">Click an app icon to configure settings</span>
-        </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-          {appIcons.map((app) => {
-            const Icon = app.icon;
-            const isSelected = activeApp === app.id;
+          {/* 3-Column Grid Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {shopCards.map((card) => {
+              const Icon = card.icon;
 
-            return (
-              <button
-                key={app.id}
-                type="button"
-                onClick={() => setActiveApp(app.id as ConfigAppType)}
-                className={`p-5 rounded-3xl border text-left flex flex-col justify-between transition-all duration-200 group relative ${
-                  isSelected
-                    ? 'bg-white border-blue-600 ring-4 ring-blue-600/15 shadow-xl scale-[1.03]'
-                    : 'bg-white border-slate-200 hover:border-slate-300 shadow-sm hover:shadow-md hover:-translate-y-1'
-                }`}
-              >
-                {/* App Icon Tile */}
+              return (
                 <div
-                  className={`w-12 h-12 rounded-2xl bg-gradient-to-tr ${app.color} text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform mb-3`}
+                  key={card.id}
+                  onClick={() => setActiveCard(card.id as ManageShopCardType)}
+                  className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm hover:shadow-md hover:border-purple-400 transition-all cursor-pointer group flex flex-col justify-between space-y-4 relative"
                 >
-                  <Icon className="w-6 h-6" />
-                </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className={`p-3 rounded-2xl ${card.iconColor} shadow-sm group-hover:scale-105 transition-transform`}>
+                        <Icon className="w-6 h-6" />
+                      </div>
 
-                {/* App Info */}
-                <div className="space-y-1">
-                  <span className="font-extrabold text-xs text-slate-900 block truncate">
-                    {app.name}
-                  </span>
-                  <span className="text-[10px] text-slate-400 block truncate font-mono">
-                    {app.subtitle}
-                  </span>
-                </div>
+                      {card.badge && (
+                        <span className="px-3 py-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-extrabold text-[10px] rounded-full shadow-sm">
+                          {card.badge}
+                        </span>
+                      )}
+                    </div>
 
-                {/* App Status Badge */}
-                <span
-                  className={`mt-3 px-2 py-0.5 font-extrabold text-[9px] rounded-full border inline-block w-fit ${app.badgeColor}`}
-                >
-                  {app.badge}
-                </span>
-              </button>
-            );
-          })}
+                    <h3 className="font-extrabold text-base text-slate-900 group-hover:text-purple-600 transition-colors">
+                      {card.title}
+                    </h3>
+
+                    <p className="text-xs text-slate-500 leading-relaxed font-normal">
+                      {card.description}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      ) : (
+        /* DETAIL CONFIGURATOR VIEW (WHEN A CARD IS SELECTED) */
+        <div className="space-y-6 animate-in fade-in zoom-in-95 duration-200">
+          {/* Back Button */}
+          <button
+            type="button"
+            onClick={() => setActiveCard(null)}
+            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 flex items-center gap-2 transition-all w-fit"
+          >
+            <ArrowLeft className="w-4 h-4 text-slate-600" />
+            <span>← Back to Manage Shop</span>
+          </button>
 
-      {/* 🛠️ ACTIVE APP CONFIGURATION CARD */}
-      <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-6 relative transition-all">
-        {/* APP 1: SUBDOMAIN & CUSTOM DOMAIN */}
-        {activeApp === 'domain' && (
-          <div className="space-y-6 animate-in fade-in duration-200">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-tr from-blue-600 to-indigo-600 text-white rounded-2xl shadow-md">
+          {/* CARD DETAIL 1: SHOP SETTINGS */}
+          {activeCard === 'settings' && (
+            <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-6">
+              <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                <div className="p-2.5 bg-purple-50 text-purple-600 rounded-2xl border border-purple-100">
+                  <StoreIcon className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base text-slate-900">Shop Settings & Profile</h3>
+                  <p className="text-xs text-slate-400">Basic merchant information & store identity</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-xs font-semibold">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                    Store Name
+                  </label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-600"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                    Store Phone Number
+                  </label>
+                  <input
+                    type="text"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="01700000000"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-600"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                    Warehouse Pickup Address
+                  </label>
+                  <input
+                    type="text"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder="House #10, Road #5, Dhanmondi, Dhaka"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-600"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-purple-600/30 flex items-center gap-2 transition-all active:scale-95"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Save Shop Settings</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* CARD DETAIL 2: SHOP DOMAIN */}
+          {activeCard === 'domain' && (
+            <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-6">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-blue-50 text-blue-600 rounded-2xl border border-blue-100">
+                    <Link2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-base text-slate-900">Shop Domain & Routing</h3>
+                    <p className="text-xs text-slate-400">Subdomain address & CNAME record setup</p>
+                  </div>
+                </div>
+
+                <span className="px-3 py-1 bg-emerald-50 text-emerald-700 font-bold text-[10px] rounded-full border border-emerald-200 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>Subdomain Active</span>
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-xs font-semibold">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                    Assigned Store Subdomain
+                  </label>
+                  <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+                    <span className="font-mono font-bold text-blue-600 text-xs">
+                      {store?.slug ? `${store.slug}.easycommerce.app` : 'setting-up...'}
+                    </span>
+                    {store?.slug && (
+                      <Link
+                        href={`/store/${store.slug}`}
+                        target="_blank"
+                        className="text-blue-600 hover:text-blue-700 p-1.5 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </Link>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                    Custom Domain (Optional CNAME)
+                  </label>
+                  <input
+                    type="text"
+                    value={domain}
+                    onChange={(e) => setDomain(e.target.value)}
+                    placeholder="e.g. www.sumonfashion.com"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-600/30 flex items-center gap-2 transition-all active:scale-95"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Save Domain Configuration</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* CARD DETAIL 3: THEME & BRANDING */}
+          {activeCard === 'theme' && (
+            <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-6">
+              <ThemeCustomizerApp store={store} />
+            </div>
+          )}
+
+          {/* CARD DETAIL 4: DELIVERY SUPPORT */}
+          {activeCard === 'delivery' && (
+            <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-6">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-2xl border border-indigo-100">
+                    <Truck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-base text-slate-900">Delivery Support & Courier API Keys</h3>
+                    <p className="text-xs text-slate-400">Steadfast Courier & Pathao Express merchant credentials</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-5 bg-blue-50/50 rounded-2xl border border-blue-100 space-y-4">
+                <span className="font-extrabold text-xs text-blue-900 block">Steadfast Courier Credentials</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-semibold">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Steadfast Api-Key</label>
+                    <input
+                      type="password"
+                      value={steadfastApiKey}
+                      onChange={(e) => setSteadfastApiKey(e.target.value)}
+                      placeholder="sf_api_key_xxxxxxxx"
+                      className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Steadfast Secret-Key</label>
+                    <input
+                      type="password"
+                      value={steadfastSecretKey}
+                      onChange={(e) => setSteadfastSecretKey(e.target.value)}
+                      placeholder="sf_secret_key_xxxxxxxx"
+                      className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-5 bg-red-50/50 rounded-2xl border border-red-100 space-y-4">
+                <span className="font-extrabold text-xs text-red-900 block">Pathao Express Credentials</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-semibold">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Pathao Client ID</label>
+                    <input
+                      type="password"
+                      value={pathaoClientId}
+                      onChange={(e) => setPathaoClientId(e.target.value)}
+                      placeholder="pth_client_id_xxxxxxxx"
+                      className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-red-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Pathao Client Secret</label>
+                    <input
+                      type="password"
+                      value={pathaoClientSecret}
+                      onChange={(e) => setPathaoClientSecret(e.target.value)}
+                      placeholder="pth_client_secret_xxxxxxxx"
+                      className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-red-600"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 flex items-center gap-2 transition-all active:scale-95"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Save Delivery Credentials</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* CARD DETAIL 5: PAYMENT GATEWAY */}
+          {activeCard === 'payment' && (
+            <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-6">
+              <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-100">
+                  <CreditCard className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base text-slate-900">Payment Gateway Integration</h3>
+                  <p className="text-xs text-slate-400">SSLCommerz, bKash & Cash on Delivery (COD) settings</p>
+                </div>
+              </div>
+
+              <div className="p-4 bg-emerald-50/60 border border-emerald-200 rounded-2xl text-xs text-emerald-800 space-y-2">
+                <span className="font-extrabold text-xs block">Active Gateways:</span>
+                <p>✅ Cash on Delivery (COD) - Auto Enabled for Dhaka & Outside Dhaka</p>
+                <p>✅ SSLCommerz Online Payment - Configured via Platform Sandbox Gateway</p>
+              </div>
+            </div>
+          )}
+
+          {/* CARD DETAIL 6: SMS SUPPORT */}
+          {activeCard === 'sms' && (
+            <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-6">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-blue-50 text-blue-600 rounded-2xl border border-blue-100">
+                    <MessageSquare className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-base text-slate-900">SMS Notification Driver</h3>
+                    <p className="text-xs text-slate-400">BulkSMSBD, Greenweb, Twilio SMS adapters</p>
+                  </div>
+                </div>
+
+                <select
+                  value={smsDriver}
+                  onChange={(e) => setSmsDriver(e.target.value as any)}
+                  className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                >
+                  <option value="BULKSMSBD">BulkSMSBD Driver (Active)</option>
+                  <option value="GREENWEB">Greenweb SMS Driver</option>
+                  <option value="TWILIO">Twilio SMS Driver</option>
+                  <option value="DISABLED">Disable SMS Gateway</option>
+                </select>
+              </div>
+
+              {smsDriver !== 'DISABLED' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-semibold">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">SMS Gateway API Key</label>
+                    <input
+                      type="password"
+                      value={smsApiKey}
+                      onChange={(e) => setSmsApiKey(e.target.value)}
+                      placeholder="Enter BulkSMSBD / Greenweb API Key"
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Sender ID (Masking)</label>
+                    <input
+                      type="text"
+                      value={smsSenderId}
+                      onChange={(e) => setSmsSenderId(e.target.value)}
+                      placeholder="e.g. EASYSTORE"
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-4 border-t border-slate-100 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-600/30 flex items-center gap-2 transition-all active:scale-95"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Save SMS Configuration</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* CARD DETAIL 7: EMAIL GATEWAY */}
+          {activeCard === 'email' && (
+            <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-6">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-amber-50 text-amber-600 rounded-2xl border border-amber-100">
+                    <Mail className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-base text-slate-900">Email Gateway Driver</h3>
+                    <p className="text-xs text-slate-400">Configure SMTP or SendGrid mail server</p>
+                  </div>
+                </div>
+
+                <select
+                  value={emailDriver}
+                  onChange={(e) => setEmailDriver(e.target.value as any)}
+                  className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                >
+                  <option value="SMTP">SMTP Email Driver (Active)</option>
+                  <option value="SENDGRID">SendGrid Email Driver</option>
+                  <option value="DISABLED">Disable Email Gateway</option>
+                </select>
+              </div>
+
+              {emailDriver !== 'DISABLED' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-semibold">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">SMTP Host</label>
+                    <input
+                      type="text"
+                      value={smtpHost}
+                      onChange={(e) => setSmtpHost(e.target.value)}
+                      placeholder="smtp.mailtrap.io"
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">From Sender Email</label>
+                    <input
+                      type="email"
+                      value={fromEmail}
+                      onChange={(e) => setFromEmail(e.target.value)}
+                      placeholder="no-reply@store.com"
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-4 border-t border-slate-100 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-amber-600/30 flex items-center gap-2 transition-all active:scale-95"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Save Email Configuration</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* CARD DETAIL 6: SEO & MARKETING PIXEL INTEGRATIONS */}
+          {activeCard === 'seo' && (
+            <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-6">
+              <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                <div className="p-2.5 bg-purple-50 text-purple-600 rounded-2xl border border-purple-100">
                   <Globe className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-base text-slate-900">Subdomain & Custom Domain Router</h3>
-                  <p className="text-xs text-slate-400">Live Store Address & Custom CNAME setup</p>
+                  <h3 className="font-extrabold text-base text-slate-900">SEO, Meta Pixel & TikTok Marketing</h3>
+                  <p className="text-xs text-slate-400">Track customer conversion events, retargeting & analytics</p>
                 </div>
               </div>
 
-              <span className="px-3 py-1 bg-emerald-50 text-emerald-700 font-bold text-[10px] rounded-full border border-emerald-200 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>Active</span>
-              </span>
-            </div>
+              {/* Meta / Facebook Pixel Box */}
+              <div className="p-5 bg-blue-50/50 rounded-2xl border border-blue-100 space-y-4">
+                <span className="font-extrabold text-xs text-blue-900 block">🔵 Meta (Facebook) Pixel & Conversions API (CAPI)</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-semibold">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Meta Pixel ID</label>
+                    <input
+                      type="text"
+                      value={facebookPixelId}
+                      onChange={(e) => setFacebookPixelId(e.target.value)}
+                      placeholder="e.g. 123456789012345"
+                      className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    />
+                  </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-xs font-semibold">
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                  Assigned Store Subdomain
-                </label>
-                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
-                  <span className="font-mono font-bold text-blue-600 text-xs">
-                    {store?.slug ? `${store.slug}.easycommerce.app` : 'setting-up...'}
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">CAPI Test Event Code (Optional)</label>
+                    <input
+                      type="text"
+                      value={facebookTestEventCode}
+                      onChange={(e) => setFacebookTestEventCode(e.target.value)}
+                      placeholder="e.g. TEST12345"
+                      className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block font-bold text-slate-700 mb-1">Meta Conversions API Access Token (CAPI)</label>
+                    <textarea
+                      value={facebookCapiToken}
+                      onChange={(e) => setFacebookCapiToken(e.target.value)}
+                      placeholder="EAAG..."
+                      rows={2}
+                      className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* TikTok Pixel Box */}
+              <div className="p-5 bg-slate-900 text-white rounded-2xl border border-slate-800 space-y-4">
+                <span className="font-extrabold text-xs block text-cyan-400">🎵 TikTok Pixel ID</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-semibold">
+                  <div className="sm:col-span-2">
+                    <label className="block font-bold text-slate-300 mb-1">TikTok Pixel ID</label>
+                    <input
+                      type="text"
+                      value={tiktokPixelId}
+                      onChange={(e) => setTiktokPixelId(e.target.value)}
+                      placeholder="e.g. C1234567890"
+                      className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white font-mono text-xs focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Google Analytics 4 (GA4) & GTM Box */}
+              <div className="p-5 bg-emerald-50/50 rounded-2xl border border-emerald-100 space-y-4">
+                <span className="font-extrabold text-xs text-emerald-900 block">📊 Google Analytics 4 (GA4) & Google Tag Manager (GTM)</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-semibold">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">GA4 Measurement ID</label>
+                    <input
+                      type="text"
+                      value={googleAnalyticsId}
+                      onChange={(e) => setGoogleAnalyticsId(e.target.value)}
+                      placeholder="e.g. G-1234567890"
+                      className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">GTM Container ID</label>
+                    <input
+                      type="text"
+                      value={googleTagManagerId}
+                      onChange={(e) => setGoogleTagManagerId(e.target.value)}
+                      placeholder="e.g. GTM-XXXXXXX"
+                      className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Snapchat & Pinterest Box */}
+              <div className="p-5 bg-amber-50/50 rounded-2xl border border-amber-100 space-y-4">
+                <span className="font-extrabold text-xs text-amber-900 block">👻 Snapchat Pixel & 📌 Pinterest Tag</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-semibold">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Snapchat Pixel ID</label>
+                    <input
+                      type="text"
+                      value={snapchatPixelId}
+                      onChange={(e) => setSnapchatPixelId(e.target.value)}
+                      placeholder="e.g. snap_pixel_123"
+                      className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-amber-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Pinterest Tag ID</label>
+                    <input
+                      type="text"
+                      value={pinterestTagId}
+                      onChange={(e) => setPinterestTagId(e.target.value)}
+                      placeholder="e.g. pin_tag_456"
+                      className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-amber-600"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* LIVE AUTO-GENERATED PRODUCT CATALOG FEEDS FOR GOOGLE & META ADS */}
+              <div className="p-5 bg-purple-900 text-white rounded-2xl border border-purple-800 space-y-4">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-purple-300" />
+                  <span className="font-extrabold text-xs text-purple-200 uppercase tracking-wider">
+                    Automated Product Catalog Sync Feeds (Google & Meta Ads)
                   </span>
-                  {store?.slug && (
-                    <Link
-                      href={`/store/${store.slug}`}
-                      target="_blank"
-                      className="text-blue-600 hover:text-blue-700 p-1.5 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
-                      title="Test Storefront"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </Link>
-                  )}
+                </div>
+
+                <div className="space-y-3 text-xs">
+                  <div>
+                    <label className="block text-[11px] font-bold text-purple-300 mb-1">
+                      🛒 Google Merchant Center Shopping RSS Feed URL
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value={`http://localhost:5001/api/v1/stores/slug/${store?.slug || 'my-shop'}/feed/google-shopping.xml`}
+                        className="w-full px-3.5 py-2 bg-purple-950 border border-purple-700 rounded-xl text-purple-200 font-mono text-[11px]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(`http://localhost:5001/api/v1/stores/slug/${store?.slug || 'my-shop'}/feed/google-shopping.xml`);
+                          toast.success('Google Shopping RSS Feed URL copied to clipboard!');
+                        }}
+                        className="px-3 py-2 bg-purple-700 hover:bg-purple-600 text-white font-bold text-xs rounded-xl shrink-0 transition-colors"
+                      >
+                        Copy URL
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-purple-300 mb-1">
+                      📦 Facebook Commerce Manager Catalog CSV Feed URL
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value={`http://localhost:5001/api/v1/stores/slug/${store?.slug || 'my-shop'}/feed/facebook-catalog.csv`}
+                        className="w-full px-3.5 py-2 bg-purple-950 border border-purple-700 rounded-xl text-purple-200 font-mono text-[11px]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(`http://localhost:5001/api/v1/stores/slug/${store?.slug || 'my-shop'}/feed/facebook-catalog.csv`);
+                          toast.success('Facebook Catalog CSV Feed URL copied to clipboard!');
+                        }}
+                        className="px-3 py-2 bg-purple-700 hover:bg-purple-600 text-white font-bold text-xs rounded-xl shrink-0 transition-colors"
+                      >
+                        Copy URL
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                  Custom Domain (CNAME Record)
-                </label>
-                <input
-                  type="text"
-                  value={domain}
-                  onChange={(e) => setDomain(e.target.value)}
-                  placeholder="e.g. www.sumonfashion.com"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-blue-600"
-                />
-              </div>
-            </div>
-
-            <div className="p-4 bg-blue-50/60 border border-blue-100 rounded-2xl text-xs text-slate-700 flex items-center justify-between">
-              <span className="font-medium">Local Subdomain Test: <code className="font-mono font-bold text-blue-700 bg-white px-2 py-0.5 rounded-md border border-blue-200">http://{store?.slug || 'store'}.localhost:3000</code></span>
-              {store?.slug && (
-                <a
-                  href={`http://${store.slug}.localhost:3000`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-bold text-blue-600 hover:underline text-xs flex items-center gap-1"
+              <div className="pt-4 border-t border-slate-100 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-purple-600/30 flex items-center gap-2 transition-all active:scale-95"
                 >
-                  <span>Test Now</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* APP 2: STORE PROFILE */}
-        {activeApp === 'profile' && (
-          <div className="space-y-6 animate-in fade-in duration-200">
-            <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
-              <div className="p-2.5 bg-gradient-to-tr from-purple-600 to-indigo-600 text-white rounded-2xl shadow-md">
-                <StoreIcon className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-extrabold text-base text-slate-900">Store Profile Configuration</h3>
-                <p className="text-xs text-slate-400">Basic merchant information & store identity</p>
+                  <Save className="w-4 h-4" />
+                  <span>Save Marketing & Pixel Settings</span>
+                </button>
               </div>
             </div>
+          )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-xs font-semibold">
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                  Store Name
-                </label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  required
-                />
+          {/* CARD DETAIL 7-11: PLACEHOLDERS FOR POLICY, BLOCKLIST, LIMITS */}
+          {['policy', 'blocklist', 'limits'].includes(activeCard) && (
+            <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-4 text-center py-12">
+              <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-2 border border-purple-100">
+                <Sparkles className="w-6 h-6" />
               </div>
-
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                  Store Phone Number
-                </label>
-                <input
-                  type="text"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="01700000000"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                />
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                  Warehouse Pickup Address
-                </label>
-                <input
-                  type="text"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="House #10, Road #5, Dhanmondi, Dhaka"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                />
-              </div>
+              <h3 className="font-extrabold text-base text-slate-900">
+                {shopCards.find((c) => c.id === activeCard)?.title} Configurator
+              </h3>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                {shopCards.find((c) => c.id === activeCard)?.description}
+              </p>
             </div>
-          </div>
-        )}
-
-        {/* APP 3: COURIER DRIVERS */}
-        {activeApp === 'courier' && (
-          <div className="space-y-6 animate-in fade-in duration-200">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-tr from-emerald-600 to-teal-600 text-white rounded-2xl shadow-md">
-                  <Truck className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-extrabold text-base text-slate-900">Courier Partner Drivers</h3>
-                  <p className="text-xs text-slate-400">Configure your Steadfast & Pathao merchant credentials</p>
-                </div>
-              </div>
-
-              <span className="px-3 py-1 bg-emerald-50 text-emerald-700 font-bold text-[10px] rounded-full border border-emerald-200 flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Encrypted Keys</span>
-              </span>
-            </div>
-
-            {/* Steadfast Courier Card */}
-            <div className="p-5 bg-blue-50/50 rounded-2xl border border-blue-100 space-y-4">
-              <span className="font-extrabold text-xs text-blue-900 block">Steadfast Courier Credentials</span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-semibold">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Steadfast Api-Key</label>
-                  <input
-                    type="password"
-                    value={steadfastApiKey}
-                    onChange={(e) => setSteadfastApiKey(e.target.value)}
-                    placeholder="sf_api_key_xxxxxxxx"
-                    className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Steadfast Secret-Key</label>
-                  <input
-                    type="password"
-                    value={steadfastSecretKey}
-                    onChange={(e) => setSteadfastSecretKey(e.target.value)}
-                    placeholder="sf_secret_key_xxxxxxxx"
-                    className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Pathao Express Card */}
-            <div className="p-5 bg-red-50/50 rounded-2xl border border-red-100 space-y-4">
-              <span className="font-extrabold text-xs text-red-900 block">Pathao Express Credentials</span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-semibold">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Pathao Client ID</label>
-                  <input
-                    type="password"
-                    value={pathaoClientId}
-                    onChange={(e) => setPathaoClientId(e.target.value)}
-                    placeholder="pth_client_id_xxxxxxxx"
-                    className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-red-600"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Pathao Client Secret</label>
-                  <input
-                    type="password"
-                    value={pathaoClientSecret}
-                    onChange={(e) => setPathaoClientSecret(e.target.value)}
-                    placeholder="pth_client_secret_xxxxxxxx"
-                    className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-red-600"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* APP 4: SMS DRIVER */}
-        {activeApp === 'sms' && (
-          <div className="space-y-6 animate-in fade-in duration-200">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-tr from-blue-500 to-cyan-600 text-white rounded-2xl shadow-md">
-                  <MessageSquare className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-extrabold text-base text-slate-900">SMS Notification Driver</h3>
-                  <p className="text-xs text-slate-400">Select active SMS gateway adapter & credentials</p>
-                </div>
-              </div>
-
-              <select
-                value={smsDriver}
-                onChange={(e) => setSmsDriver(e.target.value as any)}
-                className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-              >
-                <option value="BULKSMSBD">BulkSMSBD Driver (Active)</option>
-                <option value="GREENWEB">Greenweb SMS Driver</option>
-                <option value="TWILIO">Twilio SMS Driver</option>
-                <option value="DISABLED">Disable SMS Gateway</option>
-              </select>
-            </div>
-
-            {smsDriver !== 'DISABLED' && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-semibold">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">SMS Gateway API Key</label>
-                  <input
-                    type="password"
-                    value={smsApiKey}
-                    onChange={(e) => setSmsApiKey(e.target.value)}
-                    placeholder="Enter BulkSMSBD / Greenweb API Key"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Sender ID (Masking)</label>
-                  <input
-                    type="text"
-                    value={smsSenderId}
-                    onChange={(e) => setSmsSenderId(e.target.value)}
-                    placeholder="e.g. EASYSTORE"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* APP 5: EMAIL DRIVER */}
-        {activeApp === 'email' && (
-          <div className="space-y-6 animate-in fade-in duration-200">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-tr from-amber-500 to-orange-600 text-white rounded-2xl shadow-md">
-                  <Mail className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-extrabold text-base text-slate-900">Email Gateway Driver</h3>
-                  <p className="text-xs text-slate-400">Configure SMTP or SendGrid mail server</p>
-                </div>
-              </div>
-
-              <select
-                value={emailDriver}
-                onChange={(e) => setEmailDriver(e.target.value as any)}
-                className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-              >
-                <option value="SMTP">SMTP Email Driver (Active)</option>
-                <option value="SENDGRID">SendGrid Email Driver</option>
-                <option value="DISABLED">Disable Email Gateway</option>
-              </select>
-            </div>
-
-            {emailDriver !== 'DISABLED' && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-semibold">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">SMTP Host</label>
-                  <input
-                    type="text"
-                    value={smtpHost}
-                    onChange={(e) => setSmtpHost(e.target.value)}
-                    placeholder="smtp.mailtrap.io"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">From Sender Email</label>
-                  <input
-                    type="email"
-                    value={fromEmail}
-                    onChange={(e) => setFromEmail(e.target.value)}
-                    placeholder="no-reply@store.com"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Save Settings Action Button */}
-        <div className="pt-4 border-t border-slate-100 flex justify-end">
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-600/30 flex items-center gap-2 transition-all active:scale-95"
-          >
-            {isLoading ? (
-              <span>Saving App Settings...</span>
-            ) : (
-              <>
-                <Save className="w-4 h-4" />
-                <span>Save Store Configuration</span>
-              </>
-            )}
-          </button>
+          )}
         </div>
-      </div>
+      )}
     </form>
   );
 }

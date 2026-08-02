@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString, IsEnum, IsNumber } from 'class-validator';
-import { SmsDriverEnum, EmailDriverEnum } from '../entities/store.entity';
+import { IsOptional, IsString, IsEnum, IsNumber, IsArray } from 'class-validator';
+import { SmsDriverEnum, EmailDriverEnum, HeroBannerItem } from '../entities/store.entity';
 
 export class UpdateStoreDto {
   @ApiProperty({ example: 'My Online Fashion Store', required: false })
@@ -17,6 +17,82 @@ export class UpdateStoreDto {
   @IsOptional()
   @IsString()
   address?: string;
+
+  @ApiProperty({ example: 'https://example.com/logo.png', required: false })
+  @IsOptional()
+  @IsString()
+  logo?: string;
+
+  @ApiProperty({ example: 'https://example.com/favicon.ico', required: false })
+  @IsOptional()
+  @IsString()
+  favicon?: string;
+
+  @ApiProperty({ example: 'Sumon Fashion - Premium Apparel Store', required: false })
+  @IsOptional()
+  @IsString()
+  metaTitle?: string;
+
+  @ApiProperty({ example: 'Shop top quality clothing online with fast BD delivery.', required: false })
+  @IsOptional()
+  @IsString()
+  metaDescription?: string;
+
+  // Marketing Pixels & Conversions API
+  @ApiProperty({ example: '123456789012345', required: false })
+  @IsOptional()
+  @IsString()
+  facebookPixelId?: string;
+
+  @ApiProperty({ example: 'EAAG...', required: false })
+  @IsOptional()
+  @IsString()
+  facebookCapiToken?: string;
+
+  @ApiProperty({ example: 'TEST12345', required: false })
+  @IsOptional()
+  @IsString()
+  facebookTestEventCode?: string;
+
+  @ApiProperty({ example: 'C1234567890', required: false })
+  @IsOptional()
+  @IsString()
+  tiktokPixelId?: string;
+
+  @ApiProperty({ example: 'GTM-XXXXXXX', required: false })
+  @IsOptional()
+  @IsString()
+  googleTagManagerId?: string;
+
+  @ApiProperty({ example: 'G-1234567890', required: false })
+  @IsOptional()
+  @IsString()
+  googleAnalyticsId?: string;
+
+  @ApiProperty({ example: 'snap_pixel_123', required: false })
+  @IsOptional()
+  @IsString()
+  snapchatPixelId?: string;
+
+  @ApiProperty({ example: 'pin_tag_456', required: false })
+  @IsOptional()
+  @IsString()
+  pinterestTagId?: string;
+
+  @ApiProperty({ example: '#2563eb', required: false })
+  @IsOptional()
+  @IsString()
+  primaryColor?: string;
+
+  @ApiProperty({ example: 'Inter', required: false })
+  @IsOptional()
+  @IsString()
+  fontFamily?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsArray()
+  heroBanners?: HeroBannerItem[];
 
   @ApiProperty({ example: 'www.sumonfashion.com', required: false })
   @IsOptional()

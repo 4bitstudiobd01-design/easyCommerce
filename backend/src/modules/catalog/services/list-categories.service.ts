@@ -13,6 +13,7 @@ export class ListCategoriesService {
   async execute(tenantId: string): Promise<CategoryEntity[]> {
     return this.categoryRepository.find({
       where: { tenantId },
+      relations: ['subcategories', 'parentCategory'],
       order: { name: 'ASC' },
     });
   }

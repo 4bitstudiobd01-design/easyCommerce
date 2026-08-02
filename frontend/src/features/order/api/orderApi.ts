@@ -1,6 +1,19 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { RootState } from '@/store';
 
+export type OrderStatusType =
+  | 'PENDING'
+  | 'ON_HOLD'
+  | 'CONFIRMED'
+  | 'PROCESSING'
+  | 'SHIPPED'
+  | 'DELIVERED'
+  | 'COMPLETED'
+  | 'CANCELLED'
+  | 'RETURNED'
+  | 'PAYMENT_ON_PROCESS'
+  | 'PAYMENT_FAILED';
+
 export interface OrderItem {
   id: string;
   productId: string;
@@ -22,7 +35,7 @@ export interface PublicOrderTracking {
   deliveryFee: number;
   paymentMethod: string;
   paymentStatus: string;
-  orderStatus: 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+  orderStatus: OrderStatusType;
   createdAt: string;
   items: {
     productId: string;
@@ -53,7 +66,7 @@ export interface Order {
   grandTotal: number;
   paymentMethod: 'COD' | 'BKASH' | 'NAGAD' | 'SSLCOMMERZ';
   paymentStatus: 'UNPAID' | 'PAID' | 'REFUNDED';
-  orderStatus: 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+  orderStatus: OrderStatusType;
   storeSlug: string;
   tenantId: string;
   items: OrderItem[];
@@ -78,7 +91,7 @@ export interface CreateOrderRequest {
 
 export interface UpdateOrderStatusRequest {
   id: string;
-  orderStatus: 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+  orderStatus: OrderStatusType;
 }
 
 export const orderApi = createApi({

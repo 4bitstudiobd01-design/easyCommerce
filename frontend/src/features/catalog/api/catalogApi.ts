@@ -6,6 +6,12 @@ export interface Category {
   name: string;
   slug: string;
   description?: string;
+  parentId?: string;
+  icon?: string;
+  image?: string;
+  isFeatured?: boolean;
+  parentCategory?: Category;
+  subcategories?: Category[];
 }
 
 export interface ProductImage {
@@ -51,6 +57,10 @@ export interface CreateProductRequest {
 export interface CreateCategoryRequest {
   name: string;
   description?: string;
+  parentId?: string;
+  icon?: string;
+  image?: string;
+  isFeatured?: boolean;
 }
 
 export const catalogApi = createApi({

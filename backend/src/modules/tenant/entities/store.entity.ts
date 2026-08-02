@@ -22,6 +22,15 @@ export enum EmailDriverEnum {
   DISABLED = 'DISABLED',
 }
 
+export interface HeroBannerItem {
+  id: string;
+  title: string;
+  subtitle: string;
+  imageUrl: string;
+  ctaText?: string;
+  ctaLink?: string;
+}
+
 @Entity('stores')
 export class StoreEntity {
   @PrimaryGeneratedColumn('uuid')
@@ -47,6 +56,52 @@ export class StoreEntity {
 
   @Column({ type: 'text', nullable: true })
   logo?: string;
+
+  // Branding, Favicon & SEO
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  favicon?: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  metaTitle?: string;
+
+  @Column({ type: 'text', nullable: true })
+  metaDescription?: string;
+
+  // Marketing Pixels & Conversions API (CAPI)
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  facebookPixelId?: string;
+
+  @Column({ type: 'text', nullable: true })
+  facebookCapiToken?: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  facebookTestEventCode?: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  tiktokPixelId?: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  googleTagManagerId?: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  googleAnalyticsId?: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  snapchatPixelId?: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  pinterestTagId?: string;
+
+  // Visual Theme Styling
+  @Column({ type: 'varchar', length: 50, default: '#2563eb' })
+  primaryColor: string;
+
+  @Column({ type: 'varchar', length: 50, default: 'Inter' })
+  fontFamily: string;
+
+  // Dynamic Hero Slider Banners
+  @Column({ type: 'jsonb', nullable: true, default: [] })
+  heroBanners?: HeroBannerItem[];
 
   @Column({ type: 'varchar', length: 10, default: 'BDT' })
   currency: string;
