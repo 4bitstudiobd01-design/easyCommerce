@@ -14,6 +14,9 @@ import { LogisticsModule } from './modules/logistics/logistics.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { SmsModule } from './modules/sms/sms.module';
 import { CouponModule } from './modules/coupon/coupon.module';
+import { StaffModule } from './modules/staff/staff.module';
+import { EmailMarketingModule } from './modules/email-marketing/email-marketing.module';
+import { SeoModule } from './modules/seo/seo.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { APP_FILTER } from '@nestjs/core';
 
@@ -39,6 +42,9 @@ import { APP_FILTER } from '@nestjs/core';
     AdminModule,
     SmsModule,
     CouponModule,
+    StaffModule,
+    EmailMarketingModule,
+    SeoModule,
   ],
   controllers: [],
   providers: [

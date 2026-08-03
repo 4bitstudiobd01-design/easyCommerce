@@ -17,6 +17,11 @@ import { logisticsApi } from '@/features/logistics/api/logisticsApi';
 import { adminApi } from '@/features/admin/api/adminApi';
 import { smsApi } from '@/features/sms/api/smsApi';
 import { couponApi } from '@/features/coupon/api/couponApi';
+import { staffApi } from '@/features/staff/api/staffApi';
+import staffReducer from '@/features/staff/slices/staffSlice';
+import { emailMarketingApi } from '@/features/email-marketing/api/emailMarketingApi';
+import emailMarketingReducer from '@/features/email-marketing/slices/emailMarketingSlice';
+import { seoApi } from '@/features/seo/api/seoApi';
 
 export const store = configureStore({
   reducer: {
@@ -26,6 +31,8 @@ export const store = configureStore({
     inventory: inventoryReducer,
     cart: cartReducer,
     order: orderReducer,
+    staff: staffReducer,
+    emailMarketing: emailMarketingReducer,
     [authApi.reducerPath]: authApi.reducer,
     [tenantApi.reducerPath]: tenantApi.reducer,
     [catalogApi.reducerPath]: catalogApi.reducer,
@@ -38,6 +45,9 @@ export const store = configureStore({
     [adminApi.reducerPath]: adminApi.reducer,
     [smsApi.reducerPath]: smsApi.reducer,
     [couponApi.reducerPath]: couponApi.reducer,
+    [staffApi.reducerPath]: staffApi.reducer,
+    [emailMarketingApi.reducerPath]: emailMarketingApi.reducer,
+    [seoApi.reducerPath]: seoApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -53,6 +63,9 @@ export const store = configureStore({
       adminApi.middleware,
       smsApi.middleware,
       couponApi.middleware,
+      staffApi.middleware,
+      emailMarketingApi.middleware,
+      seoApi.middleware,
     ),
 });
 

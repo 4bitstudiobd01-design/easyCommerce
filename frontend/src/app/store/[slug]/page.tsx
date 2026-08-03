@@ -8,7 +8,14 @@ import { ProductCard } from '@/features/storefront/components/ProductCard';
 import { ProductDetailModal } from '@/features/storefront/components/ProductDetailModal';
 import { CartDrawer } from '@/features/storefront/components/CartDrawer';
 import { StorefrontPixelTracker } from '@/features/storefront/components/StorefrontPixelTracker';
-import { toggleCartDrawer } from '@/features/storefront/slices/cartSlice';
+import { NewsletterSignupWidget } from '@/features/email-marketing/components/NewsletterSignupWidget';
+import { JsonLdScript } from '@/features/seo/components/JsonLdScript';
+import { useGetStoreSeoQuery } from '@/features/seo/api/seoApi';
+import { toggleCartDrawer, addToCart } from '@/features/storefront/slices/cartSlice';
+import { LuxuryFashionTheme } from '@/features/storefront/themes/LuxuryFashionTheme';
+import { TechHubTheme } from '@/features/storefront/themes/TechHubTheme';
+import { OrganicGroceryTheme } from '@/features/storefront/themes/OrganicGroceryTheme';
+import { MinimalDarkTheme } from '@/features/storefront/themes/MinimalDarkTheme';
 import { Product } from '@/features/catalog/api/catalogApi';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store';
@@ -33,6 +40,10 @@ export default function StorefrontPage() {
   const dispatch = useDispatch();
 
   const { data, isLoading, isError } = useGetPublicStoreProductsQuery(slug, {
+    skip: !slug,
+  });
+
+  const { data: storeSeo } = useGetStoreSeoQuery(slug, {
     skip: !slug,
   });
 
@@ -111,6 +122,108 @@ export default function StorefrontPage() {
     return matchesCategory && matchesSearch;
   });
 
+  const handleThemeAddToCart = (product: Product) => {
+    dispatch(addToCart({ product, quantity: 1 }));
+  };
+
+  const activeThemeId = (store as any)?.activeThemeId || 'DEFAULT_MODERN';
+
+  if (activeThemeId === 'LUXURY_FASHION') {
+    return (
+      <>
+        {storeSeo?.jsonLdSchema && <JsonLdScript schema={storeSeo.jsonLdSchema} id="storefront-jsonld" />}
+        <StorefrontPixelTracker
+          facebookPixelId={(store as any).facebookPixelId}
+          tiktokPixelId={(store as any).tiktokPixelId}
+          googleTagManagerId={(store as any).googleTagManagerId}
+        />
+        <CartDrawer />
+        <ProductDetailModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
+        <LuxuryFashionTheme
+          storeName={store.name}
+          slug={store.slug}
+          category={store.category}
+          products={filteredProducts}
+          categories={categories}
+          onSelectProduct={(p) => setSelectedProduct(p)}
+          onAddToCart={handleThemeAddToCart}
+        />
+      </>
+    );
+  }
+
+  if (activeThemeId === 'TECH_HUB') {
+    return (
+      <>
+        {storeSeo?.jsonLdSchema && <JsonLdScript schema={storeSeo.jsonLdSchema} id="storefront-jsonld" />}
+        <StorefrontPixelTracker
+          facebookPixelId={(store as any).facebookPixelId}
+          tiktokPixelId={(store as any).tiktokPixelId}
+          googleTagManagerId={(store as any).googleTagManagerId}
+        />
+        <CartDrawer />
+        <ProductDetailModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
+        <TechHubTheme
+          storeName={store.name}
+          slug={store.slug}
+          category={store.category}
+          products={filteredProducts}
+          categories={categories}
+          onSelectProduct={(p) => setSelectedProduct(p)}
+          onAddToCart={handleThemeAddToCart}
+        />
+      </>
+    );
+  }
+
+  if (activeThemeId === 'ORGANIC_GROCERY') {
+    return (
+      <>
+        {storeSeo?.jsonLdSchema && <JsonLdScript schema={storeSeo.jsonLdSchema} id="storefront-jsonld" />}
+        <StorefrontPixelTracker
+          facebookPixelId={(store as any).facebookPixelId}
+          tiktokPixelId={(store as any).tiktokPixelId}
+          googleTagManagerId={(store as any).googleTagManagerId}
+        />
+        <CartDrawer />
+        <ProductDetailModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
+        <OrganicGroceryTheme
+          storeName={store.name}
+          slug={store.slug}
+          category={store.category}
+          products={filteredProducts}
+          categories={categories}
+          onSelectProduct={(p) => setSelectedProduct(p)}
+          onAddToCart={handleThemeAddToCart}
+        />
+      </>
+    );
+  }
+
+  if (activeThemeId === 'MINIMAL_DARK') {
+    return (
+      <>
+        {storeSeo?.jsonLdSchema && <JsonLdScript schema={storeSeo.jsonLdSchema} id="storefront-jsonld" />}
+        <StorefrontPixelTracker
+          facebookPixelId={(store as any).facebookPixelId}
+          tiktokPixelId={(store as any).tiktokPixelId}
+          googleTagManagerId={(store as any).googleTagManagerId}
+        />
+        <CartDrawer />
+        <ProductDetailModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
+        <MinimalDarkTheme
+          storeName={store.name}
+          slug={store.slug}
+          category={store.category}
+          products={filteredProducts}
+          categories={categories}
+          onSelectProduct={(p) => setSelectedProduct(p)}
+          onAddToCart={handleThemeAddToCart}
+        />
+      </>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex flex-col selection:bg-blue-600 selection:text-white">
       {/* 1. TOP ANNOUNCEMENT MARQUEE BAR */}
@@ -131,6 +244,11 @@ export default function StorefrontPage() {
           </span>
         </div>
       </div>
+
+      {/* GOOGLE SEARCH JSON-LD STRUCTURED DATA */}
+      {storeSeo?.jsonLdSchema && (
+        <JsonLdScript schema={storeSeo.jsonLdSchema} id="storefront-jsonld" />
+      )}
 
       {/* DYNAMIC PIXEL & TRACKING INJECTOR */}
       <StorefrontPixelTracker
@@ -348,6 +466,11 @@ export default function StorefrontPage() {
           </button>
         </div>
       )}
+
+      {/* NEWSLETTER SIGNUP WIDGET */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <NewsletterSignupWidget storeSlug={slug} storeName={store.name} />
+      </div>
 
       {/* 8. PROFESSIONAL E-COMMERCE FOOTER */}
       <footer className="mt-auto bg-slate-900 text-slate-400 text-xs border-t border-slate-800 py-12">

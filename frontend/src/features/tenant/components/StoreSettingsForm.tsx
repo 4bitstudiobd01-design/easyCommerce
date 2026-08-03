@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Store, useUpdateStoreMutation } from '../api/tenantApi';
 import { ThemeCustomizerApp } from './ThemeCustomizerApp';
+import { ThemeMarketplaceApp } from './ThemeMarketplaceApp';
 import {
   Store as StoreIcon,
   Link2,
@@ -25,6 +26,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { OgShareCardPreviewModal } from '@/features/seo/components/OgShareCardPreviewModal';
 
 interface StoreSettingsFormProps {
   store: Store | null;
@@ -46,6 +48,7 @@ type ManageShopCardType =
 
 export function StoreSettingsForm({ store, initialActiveCard }: StoreSettingsFormProps) {
   const [activeCard, setActiveCard] = useState<ManageShopCardType | null>(initialActiveCard || null);
+  const [isOgModalOpen, setIsOgModalOpen] = useState(false);
 
   useEffect(() => {
     if (initialActiveCard !== undefined) {
@@ -679,15 +682,37 @@ export function StoreSettingsForm({ store, initialActiveCard }: StoreSettingsFor
           {/* CARD DETAIL 6: SEO & MARKETING PIXEL INTEGRATIONS */}
           {activeCard === 'seo' && (
             <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-6">
-              <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
-                <div className="p-2.5 bg-purple-50 text-purple-600 rounded-2xl border border-purple-100">
-                  <Globe className="w-5 h-5" />
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-purple-50 text-purple-600 rounded-2xl border border-purple-100">
+                    <Globe className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-base text-slate-900">SEO, OpenGraph Cards &amp; Marketing Pixels</h3>
+                    <p className="text-xs text-slate-400">Track customer conversion events, retargeting &amp; Google Search rich snippets</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-extrabold text-base text-slate-900">SEO, Meta Pixel & TikTok Marketing</h3>
-                  <p className="text-xs text-slate-400">Track customer conversion events, retargeting & analytics</p>
-                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsOgModalOpen(true)}
+                  className="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-purple-600/20 shrink-0"
+                >
+                  <Share2 className="w-4 h-4" />
+                  <span>Preview Social OpenGraph Card</span>
+                </button>
               </div>
+
+              {/* Social OpenGraph Preview Modal */}
+              <OgShareCardPreviewModal
+                isOpen={isOgModalOpen}
+                onClose={() => setIsOgModalOpen(false)}
+                title={store?.metaTitle || `${name || store?.name} | Official Storefront`}
+                description={store?.metaDescription || `Shop authentic products and fast delivery from ${name || store?.name}.`}
+                image={store?.logo || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800'}
+                url={`https://${store?.slug || 'store'}.easycommerce.app`}
+                storeName={name || store?.name}
+              />
 
               {/* Meta / Facebook Pixel Box */}
               <div className="p-5 bg-blue-50/50 rounded-2xl border border-blue-100 space-y-4">
@@ -868,6 +893,17 @@ export function StoreSettingsForm({ store, initialActiveCard }: StoreSettingsFor
                   <Save className="w-4 h-4" />
                   <span>Save Marketing & Pixel Settings</span>
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* CARD DETAIL: THEME MARKETPLACE */}
+          {activeCard === 'theme' && (
+            <div className="space-y-6">
+              <ThemeMarketplaceApp store={store} />
+              <div className="pt-8 border-t border-slate-200">
+                <h3 className="font-extrabold text-lg text-slate-900 mb-4">Fine-Tune Active Theme Branding &amp; Banners</h3>
+                <ThemeCustomizerApp store={store} />
               </div>
             </div>
           )}

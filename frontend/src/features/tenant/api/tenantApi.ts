@@ -13,6 +13,8 @@ export interface Store {
   favicon?: string;
   metaTitle?: string;
   metaDescription?: string;
+  activeThemeId?: string;
+  unlockedThemeIds?: string[];
   primaryColor?: string;
   fontFamily?: string;
   heroBanners?: any[];
@@ -30,6 +32,26 @@ export interface Store {
   tenantId: string;
 }
 
+export interface StoreThemeItem {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  price: number;
+  isFree: boolean;
+  previewImage: string;
+  features: string[];
+  primaryColorDefault: string;
+  isUnlocked: boolean;
+  isActive: boolean;
+}
+
+export interface ThemeCatalogResponse {
+  activeThemeId: string;
+  unlockedThemeIds: string[];
+  themes: StoreThemeItem[];
+}
+
 export interface CreateStoreRequest {
   name: string;
   slug: string;
@@ -45,6 +67,13 @@ export interface UpdateStoreRequest {
   address?: string;
   domain?: string;
   currency?: string;
+  logo?: string;
+  favicon?: string;
+  metaTitle?: string;
+  metaDescription?: string;
+  primaryColor?: string;
+  fontFamily?: string;
+  heroBanners?: any[];
   facebookPixelId?: string;
   facebookCapiToken?: string;
   facebookTestEventCode?: string;
@@ -72,7 +101,7 @@ export const tenantApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ['Store'],
+  tagTypes: ['Store', 'Themes'],
   endpoints: (builder) => ({
     getMyStores: builder.query<Store[], void>({
       query: () => '/my-stores',
@@ -87,6 +116,7 @@ export const tenantApi = createApi({
     }),
     getStoreBySlug: builder.query<Store, string>({
       query: (slug) => `/slug/${slug}`,
+      providesTags: ['Store'],
       transformResponse: (response: { data: Store }) => response.data,
     }),
     createStore: builder.mutation<Store, CreateStoreRequest>({
@@ -107,6 +137,56 @@ export const tenantApi = createApi({
       invalidatesTags: ['Store'],
       transformResponse: (response: { data: Store }) => response.data,
     }),
+    getAvailableThemes: builder.query<ThemeCatalogResponse, void>({
+      query: () => {
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/stores', '') || 'http://localhost:5001/api/v1';
+        return {
+          url: `${baseUrl}/tenant/themes`,
+        };
+      },
+      providesTags: ['Themes'],
+      transformResponse: (response: { data: ThemeCatalogResponse } | ThemeCatalogResponse) =>
+        (response as any).data || response,
+    }),
+    initiateThemePayment: builder.mutation<
+      { isFree: boolean; gatewayUrl?: string; message?: string; tranId?: string },
+      string
+    >({
+      query: (themeId) => {
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/stores', '') || 'http://localhost:5001/api/v1';
+        return {
+          url: `${baseUrl}/tenant/themes/${themeId}/initiate-payment`,
+          method: 'POST',
+        };
+      },
+      invalidatesTags: ['Store', 'Themes'],
+      transformResponse: (response: { data: any } | any) => (response as any).data || response,
+    }),
+    purchaseTheme: builder.mutation<
+      { success: boolean; message: string; activeThemeId: string; unlockedThemeIds: string[] },
+      string
+    >({
+      query: (themeId) => {
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/stores', '') || 'http://localhost:5001/api/v1';
+        return {
+          url: `${baseUrl}/tenant/themes/${themeId}/purchase`,
+          method: 'POST',
+        };
+      },
+      invalidatesTags: ['Store', 'Themes'],
+      transformResponse: (response: { data: any } | any) => (response as any).data || response,
+    }),
+    activateTheme: builder.mutation<{ success: boolean; message: string; activeThemeId: string }, string>({
+      query: (themeId) => {
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/stores', '') || 'http://localhost:5001/api/v1';
+        return {
+          url: `${baseUrl}/tenant/themes/${themeId}/activate`,
+          method: 'POST',
+        };
+      },
+      invalidatesTags: ['Store', 'Themes'],
+      transformResponse: (response: { data: any } | any) => (response as any).data || response,
+    }),
   }),
 });
 
@@ -116,4 +196,8 @@ export const {
   useGetStoreBySlugQuery,
   useCreateStoreMutation,
   useUpdateStoreMutation,
+  useGetAvailableThemesQuery,
+  useInitiateThemePaymentMutation,
+  usePurchaseThemeMutation,
+  useActivateThemeMutation,
 } = tenantApi;

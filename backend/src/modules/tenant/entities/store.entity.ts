@@ -92,7 +92,13 @@ export class StoreEntity {
   @Column({ type: 'varchar', length: 255, nullable: true })
   pinterestTagId?: string;
 
-  // Visual Theme Styling
+  // Visual Theme Styling & Theme System
+  @Column({ type: 'varchar', length: 100, default: 'DEFAULT_MODERN' })
+  activeThemeId: string;
+
+  @Column({ type: 'jsonb', default: ['DEFAULT_MODERN'] })
+  unlockedThemeIds: string[];
+
   @Column({ type: 'varchar', length: 50, default: '#2563eb' })
   primaryColor: string;
 

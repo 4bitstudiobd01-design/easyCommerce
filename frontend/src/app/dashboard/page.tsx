@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store';
 import { logout } from '@/features/auth/slices/authSlice';
@@ -29,6 +30,9 @@ import { ReviewManagementTable } from '@/features/catalog/components/ReviewManag
 import { AbandonedCartsTable } from '@/features/order/components/AbandonedCartsTable';
 import { NetProfitAnalyticsCard } from '@/features/analytics/components/NetProfitAnalyticsCard';
 import { WarehouseTransferModal } from '@/features/inventory/components/WarehouseTransferModal';
+import { StaffManagementTable } from '@/features/staff/components/StaffManagementTable';
+import { CampaignManagementTable } from '@/features/email-marketing/components/CampaignManagementTable';
+import { ThemeMarketplaceApp } from '@/features/tenant/components/ThemeMarketplaceApp';
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -71,7 +75,7 @@ export default function DashboardPage() {
   const dispatch = useDispatch();
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'categories' | 'orders' | 'abandoned-carts' | 'logistics' | 'inventory' | 'warehouse-transfers' | 'net-profit' | 'sms' | 'coupons' | 'reviews' | 'customers' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'categories' | 'orders' | 'abandoned-carts' | 'logistics' | 'inventory' | 'warehouse-transfers' | 'net-profit' | 'sms' | 'coupons' | 'reviews' | 'customers' | 'staff' | 'email-marketing' | 'themes' | 'settings'>('overview');
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isCreateStoreModalOpen, setIsCreateStoreModalOpen] = useState(false);
   const [isAdjustStockModalOpen, setIsAdjustStockModalOpen] = useState(false);
@@ -97,6 +101,28 @@ export default function DashboardPage() {
     isSuccess: isStoreSuccess,
     refetch: refetchStore,
   } = useGetMyStoreQuery();
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const themePayment = params.get('theme_payment');
+      if (themePayment === 'success') {
+        setActiveTab('themes');
+        if (store) {
+          try {
+            refetchStore();
+          } catch (e) {}
+        }
+        toast.success(`🎉 Payment Successful via SSLCommerz! Premium Theme unlocked and activated.`);
+        // Clean URL query
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } else if (themePayment === 'failed' || themePayment === 'cancelled') {
+        setActiveTab('themes');
+        toast.error(`Payment ${themePayment}. Theme unlock was not completed.`);
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+  }, [store]);
 
   const { data: products = [] } = useGetProductsQuery(undefined, {
     skip: !store,
@@ -381,6 +407,42 @@ export default function DashboardPage() {
           >
             <Users className="w-4 h-4" />
             <span>Customers</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('staff')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
+              activeTab === 'staff'
+                ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/20'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4 text-blue-400" />
+            <span>Staff &amp; Roles</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('email-marketing')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
+              activeTab === 'email-marketing'
+                ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/20'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <MessageSquare className="w-4 h-4 text-blue-400" />
+            <span>Email Marketing</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('themes')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
+              activeTab === 'themes'
+                ? 'bg-amber-600 text-white font-bold shadow-md shadow-amber-600/20'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-amber-400" />
+            <span>Theme Marketplace</span>
           </button>
 
           <div className="px-3 py-2 pt-6 text-[10px] font-bold uppercase tracking-wider text-slate-500">
@@ -721,7 +783,16 @@ export default function DashboardPage() {
           {/* TAB 11: NET PROFIT ANALYTICS */}
           {activeTab === 'net-profit' && <NetProfitAnalyticsCard />}
 
-          {/* TAB 12: STORE SETTINGS */}
+          {/* TAB 12: MERCHANT STAFF ROLES & PERMISSIONS */}
+          {activeTab === 'staff' && <StaffManagementTable />}
+
+          {/* TAB 13: AUTOMATED EMAIL MARKETING */}
+          {activeTab === 'email-marketing' && <CampaignManagementTable />}
+
+          {/* TAB 14: THEME MARKETPLACE */}
+          {activeTab === 'themes' && <ThemeMarketplaceApp store={store} />}
+
+          {/* TAB 14: STORE SETTINGS */}
           {activeTab === 'settings' && (
             <div className="space-y-6">
               <div>
