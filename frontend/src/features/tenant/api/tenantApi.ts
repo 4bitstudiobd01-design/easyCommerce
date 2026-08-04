@@ -28,6 +28,20 @@ export interface Store {
   steadfastSecretKey?: string;
   pathaoClientId?: string;
   pathaoClientSecret?: string;
+  
+  // Policies
+  privacyPolicy?: string;
+  termsOfService?: string;
+  refundPolicy?: string;
+  
+  // Blocklist
+  blockedIps?: string[];
+  blockedEmails?: string[];
+  
+  // Limits
+  maxCodOrdersPerIp?: number;
+  maxOrdersPerDay?: number;
+  
   ownerId: string;
   tenantId: string;
 }
@@ -83,6 +97,19 @@ export interface UpdateStoreRequest {
   steadfastSecretKey?: string;
   pathaoClientId?: string;
   pathaoClientSecret?: string;
+  
+  // Policies
+  privacyPolicy?: string;
+  termsOfService?: string;
+  refundPolicy?: string;
+  
+  // Blocklist
+  blockedIps?: string[];
+  blockedEmails?: string[];
+  
+  // Limits
+  maxCodOrdersPerIp?: number;
+  maxOrdersPerDay?: number;
 }
 
 export const tenantApi = createApi({

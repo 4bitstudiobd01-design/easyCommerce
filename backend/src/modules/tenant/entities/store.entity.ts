@@ -166,6 +166,30 @@ export class StoreEntity {
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
 
+  // Shop Policies
+  @Column({ type: 'text', nullable: true })
+  privacyPolicy?: string;
+
+  @Column({ type: 'text', nullable: true })
+  termsOfService?: string;
+
+  @Column({ type: 'text', nullable: true })
+  refundPolicy?: string;
+
+  // Blocklist
+  @Column({ type: 'jsonb', nullable: true, default: [] })
+  blockedIps?: string[];
+
+  @Column({ type: 'jsonb', nullable: true, default: [] })
+  blockedEmails?: string[];
+
+  // Limits
+  @Column({ type: 'int', nullable: true, default: 0 })
+  maxCodOrdersPerIp?: number;
+
+  @Column({ type: 'int', nullable: true, default: 0 })
+  maxOrdersPerDay?: number;
+
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 

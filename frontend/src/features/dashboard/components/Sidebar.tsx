@@ -29,7 +29,12 @@ import {
 import { StoreSwitcherDropdown } from '@/features/tenant/components/StoreSwitcherDropdown';
 import { useState } from 'react';
 
-export const Sidebar = () => {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export const Sidebar = ({ isOpen = false, onClose }: SidebarProps) => {
   const pathname = usePathname();
   const { user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
@@ -57,7 +62,20 @@ export const Sidebar = () => {
 
   return (
     <>
-      <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 shrink-0 sticky top-0 h-screen">
+      {/* Mobile Overlay */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 md:hidden"
+          onClick={onClose}
+        />
+      )}
+
+      {/* Sidebar Container */}
+      <aside
+        className={`fixed md:sticky top-0 left-0 z-50 h-screen w-64 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 shrink-0 transition-transform duration-300 ease-in-out ${
+          isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        }`}
+      >
         {/* Brand Header */}
         <div className="p-5 border-b border-slate-800 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">

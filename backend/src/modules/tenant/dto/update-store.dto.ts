@@ -169,4 +169,44 @@ export class UpdateStoreDto {
   @IsOptional()
   @IsString()
   fromEmail?: string;
+
+  // Shop Policies
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  privacyPolicy?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  termsOfService?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  refundPolicy?: string;
+
+  // Blocklist
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  blockedIps?: string[];
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  blockedEmails?: string[];
+
+  // Limits
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  maxCodOrdersPerIp?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  maxOrdersPerDay?: number;
 }

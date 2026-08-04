@@ -41,6 +41,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [user, isStoreSuccess, isStoreLoading, isStoreFetching, store, pathname, router]);
 
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   // Prevent hydration mismatch and hide content until authenticated
   if (!isMounted || !isAuthenticated) return null;
 
@@ -49,16 +51,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <Toaster position="top-right" richColors />
       
       {/* 1. Left Sidebar Navigation */}
-      <Sidebar />
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
       {/* 2. Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         
         {/* Top Sticky Header */}
-        <DashboardHeader />
+        <DashboardHeader onMenuClick={() => setIsSidebarOpen(true)} />
 
         {/* Dashboard Body Container */}
-        <main className="flex-1 p-8 space-y-8 max-w-7xl mx-auto w-full">
+        <main className="flex-1 p-4 md:p-8 space-y-8 max-w-7xl mx-auto w-full">
           {children}
         </main>
       </div>

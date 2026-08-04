@@ -2,23 +2,36 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Search, ExternalLink } from 'lucide-react';
+import { Search, ExternalLink, Menu } from 'lucide-react';
 import { useGetMyStoreQuery } from '@/features/tenant/api/tenantApi';
 import { NotificationBellDrawer } from '@/features/sms/components/NotificationBellDrawer';
 
-export const DashboardHeader = () => {
+interface DashboardHeaderProps {
+  onMenuClick?: () => void;
+}
+
+export const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
   const { data: store } = useGetMyStoreQuery();
 
   return (
     <header className="h-16 bg-white border-b border-slate-200 px-8 flex items-center justify-between sticky top-0 z-40">
-      {/* Search Input */}
-      <div className="relative w-80">
-        <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+      {/* Search Input & Hamburger */}
+      <div className="flex items-center gap-4 w-full max-w-sm">
+        <button
+          onClick={onMenuClick}
+          className="md:hidden p-2 text-slate-500 hover:text-slate-900 bg-slate-100 rounded-lg transition-colors"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+
+        <div className="relative w-full">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
         <input
           type="text"
           placeholder="Search products, orders, customers..."
           className="w-full pl-10 pr-4 py-2 bg-slate-100/80 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all"
         />
+        </div>
       </div>
 
       {/* Header Action Items */}
