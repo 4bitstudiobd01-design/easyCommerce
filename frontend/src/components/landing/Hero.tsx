@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Store, ArrowRight, ShieldCheck, Sparkles, CheckCircle2, Zap, PackageCheck } from 'lucide-react';
 
-export function Hero() {
+export function Hero({ title, subtitle }: { title?: string, subtitle?: string }) {
   return (
     <section className="relative py-20 px-6 bg-slate-50 overflow-hidden">
       <div className="max-w-5xl mx-auto text-center space-y-8 relative z-10">
@@ -12,14 +12,12 @@ export function Hero() {
         </div>
 
         {/* Hero Title */}
-        <h1 className="text-5xl md:text-7xl font-extrabold text-slate-900 tracking-tight leading-[1.1]">
-          Sell Anything Online <br />
-          <span className="text-blue-600">Physical, Digital or Resell</span>
+        <h1 className="text-5xl md:text-7xl font-extrabold text-slate-900 tracking-tight leading-[1.1]" dangerouslySetInnerHTML={{ __html: title || 'Sell Anything Online <br /><span class="text-blue-600">Physical, Digital or Resell</span>' }}>
         </h1>
 
         {/* Hero Subtitle */}
         <p className="text-lg md:text-xl text-slate-600 max-w-3xl mx-auto font-normal leading-relaxed">
-          Whether you sell physical products, digital downloads, e-books, or supplier resell items — EasyCommerce empowers any Bangladeshi merchant to launch and scale effortlessly.
+          {subtitle || 'Whether you sell physical products, digital downloads, e-books, or supplier resell items — EasyCommerce empowers any Bangladeshi merchant to launch and scale effortlessly.'}
         </p>
 
         {/* CTAs */}

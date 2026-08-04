@@ -13,14 +13,34 @@ import { Testimonials } from '@/components/landing/Testimonials';
 import { FaqSection } from '@/components/landing/FaqSection';
 import { Footer } from '@/components/landing/Footer';
 
-export default function Home() {
+export const revalidate = 60; // Revalidate cache every 60 seconds
+
+async function getPlatformConfig() {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1'}/admin/platform-config`, {
+      next: { revalidate: 60 }
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch (e) {
+    return null;
+  }
+}
+
+export default async function Home() {
+  const cmsConfig = await getPlatformConfig();
+  const heroContent = cmsConfig?.heroContent || {};
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans antialiased text-slate-900 selection:bg-blue-600 selection:text-white">
       {/* 1. Navbar */}
       <Navbar />
 
       {/* 2. Hero Section */}
-      <Hero />
+      <Hero 
+        title={heroContent.title} 
+        subtitle={heroContent.subtitle} 
+      />
 
       {/* 3. Infinite Auto-Scrolling Brand Ticker */}
       <BrandTicker />

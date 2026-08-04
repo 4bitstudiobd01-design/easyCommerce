@@ -9,12 +9,14 @@ import { GetPlatformStatsService } from './services/get-platform-stats.service';
 import { ListAllStoresService } from './services/list-all-stores.service';
 import { ToggleStoreStatusService } from './services/toggle-store-status.service';
 import { ListAllSystemOrdersService } from './services/list-all-system-orders.service';
+import { PlatformConfigEntity } from './entities/platform-config.entity';
+import { PlatformConfigService } from './services/platform-config.service';
 import { AdminController } from './admin.controller';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([StoreEntity, OrderEntity, UserEntity]),
+    TypeOrmModule.forFeature([StoreEntity, OrderEntity, UserEntity, PlatformConfigEntity]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -30,6 +32,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     ListAllStoresService,
     ToggleStoreStatusService,
     ListAllSystemOrdersService,
+    PlatformConfigService,
     JwtAuthGuard,
   ],
   exports: [

@@ -45,6 +45,22 @@ export interface AdminSystemOrderDetail {
   createdAt: string;
 }
 
+export interface PlatformConfig {
+  id: string;
+  configKey: string;
+  heroContent: {
+    title?: string;
+    subtitle?: string;
+    ctaPrimaryText?: string;
+    ctaPrimaryLink?: string;
+    ctaSecondaryText?: string;
+    ctaSecondaryLink?: string;
+  };
+  pricingPlans: any[];
+  testimonials: any[];
+  faqs: any[];
+}
+
 export const adminApi = createApi({
   reducerPath: 'adminApi',
   baseQuery: fetchBaseQuery({
@@ -57,7 +73,7 @@ export const adminApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ['AdminStats', 'AdminStores', 'AdminOrders'],
+  tagTypes: ['AdminStats', 'AdminStores', 'AdminOrders', 'PlatformConfig'],
   endpoints: (builder) => ({
     getPlatformStats: builder.query<PlatformStatsOverview, void>({
       query: () => '/stats',
@@ -82,6 +98,18 @@ export const adminApi = createApi({
       invalidatesTags: ['AdminStats', 'AdminStores'],
       transformResponse: (response: { data: AdminStoreDetail }) => response.data,
     }),
+    getPlatformConfig: builder.query<PlatformConfig, void>({
+      query: () => '/platform-config',
+      providesTags: ['PlatformConfig'],
+    }),
+    updatePlatformConfig: builder.mutation<PlatformConfig, Partial<PlatformConfig>>({
+      query: (body) => ({
+        url: '/platform-config',
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: ['PlatformConfig'],
+    }),
   }),
 });
 
@@ -90,4 +118,6 @@ export const {
   useGetAllStoresQuery,
   useGetAllSystemOrdersQuery,
   useToggleStoreStatusMutation,
+  useGetPlatformConfigQuery,
+  useUpdatePlatformConfigMutation,
 } = adminApi;

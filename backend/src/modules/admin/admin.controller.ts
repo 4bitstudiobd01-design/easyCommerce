@@ -11,6 +11,9 @@ import { GetPlatformStatsService } from './services/get-platform-stats.service';
 import { ListAllStoresService } from './services/list-all-stores.service';
 import { ToggleStoreStatusService } from './services/toggle-store-status.service';
 import { ListAllSystemOrdersService } from './services/list-all-system-orders.service';
+import { PlatformConfigService } from './services/platform-config.service';
+import { UpdatePlatformConfigDto } from './dto/update-platform-config.dto';
+import { Body, Put } from '@nestjs/common';
 
 @ApiTags('Super Admin Control Panel')
 @Controller('admin')
@@ -20,6 +23,7 @@ export class AdminController {
     private readonly listAllStoresService: ListAllStoresService,
     private readonly toggleStoreStatusService: ToggleStoreStatusService,
     private readonly listAllSystemOrdersService: ListAllSystemOrdersService,
+    private readonly platformConfigService: PlatformConfigService,
   ) {}
 
   @Get('stats')
@@ -56,5 +60,21 @@ export class AdminController {
   @ApiResponse({ status: 200, description: 'Store status updated' })
   async toggleStoreStatus(@Param('id') storeId: string) {
     return this.toggleStoreStatusService.execute(storeId);
+  }
+
+  @Get('platform-config')
+  @ApiOperation({ summary: 'Get global CMS settings for the landing page (Public)' })
+  @ApiResponse({ status: 200, description: 'Platform CMS data' })
+  async getPlatformConfig() {
+    return this.platformConfigService.getConfig();
+  }
+
+  @Put('platform-config')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update global CMS settings (Super Admin Only)' })
+  @ApiResponse({ status: 200, description: 'Platform CMS data updated' })
+  async updatePlatformConfig(@Body() dto: UpdatePlatformConfigDto) {
+    return this.platformConfigService.updateConfig(dto);
   }
 }

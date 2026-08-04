@@ -33,15 +33,17 @@ import {
   RefreshCw,
   TrendingUp,
   ArrowUpRight,
+  Globe,
 } from 'lucide-react';
 import { TableRowSkeleton } from '@/components/ui/Skeleton';
+import { CmsManager } from '@/components/admin/CmsManager';
 
 export default function SuperAdminPage() {
   const { user, token, isAuthenticated } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'stores' | 'orders' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'stores' | 'orders' | 'settings' | 'cms'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
 
   // 1. Mandatory Auth Protection Check
@@ -180,6 +182,18 @@ export default function SuperAdminPage() {
           >
             <Database className="w-4 h-4" />
             <span>System Migrations & DB</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('cms')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
+              activeTab === 'cms'
+                ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/20'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <Globe className="w-4 h-4" />
+            <span>Landing Page CMS</span>
           </button>
         </nav>
 
@@ -687,6 +701,10 @@ export default function SuperAdminPage() {
                 </div>
               </div>
             </div>
+          )}
+          {/* TAB 5: CMS MANAGER */}
+          {activeTab === 'cms' && (
+            <CmsManager />
           )}
         </main>
       </div>
