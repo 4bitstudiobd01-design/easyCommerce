@@ -3,15 +3,24 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Sidebar } from '@/features/dashboard/components/Sidebar';
+import { useGetMyStoreQuery } from '@/features/tenant/api/tenantApi';
 import { DashboardHeader } from '@/features/dashboard/components/DashboardHeader';
 import { Toaster } from 'sonner';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { token, isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const { user, token, isAuthenticated } = useSelector((state: RootState) => state.auth);
   const router = useRouter();
+  const pathname = usePathname();
   const [isMounted, setIsMounted] = useState(false);
+
+  const {
+    data: store,
+    isLoading: isStoreLoading,
+    isFetching: isStoreFetching,
+    isSuccess: isStoreSuccess,
+  } = useGetMyStoreQuery(undefined, { skip: !isAuthenticated });
 
   useEffect(() => {
     setIsMounted(true);
@@ -22,6 +31,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       router.push('/login');
     }
   }, [token, isAuthenticated, router]);
+
+  // Onboarding logic: if user has no store, force them to create-store page
+  useEffect(() => {
+    if (user?.role !== 'SUPER_ADMIN' && isStoreSuccess && !isStoreLoading && !isStoreFetching && !store) {
+      if (pathname !== '/dashboard/create-store') {
+        router.push('/dashboard/create-store');
+      }
+    }
+  }, [user, isStoreSuccess, isStoreLoading, isStoreFetching, store, pathname, router]);
 
   // Prevent hydration mismatch and hide content until authenticated
   if (!isMounted || !isAuthenticated) return null;

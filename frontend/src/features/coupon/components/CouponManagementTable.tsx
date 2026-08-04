@@ -2,17 +2,16 @@
 
 import React, { useState } from 'react';
 import { useGetMerchantCouponsQuery } from '../api/couponApi';
-import { CreateCouponModal } from './CreateCouponModal';
 import { Tag, Plus, CheckCircle2, Clock, Percent, DollarSign, RefreshCw, AlertTriangle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { TableRowSkeleton } from '@/components/ui/Skeleton';
 
 export function CouponManagementTable() {
   const { data: coupons = [], isLoading, isError, refetch } = useGetMerchantCouponsQuery();
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const router = useRouter();
 
   return (
     <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden space-y-0">
-      <CreateCouponModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
 
       {/* Header */}
       <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -38,7 +37,7 @@ export function CouponManagementTable() {
           </button>
 
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => router.push('/dashboard/coupons/create')}
             className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-600/20 flex items-center gap-2 transition-all active:scale-95"
           >
             <Plus className="w-4 h-4" />

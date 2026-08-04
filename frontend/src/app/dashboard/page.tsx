@@ -7,7 +7,6 @@ import { RootState } from '@/store';
 import { useGetMyStoreQuery } from '@/features/tenant/api/tenantApi';
 import { useGetProductsQuery } from '@/features/catalog/api/catalogApi';
 import { useGetMerchantOrdersQuery } from '@/features/order/api/orderApi';
-import { CreateProductModal } from '@/features/catalog/components/CreateProductModal';
 import { ProductListTable } from '@/features/catalog/components/ProductListTable';
 import { RevenueChart } from '@/features/analytics/components/RevenueChart';
 import { TopProductsCard } from '@/features/analytics/components/TopProductsCard';
@@ -17,8 +16,6 @@ import { useRouter } from 'next/navigation';
 export default function DashboardOverviewPage() {
   const { user } = useSelector((state: RootState) => state.auth);
   const router = useRouter();
-  
-  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
 
   const {
     data: store,
@@ -53,13 +50,7 @@ export default function DashboardOverviewPage() {
   }, [store, router, refetchStore]);
 
   return (
-    <>
-      {/* Add Product Modal */}
-      <CreateProductModal
-        isOpen={isProductModalOpen}
-        onClose={() => setIsProductModalOpen(false)}
-      />
-
+    <div className="space-y-6">
       {/* Welcome Banner */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white p-8 border border-slate-800 shadow-xl">
         <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-600/30 via-transparent to-transparent pointer-events-none"></div>
@@ -80,7 +71,7 @@ export default function DashboardOverviewPage() {
 
           <div className="flex items-center gap-3 shrink-0">
             <button
-              onClick={() => setIsProductModalOpen(true)}
+              onClick={() => router.push('/dashboard/products/create')}
               className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-600/30 flex items-center gap-2 transition-all active:scale-95"
             >
               <Plus className="w-4 h-4" />
@@ -165,8 +156,8 @@ export default function DashboardOverviewPage() {
 
       {/* Product List Table Section */}
       <div className="space-y-4">
-        <ProductListTable onAddProductClick={() => setIsProductModalOpen(true)} />
+        <ProductListTable onAddProductClick={() => router.push('/dashboard/products/create')} />
       </div>
-    </>
+    </div>
   );
 }

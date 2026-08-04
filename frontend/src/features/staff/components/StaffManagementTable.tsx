@@ -6,8 +6,6 @@ import {
   useDeleteStaffMutation,
   StaffMember,
 } from '../api/staffApi';
-import { InviteStaffModal } from './InviteStaffModal';
-import { EditStaffPermissionsModal } from './EditStaffPermissionsModal';
 import {
   UserPlus,
   Users,
@@ -25,11 +23,11 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { TableRowSkeleton } from '@/components/ui/Skeleton';
+import { useRouter } from 'next/navigation';
 
 export const StaffManagementTable: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
+  const router = useRouter();
   const [deletingStaffId, setDeletingStaffId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -138,13 +136,13 @@ export const StaffManagementTable: React.FC = () => {
           </div>
           <div>
             <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-              Merchant Staff Roles & Permissions (টিম ও পারমিশন)
+              Store Team & RBAC
               <span className="px-2.5 py-0.5 bg-blue-50 text-blue-700 text-xs font-extrabold rounded-full border border-blue-200">
                 {staffMembers.length} Staff
               </span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Invite team members, assign store manager or custom role permissions, and control access.
+              Manage your staff members, roles, and granular permissions
             </p>
           </div>
         </div>
@@ -159,7 +157,7 @@ export const StaffManagementTable: React.FC = () => {
           </button>
 
           <button
-            onClick={() => setIsInviteModalOpen(true)}
+            onClick={() => router.push('/dashboard/staff/invite')}
             className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition flex items-center gap-2 shadow-lg shadow-blue-600/20"
           >
             <UserPlus className="w-4 h-4" />
@@ -280,9 +278,9 @@ export const StaffManagementTable: React.FC = () => {
                         )}
 
                         <button
-                          onClick={() => setEditingStaff(staff)}
-                          className="p-2 rounded-xl text-slate-600 hover:bg-slate-100 transition"
-                          title="Edit Permissions"
+                          onClick={() => router.push(`/dashboard/staff/${staff.id}/edit`)}
+                          className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                          title="Edit permissions"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
@@ -336,17 +334,6 @@ export const StaffManagementTable: React.FC = () => {
         </div>
       )}
 
-      {/* Modals */}
-      <InviteStaffModal
-        isOpen={isInviteModalOpen}
-        onClose={() => setIsInviteModalOpen(false)}
-      />
-
-      <EditStaffPermissionsModal
-        isOpen={Boolean(editingStaff)}
-        staff={editingStaff}
-        onClose={() => setEditingStaff(null)}
-      />
     </div>
   );
 };

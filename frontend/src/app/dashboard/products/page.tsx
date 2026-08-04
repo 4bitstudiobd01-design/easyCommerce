@@ -3,22 +3,17 @@
 import React, { useState } from 'react';
 import { useGetMyStoreQuery } from '@/features/tenant/api/tenantApi';
 import { useGetCategoriesQuery } from '@/features/catalog/api/catalogApi';
-import { CreateProductModal } from '@/features/catalog/components/CreateProductModal';
 import { ProductListTable } from '@/features/catalog/components/ProductListTable';
 import { Plus } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function ProductsPage() {
-  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const router = useRouter();
   const { data: store } = useGetMyStoreQuery();
   const { data: categories = [] } = useGetCategoriesQuery(undefined, { skip: !store });
 
   return (
     <div className="space-y-6">
-      <CreateProductModal
-        isOpen={isProductModalOpen}
-        onClose={() => setIsProductModalOpen(false)}
-      />
-
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Products & Catalog Management</h1>
@@ -26,7 +21,7 @@ export default function ProductsPage() {
         </div>
 
         <button
-          onClick={() => setIsProductModalOpen(true)}
+          onClick={() => router.push('/dashboard/products/create')}
           className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-600/30 flex items-center gap-2 transition-all"
         >
           <Plus className="w-4 h-4" />
@@ -46,7 +41,7 @@ export default function ProductsPage() {
         </div>
       )}
 
-      <ProductListTable onAddProductClick={() => setIsProductModalOpen(true)} />
+      <ProductListTable onAddProductClick={() => router.push('/dashboard/products/create')} />
     </div>
   );
 }

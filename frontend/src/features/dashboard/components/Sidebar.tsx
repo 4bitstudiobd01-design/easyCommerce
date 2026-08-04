@@ -27,7 +27,6 @@ import {
   Store as StoreIcon,
 } from 'lucide-react';
 import { StoreSwitcherDropdown } from '@/features/tenant/components/StoreSwitcherDropdown';
-import { CreateStoreModal } from '@/features/tenant/components/CreateStoreModal';
 import { useState } from 'react';
 
 export const Sidebar = () => {
@@ -35,8 +34,6 @@ export const Sidebar = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
   const router = useRouter();
-
-  const [isCreateStoreModalOpen, setIsCreateStoreModalOpen] = useState(false);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -60,10 +57,6 @@ export const Sidebar = () => {
 
   return (
     <>
-      <CreateStoreModal
-        isOpen={isCreateStoreModalOpen}
-        onSuccess={() => setIsCreateStoreModalOpen(false)}
-      />
       <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 shrink-0 sticky top-0 h-screen">
         {/* Brand Header */}
         <div className="p-5 border-b border-slate-800 flex items-center justify-between">
@@ -86,7 +79,7 @@ export const Sidebar = () => {
         <nav className="flex-1 overflow-y-auto p-4 space-y-1 text-xs font-semibold [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-700/50 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-slate-600/80">
           
           <div className="mb-6 pb-4 border-b border-slate-800/60">
-            <StoreSwitcherDropdown onCreateNewStore={() => setIsCreateStoreModalOpen(true)} />
+            <StoreSwitcherDropdown onCreateNewStore={() => router.push('/dashboard/create-store')} />
           </div>
 
           {/* --- Main Menu --- */}

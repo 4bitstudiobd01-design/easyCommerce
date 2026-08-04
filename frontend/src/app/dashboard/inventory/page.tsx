@@ -1,28 +1,25 @@
 'use client';
 
 import React, { useState } from 'react';
-import { AdjustStockModal } from '@/features/inventory/components/AdjustStockModal';
 import { InventoryStockTable } from '@/features/inventory/components/InventoryStockTable';
 import { useGetMyStoreQuery } from '@/features/tenant/api/tenantApi';
 import { SlidersHorizontal } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function InventoryPage() {
   const { data: store } = useGetMyStoreQuery();
-  const [isAdjustStockModalOpen, setIsAdjustStockModalOpen] = useState(false);
-  const [selectedProductIdForStock, setSelectedProductIdForStock] = useState<string | undefined>(undefined);
+  const router = useRouter();
 
   const handleOpenStockModal = (prodId?: string) => {
-    setSelectedProductIdForStock(prodId);
-    setIsAdjustStockModalOpen(true);
+    if (prodId) {
+      router.push(`/dashboard/inventory/adjust?productId=${prodId}`);
+    } else {
+      router.push('/dashboard/inventory/adjust');
+    }
   };
 
   return (
     <div className="space-y-6">
-      <AdjustStockModal
-        isOpen={isAdjustStockModalOpen}
-        onClose={() => setIsAdjustStockModalOpen(false)}
-        initialProductId={selectedProductIdForStock}
-      />
 
       <div className="flex items-center justify-between">
         <div>
