@@ -11,7 +11,9 @@ import { ToggleStoreStatusService } from './services/toggle-store-status.service
 import { ListAllSystemOrdersService } from './services/list-all-system-orders.service';
 import { PlatformConfigEntity } from './entities/platform-config.entity';
 import { PlatformConfigService } from './services/platform-config.service';
+import { DashboardFacadeService } from './services/dashboard-facade.service';
 import { AdminController } from './admin.controller';
+import { AdminDashboardController } from './admin-dashboard.controller';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 @Module({
@@ -26,13 +28,14 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
       }),
     }),
   ],
-  controllers: [AdminController],
+  controllers: [AdminController, AdminDashboardController],
   providers: [
     GetPlatformStatsService,
     ListAllStoresService,
     ToggleStoreStatusService,
     ListAllSystemOrdersService,
     PlatformConfigService,
+    DashboardFacadeService,
     JwtAuthGuard,
   ],
   exports: [
@@ -40,6 +43,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     ListAllStoresService,
     ToggleStoreStatusService,
     ListAllSystemOrdersService,
+    DashboardFacadeService,
     TypeOrmModule,
   ],
 })

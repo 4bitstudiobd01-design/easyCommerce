@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { TableRowSkeleton } from '@/components/ui/Skeleton';
 import { CmsManager } from '@/components/admin/CmsManager';
+import { DashboardRenderer } from '@/features/admin/components/core/DashboardRenderer';
 
 export default function SuperAdminPage() {
   const { user, token, isAuthenticated } = useSelector((state: RootState) => state.auth);
@@ -289,79 +290,8 @@ export default function SuperAdminPage() {
                 </div>
               </div>
 
-              {/* 4 Metric Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                {/* Card 1: Platform Revenue */}
-                <div className="p-6 bg-white rounded-3xl border border-slate-200 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Platform Revenue</span>
-                    <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100">
-                      <DollarSign className="w-4 h-4" />
-                    </div>
-                  </div>
-                  <div className="mt-4 flex items-baseline justify-between">
-                    <span className="text-2xl font-extrabold text-slate-900">
-                      {isStatsLoading ? '...' : `৳${(stats?.totalPlatformRevenue || 0).toLocaleString()}`}
-                    </span>
-                    <span className="text-xs font-bold text-emerald-600">BDT ৳</span>
-                  </div>
-                  <p className="text-[11px] text-slate-400 mt-1">Across all merchant stores</p>
-                </div>
-
-                {/* Card 2: Total Merchants */}
-                <div className="p-6 bg-white rounded-3xl border border-slate-200 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Registered Merchants</span>
-                    <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl border border-purple-100">
-                      <Users className="w-4 h-4" />
-                    </div>
-                  </div>
-                  <div className="mt-4 flex items-baseline justify-between">
-                    <span className="text-2xl font-extrabold text-slate-900">
-                      {isStatsLoading ? '...' : stats?.totalMerchantsCount || 0}
-                    </span>
-                    <span className="text-xs font-bold text-purple-600">Owners</span>
-                  </div>
-                  <p className="text-[11px] text-slate-400 mt-1">Active SaaS accounts</p>
-                </div>
-
-                {/* Card 3: Onboarded Stores */}
-                <div className="p-6 bg-white rounded-3xl border border-slate-200 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Tenant Stores</span>
-                    <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl border border-blue-100">
-                      <Building2 className="w-4 h-4" />
-                    </div>
-                  </div>
-                  <div className="mt-4 flex items-baseline justify-between">
-                    <span className="text-2xl font-extrabold text-slate-900">
-                      {isStatsLoading ? '...' : stats?.totalStoresCount || 0}
-                    </span>
-                    <span className="text-xs font-bold text-blue-600">
-                      {stats?.activeStoresCount || 0} Active
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-400 mt-1">Subdomains registered</p>
-                </div>
-
-                {/* Card 4: System Orders */}
-                <div className="p-6 bg-white rounded-3xl border border-slate-200 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">System Purchases</span>
-                    <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100">
-                      <ShoppingCart className="w-4 h-4" />
-                    </div>
-                  </div>
-                  <div className="mt-4 flex items-baseline justify-between">
-                    <span className="text-2xl font-extrabold text-slate-900">
-                      {isStatsLoading ? '...' : stats?.totalSystemOrdersCount || 0}
-                    </span>
-                    <span className="text-xs font-bold text-indigo-600">Orders</span>
-                  </div>
-                  <p className="text-[11px] text-slate-400 mt-1">All tenant customer purchases</p>
-                </div>
-              </div>
-
+              {/* DYNAMIC WIDGET REGISTRY RENDERER */}
+              <DashboardRenderer />
               {/* 2 Quick Overview Box Lists */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Recent Onboarded Stores Box */}

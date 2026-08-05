@@ -61,6 +61,91 @@ export interface PlatformConfig {
   faqs: any[];
 }
 
+export interface DashboardSummaryData {
+  platformHealthSnapshot: {
+    overallStatus: 'operational' | 'degraded' | 'outage';
+    label: string;
+  };
+  kpis: {
+    totalRevenueBdt: number;
+    totalRevenueGrowthPercent: number;
+    monthlyRevenueBdt: number;
+    monthlyRevenueGrowthPercent: number;
+    quarterlyGrowthPercent: number;
+  };
+  merchantSummary: {
+    totalMerchants: number;
+    activeMerchants: number;
+    newMerchantsThisMonth: number;
+    suspendedMerchants: number;
+  };
+  storeSummary: {
+    totalStores: number;
+    activeStores: number;
+    trialStores: number;
+    suspendedStores: number;
+  };
+  orderSummary: {
+    todayOrders: number;
+    pendingOrders: number;
+    completedOrders: number;
+    cancelledOrders: number;
+  };
+}
+
+export interface DashboardAnalyticsData {
+  revenueTrend: Array<{ date: string; revenueBdt: number }>;
+  merchantGrowth: Array<{ date: string; totalMerchants: number }>;
+  ordersTrend: Array<{ dayName: string; ordersCount: number }>;
+  subscriptionBreakdown: Array<{ name: string; value: number; color: string }>;
+  paymentMethodsShare: Array<{ name: string; value: number; color: string }>;
+}
+
+export interface DashboardOperationsData {
+  recentActivities: Array<{
+    id: string;
+    title: string;
+    subtitle: string;
+    timestamp: string;
+    eventType: string;
+    severity: 'info' | 'success' | 'warning' | 'error';
+  }>;
+  notifications: Array<{
+    id: string;
+    title: string;
+    message: string;
+    timestamp: string;
+    severity: 'info' | 'success' | 'warning' | 'error';
+    isRead: boolean;
+  }>;
+  topMerchants: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    revenueBdt: number;
+    ordersCount: number;
+    growthPercent: number;
+  }>;
+  topProducts: Array<{
+    id: string;
+    name: string;
+    category: string;
+    revenueBdt: number;
+    ordersCount: number;
+    conversionRatePercent: number;
+  }>;
+}
+
+export interface DashboardInfrastructureData {
+  overallStatus: 'operational' | 'degraded' | 'outage';
+  overallLabel: string;
+  microservices: Array<{
+    name: string;
+    status: 'operational' | 'degraded' | 'outage';
+    metric: string;
+  }>;
+}
+
 export const adminApi = createApi({
   reducerPath: 'adminApi',
   baseQuery: fetchBaseQuery({
@@ -73,7 +158,7 @@ export const adminApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ['AdminStats', 'AdminStores', 'AdminOrders', 'PlatformConfig'],
+  tagTypes: ['AdminStats', 'AdminStores', 'AdminOrders', 'PlatformConfig', 'AdminSummary', 'AdminAnalytics', 'AdminOperations', 'AdminInfra'],
   endpoints: (builder) => ({
     getPlatformStats: builder.query<PlatformStatsOverview, void>({
       query: () => '/stats',
@@ -95,7 +180,7 @@ export const adminApi = createApi({
         url: `/stores/${storeId}/toggle-status`,
         method: 'PATCH',
       }),
-      invalidatesTags: ['AdminStats', 'AdminStores'],
+      invalidatesTags: ['AdminStats', 'AdminStores', 'AdminSummary'],
       transformResponse: (response: { data: AdminStoreDetail }) => response.data,
     }),
     getPlatformConfig: builder.query<PlatformConfig, void>({
@@ -110,6 +195,35 @@ export const adminApi = createApi({
       }),
       invalidatesTags: ['PlatformConfig'],
     }),
+    getDashboardSummary: builder.query<DashboardSummaryData, { dateRangePreset?: string; currency?: string } | void>({
+      query: (params) => ({
+        url: '/dashboard/summary',
+        params: params || {},
+      }),
+      providesTags: ['AdminSummary'],
+      transformResponse: (response: { data: DashboardSummaryData }) => response.data,
+    }),
+    getDashboardAnalytics: builder.query<DashboardAnalyticsData, { timeframe?: string } | void>({
+      query: (params) => ({
+        url: '/dashboard/analytics',
+        params: params || {},
+      }),
+      providesTags: ['AdminAnalytics'],
+      transformResponse: (response: { data: DashboardAnalyticsData }) => response.data,
+    }),
+    getDashboardOperations: builder.query<DashboardOperationsData, { limit?: number } | void>({
+      query: (params) => ({
+        url: '/dashboard/operations',
+        params: params || {},
+      }),
+      providesTags: ['AdminOperations'],
+      transformResponse: (response: { data: DashboardOperationsData }) => response.data,
+    }),
+    getDashboardInfrastructure: builder.query<DashboardInfrastructureData, void>({
+      query: () => '/dashboard/infrastructure',
+      providesTags: ['AdminInfra'],
+      transformResponse: (response: { data: DashboardInfrastructureData }) => response.data,
+    }),
   }),
 });
 
@@ -120,4 +234,8 @@ export const {
   useToggleStoreStatusMutation,
   useGetPlatformConfigQuery,
   useUpdatePlatformConfigMutation,
+  useGetDashboardSummaryQuery,
+  useGetDashboardAnalyticsQuery,
+  useGetDashboardOperationsQuery,
+  useGetDashboardInfrastructureQuery,
 } = adminApi;
