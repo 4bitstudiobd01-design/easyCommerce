@@ -10,6 +10,9 @@ export interface DashboardRendererProps {
   userPermissions?: string[];
   enabledCategories?: WidgetCategory[];
   className?: string;
+  registry?: Record<string, RegisteredWidget>;
+  layoutId?: string;
+  flattenLayout?: boolean;
 }
 
 const CATEGORY_SECTION_TITLES: Record<WidgetCategory, { title: string; subtitle?: string }> = {
@@ -46,6 +49,9 @@ export function DashboardRenderer({
   userPermissions,
   enabledCategories,
   className = '',
+  registry,
+  layoutId,
+  flattenLayout,
 }: DashboardRendererProps) {
   // 1. Fetch Aggregator RTK Query Data
   const {
@@ -78,7 +84,8 @@ export function DashboardRenderer({
 
   // Filter and group widgets dynamically from the Widget Registry
   const groupedWidgets = useMemo(() => {
-    const widgetsList = Object.values(WIDGET_REGISTRY);
+    const activeRegistry = registry || WIDGET_REGISTRY;
+    const widgetsList = Object.values(activeRegistry);
 
     const filtered = widgetsList.filter((widget) => {
       if (!widget.isEnabled) return false;
@@ -238,6 +245,63 @@ export function DashboardRenderer({
     }
   };
 
+  // Helper to map dynamic colSpan numbers to static Tailwind classes
+  const getColSpanClasses = (colSpan: { sm: number; md: number; lg: number; xl: number }) => {
+    const sm = {
+      1: 'col-span-1', 2: 'col-span-2', 3: 'col-span-3', 4: 'col-span-4',
+      5: 'col-span-5', 6: 'col-span-6', 7: 'col-span-7', 8: 'col-span-8',
+      9: 'col-span-9', 10: 'col-span-10', 11: 'col-span-11', 12: 'col-span-12',
+    };
+    const md = {
+      1: 'md:col-span-1', 2: 'md:col-span-2', 3: 'md:col-span-3', 4: 'md:col-span-4',
+      5: 'md:col-span-5', 6: 'md:col-span-6', 7: 'md:col-span-7', 8: 'md:col-span-8',
+      9: 'md:col-span-9', 10: 'md:col-span-10', 11: 'md:col-span-11', 12: 'md:col-span-12',
+    };
+    const lg = {
+      1: 'lg:col-span-1', 2: 'lg:col-span-2', 3: 'lg:col-span-3', 4: 'lg:col-span-4',
+      5: 'lg:col-span-5', 6: 'lg:col-span-6', 7: 'lg:col-span-7', 8: 'lg:col-span-8',
+      9: 'lg:col-span-9', 10: 'lg:col-span-10', 11: 'lg:col-span-11', 12: 'lg:col-span-12',
+    };
+    const xl = {
+      1: 'xl:col-span-1', 2: 'xl:col-span-2', 3: 'xl:col-span-3', 4: 'xl:col-span-4',
+      5: 'xl:col-span-5', 6: 'xl:col-span-6', 7: 'xl:col-span-7', 8: 'xl:col-span-8',
+      9: 'xl:col-span-9', 10: 'xl:col-span-10', 11: 'xl:col-span-11', 12: 'xl:col-span-12',
+    };
+
+    return [
+      sm[(colSpan.sm as keyof typeof sm) || 12],
+      md[(colSpan.md as keyof typeof md) || 12],
+      lg[(colSpan.lg as keyof typeof lg) || 12],
+      xl[(colSpan.xl as keyof typeof xl) || 12],
+    ].join(' ');
+  };
+
+  if (flattenLayout) {
+    const flatWidgets = (Object.values(groupedWidgets) as RegisteredWidget[][])
+      .flat()
+      .sort((a, b) => a.defaultLayout.order - b.defaultLayout.order);
+
+    return (
+      <div className={`space-y-4 ${className}`}>
+        <DashboardGrid className="!gap-3">
+          {flatWidgets.map((widget) => {
+            const WidgetComponent = widget.component;
+            const colSpanClass = getColSpanClasses(widget.defaultLayout.colSpan);
+            const widgetProps = getWidgetProps(widget.id);
+
+            return (
+              <div key={widget.id} className={colSpanClass}>
+                <WidgetBoundary widgetId={widget.id}>
+                  <WidgetComponent {...widgetProps} />
+                </WidgetBoundary>
+              </div>
+            );
+          })}
+        </DashboardGrid>
+      </div>
+    );
+  }
+
   return (
     <div className={`space-y-8 ${className}`}>
       {(Object.keys(groupedWidgets) as WidgetCategory[]).map((category) => {
@@ -256,7 +320,7 @@ export function DashboardRenderer({
             <DashboardGrid>
               {widgetsInCategory.map((widget) => {
                 const WidgetComponent = widget.component;
-                const colSpanClass = `col-span-12 lg:col-span-${widget.defaultLayout.colSpan.lg}`;
+                const colSpanClass = getColSpanClasses(widget.defaultLayout.colSpan);
                 const widgetProps = getWidgetProps(widget.id);
 
                 return (

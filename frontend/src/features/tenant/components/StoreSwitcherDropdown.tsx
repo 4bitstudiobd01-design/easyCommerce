@@ -26,8 +26,13 @@ export function StoreSwitcherDropdown({
       const foundStore = stores.find((s) => s.id === savedStoreId);
       const selected = foundStore || stores[0];
       setActiveStore(selected);
-      if (!savedStoreId && selected) {
+      if (selected && (!savedStoreId || !foundStore)) {
         localStorage.setItem('easycommerce_active_store_id', selected.id);
+        // If we had an invalid store ID in localStorage, we must reload the page 
+        // to reset the headers in RTK Query which might have cached the old ID
+        if (savedStoreId && !foundStore) {
+          window.location.reload();
+        }
       }
     }
   }, [stores]);

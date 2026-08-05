@@ -12,10 +12,10 @@ export function StatTrend({ value, periodLabel = 'vs last month', className = ''
   const isNeutral = value === 0;
 
   const colorClasses = isNeutral
-    ? 'text-slate-500 bg-slate-100 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+    ? 'text-blue-500 bg-blue-50 border-blue-100'
     : isPositive
-    ? 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
-    : 'text-rose-700 bg-rose-50 dark:bg-rose-950/40 dark:text-rose-400 border-rose-200 dark:border-rose-800';
+    ? 'text-blue-700 bg-blue-100 border-blue-200'
+    : 'text-blue-600 bg-blue-50 border-blue-100';
 
   const Icon = isNeutral ? Minus : isPositive ? ArrowUpRight : ArrowDownRight;
 
@@ -26,7 +26,7 @@ export function StatTrend({ value, periodLabel = 'vs last month', className = ''
         {isPositive ? '+' : ''}
         {value.toFixed(1)}%
       </span>
-      {periodLabel && <span className="font-normal text-slate-400 dark:text-slate-500 text-[10px] ml-0.5">{periodLabel}</span>}
+      {periodLabel && <span className="font-normal text-blue-400 text-[10px] ml-0.5">{periodLabel}</span>}
     </span>
   );
 }
