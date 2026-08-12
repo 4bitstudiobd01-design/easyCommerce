@@ -19,6 +19,12 @@ export class ThemePurchaseEntity {
   @Column({ type: 'varchar', length: 100 })
   themeId: string;
 
+  @Column({ type: 'varchar', length: 100, nullable: true, unique: true })
+  tranId?: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  valId?: string;
+
   @Column({ type: 'decimal', precision: 12, scale: 2 })
   price: number;
 

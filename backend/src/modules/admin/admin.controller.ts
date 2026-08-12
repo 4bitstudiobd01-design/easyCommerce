@@ -7,6 +7,9 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { UserRoleEnum } from '../user/entities/user.entity';
 import { GetPlatformStatsService } from './services/get-platform-stats.service';
 import { ListAllStoresService } from './services/list-all-stores.service';
 import { ToggleStoreStatusService } from './services/toggle-store-status.service';
@@ -27,7 +30,8 @@ export class AdminController {
   ) {}
 
   @Get('stats')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRoleEnum.SUPER_ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get platform-wide revenue & system metrics for Super Admin' })
   @ApiResponse({ status: 200, description: 'Platform statistics overview' })
@@ -36,7 +40,8 @@ export class AdminController {
   }
 
   @Get('stores')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRoleEnum.SUPER_ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List all onboarded merchant stores across all tenants' })
   @ApiResponse({ status: 200, description: 'List of all stores' })
@@ -45,7 +50,8 @@ export class AdminController {
   }
 
   @Get('orders')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRoleEnum.SUPER_ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List all customer orders across all stores' })
   @ApiResponse({ status: 200, description: 'List of all system orders' })
@@ -54,7 +60,8 @@ export class AdminController {
   }
 
   @Patch('stores/:id/toggle-status')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRoleEnum.SUPER_ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Toggle store active or suspended status' })
   @ApiResponse({ status: 200, description: 'Store status updated' })
@@ -70,7 +77,8 @@ export class AdminController {
   }
 
   @Put('platform-config')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRoleEnum.SUPER_ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update global CMS settings (Super Admin Only)' })
   @ApiResponse({ status: 200, description: 'Platform CMS data updated' })

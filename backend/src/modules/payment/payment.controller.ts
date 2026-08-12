@@ -60,7 +60,7 @@ export class PaymentController {
       amount: payload.amount,
       card_type: payload.card_type,
       bank_tran_id: payload.bank_tran_id,
-      status: payload.status || 'VALID',
+      status: payload.status,
     });
 
     if (result.success) {
@@ -98,7 +98,7 @@ export class PaymentController {
       amount: payload.amount,
       card_type: payload.card_type,
       bank_tran_id: payload.bank_tran_id,
-      status: payload.status || 'VALID',
+      status: payload.status,
     });
   }
 

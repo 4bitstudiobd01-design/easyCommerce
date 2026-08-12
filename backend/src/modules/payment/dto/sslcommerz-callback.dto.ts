@@ -1,5 +1,5 @@
 export class SslCommerzCallbackDto {
-  status: string;
+  status?: string;
   tran_date?: string;
   tran_id: string;
   val_id?: string;

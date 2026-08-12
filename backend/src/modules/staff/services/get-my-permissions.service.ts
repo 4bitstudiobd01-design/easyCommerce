@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { StaffMemberEntity, StaffPermissionType } from '../entities/staff.entity';
 import { UserEntity, UserRoleEnum } from '../../user/entities/user.entity';
+import { StoreEntity } from '../../tenant/entities/store.entity';
 
 const ALL_PERMISSIONS: StaffPermissionType[] = [
   'products:read',
@@ -29,6 +30,8 @@ export class GetMyPermissionsService {
     private readonly staffRepository: Repository<StaffMemberEntity>,
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
+    @InjectRepository(StoreEntity)
+    private readonly storeRepository: Repository<StoreEntity>,
   ) {}
 
   async execute(
@@ -41,12 +44,36 @@ export class GetMyPermissionsService {
       return { role: 'GUEST', isOwner: false, permissions: [] };
     }
 
-    if (user.role === UserRoleEnum.SUPER_ADMIN || user.role === UserRoleEnum.STORE_OWNER) {
+    if (user.role === UserRoleEnum.SUPER_ADMIN) {
       return {
         role: user.role,
         isOwner: true,
         permissions: ALL_PERMISSIONS,
       };
+    }
+
+    if (user.role === UserRoleEnum.STORE_OWNER) {
+      if (!storeId) {
+        return {
+          role: user.role,
+          isOwner: true,
+          permissions: ALL_PERMISSIONS,
+        };
+      }
+
+      const ownsStore = await this.storeRepository.findOne({
+        where: { id: storeId, ownerId: user.id },
+      });
+
+      if (ownsStore) {
+        return {
+          role: user.role,
+          isOwner: true,
+          permissions: ALL_PERMISSIONS,
+        };
+      }
+
+      return { role: user.role, isOwner: false, permissions: [] };
     }
 
     if (!storeId) {

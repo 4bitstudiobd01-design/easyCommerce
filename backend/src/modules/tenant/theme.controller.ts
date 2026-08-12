@@ -23,6 +23,7 @@ import { Repository } from 'typeorm';
 import { ThemePurchaseEntity } from './entities/theme-purchase.entity';
 import { StoreEntity } from './entities/store.entity';
 import { ConfigService } from '@nestjs/config';
+import axios from 'axios';
 
 @ApiTags('Storefront Theme System & SSLCommerz Payment')
 @Controller('tenant/themes')
@@ -99,38 +100,79 @@ export class ThemeController {
   // --- SSLCommerz Payment Redirect Callback Routes ---
 
   @Post('payment/sslcommerz/success')
+  @Get('payment/sslcommerz/success')
   @ApiOperation({ summary: 'SSLCommerz payment success callback' })
   async paymentSuccess(
     @Query('purchaseId') purchaseId: string,
-    @Query('themeId') themeId: string,
-    @Query('storeId') storeId: string,
+    @Query('val_id') valId: string,
     @Res() res: any,
   ) {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
 
     try {
-      if (purchaseId) {
-        const purchase = await this.purchaseRepository.findOne({ where: { id: purchaseId } });
-        if (purchase) {
-          purchase.status = 'COMPLETED';
-          await this.purchaseRepository.save(purchase);
-        }
+      const purchase = purchaseId
+        ? await this.purchaseRepository.findOne({ where: { id: purchaseId } })
+        : null;
+
+      if (!purchase || !purchase.tranId || purchase.status !== 'PENDING') {
+        return res.redirect(`${frontendUrl}/dashboard?theme_payment=error`);
       }
 
-      if (storeId && themeId) {
-        const store = await this.storeRepository.findOne({ where: { id: storeId } });
-        if (store) {
-          const unlocked = new Set(store.unlockedThemeIds || ['DEFAULT_MODERN']);
-          unlocked.add(themeId);
-          store.unlockedThemeIds = Array.from(unlocked);
-          store.activeThemeId = themeId;
-          await this.storeRepository.save(store);
-        }
+      const isValidated = await this.verifySslCommerzPayment(valId);
+
+      if (!isValidated) {
+        purchase.status = 'FAILED';
+        await this.purchaseRepository.save(purchase);
+        return res.redirect(`${frontendUrl}/dashboard?theme_payment=failed`);
       }
 
-      return res.redirect(`${frontendUrl}/dashboard?theme_payment=success&themeId=${themeId}`);
+      purchase.status = 'COMPLETED';
+      purchase.valId = valId;
+      await this.purchaseRepository.save(purchase);
+
+      const store = await this.storeRepository.findOne({ where: { id: purchase.storeId } });
+      if (store) {
+        const unlocked = new Set(store.unlockedThemeIds || ['DEFAULT_MODERN']);
+        unlocked.add(purchase.themeId);
+        store.unlockedThemeIds = Array.from(unlocked);
+        store.activeThemeId = purchase.themeId;
+        await this.storeRepository.save(store);
+      }
+
+      return res.redirect(
+        `${frontendUrl}/dashboard?theme_payment=success&themeId=${purchase.themeId}`,
+      );
     } catch (err) {
       return res.redirect(`${frontendUrl}/dashboard?theme_payment=error`);
+    }
+  }
+
+  private async verifySslCommerzPayment(valId?: string): Promise<boolean> {
+    if (!valId) {
+      return false;
+    }
+
+    const storeIdKey =
+      this.configService.get<string>('SSL_STORE_ID') ||
+      this.configService.get<string>('SSLCOMMERZ_STORE_ID', 'testbox');
+    const storePass =
+      this.configService.get<string>('SSL_STORE_PASSWORD') ||
+      this.configService.get<string>('SSLCOMMERZ_STORE_PASSWORD', 'qwerty');
+    const isSandbox = this.configService.get<string>('SSL_IS_SANDBOX', 'true') === 'true';
+    const isLive =
+      !isSandbox && this.configService.get<string>('SSLCOMMERZ_IS_LIVE', 'false') === 'true';
+
+    const validationUrl = isLive
+      ? 'https://securepay.sslcommerz.com/validator/api/validationserverAPI.php'
+      : 'https://sandbox.sslcommerz.com/validator/api/validationserverAPI.php';
+
+    try {
+      const res = await axios.get(
+        `${validationUrl}?val_id=${valId}&store_id=${storeIdKey}&store_passwd=${storePass}&format=json`,
+      );
+      return res.data?.status === 'VALID' || res.data?.status === 'VALIDATED';
+    } catch (err) {
+      return false;
     }
   }
 

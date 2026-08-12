@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { OrderEntity } from '../entities/order.entity';
@@ -45,16 +45,19 @@ export class TrackPublicOrderService {
 
   async execute(query: string, storeSlug?: string): Promise<PublicOrderTrackingResult[]> {
     const sanitizedQuery = query.trim().replace('#', '');
+    const looksLikeOrderNumber = /^ORD-/i.test(sanitizedQuery);
 
-    const whereConditions: any[] = [
-      { orderNumber: sanitizedQuery },
-      { customerPhone: sanitizedQuery },
-    ];
-
-    if (storeSlug) {
-      whereConditions[0].storeSlug = storeSlug;
-      whereConditions[1].storeSlug = storeSlug;
+    // Phone-number search must be scoped to a single store — otherwise a phone
+    // number match would return other tenants' customers' orders (PII leak).
+    if (!looksLikeOrderNumber && !storeSlug) {
+      throw new BadRequestException(
+        'Please search from your store\'s tracking page, or provide your order number.',
+      );
     }
+
+    const whereConditions: any[] = looksLikeOrderNumber
+      ? [{ orderNumber: sanitizedQuery, ...(storeSlug ? { storeSlug } : {}) }]
+      : [{ customerPhone: sanitizedQuery, storeSlug }];
 
     const orders = await this.orderRepository.find({
       where: whereConditions,

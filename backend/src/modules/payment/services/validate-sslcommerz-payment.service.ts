@@ -18,18 +18,20 @@ export class ValidateSslCommerzPaymentService {
   ) {}
 
   async execute(dto: SslCommerzCallbackDto): Promise<{ success: boolean; orderNumber?: string }> {
-    let payment = await this.paymentRepository.findOne({
+    if (!dto.tran_id) {
+      return { success: false };
+    }
+
+    const payment = await this.paymentRepository.findOne({
       where: { tranId: dto.tran_id },
     });
 
-    if (!payment && dto.tran_id) {
-      payment = await this.paymentRepository.findOne({
-        where: { status: PaymentTransactionStatusEnum.PENDING },
-        order: { createdAt: 'DESC' },
-      });
+    if (!payment) {
+      return { success: false };
     }
 
-    if (!payment) {
+    if (payment.status !== PaymentTransactionStatusEnum.PENDING) {
+      // Already processed (or already failed) — do not re-process a terminal payment.
       return { success: false };
     }
 
@@ -52,18 +54,20 @@ export class ValidateSslCommerzPaymentService {
         ? 'https://securepay.sslcommerz.com/validator/api/validationserverAPI.php'
         : 'https://sandbox.sslcommerz.com/validator/api/validationserverAPI.php';
 
-      let isValidated = true;
+      // Fail closed: a payment is only considered valid if SSLCommerz's
+      // server-to-server validation API explicitly confirms it.
+      let isValidated = false;
 
       if (dto.val_id) {
         try {
           const res = await axios.get(
             `${validationUrl}?val_id=${dto.val_id}&store_id=${storeId}&store_passwd=${storePass}&format=json`,
           );
-          if (res.data?.status !== 'VALID' && res.data?.status !== 'VALIDATED') {
-            isValidated = false;
+          if (res.data?.status === 'VALID' || res.data?.status === 'VALIDATED') {
+            isValidated = true;
           }
         } catch (err) {
-          // If validation API call fails in sandbox, fallback to callback status
+          // Validation API call failed — treat as not validated rather than trusting the callback.
         }
       }
 
