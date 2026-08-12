@@ -35,6 +35,7 @@ export default function DomainSettingsPage() {
   const copyCname = () => {
     navigator.clipboard.writeText(cnameRecord);
     setCopied(true);
+    toast.success('CNAME record copied to clipboard.');
     setTimeout(() => setCopied(false), 2000);
   };
 

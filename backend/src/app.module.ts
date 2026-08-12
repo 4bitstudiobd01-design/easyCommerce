@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ScheduleModule } from '@nestjs/schedule';
 import { typeOrmConfig } from './config/database.config';
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -17,6 +18,7 @@ import { CouponModule } from './modules/coupon/coupon.module';
 import { StaffModule } from './modules/staff/staff.module';
 import { EmailMarketingModule } from './modules/email-marketing/email-marketing.module';
 import { SeoModule } from './modules/seo/seo.module';
+import { BillingModule } from './modules/billing/billing.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { APP_FILTER } from '@nestjs/core';
 
@@ -26,6 +28,7 @@ import { APP_FILTER } from '@nestjs/core';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    ScheduleModule.forRoot(),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: typeOrmConfig,
@@ -45,6 +48,7 @@ import { APP_FILTER } from '@nestjs/core';
     StaffModule,
     EmailMarketingModule,
     SeoModule,
+    BillingModule,
   ],
   controllers: [],
   providers: [

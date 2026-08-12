@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import { useCreateCampaignMutation } from '../api/emailMarketingApi';
 import { X, Mail, Send, AlertCircle, Sparkles, FileText, Users } from 'lucide-react';
 
@@ -35,9 +36,10 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({ isOpen
 
       setTitle('');
       setSubject('');
+      toast.success('Campaign draft created.');
       onClose();
-    } catch (err) {
-      console.error('Failed to create email campaign:', err);
+    } catch (err: any) {
+      toast.error(err?.data?.message || 'Failed to create email campaign.');
     }
   };
 

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import { Order } from '@/features/order/api/orderApi';
 import { useBookCourierMutation } from '../api/logisticsApi';
 import { Truck, X, ShieldCheck, MapPin, Phone, User, Package, CheckCircle2 } from 'lucide-react';
@@ -34,10 +35,13 @@ export function BookCourierModal({ order, isOpen, onClose, onSuccess }: BookCour
         note: note || undefined,
       }).unwrap();
 
+      toast.success('Courier booked successfully.');
       if (onSuccess) onSuccess();
       onClose();
     } catch (err: any) {
-      setErrorMsg(err?.data?.message || 'Failed to dispatch parcel to courier.');
+      const message = err?.data?.message || 'Failed to dispatch parcel to courier.';
+      setErrorMsg(message);
+      toast.error(message);
     }
   };
 

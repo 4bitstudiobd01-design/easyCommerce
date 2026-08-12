@@ -146,6 +146,25 @@ export interface DashboardInfrastructureData {
   }>;
 }
 
+export interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  subject: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface CreateContactMessageRequest {
+  name: string;
+  email: string;
+  phone?: string;
+  subject: string;
+  message: string;
+}
+
 export const adminApi = createApi({
   reducerPath: 'adminApi',
   baseQuery: fetchBaseQuery({
@@ -158,7 +177,7 @@ export const adminApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ['AdminStats', 'AdminStores', 'AdminOrders', 'PlatformConfig', 'AdminSummary', 'AdminAnalytics', 'AdminOperations', 'AdminInfra'],
+  tagTypes: ['AdminStats', 'AdminStores', 'AdminOrders', 'PlatformConfig', 'AdminSummary', 'AdminAnalytics', 'AdminOperations', 'AdminInfra', 'AdminContactMessages'],
   endpoints: (builder) => ({
     getPlatformStats: builder.query<PlatformStatsOverview, void>({
       query: () => '/stats',
@@ -224,6 +243,17 @@ export const adminApi = createApi({
       providesTags: ['AdminInfra'],
       transformResponse: (response: { data: DashboardInfrastructureData }) => response.data,
     }),
+    submitContactMessage: builder.mutation<ContactMessage, CreateContactMessageRequest>({
+      query: (body) => ({
+        url: '/contact-messages',
+        method: 'POST',
+        body,
+      }),
+    }),
+    getContactMessages: builder.query<ContactMessage[], void>({
+      query: () => '/contact-messages',
+      providesTags: ['AdminContactMessages'],
+    }),
   }),
 });
 
@@ -238,4 +268,6 @@ export const {
   useGetDashboardAnalyticsQuery,
   useGetDashboardOperationsQuery,
   useGetDashboardInfrastructureQuery,
+  useSubmitContactMessageMutation,
+  useGetContactMessagesQuery,
 } = adminApi;

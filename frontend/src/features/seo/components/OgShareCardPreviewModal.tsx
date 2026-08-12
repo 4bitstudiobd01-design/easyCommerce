@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import {
   X,
   Share2,
@@ -44,6 +45,7 @@ export const OgShareCardPreviewModal: React.FC<OgShareCardPreviewModalProps> = (
   const handleCopyUrl = () => {
     navigator.clipboard.writeText(url);
     setCopied(true);
+    toast.success('Share link copied to clipboard.');
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -208,10 +210,9 @@ export const OgShareCardPreviewModal: React.FC<OgShareCardPreviewModalProps> = (
                 <div className="flex items-center gap-3 text-xs text-slate-600">
                   {price !== undefined && (
                     <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                      ৳{price.toLocaleString()} {currency} • In Stock
+                      ৳{price.toLocaleString()} {currency}
                     </span>
                   )}
-                  <span className="text-amber-600 font-bold">★★★★★ 5.0 (12 reviews)</span>
                 </div>
                 <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">
                   {description}

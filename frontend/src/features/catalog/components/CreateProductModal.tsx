@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import {
   useCreateProductMutation,
   useGetCategoriesQuery,
@@ -49,8 +50,11 @@ export function CreateProductModal({ isOpen, onClose }: CreateProductModalProps)
       setCategoryId(created.id);
       setNewCategoryName('');
       setShowAddCategory(false);
+      toast.success('Category created.');
     } catch (err: any) {
-      setErrorMsg(err?.data?.message || 'Failed to create category.');
+      const message = err?.data?.message || 'Failed to create category.';
+      setErrorMsg(message);
+      toast.error(message);
     }
   };
 
@@ -82,9 +86,12 @@ export function CreateProductModal({ isOpen, onClose }: CreateProductModalProps)
       setSku('');
       setImageUrl('');
       setCategoryId('');
+      toast.success('Product added to catalog.');
       onClose();
     } catch (err: any) {
-      setErrorMsg(err?.data?.message || 'Failed to create product. Please try again.');
+      const message = err?.data?.message || 'Failed to create product. Please try again.';
+      setErrorMsg(message);
+      toast.error(message);
     }
   };
 

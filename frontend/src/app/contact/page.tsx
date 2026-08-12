@@ -3,10 +3,12 @@
 import React, { useState } from 'react';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
+import { useSubmitContactMessageMutation } from '@/features/admin/api/adminApi';
 import { Mail, Phone, MapPin, Send, CheckCircle2, MessageSquare } from 'lucide-react';
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -15,9 +17,24 @@ export default function ContactPage() {
     message: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [submitContactMessage, { isLoading }] = useSubmitContactMessageMutation();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setErrorMsg('');
+
+    try {
+      await submitContactMessage({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone || undefined,
+        subject: formData.subject,
+        message: formData.message,
+      }).unwrap();
+      setSubmitted(true);
+    } catch (err: any) {
+      setErrorMsg(err?.data?.message || 'Failed to send message. Please try again.');
+    }
   };
 
   return (
@@ -171,12 +188,19 @@ export default function ContactPage() {
                   />
                 </div>
 
+                {errorMsg && (
+                  <p className="text-xs font-semibold text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">
+                    {errorMsg}
+                  </p>
+                )}
+
                 <button
                   type="submit"
-                  className="w-full py-3.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-colors shadow-md shadow-blue-600/20 text-sm active:scale-95"
+                  disabled={isLoading}
+                  className="w-full py-3.5 px-4 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-colors shadow-md shadow-blue-600/20 text-sm active:scale-95"
                 >
                   <Send className="w-4 h-4" />
-                  <span>Send Message</span>
+                  <span>{isLoading ? 'Sending...' : 'Send Message'}</span>
                 </button>
               </form>
             )}

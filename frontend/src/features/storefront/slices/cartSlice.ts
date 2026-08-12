@@ -8,6 +8,7 @@ export interface CartItem {
   imageUrl?: string;
   quantity: number;
   sku?: string;
+  storeSlug: string;
 }
 
 interface CartState {
@@ -34,9 +35,15 @@ export const cartSlice = createSlice({
   name: 'cart',
   initialState,
   reducers: {
-    addToCart: (state, action: PayloadAction<{ product: any; quantity?: number }>) => {
-      const { product, quantity = 1 } = action.payload;
+    addToCart: (state, action: PayloadAction<{ product: any; quantity?: number; storeSlug: string }>) => {
+      const { product, quantity = 1, storeSlug } = action.payload;
       const primaryImg = product.images?.find((img: any) => img.isPrimary)?.url || product.images?.[0]?.url;
+
+      // A cart can only contain items from one store at a time — adding from a
+      // different store starts a fresh cart rather than mixing storeSlugs.
+      if (state.items.length > 0 && state.items[0].storeSlug !== storeSlug) {
+        state.items = [];
+      }
 
       const existingIndex = state.items.findIndex((item) => item.productId === product.id);
 
@@ -51,6 +58,7 @@ export const cartSlice = createSlice({
           imageUrl: primaryImg,
           quantity,
           sku: product.variants?.[0]?.sku,
+          storeSlug,
         });
       }
 

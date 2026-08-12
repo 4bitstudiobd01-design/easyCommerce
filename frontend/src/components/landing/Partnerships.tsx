@@ -6,22 +6,19 @@ import { ArrowRight, Truck, CreditCard, Sparkles } from 'lucide-react';
 
 export function Partnerships() {
   const courierPartners = [
-    { name: 'Pathao Courier', category: 'Logistics', badge: 'Same-day Delivery' },
-    { name: 'REDX Express', category: 'Logistics', badge: 'Nationwide' },
+    { name: 'Pathao Courier', category: 'Logistics', badge: '1-Click Booking' },
     { name: 'Steadfast Courier', category: 'Logistics', badge: 'Automated API' },
-    { name: 'Paperfly Logistics', category: 'Logistics', badge: 'Doorstep Pick' },
   ];
 
   const paymentPartners = [
-    { name: 'bKash Merchant', category: 'MFS Gateway', badge: 'Instant Checkout' },
-    { name: 'Nagad Direct', category: 'MFS Gateway', badge: 'Zero Extra Fee' },
-    { name: 'Upay MFS', category: 'MFS Gateway', badge: 'Instant Settlement' },
+    { name: 'bKash', category: 'via SSLCommerz', badge: 'Instant Checkout' },
+    { name: 'Nagad', category: 'via SSLCommerz', badge: 'Instant Checkout' },
     { name: 'SSLCommerz', category: 'Cards & NetBanking', badge: 'PCI-DSS Certified' },
-    { name: 'Stripe Global', category: 'International Cards', badge: 'USD/EUR' },
+    { name: 'Cash on Delivery', category: 'COD', badge: 'Zero Setup' },
   ];
 
   // Multiplied lists for seamless edge-to-edge infinite marquee loops
-  const courierTrack = [...courierPartners, ...courierPartners, ...courierPartners, ...courierPartners];
+  const courierTrack = [...courierPartners, ...courierPartners, ...courierPartners, ...courierPartners, ...courierPartners, ...courierPartners];
   const paymentTrack = [...paymentPartners, ...paymentPartners, ...paymentPartners, ...paymentPartners];
 
   return (
@@ -30,13 +27,13 @@ export function Partnerships() {
         {/* Section Header */}
         <div className="max-w-4xl mx-auto px-6 space-y-3">
           <span className="text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
-            Ecosystem Partners
+            Checkout & Delivery
           </span>
           <h2 className="text-3xl md:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
-            In partnership with our dedicated logistics and payment partners
+            Pre-integrated for Bangladesh checkout and delivery
           </h2>
           <p className="text-slate-500 text-base font-normal">
-            Pre-integrated native APIs for frictionless checkout and nationwide fulfillment.
+            No setup needed — bKash, Nagad, cards, and courier booking are ready from day one.
           </p>
         </div>
 
@@ -104,7 +101,7 @@ export function Partnerships() {
               Take Your Business Online, Effortlessly with EasyCommerce
             </h3>
             <p className="text-slate-600 text-xs md:text-sm max-w-xl mx-auto">
-              Join thousands of Bangladeshi merchants and experience zero-code store setup, native bKash/Nagad checkout, and automated Steadfast/Pathao courier booking.
+              Zero-code store setup, bKash/Nagad checkout, and automated Steadfast/Pathao courier booking — ready the moment you launch.
             </p>
             <div className="pt-2">
               <Link

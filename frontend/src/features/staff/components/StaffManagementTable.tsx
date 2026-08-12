@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import {
   useGetStaffMembersQuery,
   useDeleteStaffMutation,
@@ -39,6 +40,7 @@ export const StaffManagementTable: React.FC = () => {
     const inviteUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/staff-invite?token=${staff.inviteToken}`;
     navigator.clipboard.writeText(inviteUrl);
     setCopiedId(staff.id);
+    toast.success('Invitation link copied to clipboard.');
     setTimeout(() => setCopiedId(null), 2000);
   };
 
@@ -46,8 +48,9 @@ export const StaffManagementTable: React.FC = () => {
     try {
       await deleteStaff(staffId).unwrap();
       setDeletingStaffId(null);
+      toast.success('Staff access revoked.');
     } catch (err: any) {
-      alert(err?.data?.message || 'Failed to revoke staff access.');
+      toast.error(err?.data?.message || 'Failed to revoke staff access.');
     }
   };
 

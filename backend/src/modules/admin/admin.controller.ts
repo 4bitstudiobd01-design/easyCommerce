@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   Patch,
   Param,
   UseGuards,
@@ -16,6 +17,9 @@ import { ToggleStoreStatusService } from './services/toggle-store-status.service
 import { ListAllSystemOrdersService } from './services/list-all-system-orders.service';
 import { PlatformConfigService } from './services/platform-config.service';
 import { UpdatePlatformConfigDto } from './dto/update-platform-config.dto';
+import { CreateContactMessageService } from './services/create-contact-message.service';
+import { ListContactMessagesService } from './services/list-contact-messages.service';
+import { CreateContactMessageDto } from './dto/create-contact-message.dto';
 import { Body, Put } from '@nestjs/common';
 
 @ApiTags('Super Admin Control Panel')
@@ -27,6 +31,8 @@ export class AdminController {
     private readonly toggleStoreStatusService: ToggleStoreStatusService,
     private readonly listAllSystemOrdersService: ListAllSystemOrdersService,
     private readonly platformConfigService: PlatformConfigService,
+    private readonly createContactMessageService: CreateContactMessageService,
+    private readonly listContactMessagesService: ListContactMessagesService,
   ) {}
 
   @Get('stats')
@@ -84,5 +90,22 @@ export class AdminController {
   @ApiResponse({ status: 200, description: 'Platform CMS data updated' })
   async updatePlatformConfig(@Body() dto: UpdatePlatformConfigDto) {
     return this.platformConfigService.updateConfig(dto);
+  }
+
+  @Post('contact-messages')
+  @ApiOperation({ summary: 'Submit a public "Contact Us" message (Public)' })
+  @ApiResponse({ status: 201, description: 'Message received' })
+  async submitContactMessage(@Body() dto: CreateContactMessageDto) {
+    return this.createContactMessageService.execute(dto);
+  }
+
+  @Get('contact-messages')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRoleEnum.SUPER_ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List all "Contact Us" messages (Super Admin Only)' })
+  @ApiResponse({ status: 200, description: 'List of contact messages' })
+  async listContactMessages() {
+    return this.listContactMessagesService.execute();
   }
 }

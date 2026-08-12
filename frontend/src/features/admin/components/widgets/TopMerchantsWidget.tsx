@@ -24,15 +24,8 @@ export interface TopMerchantsWidgetProps {
   className?: string;
 }
 
-const defaultMerchants: TopMerchantItem[] = [
-  { id: '1', name: 'Urban Attire BD', slug: 'urban-attire', revenueBdt: 1850000, ordersCount: 1420, growthPercent: 34.2 },
-  { id: '2', name: 'Deshi Look', slug: 'deshi-look', revenueBdt: 1420000, ordersCount: 980, growthPercent: 28.4 },
-  { id: '3', name: 'Cake Bari', slug: 'cake-bari', revenueBdt: 980000, ordersCount: 750, growthPercent: 22.1 },
-  { id: '4', name: 'Mrittika Crafts', slug: 'mrittika-crafts', revenueBdt: 740000, ordersCount: 610, growthPercent: 18.5 },
-];
-
 export function TopMerchantsWidget({
-  merchants = defaultMerchants,
+  merchants = [],
   isLoading = false,
   isError = false,
   error,

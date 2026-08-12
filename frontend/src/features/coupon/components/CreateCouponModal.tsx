@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import { useCreateCouponMutation } from '../api/couponApi';
 import { X, Tag, Plus, CheckCircle2, Percent, DollarSign } from 'lucide-react';
 
@@ -37,9 +38,12 @@ export function CreateCouponModal({ isOpen, onClose }: CreateCouponModalProps) {
       }).unwrap();
 
       setCode('');
+      toast.success('Promo code created.');
       onClose();
     } catch (err: any) {
-      setErrorMsg(err?.data?.message || 'Failed to create promo coupon.');
+      const message = err?.data?.message || 'Failed to create promo coupon.';
+      setErrorMsg(message);
+      toast.error(message);
     }
   };
 

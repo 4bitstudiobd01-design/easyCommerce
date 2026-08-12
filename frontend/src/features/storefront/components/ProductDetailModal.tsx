@@ -1,18 +1,20 @@
 'use client';
 
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import { Product } from '@/features/catalog/api/catalogApi';
 import { useDispatch } from 'react-redux';
 import { addToCart } from '../slices/cartSlice';
 import { ProductReviewsSection } from './ProductReviewsSection';
-import { ShoppingBag, X, Plus, Minus, CheckCircle2, ShieldCheck, Image as ImageIcon } from 'lucide-react';
+import { ShoppingBag, X, Plus, Minus, ShieldCheck, Image as ImageIcon } from 'lucide-react';
 
 interface ProductDetailModalProps {
   product: Product | null;
+  storeSlug: string;
   onClose: () => void;
 }
 
-export function ProductDetailModal({ product, onClose }: ProductDetailModalProps) {
+export function ProductDetailModal({ product, storeSlug, onClose }: ProductDetailModalProps) {
   const dispatch = useDispatch();
   const [quantity, setQuantity] = useState(1);
 
@@ -25,7 +27,8 @@ export function ProductDetailModal({ product, onClose }: ProductDetailModalProps
     product.compareAtPrice && Number(product.compareAtPrice) > Number(product.basePrice);
 
   const handleAddToCart = () => {
-    dispatch(addToCart({ product, quantity }));
+    dispatch(addToCart({ product, quantity, storeSlug }));
+    toast.success(`${quantity} × ${product.title} added to cart.`);
     onClose();
   };
 
@@ -72,12 +75,8 @@ export function ProductDetailModal({ product, onClose }: ProductDetailModalProps
                 {product.title}
               </h2>
 
-              {/* SKU & Stock Badge */}
+              {/* SKU */}
               <div className="flex items-center gap-3 mt-3">
-                <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 font-bold text-[10px] rounded-full border border-emerald-200 flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" />
-                  <span>In Stock</span>
-                </span>
                 <span className="font-mono text-xs text-slate-400">
                   SKU: {product.variants?.[0]?.sku || 'DEFAULT'}
                 </span>

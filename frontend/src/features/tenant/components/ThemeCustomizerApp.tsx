@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import { Store, useUpdateStoreMutation } from '../api/tenantApi';
 import {
   Palette,
@@ -100,22 +101,16 @@ export function ThemeCustomizerApp({ store }: ThemeCustomizerAppProps) {
         heroBanners,
       } as any).unwrap();
 
-      setSuccessMsg('Storefront Theme, Branding, Logo & Hero Banners saved successfully!');
-      setTimeout(() => setSuccessMsg(''), 4000);
+      toast.success('Storefront theme, branding, logo & hero banners saved successfully!');
     } catch (err: any) {
-      setErrorMsg(err?.data?.message || 'Failed to save storefront theme customization.');
+      const message = err?.data?.message || 'Failed to save storefront theme customization.';
+      setErrorMsg(message);
+      toast.error(message);
     }
   };
 
   return (
     <form onSubmit={handleSaveTheme} className="space-y-8 animate-in fade-in duration-200">
-      {successMsg && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold text-xs rounded-2xl flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-          <span>{successMsg}</span>
-        </div>
-      )}
-
       {errorMsg && (
         <div className="p-4 bg-red-50 border border-red-200 text-red-700 font-bold text-xs rounded-2xl">
           {errorMsg}

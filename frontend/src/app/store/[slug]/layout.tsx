@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           seo.metaDescription ||
           `Shop authentic products, pricing, and fast nationwide delivery from ${seo.storeName} on EasyCommerce.`,
         icons: {
-          icon: seo.faviconUrl || '/favicon.ico',
+          icon: seo.faviconUrl || '/icon.png',
         },
         alternates: {
           canonical: seo.canonicalUrl || `https://${slug}.easycommerce.app`,

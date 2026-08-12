@@ -54,6 +54,8 @@ export class ThemeController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List all available themes and store unlock status' })
   @ApiResponse({ status: 200, description: 'Catalog of storefront themes' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid authentication token' })
+  @ApiResponse({ status: 400, description: 'Merchant store context not found' })
   async getThemes(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') headerStoreId: string,
@@ -67,6 +69,8 @@ export class ThemeController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Initiate SSLCommerz payment gateway session to purchase premium theme' })
   @ApiResponse({ status: 200, description: 'SSLCommerz Gateway URL returned' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid authentication token' })
+  @ApiResponse({ status: 400, description: 'Merchant store context not found' })
   async initiateThemePayment(
     @CurrentUser('sub') userId: string,
     @CurrentUser('email') email: string,
@@ -88,6 +92,8 @@ export class ThemeController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Activate an unlocked storefront theme' })
   @ApiResponse({ status: 200, description: 'Theme activated successfully' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid authentication token' })
+  @ApiResponse({ status: 400, description: 'Merchant store context not found or theme not unlocked' })
   async activateTheme(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') headerStoreId: string,
@@ -102,6 +108,7 @@ export class ThemeController {
   @Post('payment/sslcommerz/success')
   @Get('payment/sslcommerz/success')
   @ApiOperation({ summary: 'SSLCommerz payment success callback' })
+  @ApiResponse({ status: 302, description: 'Redirects to frontend dashboard with theme payment status' })
   async paymentSuccess(
     @Query('purchaseId') purchaseId: string,
     @Query('val_id') valId: string,
@@ -178,6 +185,7 @@ export class ThemeController {
 
   @Post('payment/sslcommerz/fail')
   @ApiOperation({ summary: 'SSLCommerz payment failure callback' })
+  @ApiResponse({ status: 302, description: 'Redirects to frontend dashboard with failed theme payment status' })
   async paymentFail(@Query('purchaseId') purchaseId: string, @Res() res: any) {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
     if (purchaseId) {
@@ -192,6 +200,7 @@ export class ThemeController {
 
   @Post('payment/sslcommerz/cancel')
   @ApiOperation({ summary: 'SSLCommerz payment cancellation callback' })
+  @ApiResponse({ status: 302, description: 'Redirects to frontend dashboard with cancelled theme payment status' })
   async paymentCancel(@Query('purchaseId') purchaseId: string, @Res() res: any) {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
     if (purchaseId) {

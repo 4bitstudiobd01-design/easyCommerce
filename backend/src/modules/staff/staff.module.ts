@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { StaffMemberEntity } from './entities/staff.entity';
 import { UserEntity } from '../user/entities/user.entity';
 import { TenantModule } from '../tenant/tenant.module';
+import { BillingModule } from '../billing/billing.module';
 import { StaffController } from './staff.controller';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
@@ -19,6 +20,7 @@ import { GetMyPermissionsService } from './services/get-my-permissions.service';
   imports: [
     TypeOrmModule.forFeature([StaffMemberEntity, UserEntity]),
     TenantModule,
+    BillingModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

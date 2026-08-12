@@ -60,12 +60,15 @@ export class CatalogController {
   @Get('public/store/:slug/products')
   @ApiOperation({ summary: 'Get public storefront details & products by store slug' })
   @ApiResponse({ status: 200, description: 'Storefront details and published catalog products' })
+  @ApiResponse({ status: 404, description: 'Store not found' })
   async getPublicStoreProducts(@Param('slug') slug: string): Promise<PublicStoreProductsResponse> {
     return this.findPublicStoreProductsService.execute(slug);
   }
 
   @Post('products/:id/reviews')
   @ApiOperation({ summary: 'Submit a product review' })
+  @ApiResponse({ status: 201, description: 'Review submitted successfully, pending moderation' })
+  @ApiResponse({ status: 404, description: 'Product not found' })
   async createReview(
     @Param('id') productId: string,
     @Body() dto: CreateReviewDto,
@@ -75,6 +78,7 @@ export class CatalogController {
 
   @Get('products/:id/reviews')
   @ApiOperation({ summary: 'Get approved reviews for a product' })
+  @ApiResponse({ status: 200, description: 'List of approved reviews for the product' })
   async getApprovedReviews(@Param('id') productId: string) {
     return this.listProductReviewsService.listApprovedForProduct(productId);
   }
@@ -85,6 +89,9 @@ export class CatalogController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all reviews for merchant store moderation' })
+  @ApiResponse({ status: 200, description: 'List of all reviews for merchant store moderation' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid authentication token' })
+  @ApiResponse({ status: 400, description: 'Merchant has not created a store yet' })
   async listMerchantReviews(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') storeId?: string,
@@ -97,6 +104,9 @@ export class CatalogController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Approve or reject a review' })
+  @ApiResponse({ status: 200, description: 'Review approval status updated' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid authentication token' })
+  @ApiResponse({ status: 400, description: 'Merchant has not created a store yet' })
   async toggleReviewApproval(
     @CurrentUser('sub') userId: string,
     @Param('id') reviewId: string,
@@ -111,6 +121,9 @@ export class CatalogController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete a review' })
+  @ApiResponse({ status: 200, description: 'Review deleted successfully' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid authentication token' })
+  @ApiResponse({ status: 400, description: 'Merchant has not created a store yet' })
   async deleteReview(
     @CurrentUser('sub') userId: string,
     @Param('id') reviewId: string,
@@ -126,6 +139,8 @@ export class CatalogController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new product category' })
   @ApiResponse({ status: 201, description: 'Category created successfully' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid authentication token' })
+  @ApiResponse({ status: 400, description: 'Merchant has not created a store yet' })
   async createCategory(
     @CurrentUser('sub') userId: string,
     @Body() dto: CreateCategoryDto,
@@ -140,6 +155,8 @@ export class CatalogController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List all categories for logged-in merchant store' })
   @ApiResponse({ status: 200, description: 'List of store categories' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid authentication token' })
+  @ApiResponse({ status: 400, description: 'Merchant has not created a store yet' })
   async listCategories(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') storeId?: string,
@@ -153,6 +170,8 @@ export class CatalogController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new product with default variant and image' })
   @ApiResponse({ status: 201, description: 'Product created successfully' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid authentication token' })
+  @ApiResponse({ status: 400, description: 'Merchant has not created a store yet' })
   async createProduct(
     @CurrentUser('sub') userId: string,
     @Body() dto: CreateProductDto,
@@ -167,6 +186,8 @@ export class CatalogController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List all products for logged-in merchant store' })
   @ApiResponse({ status: 200, description: 'List of merchant products' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid authentication token' })
+  @ApiResponse({ status: 400, description: 'Merchant has not created a store yet' })
   async listProducts(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') storeId?: string,
@@ -180,6 +201,8 @@ export class CatalogController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get product details by ID' })
   @ApiResponse({ status: 200, description: 'Product details' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid authentication token' })
+  @ApiResponse({ status: 404, description: 'Product not found' })
   async getProductById(
     @CurrentUser('sub') userId: string,
     @Param('id') id: string,

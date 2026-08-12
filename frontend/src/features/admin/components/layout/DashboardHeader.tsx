@@ -57,14 +57,14 @@ export function DashboardHeader({
           <span className="hidden sm:inline">Merchant View</span>
         </Link>
 
-        <button
-          type="button"
+        <Link
+          href="/admin#notifications-widget"
           className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors relative"
           aria-label="Notifications"
+          title="View platform notifications"
         >
           <Bell className="w-4 h-4" />
-          <span className="w-2 h-2 bg-blue-600 rounded-full absolute top-1.5 right-1.5" />
-        </button>
+        </Link>
 
         <div className="h-5 w-px bg-slate-200 dark:bg-slate-800" />
 

@@ -14,6 +14,7 @@ import {
   ShieldBan,
   Sliders,
   Palette,
+  Wallet,
 } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -107,6 +108,14 @@ export default function SettingsPage() {
       icon: Sliders,
       badge: 'New',
       iconColor: 'text-indigo-600 bg-indigo-50',
+    },
+    {
+      id: 'billing',
+      title: 'Billing & Plan',
+      description: 'View your current plan, usage limits, and upgrade for more stores and staff seats.',
+      icon: Wallet,
+      badge: 'New',
+      iconColor: 'text-blue-600 bg-blue-50',
     },
   ];
 

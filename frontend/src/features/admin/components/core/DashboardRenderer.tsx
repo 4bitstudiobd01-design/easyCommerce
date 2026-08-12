@@ -289,7 +289,7 @@ export function DashboardRenderer({
             const widgetProps = getWidgetProps(widget.id);
 
             return (
-              <div key={widget.id} className={colSpanClass}>
+              <div key={widget.id} id={widget.id} className={`${colSpanClass} scroll-mt-20`}>
                 <WidgetBoundary widgetId={widget.id}>
                   <WidgetComponent {...widgetProps} />
                 </WidgetBoundary>
@@ -323,7 +323,7 @@ export function DashboardRenderer({
                 const widgetProps = getWidgetProps(widget.id);
 
                 return (
-                  <div key={widget.id} className={colSpanClass}>
+                  <div key={widget.id} id={widget.id} className={`${colSpanClass} scroll-mt-20`}>
                     <WidgetBoundary widgetId={widget.id}>
                       <WidgetComponent {...widgetProps} />
                     </WidgetBoundary>

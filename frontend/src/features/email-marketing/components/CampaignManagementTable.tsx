@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import {
   useGetCampaignsQuery,
   useGetSubscribersQuery,
@@ -41,9 +42,9 @@ export const CampaignManagementTable: React.FC = () => {
     setSendingId(campaign.id);
     try {
       const res = await sendBroadcast(campaign.id).unwrap();
-      alert(`Broadcast sent successfully to ${res.totalSent} recipients!`);
+      toast.success(`Broadcast sent successfully to ${res.totalSent} recipients!`);
     } catch (err: any) {
-      alert(err?.data?.message || 'Failed to send campaign broadcast.');
+      toast.error(err?.data?.message || 'Failed to send campaign broadcast.');
     } finally {
       setSendingId(null);
     }

@@ -42,6 +42,8 @@ export class InventoryController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new fulfillment warehouse' })
   @ApiResponse({ status: 201, description: 'Warehouse created successfully' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid authentication token' })
+  @ApiResponse({ status: 400, description: 'Merchant has not created a store yet' })
   async createWarehouse(
     @CurrentUser('sub') userId: string,
     @Body() dto: CreateWarehouseDto,
@@ -56,6 +58,8 @@ export class InventoryController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List all warehouses for merchant store' })
   @ApiResponse({ status: 200, description: 'List of store warehouses' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid authentication token' })
+  @ApiResponse({ status: 400, description: 'Merchant has not created a store yet' })
   async listWarehouses(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') storeId?: string,
@@ -69,6 +73,8 @@ export class InventoryController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Adjust physical stock counts for a product' })
   @ApiResponse({ status: 200, description: 'Stock adjusted successfully' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid authentication token' })
+  @ApiResponse({ status: 400, description: 'Merchant has not created a store yet' })
   async adjustStock(
     @CurrentUser('sub') userId: string,
     @Body() dto: AdjustStockDto,
@@ -83,6 +89,8 @@ export class InventoryController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get stock inventory levels across products for merchant' })
   @ApiResponse({ status: 200, description: 'Inventory stock list' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid authentication token' })
+  @ApiResponse({ status: 400, description: 'Merchant has not created a store yet' })
   async getInventoryStocks(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') storeId?: string,
@@ -95,6 +103,9 @@ export class InventoryController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get stock inventory alias route for frontend' })
+  @ApiResponse({ status: 200, description: 'Inventory stock list' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid authentication token' })
+  @ApiResponse({ status: 400, description: 'Merchant has not created a store yet' })
   async getInventoryStockAlias(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') storeId?: string,

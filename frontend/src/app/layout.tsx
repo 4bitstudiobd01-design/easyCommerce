@@ -8,7 +8,6 @@ export const metadata: Metadata = {
   description: 'Enterprise Multi-Tenant eCommerce SaaS Platform for merchants in Bangladesh and worldwide.',
   icons: {
     icon: '/icon.png',
-    shortcut: '/favicon.ico',
     apple: '/icon.png',
   },
 };

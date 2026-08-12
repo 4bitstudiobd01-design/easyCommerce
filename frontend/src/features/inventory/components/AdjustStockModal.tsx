@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import {
   useAdjustStockMutation,
   useGetWarehousesQuery,
@@ -63,9 +64,12 @@ export function AdjustStockModal({
         action,
       }).unwrap();
 
+      toast.success('Stock level updated.');
       onClose();
     } catch (err: any) {
-      setErrorMsg(err?.data?.message || 'Failed to adjust stock level.');
+      const message = err?.data?.message || 'Failed to adjust stock level.';
+      setErrorMsg(message);
+      toast.error(message);
     }
   };
 

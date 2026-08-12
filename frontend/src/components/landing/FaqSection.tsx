@@ -9,15 +9,15 @@ export function FaqSection() {
   const faqs = [
     {
       q: 'How fast can I launch my online store with EasyCommerce?',
-      a: 'You can launch your store in under 10 seconds! Simply register with your email or phone number, choose your store name, and your store domain (store.easycommerce.app) is automatically provisioned.',
+      a: 'In minutes. Register with your email, choose your store name, and your storefront is live immediately at your own store.easycommerce.app address — no developer needed.',
     },
     {
       q: 'Do I need developer skills to set up bKash, Nagad, or Steadfast courier?',
-      a: 'No developer skills are required. EasyCommerce includes pre-built native integrations for bKash, Nagad, SSLCommerz, Steadfast, and Pathao. Simply enter your API credentials in your admin dashboard.',
+      a: 'No developer skills are required. Checkout runs through SSLCommerz with bKash, Nagad, and card support built in, and Steadfast/Pathao courier booking is available directly from your order panel — just enter your gateway and courier credentials in your dashboard.',
     },
     {
       q: 'Can I connect my own custom domain (e.g. merchant.com)?',
-      a: 'Yes! All paid plans support custom domain binding with automated Let’s Encrypt SSL certificate issuance.',
+      a: 'Custom domain binding is on our roadmap and not yet available. Every store gets a free store.easycommerce.app subdomain today.',
     },
     {
       q: 'How does EasyCommerce handle inventory management?',
@@ -25,7 +25,7 @@ export function FaqSection() {
     },
     {
       q: 'Is my store data isolated securely from other merchants?',
-      a: 'Yes. EasyCommerce uses enterprise multi-tenancy with PostgreSQL row-level security context enforcing 100% data isolation per merchant.',
+      a: 'Yes. EasyCommerce uses row-level multi-tenancy in the database, so every query is scoped to your store — other merchants can never see or access your data.',
     },
   ];
 

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import { useInviteStaffMutation, StaffPermissionType } from '../api/staffApi';
 import {
   X,
@@ -164,13 +165,14 @@ export const InviteStaffModal: React.FC<InviteStaffModalProps> = ({ isOpen, onCl
         permissions,
       }).unwrap();
 
+      toast.success('Staff invitation sent.');
       if (res.inviteToken) {
         setCreatedInviteToken(res.inviteToken);
       } else {
         onClose();
       }
-    } catch (err) {
-      console.error('Failed to invite staff member:', err);
+    } catch (err: any) {
+      toast.error(err?.data?.message || 'Failed to invite staff member.');
     }
   };
 
@@ -181,6 +183,7 @@ export const InviteStaffModal: React.FC<InviteStaffModalProps> = ({ isOpen, onCl
   const handleCopy = () => {
     navigator.clipboard.writeText(inviteUrl);
     setCopied(true);
+    toast.success('Invitation link copied to clipboard.');
     setTimeout(() => setCopied(false), 2000);
   };
 

@@ -119,8 +119,8 @@ export default function EditStaffPermissionsPage() {
       
       toast.success('Staff permissions updated successfully!');
       router.push('/dashboard/staff');
-    } catch (err) {
-      console.error('Failed to update staff permissions:', err);
+    } catch (err: any) {
+      toast.error(err?.data?.message || 'Failed to update staff permissions.');
     }
   };
 

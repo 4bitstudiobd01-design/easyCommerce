@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store';
 import { clearCart } from '@/features/storefront/slices/cartSlice';
@@ -56,13 +57,12 @@ export default function CheckoutPage() {
   const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const deliveryFee = city.toLowerCase().includes('dhaka') ? 60 : 120;
   const grandTotal = Math.max(0, subtotal + deliveryFee - appliedDiscount);
+  const storeSlug = cartItems[0]?.storeSlug;
 
   const handleApplyPromoCode = async () => {
-    if (!promoCodeInput.trim()) return;
+    if (!promoCodeInput.trim() || !storeSlug) return;
     setPromoErrorMsg('');
     setPromoSuccessMsg('');
-
-    const storeSlug = new URLSearchParams(window.location.search).get('storeSlug') || localStorage.getItem('easycommerce_store_slug') || 'demo-store';
 
     try {
       const result = await validateCoupon({
@@ -74,10 +74,13 @@ export default function CheckoutPage() {
       setAppliedDiscount(result.calculatedDiscount);
       setAppliedCouponCode(result.code);
       setPromoSuccessMsg(result.message);
+      toast.success(result.message || 'Promo code applied.');
     } catch (err: any) {
       setAppliedDiscount(0);
       setAppliedCouponCode('');
-      setPromoErrorMsg(err?.data?.message || 'Invalid promo coupon code.');
+      const message = err?.data?.message || 'Invalid promo coupon code.';
+      setPromoErrorMsg(message);
+      toast.error(message);
     }
   };
 
@@ -90,9 +93,14 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (!storeSlug) {
+      setErrorMsg('Unable to determine which store this order belongs to. Please return to the store and try again.');
+      return;
+    }
+
     try {
       const order = await createOrder({
-        storeSlug: 'darucinifashon', // Default storefront slug
+        storeSlug,
         customerName,
         customerPhone,
         customerEmail: customerEmail || undefined,
@@ -117,8 +125,11 @@ export default function CheckoutPage() {
 
       setCompletedOrder(order);
       dispatch(clearCart());
+      toast.success('Order placed successfully!');
     } catch (err: any) {
-      setErrorMsg(err?.data?.message || 'Failed to place order. Please try again.');
+      const message = err?.data?.message || 'Failed to place order. Please try again.';
+      setErrorMsg(message);
+      toast.error(message);
     }
   };
 

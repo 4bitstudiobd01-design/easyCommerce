@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { UserPlus, Store, TrendingUp, Download, ArrowRight } from 'lucide-react';
+import { UserPlus, Store, TrendingUp, ArrowRight } from 'lucide-react';
 
 export function HowItWorks() {
   const steps = [
@@ -38,14 +38,6 @@ export function HowItWorks() {
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
-            <Link
-              href="/register"
-              className="px-5 py-2.5 bg-white border border-blue-600 text-blue-600 hover:bg-blue-50 font-bold text-xs rounded-full inline-flex items-center gap-1.5 transition-colors shadow-sm"
-            >
-              <span>Get App</span>
-              <Download className="w-3.5 h-3.5" />
-            </Link>
-
             <Link
               href="/register"
               className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-full inline-flex items-center gap-2 transition-all shadow-md shadow-blue-600/20 active:scale-95"

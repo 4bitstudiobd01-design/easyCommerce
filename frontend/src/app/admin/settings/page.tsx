@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Database, CheckCircle2, Layers } from 'lucide-react';
+import { Database, Terminal } from 'lucide-react';
 
 export default function AdminSettingsPage() {
   return (
@@ -11,30 +11,24 @@ export default function AdminSettingsPage() {
           <Database className="w-5 h-5" />
         </div>
         <div>
-          <h3 className="font-extrabold text-base text-slate-900">Database & System Migrations Status</h3>
-          <p className="text-xs text-slate-400">PostgreSQL TypeORM schema migrations</p>
+          <h3 className="font-extrabold text-base text-slate-900">Database & System Migrations</h3>
+          <p className="text-xs text-slate-400">PostgreSQL schema managed via TypeORM migrations</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-xs font-semibold">
-        <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-1">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-            PostgreSQL Connection Status
-          </span>
-          <span className="text-sm font-extrabold text-emerald-600 flex items-center gap-1.5">
-            <CheckCircle2 className="w-4 h-4" />
-            <span>Connected & Operational</span>
-          </span>
-        </div>
-
-        <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-1">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-            Executed TypeORM Migrations
-          </span>
-          <span className="text-sm font-extrabold text-blue-600 flex items-center gap-1.5">
-            <Layers className="w-4 h-4" />
-            <span>8 Active System Migrations</span>
-          </span>
+      <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-start gap-3 text-xs">
+        <Terminal className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+        <div className="space-y-1 text-slate-600">
+          <p className="font-semibold text-slate-800">
+            Live database connection and migration status are not surfaced in this dashboard yet.
+          </p>
+          <p>
+            Check migration state from the backend with{' '}
+            <code className="px-1.5 py-0.5 bg-white border border-slate-200 rounded font-mono text-[11px]">
+              npm run migration:show
+            </code>
+            .
+          </p>
         </div>
       </div>
     </div>

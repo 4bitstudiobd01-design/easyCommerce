@@ -1,8 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useGetProductsQuery, Product } from '../api/catalogApi';
-import { Package, Tag, Layers, ArrowUpRight, Image as ImageIcon } from 'lucide-react';
+import { useGetMyStoreQuery } from '@/features/tenant/api/tenantApi';
+import { OgShareCardPreviewModal } from '@/features/seo/components/OgShareCardPreviewModal';
+import { Package, Tag, Layers, ArrowUpRight, Image as ImageIcon, Share2 } from 'lucide-react';
 import { TableRowSkeleton } from '@/components/ui/Skeleton';
 
 interface ProductListTableProps {
@@ -11,6 +13,8 @@ interface ProductListTableProps {
 
 export function ProductListTable({ onAddProductClick }: ProductListTableProps) {
   const { data: products = [], isLoading, isError } = useGetProductsQuery();
+  const { data: store } = useGetMyStoreQuery();
+  const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
 
   if (isLoading) {
     return (
@@ -88,6 +92,7 @@ export function ProductListTable({ onAddProductClick }: ProductListTableProps) {
               <th className="px-6 py-3.5">SKU / Variant</th>
               <th className="px-6 py-3.5">Status</th>
               <th className="px-6 py-3.5 text-right">Created</th>
+              <th className="px-6 py-3.5 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 font-medium">
@@ -165,12 +170,37 @@ export function ProductListTable({ onAddProductClick }: ProductListTableProps) {
                   <td className="px-6 py-4 text-right text-slate-400 text-[11px]">
                     {new Date(product.createdAt).toLocaleDateString()}
                   </td>
+
+                  <td className="px-6 py-4 text-right">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewProduct(product)}
+                      className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="Preview social share card"
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                    </button>
+                  </td>
                 </tr>
               );
             })}
           </tbody>
         </table>
       </div>
+
+      {previewProduct && (
+        <OgShareCardPreviewModal
+          isOpen={Boolean(previewProduct)}
+          onClose={() => setPreviewProduct(null)}
+          title={previewProduct.title}
+          description={previewProduct.description || `Buy ${previewProduct.title} online.`}
+          image={previewProduct.images?.find((img) => img.isPrimary)?.url || previewProduct.images?.[0]?.url || ''}
+          url={store?.slug && typeof window !== 'undefined' ? `${window.location.origin}/store/${store.slug}` : ''}
+          price={Number(previewProduct.basePrice)}
+          currency={store?.currency}
+          storeName={store?.name}
+        />
+      )}
     </div>
   );
 }

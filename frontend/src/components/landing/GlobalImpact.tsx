@@ -1,12 +1,28 @@
 import Image from 'next/image';
-import { Globe2, ShoppingCart, Users, DollarSign, TrendingUp } from 'lucide-react';
+import { Globe2, ShieldCheck, Layers, Zap, Building2 } from 'lucide-react';
 
 export function GlobalImpact() {
-  const stats = [
-    { value: '25,409+', label: 'Over 25k Merchant Orders', icon: ShoppingCart, color: 'text-blue-600' },
-    { value: '100k', label: 'Users used our platform around the world', icon: Users, color: 'text-emerald-600' },
-    { value: '৳3,787.8M', label: 'Total Order Amount Processed', icon: DollarSign, color: 'text-indigo-600' },
-    { value: '৳8M', label: "Today's Merchant Sales Volume", icon: TrendingUp, color: 'text-purple-600' },
+  const pillars = [
+    {
+      value: 'Row-Level',
+      label: 'Multi-Tenant Data Isolation Per Store',
+      icon: ShieldCheck,
+    },
+    {
+      value: 'Decoupled',
+      label: 'Inventory Domain, Independent of Catalog',
+      icon: Layers,
+    },
+    {
+      value: 'Native',
+      label: 'bKash, Nagad & Cards via SSLCommerz',
+      icon: Zap,
+    },
+    {
+      value: 'Built For',
+      label: 'Bangladesh First, Global Ready',
+      icon: Building2,
+    },
   ];
 
   return (
@@ -15,13 +31,13 @@ export function GlobalImpact() {
         {/* Section Header */}
         <div className="max-w-3xl mx-auto space-y-3">
           <span className="text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
-            Global Scale & Impact
+            Architecture That Scales
           </span>
           <h2 className="text-3xl md:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
-            Empowering entrepreneurs around the world
+            Built to grow with your business
           </h2>
           <p className="text-slate-500 text-base font-normal">
-            Processing high-concurrency order volumes with sub-second tenant latency.
+            A modular, multi-tenant foundation designed for high-concurrency order volumes from day one.
           </p>
         </div>
 
@@ -41,7 +57,7 @@ export function GlobalImpact() {
             <div className="relative z-10 flex items-center gap-2 bg-white/95 backdrop-blur-md px-4 py-2 rounded-full border border-blue-200 shadow-md">
               <Globe2 className="w-4 h-4 text-blue-600 animate-spin" style={{ animationDuration: '15s' }} />
               <span className="text-xs font-bold text-slate-800">
-                Active Nodes: Dhaka • Chittagong • Sylhet • Global Replicas
+                Headquartered in Dhaka, Bangladesh
               </span>
             </div>
           </div>
@@ -49,14 +65,14 @@ export function GlobalImpact() {
 
         {/* Clean Stats Row (Card-free pure typography) */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 pt-6 max-w-6xl mx-auto">
-          {stats.map((st, idx) => {
+          {pillars.map((st, idx) => {
             const Icon = st.icon;
             return (
               <div key={idx} className="space-y-2 text-center">
                 <div className="p-2 w-fit mx-auto text-blue-600 bg-blue-50 rounded-xl border border-blue-100">
                   <Icon className="w-5 h-5" />
                 </div>
-                <h3 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight">
+                <h3 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
                   {st.value}
                 </h3>
                 <p className="text-xs text-slate-500 font-medium max-w-[180px] mx-auto leading-relaxed">

@@ -1,18 +1,20 @@
 'use client';
 
 import React from 'react';
+import { toast } from 'sonner';
 import { Product } from '@/features/catalog/api/catalogApi';
 import { useDispatch } from 'react-redux';
 import { addToCart } from '../slices/cartSlice';
-import { ShoppingBag, Eye, Image as ImageIcon, Star, Check } from 'lucide-react';
+import { ShoppingBag, Eye, Image as ImageIcon } from 'lucide-react';
 
 interface ProductCardProps {
   product: Product;
+  storeSlug: string;
   onOpenDetail?: (product: Product) => void;
   primaryColor?: string;
 }
 
-export function ProductCard({ product, onOpenDetail, primaryColor = '#2563eb' }: ProductCardProps) {
+export function ProductCard({ product, storeSlug, onOpenDetail, primaryColor = '#2563eb' }: ProductCardProps) {
   const dispatch = useDispatch();
 
   const primaryImage =
@@ -31,7 +33,8 @@ export function ProductCard({ product, onOpenDetail, primaryColor = '#2563eb' }:
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
-    dispatch(addToCart({ product, quantity: 1 }));
+    dispatch(addToCart({ product, quantity: 1, storeSlug }));
+    toast.success(`${product.title} added to cart.`);
   };
 
   return (
@@ -62,12 +65,6 @@ export function ProductCard({ product, onOpenDetail, primaryColor = '#2563eb' }:
             </div>
           )}
 
-          {/* In Stock Badge */}
-          <div className="absolute top-3 right-3 px-2.5 py-1 bg-slate-900/80 backdrop-blur-md text-white font-bold text-[10px] rounded-xl flex items-center gap-1">
-            <Check className="w-3 h-3 text-emerald-400" />
-            <span>In Stock</span>
-          </div>
-
           {/* Hover Quick Action Overlay */}
           <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-4">
             <button
@@ -83,17 +80,10 @@ export function ProductCard({ product, onOpenDetail, primaryColor = '#2563eb' }:
 
         {/* Card Body Details */}
         <div className="p-5 space-y-2">
-          {/* Category & Star Rating */}
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-wider block" style={{ color: primaryColor }}>
-              {product.category?.name || 'Catalog Item'}
-            </span>
-
-            <div className="flex items-center gap-1 text-amber-400 text-xs font-extrabold">
-              <Star className="w-3.5 h-3.5 fill-amber-400" />
-              <span>5.0</span>
-            </div>
-          </div>
+          {/* Category */}
+          <span className="text-[10px] font-bold uppercase tracking-wider block" style={{ color: primaryColor }}>
+            {product.category?.name || 'Catalog Item'}
+          </span>
 
           {/* Product Title */}
           <h3 className="font-extrabold text-sm text-slate-900 line-clamp-2 leading-snug group-hover:text-slate-700 transition-colors">

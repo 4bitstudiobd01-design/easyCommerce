@@ -5,14 +5,14 @@ export function FeatureGrid() {
     {
       icon: Smartphone,
       iconBg: 'bg-blue-50 text-blue-600 border-blue-100',
-      title: 'Native MFS & Gateways',
-      desc: 'First-party integration with bKash, Nagad, Rocket, SSLCommerz, and automated COD verification.',
+      title: 'MFS & Card Checkout',
+      desc: 'SSLCommerz-powered checkout with bKash, Nagad, cards, and automated Cash on Delivery.',
     },
     {
       icon: Truck,
       iconBg: 'bg-emerald-50 text-emerald-600 border-emerald-100',
       title: 'Automated Courier Logistics',
-      desc: 'One-click order fulfillment and tracking labels for Steadfast, Pathao, RedX, and Paperfly.',
+      desc: 'One-click order fulfillment and tracking labels for Steadfast and Pathao.',
     },
     {
       icon: Layers,

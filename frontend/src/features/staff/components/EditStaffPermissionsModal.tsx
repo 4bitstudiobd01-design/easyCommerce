@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { StaffMember, useUpdateStaffPermissionsMutation, StaffPermissionType } from '../api/staffApi';
 import { X, Shield, Save, AlertCircle, Sparkles } from 'lucide-react';
 
@@ -108,9 +109,10 @@ export const EditStaffPermissionsModal: React.FC<EditStaffPermissionsModalProps>
         permissions,
         status,
       }).unwrap();
+      toast.success('Staff permissions updated.');
       onClose();
-    } catch (err) {
-      console.error('Failed to update staff permissions:', err);
+    } catch (err: any) {
+      toast.error(err?.data?.message || 'Failed to update staff permissions.');
     }
   };
 

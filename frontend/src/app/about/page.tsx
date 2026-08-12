@@ -35,7 +35,7 @@ export default function AboutPage() {
             </div>
             <h3 className="text-xl font-bold text-slate-900">Local Ecosystem First</h3>
             <p className="text-xs text-slate-600 leading-relaxed font-medium">
-              We built native first-party integrations for bKash, Nagad, SSLCommerz, Steadfast, and Pathao so merchants never struggle with complex API setups.
+              We built bKash, Nagad, and card checkout in from day one, plus one-click Steadfast and Pathao courier booking — so merchants never touch a complex API setup.
             </p>
           </div>
 
@@ -43,9 +43,9 @@ export default function AboutPage() {
             <div className="p-3 bg-emerald-50 w-fit rounded-xl border border-emerald-100 text-emerald-600">
               <ShieldCheck className="w-6 h-6" />
             </div>
-            <h3 className="text-xl font-bold text-slate-900">100% Data Isolation</h3>
+            <h3 className="text-xl font-bold text-slate-900">Your Store, Your Data</h3>
             <p className="text-xs text-slate-600 leading-relaxed font-medium">
-              Our multi-tenant PostgreSQL architecture enforces strict row-level security context, guaranteeing complete data privacy and sub-second performance.
+              Every store runs on isolated, tenant-scoped data in our multi-tenant architecture — other merchants can never see or touch your store's information.
             </p>
           </div>
 
@@ -67,7 +67,7 @@ export default function AboutPage() {
               Ready to build your dream online store?
             </h2>
             <p className="text-slate-600 text-sm">
-              Join 10,000+ Bangladeshi merchants using EasyCommerce today.
+              Launch free today — no credit card, no developer needed.
             </p>
           </div>
 

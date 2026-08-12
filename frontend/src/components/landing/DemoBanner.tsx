@@ -64,7 +64,7 @@ export function DemoBanner() {
           </h2>
 
           <p className="text-slate-600 text-sm md:text-base font-normal max-w-xl mx-auto leading-relaxed">
-            Step inside the EasyCommerce experience and preview how your store will look, function, and grow — before you even start.
+            Create your free store in minutes and see exactly how it looks, functions, and grows — no credit card required.
           </p>
 
           <div className="pt-2">
@@ -72,7 +72,7 @@ export function DemoBanner() {
               href="/register"
               className="px-8 py-3.5 bg-white border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white font-extrabold text-sm rounded-full inline-flex items-center gap-2.5 transition-all shadow-md active:scale-95"
             >
-              <span>Explore Demo</span>
+              <span>Create Your Free Store</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>

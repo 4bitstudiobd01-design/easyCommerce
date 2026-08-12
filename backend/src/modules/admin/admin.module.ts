@@ -11,14 +11,19 @@ import { ToggleStoreStatusService } from './services/toggle-store-status.service
 import { ListAllSystemOrdersService } from './services/list-all-system-orders.service';
 import { PlatformConfigEntity } from './entities/platform-config.entity';
 import { PlatformConfigService } from './services/platform-config.service';
+import { ContactMessageEntity } from './entities/contact-message.entity';
+import { CreateContactMessageService } from './services/create-contact-message.service';
+import { ListContactMessagesService } from './services/list-contact-messages.service';
 import { DashboardFacadeService } from './services/dashboard-facade.service';
 import { AdminController } from './admin.controller';
 import { AdminDashboardController } from './admin-dashboard.controller';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { SmsModule } from '../sms/sms.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([StoreEntity, OrderEntity, UserEntity, PlatformConfigEntity]),
+    TypeOrmModule.forFeature([StoreEntity, OrderEntity, UserEntity, PlatformConfigEntity, ContactMessageEntity]),
+    SmsModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -35,6 +40,8 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     ToggleStoreStatusService,
     ListAllSystemOrdersService,
     PlatformConfigService,
+    CreateContactMessageService,
+    ListContactMessagesService,
     DashboardFacadeService,
     JwtAuthGuard,
   ],

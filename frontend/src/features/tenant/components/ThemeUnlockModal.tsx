@@ -13,7 +13,6 @@ interface ThemeUnlockModalProps {
 
 export const ThemeUnlockModal: React.FC<ThemeUnlockModalProps> = ({ isOpen, onClose, theme }) => {
   const [initiatePayment, { isLoading }] = useInitiateThemePaymentMutation();
-  const [selectedGateway, setSelectedGateway] = useState<'SSLCOMMERZ' | 'BKASH'>('SSLCOMMERZ');
 
   if (!isOpen || !theme) return null;
 
@@ -83,42 +82,16 @@ export const ThemeUnlockModal: React.FC<ThemeUnlockModalProps> = ({ isOpen, onCl
             </div>
           </div>
 
-          {/* Payment Method Selector */}
+          {/* Payment Gateway */}
           <div className="space-y-2">
-            <span className="text-xs font-extrabold text-slate-700 block">Select Payment Gateway:</span>
-            <div className="grid grid-cols-2 gap-3">
-              <div
-                onClick={() => setSelectedGateway('SSLCOMMERZ')}
-                className={`p-3 rounded-2xl border cursor-pointer transition flex items-center gap-3 ${
-                  selectedGateway === 'SSLCOMMERZ'
-                    ? 'border-blue-600 bg-blue-50/50 text-blue-900 font-bold ring-2 ring-blue-600/20'
-                    : 'border-slate-200 text-slate-700 hover:bg-slate-50'
-                }`}
-              >
-                <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-xs shrink-0">
-                  SSL
-                </div>
-                <div className="text-xs">
-                  <span className="block font-extrabold">SSLCommerz</span>
-                  <span className="text-[10px] text-slate-500 block">bKash, Nagad, Visa, MC</span>
-                </div>
+            <span className="text-xs font-extrabold text-slate-700 block">Payment Gateway:</span>
+            <div className="p-3 rounded-2xl border border-blue-600 bg-blue-50/50 text-blue-900 font-bold ring-2 ring-blue-600/20 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-xs shrink-0">
+                SSL
               </div>
-
-              <div
-                onClick={() => setSelectedGateway('BKASH')}
-                className={`p-3 rounded-2xl border cursor-pointer transition flex items-center gap-3 ${
-                  selectedGateway === 'BKASH'
-                    ? 'border-pink-600 bg-pink-50/50 text-pink-900 font-bold ring-2 ring-pink-600/20'
-                    : 'border-slate-200 text-slate-700 hover:bg-slate-50'
-                }`}
-              >
-                <div className="w-8 h-8 rounded-xl bg-pink-600 text-white flex items-center justify-center font-black text-xs shrink-0">
-                  bK
-                </div>
-                <div className="text-xs">
-                  <span className="block font-extrabold">bKash Direct</span>
-                  <span className="text-[10px] text-slate-500 block">Instant Mobile Wallet</span>
-                </div>
+              <div className="text-xs">
+                <span className="block font-extrabold">SSLCommerz</span>
+                <span className="text-[10px] text-slate-500 block">bKash, Nagad, Visa, MC — choose on the payment page</span>
               </div>
             </div>
           </div>

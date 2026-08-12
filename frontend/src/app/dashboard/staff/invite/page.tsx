@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import { useInviteStaffMutation, StaffPermissionType } from '@/features/staff/api/staffApi';
 import {
   UserPlus,
@@ -157,13 +158,14 @@ export default function InviteStaffPage() {
         permissions,
       }).unwrap();
 
+      toast.success('Staff invitation sent.');
       if (res.inviteToken) {
         setCreatedInviteToken(res.inviteToken);
       } else {
         router.push('/dashboard/staff');
       }
-    } catch (err) {
-      console.error('Failed to invite staff member:', err);
+    } catch (err: any) {
+      toast.error(err?.data?.message || 'Failed to invite staff member.');
     }
   };
 
@@ -174,6 +176,7 @@ export default function InviteStaffPage() {
   const handleCopy = () => {
     navigator.clipboard.writeText(inviteUrl);
     setCopied(true);
+    toast.success('Invitation link copied to clipboard.');
     setTimeout(() => setCopied(false), 2000);
   };
 

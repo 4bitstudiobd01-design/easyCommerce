@@ -1,9 +1,10 @@
 import { Controller, Post, Get, Body, Param, UseGuards, BadRequestException } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AbandonedCartService } from '../services/abandoned-cart.service';
 import { FindStoreByUserService } from '../../tenant/services/find-store-by-user.service';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import { TrackAbandonedCartDto } from '../dto/track-abandoned-cart.dto';
 
 @ApiTags('Abandoned Carts & Checkout Recovery')
 @Controller('orders/abandoned-carts')
@@ -24,18 +25,9 @@ export class AbandonedCartController {
   // Public endpoint to track incomplete checkout session
   @Post('track')
   @ApiOperation({ summary: 'Track incomplete customer checkout session' })
-  async trackCart(
-    @Body()
-    dto: {
-      customerName?: string;
-      customerPhone: string;
-      customerEmail?: string;
-      shippingAddress?: string;
-      itemsJson: any[];
-      totalAmount: number;
-      storeSlug: string;
-    },
-  ) {
+  @ApiResponse({ status: 201, description: 'Abandoned cart tracked successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid tracking payload' })
+  async trackCart(@Body() dto: TrackAbandonedCartDto) {
     return this.abandonedCartService.trackIncompleteCart(dto);
   }
 
@@ -44,6 +36,9 @@ export class AbandonedCartController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List abandoned carts for merchant store' })
+  @ApiResponse({ status: 200, description: 'List of abandoned carts for the merchant store' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid authentication token' })
+  @ApiResponse({ status: 400, description: 'Merchant has not created a store yet' })
   async getMerchantAbandonedCarts(@CurrentUser('sub') userId: string) {
     const tenantId = await this.getMerchantTenantId(userId);
     return this.abandonedCartService.getMerchantAbandonedCarts(tenantId);
@@ -54,6 +49,9 @@ export class AbandonedCartController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Send 1-click Recovery SMS to customer' })
+  @ApiResponse({ status: 201, description: 'Recovery SMS sent successfully' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid authentication token' })
+  @ApiResponse({ status: 400, description: 'Merchant has not created a store yet' })
   async sendRecoverySms(
     @CurrentUser('sub') userId: string,
     @Param('id') id: string,

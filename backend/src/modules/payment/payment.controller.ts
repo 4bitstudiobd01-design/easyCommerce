@@ -43,6 +43,7 @@ export class PaymentController {
   @Post('initiate')
   @ApiOperation({ summary: 'Initiate online SSLCommerz payment for an order' })
   @ApiResponse({ status: 201, description: 'SSLCommerz Gateway Page URL' })
+  @ApiResponse({ status: 400, description: 'Order not found or invalid payment request' })
   async initiatePayment(@Body() dto: InitiatePaymentDto) {
     return this.initiateSslCommerzPaymentService.execute(dto.orderId);
   }
@@ -50,6 +51,7 @@ export class PaymentController {
   @Post('sslcommerz/success')
   @Get('sslcommerz/success')
   @ApiOperation({ summary: 'SSLCommerz payment success callback' })
+  @ApiResponse({ status: 302, description: 'Redirects to frontend checkout success/fail page' })
   async sslCommerzSuccess(@Req() req: Request, @Res() res: Response) {
     const payload = { ...req.query, ...req.body };
     const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
@@ -75,6 +77,7 @@ export class PaymentController {
   @Post('sslcommerz/fail')
   @Get('sslcommerz/fail')
   @ApiOperation({ summary: 'SSLCommerz payment fail callback' })
+  @ApiResponse({ status: 302, description: 'Redirects to frontend checkout page with FAIL status' })
   async sslCommerzFail(@Res() res: Response) {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
     return res.redirect(`${frontendUrl}/checkout?status=FAIL`);
@@ -83,6 +86,7 @@ export class PaymentController {
   @Post('sslcommerz/cancel')
   @Get('sslcommerz/cancel')
   @ApiOperation({ summary: 'SSLCommerz payment cancel callback' })
+  @ApiResponse({ status: 302, description: 'Redirects to frontend checkout page with CANCEL status' })
   async sslCommerzCancel(@Res() res: Response) {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
     return res.redirect(`${frontendUrl}/checkout?status=CANCEL`);
@@ -90,6 +94,7 @@ export class PaymentController {
 
   @Post('sslcommerz/ipn')
   @ApiOperation({ summary: 'SSLCommerz IPN Webhook callback' })
+  @ApiResponse({ status: 201, description: 'Payment validated and order updated via server-to-server IPN' })
   async sslCommerzIpn(@Req() req: Request) {
     const payload = { ...req.query, ...req.body };
     return this.validateSslCommerzPaymentService.execute({
@@ -109,6 +114,8 @@ export class PaymentController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List all payment transactions for merchant store' })
   @ApiResponse({ status: 200, description: 'List of store payment records' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid authentication token' })
+  @ApiResponse({ status: 400, description: 'Merchant has not created a store yet' })
   async listMerchantPayments(@CurrentUser('sub') userId: string) {
     const tenantId = await this.getMerchantTenantId(userId);
     return this.listMerchantPaymentsService.execute(tenantId);

@@ -6,6 +6,7 @@ import { StoreEntity } from '../entities/store.entity';
 import { UserEntity } from '../../user/entities/user.entity';
 import { CreateStoreDto } from '../dto/create-store.dto';
 import { StoreResponseDto } from '../dto/store-response.dto';
+import { EnforcePlanLimitService } from '../../billing/services/enforce-plan-limit.service';
 
 @Injectable()
 export class CreateStoreService {
@@ -16,6 +17,7 @@ export class CreateStoreService {
     private readonly storeRepository: Repository<StoreEntity>,
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
+    private readonly enforcePlanLimitService: EnforcePlanLimitService,
   ) {}
 
   async execute(userId: string, dto: CreateStoreDto): Promise<StoreResponseDto> {
@@ -29,11 +31,24 @@ export class CreateStoreService {
       throw new ConflictException(`Store slug "${slug}" is already taken. Please choose another.`);
     }
 
-    const tenant = this.tenantRepository.create({
-      name: `${dto.name} Org`,
-      isActive: true,
-    });
-    const savedTenant = await this.tenantRepository.save(tenant);
+    // A user's stores all belong to the same organization (tenant) — reuse it
+    // if one already exists instead of splintering every store into its own
+    // tenant, which would break multi-store billing/ownership.
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    let tenantId = user?.tenantId;
+
+    if (!tenantId) {
+      const tenant = this.tenantRepository.create({
+        name: `${dto.name} Org`,
+        isActive: true,
+      });
+      const savedTenant = await this.tenantRepository.save(tenant);
+      tenantId = savedTenant.id;
+
+      await this.userRepository.update(userId, { tenantId });
+    }
+
+    await this.enforcePlanLimitService.assertCanCreateStore(tenantId);
 
     const store = this.storeRepository.create({
       name: dto.name,
@@ -43,14 +58,10 @@ export class CreateStoreService {
       address: dto.address,
       logo: dto.logo,
       ownerId: userId,
-      tenantId: savedTenant.id,
+      tenantId,
       isActive: true,
     });
     const savedStore = await this.storeRepository.save(store);
-
-    await this.userRepository.update(userId, {
-      tenantId: savedTenant.id,
-    });
 
     return {
       id: savedStore.id,

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { toast } from 'sonner';
 import { UserPlus, PlusCircle, Bell, ShieldAlert, FileText, Settings } from 'lucide-react';
 import { QuickActionCard, QuickActionItem } from '../core/QuickActionCard';
 
@@ -16,7 +17,7 @@ const defaultActions: QuickActionItem[] = [
     label: 'Onboard Merchant',
     description: 'Manually register new tenant',
     icon: UserPlus,
-    onClick: () => console.log('Create Merchant clicked'),
+    onClick: () => toast.info('Merchant onboarding is coming soon.'),
     variant: 'primary',
   },
   {
@@ -24,7 +25,7 @@ const defaultActions: QuickActionItem[] = [
     label: 'Broadcast Notice',
     description: 'Send global system announcement',
     icon: Bell,
-    onClick: () => console.log('Broadcast Notice clicked'),
+    onClick: () => toast.info('Broadcast notices are coming soon.'),
     variant: 'secondary',
   },
   {
@@ -32,7 +33,7 @@ const defaultActions: QuickActionItem[] = [
     label: 'Maintenance Mode',
     description: 'Toggle platform maintenance banner',
     icon: ShieldAlert,
-    onClick: () => console.log('Maintenance Mode clicked'),
+    onClick: () => toast.info('Maintenance mode toggle is coming soon.'),
     variant: 'danger',
   },
   {
@@ -40,7 +41,7 @@ const defaultActions: QuickActionItem[] = [
     label: 'View Audit Logs',
     description: 'Inspect administrative audit trails',
     icon: FileText,
-    onClick: () => console.log('Audit Logs clicked'),
+    onClick: () => toast.info('Audit logs viewer is coming soon.'),
     variant: 'secondary',
   },
 ];

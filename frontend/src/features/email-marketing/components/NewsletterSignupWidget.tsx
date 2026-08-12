@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import { useSubscribePublicMutation } from '../api/emailMarketingApi';
 import { Mail, CheckCircle2, AlertCircle, Sparkles, Send } from 'lucide-react';
 
@@ -34,8 +35,9 @@ export const NewsletterSignupWidget: React.FC<NewsletterSignupWidgetProps> = ({
       setIsSubmitted(true);
       setEmail('');
       setName('');
-    } catch (err) {
-      console.error('Failed to subscribe to newsletter:', err);
+      toast.success('Subscribed successfully!');
+    } catch (err: any) {
+      toast.error(err?.data?.message || 'Failed to subscribe. Please try again.');
     }
   };
 

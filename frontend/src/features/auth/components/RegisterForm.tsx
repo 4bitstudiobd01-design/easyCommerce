@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { useRegisterMerchantMutation } from '../api/authApi';
 import { useDispatch } from 'react-redux';
 import { setCredentials } from '../slices/authSlice';
@@ -38,11 +39,12 @@ export function RegisterForm() {
         })
       );
 
+      toast.success('Store account created successfully.');
       router.push('/dashboard');
     } catch (err: any) {
-      setErrorMsg(
-        err?.data?.message || 'Registration failed. Please check your details.'
-      );
+      const message = err?.data?.message || 'Registration failed. Please check your details.';
+      setErrorMsg(message);
+      toast.error(message);
     }
   };
 

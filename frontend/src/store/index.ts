@@ -22,6 +22,7 @@ import staffReducer from '@/features/staff/slices/staffSlice';
 import { emailMarketingApi } from '@/features/email-marketing/api/emailMarketingApi';
 import emailMarketingReducer from '@/features/email-marketing/slices/emailMarketingSlice';
 import { seoApi } from '@/features/seo/api/seoApi';
+import { billingApi } from '@/features/billing/api/billingApi';
 
 export const store = configureStore({
   reducer: {
@@ -48,6 +49,7 @@ export const store = configureStore({
     [staffApi.reducerPath]: staffApi.reducer,
     [emailMarketingApi.reducerPath]: emailMarketingApi.reducer,
     [seoApi.reducerPath]: seoApi.reducer,
+    [billingApi.reducerPath]: billingApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -66,6 +68,7 @@ export const store = configureStore({
       staffApi.middleware,
       emailMarketingApi.middleware,
       seoApi.middleware,
+      billingApi.middleware,
     ),
 });
 

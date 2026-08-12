@@ -67,6 +67,13 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
 
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
 
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [isColumnsOpen, setIsColumnsOpen] = useState(false);
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState<'ALL' | 'UNPAID' | 'PAID' | 'REFUNDED'>('ALL');
+  const [visibleColumns, setVisibleColumns] = useState({ type: true, amount: true });
+  const [openRowMenuId, setOpenRowMenuId] = useState<string | null>(null);
+
   // Calculate Metrics
   const confirmedCount = orders.filter((o) => o.orderStatus === 'CONFIRMED').length;
   const totalAmountSum = orders.reduce((sum, o) => sum + Number(o.grandTotal || 0), 0);
@@ -97,18 +104,58 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
     }
   };
 
-  // Filtered Orders
-  const filteredOrders = orders.filter((order) => {
-    const matchesFilter = selectedFilter === 'ALL' || order.orderStatus === selectedFilter;
+  const handleExportCsv = () => {
+    if (filteredOrders.length === 0) {
+      toast.error('No orders to export.');
+      return;
+    }
 
-    const matchesSearch =
-      !searchQuery ||
-      order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.customerPhone.includes(searchQuery);
+    const headers = ['Order Number', 'Customer Name', 'Phone', 'Status', 'Payment Status', 'Grand Total', 'Created At'];
+    const rows = filteredOrders.map((o) => [
+      o.orderNumber,
+      o.customerName,
+      o.customerPhone,
+      o.orderStatus,
+      o.paymentStatus,
+      Number(o.grandTotal).toFixed(2),
+      new Date(o.createdAt).toISOString(),
+    ]);
 
-    return matchesFilter && matchesSearch;
-  });
+    const csvContent = [headers, ...rows]
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `orders-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+
+    toast.success(`Exported ${filteredOrders.length} orders to CSV.`);
+  };
+
+  // Filtered & Sorted Orders
+  const filteredOrders = orders
+    .filter((order) => {
+      const matchesFilter = selectedFilter === 'ALL' || order.orderStatus === selectedFilter;
+
+      const matchesPaymentStatus =
+        paymentStatusFilter === 'ALL' || order.paymentStatus === paymentStatusFilter;
+
+      const matchesSearch =
+        !searchQuery ||
+        order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.customerPhone.includes(searchQuery);
+
+      return matchesFilter && matchesPaymentStatus && matchesSearch;
+    })
+    .sort((a, b) => {
+      const diff = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      return sortOrder === 'newest' ? diff : -diff;
+    });
 
   const filterPills: { id: OrderStatusFilterType; label: string; activeColor: string; textColor: string }[] = [
     { id: 'ALL', label: 'All Orders', activeColor: 'bg-slate-900 text-white', textColor: 'text-slate-700 hover:bg-slate-100' },
@@ -168,7 +215,7 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
 
         <button
           type="button"
-          onClick={onCreateOrderClick || (() => alert('Create Order feature clicked'))}
+          onClick={onCreateOrderClick || (() => toast('Manual order creation is coming soon.'))}
           className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-purple-600/30 flex items-center gap-2 transition-all active:scale-95"
         >
           <Plus className="w-4 h-4" />
@@ -185,7 +232,9 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
           </div>
           <div>
             <span className="text-[11px] font-bold text-slate-400 block">Today's date</span>
-            <span className="text-base font-black text-slate-900 block mt-0.5">3rd August</span>
+            <span className="text-base font-black text-slate-900 block mt-0.5">
+              {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+            </span>
           </div>
         </div>
 
@@ -253,33 +302,97 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
 
         {/* Relocated Tool Buttons: Filters, Sort, Columns, Export */}
         <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            className="px-3.5 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-sm hover:bg-slate-50 transition-colors"
-          >
-            <Filter className="w-3.5 h-3.5 text-slate-500" />
-            <span>Filters</span>
-          </button>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                setIsFiltersOpen((v) => !v);
+                setIsColumnsOpen(false);
+              }}
+              className="px-3.5 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-sm hover:bg-slate-50 transition-colors"
+            >
+              <Filter className="w-3.5 h-3.5 text-slate-500" />
+              <span>Filters</span>
+              {paymentStatusFilter !== 'ALL' && (
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-600" />
+              )}
+            </button>
+
+            {isFiltersOpen && (
+              <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-lg z-10 p-3 space-y-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                  Payment Status
+                </span>
+                {(['ALL', 'UNPAID', 'PAID', 'REFUNDED'] as const).map((status) => (
+                  <button
+                    key={status}
+                    type="button"
+                    onClick={() => {
+                      setPaymentStatusFilter(status);
+                      setIsFiltersOpen(false);
+                    }}
+                    className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                      paymentStatusFilter === status
+                        ? 'bg-purple-50 text-purple-700'
+                        : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    {status === 'ALL' ? 'All Payment Statuses' : status.charAt(0) + status.slice(1).toLowerCase()}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           <button
             type="button"
+            onClick={() => setSortOrder((s) => (s === 'newest' ? 'oldest' : 'newest'))}
             className="p-2 bg-white border border-slate-200 text-slate-700 rounded-xl shadow-sm hover:bg-slate-50 transition-colors"
-            title="Sort"
+            title={sortOrder === 'newest' ? 'Sorted: Newest first (click for oldest first)' : 'Sorted: Oldest first (click for newest first)'}
           >
             <ArrowUpDown className="w-3.5 h-3.5 text-slate-500" />
           </button>
 
-          <button
-            type="button"
-            className="px-3.5 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-sm hover:bg-slate-50 transition-colors"
-          >
-            <span>Columns</span>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-          </button>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                setIsColumnsOpen((v) => !v);
+                setIsFiltersOpen(false);
+              }}
+              className="px-3.5 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-sm hover:bg-slate-50 transition-colors"
+            >
+              <span>Columns</span>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+            </button>
+
+            {isColumnsOpen && (
+              <div className="absolute right-0 mt-2 w-44 bg-white border border-slate-200 rounded-xl shadow-lg z-10 p-3 space-y-1">
+                <label className="flex items-center gap-2 px-1 py-1.5 text-xs font-semibold text-slate-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={visibleColumns.type}
+                    onChange={() => setVisibleColumns((c) => ({ ...c, type: !c.type }))}
+                    className="rounded border-slate-300 text-purple-600 focus:ring-purple-600"
+                  />
+                  Type
+                </label>
+                <label className="flex items-center gap-2 px-1 py-1.5 text-xs font-semibold text-slate-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={visibleColumns.amount}
+                    onChange={() => setVisibleColumns((c) => ({ ...c, amount: !c.amount }))}
+                    className="rounded border-slate-300 text-purple-600 focus:ring-purple-600"
+                  />
+                  Amount
+                </label>
+              </div>
+            )}
+          </div>
 
           <button
             type="button"
-            onClick={() => alert('Exporting orders to CSV...')}
+            onClick={handleExportCsv}
             className="px-4 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs rounded-xl border border-purple-200/80 flex items-center gap-1.5 transition-colors shadow-sm"
           >
             <Download className="w-3.5 h-3.5 text-purple-600" />
@@ -327,15 +440,18 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                 <th className="px-6 py-3.5 font-bold">Customer</th>
                 <th className="px-6 py-3.5 font-bold">Date</th>
                 <th className="px-6 py-3.5 font-bold">Status</th>
-                <th className="px-4 py-3.5 font-bold">Type</th>
-                <th className="px-6 py-3.5 font-bold">Amount</th>
+                {visibleColumns.type && <th className="px-4 py-3.5 font-bold">Type</th>}
+                {visibleColumns.amount && <th className="px-6 py-3.5 font-bold">Amount</th>}
                 <th className="px-6 py-3.5 font-bold text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium">
               {filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-12 text-slate-400 text-xs">
+                  <td
+                    colSpan={6 + (visibleColumns.type ? 1 : 0) + (visibleColumns.amount ? 1 : 0)}
+                    className="text-center py-12 text-slate-400 text-xs"
+                  >
                     No orders found matching the filter or search criteria.
                   </td>
                 </tr>
@@ -476,19 +592,23 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                       </td>
 
                       {/* Type (Delivery Provider) */}
-                      <td className="px-4 py-4">
-                        <span className="px-2.5 py-1 bg-slate-100 text-slate-700 font-bold text-[10px] rounded-lg border border-slate-200 flex items-center gap-1 w-fit">
-                          <Printer className="w-3 h-3 text-slate-500" />
-                          <span>Own</span>
-                        </span>
-                      </td>
+                      {visibleColumns.type && (
+                        <td className="px-4 py-4">
+                          <span className="px-2.5 py-1 bg-slate-100 text-slate-700 font-bold text-[10px] rounded-lg border border-slate-200 flex items-center gap-1 w-fit">
+                            <Printer className="w-3 h-3 text-slate-500" />
+                            <span>Own</span>
+                          </span>
+                        </td>
+                      )}
 
                       {/* Amount */}
-                      <td className="px-6 py-4">
-                        <span className="font-black text-slate-900 text-xs">
-                          ৳{Number(order.grandTotal).toFixed(2)}
-                        </span>
-                      </td>
+                      {visibleColumns.amount && (
+                        <td className="px-6 py-4">
+                          <span className="font-black text-slate-900 text-xs">
+                            ৳{Number(order.grandTotal).toFixed(2)}
+                          </span>
+                        </td>
+                      )}
 
                       {/* Action Icons */}
                       <td className="px-6 py-4 text-right">
@@ -525,12 +645,42 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                             </button>
                           )}
 
-                          <button
-                            type="button"
-                            className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-                          >
-                            <MoreHorizontal className="w-3.5 h-3.5" />
-                          </button>
+                          <div className="relative">
+                            <button
+                              type="button"
+                              onClick={() => setOpenRowMenuId((id) => (id === order.id ? null : order.id))}
+                              className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+                            >
+                              <MoreHorizontal className="w-3.5 h-3.5" />
+                            </button>
+
+                            {openRowMenuId === order.id && (
+                              <div className="absolute right-0 mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-lg z-10 py-1">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(order.orderNumber);
+                                    toast.success('Order number copied.');
+                                    setOpenRowMenuId(null);
+                                  }}
+                                  className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                >
+                                  Copy order number
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(order.customerPhone);
+                                    toast.success('Customer phone copied.');
+                                    setOpenRowMenuId(null);
+                                  }}
+                                  className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                >
+                                  Copy customer phone
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </td>
                     </tr>

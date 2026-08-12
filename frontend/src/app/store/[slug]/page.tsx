@@ -123,7 +123,7 @@ export default function StorefrontPage() {
   });
 
   const handleThemeAddToCart = (product: Product) => {
-    dispatch(addToCart({ product, quantity: 1 }));
+    dispatch(addToCart({ product, quantity: 1, storeSlug: slug }));
   };
 
   const activeThemeId = (store as any)?.activeThemeId || 'DEFAULT_MODERN';
@@ -138,7 +138,7 @@ export default function StorefrontPage() {
           googleTagManagerId={(store as any).googleTagManagerId}
         />
         <CartDrawer />
-        <ProductDetailModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
+        <ProductDetailModal product={selectedProduct} storeSlug={slug} onClose={() => setSelectedProduct(null)} />
         <LuxuryFashionTheme
           storeName={store.name}
           slug={store.slug}
@@ -162,7 +162,7 @@ export default function StorefrontPage() {
           googleTagManagerId={(store as any).googleTagManagerId}
         />
         <CartDrawer />
-        <ProductDetailModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
+        <ProductDetailModal product={selectedProduct} storeSlug={slug} onClose={() => setSelectedProduct(null)} />
         <TechHubTheme
           storeName={store.name}
           slug={store.slug}
@@ -186,7 +186,7 @@ export default function StorefrontPage() {
           googleTagManagerId={(store as any).googleTagManagerId}
         />
         <CartDrawer />
-        <ProductDetailModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
+        <ProductDetailModal product={selectedProduct} storeSlug={slug} onClose={() => setSelectedProduct(null)} />
         <OrganicGroceryTheme
           storeName={store.name}
           slug={store.slug}
@@ -210,7 +210,7 @@ export default function StorefrontPage() {
           googleTagManagerId={(store as any).googleTagManagerId}
         />
         <CartDrawer />
-        <ProductDetailModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
+        <ProductDetailModal product={selectedProduct} storeSlug={slug} onClose={() => setSelectedProduct(null)} />
         <MinimalDarkTheme
           storeName={store.name}
           slug={store.slug}
@@ -272,6 +272,7 @@ export default function StorefrontPage() {
       <CartDrawer />
       <ProductDetailModal
         product={selectedProduct}
+        storeSlug={slug}
         onClose={() => setSelectedProduct(null)}
       />
 
@@ -440,6 +441,7 @@ export default function StorefrontPage() {
               <ProductCard
                 key={product.id}
                 product={product}
+                storeSlug={slug}
                 primaryColor={primaryColor}
                 onOpenDetail={(prod) => setSelectedProduct(prod)}
               />

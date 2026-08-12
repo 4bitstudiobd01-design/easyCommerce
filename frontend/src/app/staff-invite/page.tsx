@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
+import { toast } from 'sonner';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAcceptStaffInviteMutation } from '@/features/staff/api/staffApi';
 import Link from 'next/link';
@@ -35,11 +36,12 @@ function StaffInviteContent() {
     try {
       const res = await acceptInvite({ token, password }).unwrap();
       setSuccessMessage(res.message || 'Invitation accepted successfully!');
+      toast.success('Invitation accepted. Redirecting to login...');
       setTimeout(() => {
         router.push('/login');
       }, 2500);
     } catch (err: any) {
-      console.error('Failed to accept staff invite:', err);
+      toast.error(err?.data?.message || 'Failed to accept staff invite.');
     }
   };
 

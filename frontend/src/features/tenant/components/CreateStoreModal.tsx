@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { useCreateStoreMutation } from '../api/tenantApi';
 import { Store, Sparkles, Globe, Phone, MapPin, Tag, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
 
@@ -46,13 +47,14 @@ export function CreateStoreModal({ isOpen, onSuccess }: CreateStoreModalProps) {
         address,
       }).unwrap();
 
+      toast.success('Store created successfully.');
       if (onSuccess) {
         onSuccess();
       }
     } catch (err: any) {
-      setErrorMsg(
-        err?.data?.message || 'Failed to create store. Please try again.'
-      );
+      const message = err?.data?.message || 'Failed to create store. Please try again.';
+      setErrorMsg(message);
+      toast.error(message);
     }
   };
 

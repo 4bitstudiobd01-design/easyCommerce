@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store';
@@ -28,6 +29,7 @@ export function AdminSidebar() {
 
   const handleLogout = () => {
     dispatch(logout());
+    toast.success('Logged out successfully.');
     router.push('/login');
   };
 

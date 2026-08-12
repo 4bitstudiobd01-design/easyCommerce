@@ -23,15 +23,8 @@ export interface TopProductsWidgetProps {
   className?: string;
 }
 
-const defaultProducts: TopProductItem[] = [
-  { id: '1', name: 'Premium Cotton Panjabi', category: 'Men Fashion', revenueBdt: 450000, ordersCount: 320, conversionRatePercent: 4.8 },
-  { id: '2', name: 'Handcrafted Clay Dinner Set', category: 'Home & Crafts', revenueBdt: 380000, ordersCount: 190, conversionRatePercent: 3.9 },
-  { id: '3', name: 'Organza Embroidery Sharee', category: 'Women Boutique', revenueBdt: 310000, ordersCount: 140, conversionRatePercent: 3.5 },
-  { id: '4', name: 'Custom Chocolate Gift Box', category: 'Bakery & Sweets', revenueBdt: 240000, ordersCount: 280, conversionRatePercent: 5.2 },
-];
-
 export function TopProductsWidget({
-  products = defaultProducts,
+  products = [],
   isLoading = false,
   isError = false,
   error,

@@ -8,7 +8,6 @@ import { FeatureGrid } from '@/components/landing/FeatureGrid';
 import { HowItWorks } from '@/components/landing/HowItWorks';
 import { Partnerships } from '@/components/landing/Partnerships';
 import { Pricing } from '@/components/landing/Pricing';
-import { CompareFeatures } from '@/components/landing/CompareFeatures';
 import { Testimonials } from '@/components/landing/Testimonials';
 import { FaqSection } from '@/components/landing/FaqSection';
 import { Footer } from '@/components/landing/Footer';
@@ -66,16 +65,13 @@ export default async function Home() {
       {/* 10. Pricing Summary Cards */}
       <Pricing />
 
-      {/* 11. Detailed Side-by-Side Feature Matrix Table */}
-      <CompareFeatures />
-
-      {/* 12. Merchant Testimonials & Success Stories */}
+      {/* 11. Merchant Testimonials & Success Stories */}
       <Testimonials />
 
-      {/* 13. Frequently Asked Questions */}
+      {/* 12. Frequently Asked Questions */}
       <FaqSection />
 
-      {/* 14. Footer */}
+      {/* 13. Footer */}
       <Footer />
     </div>
   );

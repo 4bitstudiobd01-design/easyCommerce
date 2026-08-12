@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { useLoginMutation } from '../api/authApi';
 import { useDispatch } from 'react-redux';
 import { setCredentials } from '../slices/authSlice';
@@ -31,15 +32,17 @@ export function LoginForm() {
         })
       );
 
+      toast.success('Signed in successfully.');
+
       if (response.user?.role === 'SUPER_ADMIN') {
         router.push('/admin');
       } else {
         router.push('/dashboard');
       }
     } catch (err: any) {
-      setErrorMsg(
-        err?.data?.message || 'Invalid credentials. Please try again.'
-      );
+      const message = err?.data?.message || 'Invalid credentials. Please try again.';
+      setErrorMsg(message);
+      toast.error(message);
     }
   };
 

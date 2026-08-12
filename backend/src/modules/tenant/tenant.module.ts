@@ -17,11 +17,13 @@ import { InitiateThemeSslCommerzPaymentService } from './services/initiate-theme
 import { TenantController } from './tenant.controller';
 import { ThemeController } from './theme.controller';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { BillingModule } from '../billing/billing.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([TenantEntity, StoreEntity, ThemePurchaseEntity]),
     UserModule,
+    BillingModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

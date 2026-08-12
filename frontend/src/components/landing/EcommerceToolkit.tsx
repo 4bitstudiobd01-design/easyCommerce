@@ -42,7 +42,7 @@ export function EcommerceToolkit() {
               </div>
               <h3 className="text-xl font-bold text-slate-900">Automated Courier Integration</h3>
               <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                Book Steadfast, Pathao, and REDX shipments with 1-click. Automatic tracking status update sent directly to customer SMS.
+                Book Steadfast and Pathao shipments with 1-click. Automatic tracking status update sent directly to customer SMS.
               </p>
             </div>
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 flex items-center justify-between">

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store';
 import { logout } from '@/features/auth/slices/authSlice';
@@ -12,17 +13,119 @@ import {
   LogOut,
   LayoutDashboard,
   ChevronDown,
-  Layers,
+  Boxes,
   Palette,
-  ShieldCheck,
+  KeySquare,
   Building2,
   Mail,
   HelpCircle,
   User as UserIcon,
+  Truck,
+  Wallet,
+  LineChart,
+  Tag,
+  Menu,
+  X,
+  LucideIcon,
 } from 'lucide-react';
+
+interface MenuItem {
+  href: string;
+  icon: LucideIcon;
+  color: string;
+  title: string;
+  desc: string;
+}
+
+const PLATFORM_FEATURES: MenuItem[] = [
+  {
+    href: '/#features',
+    icon: KeySquare,
+    color: 'blue',
+    title: 'Multi-Tenant Isolation',
+    desc: 'Your store\'s data stays yours — fully isolated from every other merchant.',
+  },
+  {
+    href: '/#features',
+    icon: Palette,
+    color: 'emerald',
+    title: 'Zero-Code Customizer',
+    desc: 'Responsive theme builder — no developer needed.',
+  },
+  {
+    href: '/#features',
+    icon: Boxes,
+    color: 'indigo',
+    title: 'Decoupled Inventory',
+    desc: 'Multi-warehouse stock control, separate from your catalog.',
+  },
+];
+
+const CHECKOUT_FULFILLMENT: MenuItem[] = [
+  {
+    href: '/#features',
+    icon: Wallet,
+    color: 'pink',
+    title: 'bKash, Nagad & Cards',
+    desc: 'SSLCommerz-powered checkout with local MFS support.',
+  },
+  {
+    href: '/#features',
+    icon: Truck,
+    color: 'amber',
+    title: 'Steadfast & Pathao Courier',
+    desc: 'One-click parcel booking straight from your order panel.',
+  },
+  {
+    href: '/#features',
+    icon: LineChart,
+    color: 'purple',
+    title: 'Live Sales Analytics',
+    desc: 'Revenue, top products, and order trends in one dashboard.',
+  },
+];
+
+const COMPANY_LINKS = [
+  { href: '/about', icon: Building2, color: 'blue', label: 'About Us' },
+  { href: '/contact', icon: Mail, color: 'emerald', label: 'Contact Us' },
+  { href: '/#faq', icon: HelpCircle, color: 'indigo', label: 'FAQ' },
+  { href: '/#pricing', icon: Tag, color: 'purple', label: 'Pricing' },
+];
+
+// Static class lookup — Tailwind needs full literal class names to detect them at build time.
+const ICON_STYLES: Record<string, { bg: string; text: string; hoverBg: string }> = {
+  blue: { bg: 'bg-blue-50', text: 'text-blue-600', hoverBg: 'group-hover:bg-blue-600' },
+  emerald: { bg: 'bg-emerald-50', text: 'text-emerald-600', hoverBg: 'group-hover:bg-emerald-600' },
+  indigo: { bg: 'bg-indigo-50', text: 'text-indigo-600', hoverBg: 'group-hover:bg-indigo-600' },
+  pink: { bg: 'bg-pink-50', text: 'text-pink-600', hoverBg: 'group-hover:bg-pink-600' },
+  amber: { bg: 'bg-amber-50', text: 'text-amber-600', hoverBg: 'group-hover:bg-amber-600' },
+  purple: { bg: 'bg-purple-50', text: 'text-purple-600', hoverBg: 'group-hover:bg-purple-600' },
+};
+
+function MenuLinkItem({ item, onClick, interactive = true }: { item: MenuItem; onClick: () => void; interactive?: boolean }) {
+  const style = ICON_STYLES[item.color];
+  return (
+    <Link
+      href={item.href}
+      onClick={onClick}
+      className={`p-2.5 rounded-xl hover:bg-slate-50 transition-colors flex items-start gap-3 ${interactive ? 'group' : ''} block`}
+    >
+      <div className={`p-2 rounded-lg mt-0.5 shrink-0 transition-colors ${style.bg} ${style.text} ${interactive ? `${style.hoverBg} group-hover:text-white` : ''}`}>
+        <item.icon className="w-4 h-4" />
+      </div>
+      <div>
+        <span className={`font-bold text-slate-900 text-xs block transition-colors ${interactive ? 'group-hover:text-blue-600' : ''}`}>
+          {item.title}
+        </span>
+        <span className="text-[11px] text-slate-500 block leading-tight">{item.desc}</span>
+      </div>
+    </Link>
+  );
+}
 
 export function Navbar() {
   const [activeMenu, setActiveMenu] = useState<'features' | 'company' | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   const dispatch = useDispatch();
@@ -32,8 +135,19 @@ export function Navbar() {
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    // Close the mobile drawer on desktop resize so it never gets stuck open.
+    const handleResize = () => {
+      if (window.innerWidth >= 768) setIsMobileMenuOpen(false);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const handleLogout = () => {
     dispatch(logout());
+    toast.success('Logged out successfully.');
+    setIsMobileMenuOpen(false);
   };
 
   return (
@@ -52,7 +166,7 @@ export function Navbar() {
           </div>
         </Link>
 
-        {/* Clean Navigation Links */}
+        {/* Desktop Navigation Links */}
         <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-700 relative">
           {/* 1. Unified Features & Ecosystem Mega Menu */}
           <div
@@ -77,59 +191,19 @@ export function Navbar() {
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block px-3">
                     Core Platform
                   </span>
-                  <Link
-                    href="/#features"
-                    onClick={() => setActiveMenu(null)}
-                    className="p-2.5 rounded-xl hover:bg-slate-50 transition-colors flex items-start gap-3 group block"
-                  >
-                    <div className="p-2 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors mt-0.5">
-                      <ShieldCheck className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <span className="font-bold text-slate-900 text-xs block group-hover:text-blue-600 transition-colors">
-                        Multi-Tenant Isolation
-                      </span>
-                      <span className="text-[11px] text-slate-500 block leading-tight">
-                        Row-level security context.
-                      </span>
-                    </div>
-                  </Link>
+                  {PLATFORM_FEATURES.map((item) => (
+                    <MenuLinkItem key={item.title} item={item} onClick={() => setActiveMenu(null)} />
+                  ))}
+                </div>
 
-                  <Link
-                    href="/#features"
-                    onClick={() => setActiveMenu(null)}
-                    className="p-2.5 rounded-xl hover:bg-slate-50 transition-colors flex items-start gap-3 group block"
-                  >
-                    <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg group-hover:bg-emerald-600 group-hover:text-white transition-colors mt-0.5">
-                      <Palette className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <span className="font-bold text-slate-900 text-xs block group-hover:text-blue-600 transition-colors">
-                        Zero-Code Customizer
-                      </span>
-                      <span className="text-[11px] text-slate-500 block leading-tight">
-                        Responsive theme builder.
-                      </span>
-                    </div>
-                  </Link>
-
-                  <Link
-                    href="/#features"
-                    onClick={() => setActiveMenu(null)}
-                    className="p-2.5 rounded-xl hover:bg-slate-50 transition-colors flex items-start gap-3 group block"
-                  >
-                    <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg group-hover:bg-indigo-600 group-hover:text-white transition-colors mt-0.5">
-                      <Layers className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <span className="font-bold text-slate-900 text-xs block group-hover:text-blue-600 transition-colors">
-                        Decoupled Inventory
-                      </span>
-                      <span className="text-[11px] text-slate-500 block leading-tight">
-                        Multi-warehouse stock control.
-                      </span>
-                    </div>
-                  </Link>
+                {/* Column 2: Checkout & Fulfillment */}
+                <div className="space-y-3">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block px-3">
+                    Checkout & Fulfillment
+                  </span>
+                  {CHECKOUT_FULFILLMENT.map((item) => (
+                    <MenuLinkItem key={item.title} item={item} onClick={() => setActiveMenu(null)} />
+                  ))}
                 </div>
               </div>
             )}
@@ -158,40 +232,29 @@ export function Navbar() {
             {/* Company Dropdown Menu */}
             {activeMenu === 'company' && (
               <div className="absolute top-full left-0 w-48 p-2 bg-white border border-slate-200 rounded-xl shadow-xl z-50 text-left animate-in fade-in slide-in-from-top-2 duration-200 space-y-1">
-                <Link
-                  href="/about"
-                  onClick={() => setActiveMenu(null)}
-                  className="p-2.5 rounded-lg hover:bg-slate-50 font-bold text-xs text-slate-800 flex items-center gap-2 transition-colors"
-                >
-                  <Building2 className="w-4 h-4 text-blue-600" />
-                  <span>About Us</span>
-                </Link>
-                <Link
-                  href="/contact"
-                  onClick={() => setActiveMenu(null)}
-                  className="p-2.5 rounded-lg hover:bg-slate-50 font-bold text-xs text-slate-800 flex items-center gap-2 transition-colors"
-                >
-                  <Mail className="w-4 h-4 text-emerald-600" />
-                  <span>Contact Us</span>
-                </Link>
-                <Link
-                  href="/#faq"
-                  onClick={() => setActiveMenu(null)}
-                  className="p-2.5 rounded-lg hover:bg-slate-50 font-bold text-xs text-slate-800 flex items-center gap-2 transition-colors"
-                >
-                  <HelpCircle className="w-4 h-4 text-indigo-600" />
-                  <span>FAQ</span>
-                </Link>
+                {COMPANY_LINKS.map((item) => {
+                  const style = ICON_STYLES[item.color];
+                  return (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      onClick={() => setActiveMenu(null)}
+                      className="p-2.5 rounded-lg hover:bg-slate-50 font-bold text-xs text-slate-800 flex items-center gap-2 transition-colors"
+                    >
+                      <item.icon className={`w-4 h-4 ${style.text}`} />
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </div>
         </nav>
 
-        {/* Clean Dynamic Action Buttons (Logged In vs Logged Out) */}
-        <div className="flex items-center gap-3 shrink-0">
+        {/* Desktop Action Buttons */}
+        <div className="hidden md:flex items-center gap-3 shrink-0">
           {mounted && isAuthenticated && user ? (
             <>
-              {/* Dashboard Button */}
               <Link
                 href="/dashboard"
                 className="px-4 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-xs rounded-xl border border-blue-200 flex items-center gap-2 transition-all"
@@ -200,7 +263,6 @@ export function Navbar() {
                 <span>Control Panel</span>
               </Link>
 
-              {/* User Badge / Logout */}
               <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
                 <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-800 font-bold text-xs rounded-xl">
                   <UserIcon className="w-3.5 h-3.5 text-slate-500" />
@@ -236,7 +298,105 @@ export function Navbar() {
             </>
           )}
         </div>
+
+        {/* Mobile Menu Trigger */}
+        <button
+          type="button"
+          onClick={() => setIsMobileMenuOpen((v) => !v)}
+          className="md:hidden p-2 text-slate-600 hover:text-blue-600 hover:bg-slate-100 rounded-xl transition-colors"
+          aria-label="Toggle navigation menu"
+          aria-expanded={isMobileMenuOpen}
+        >
+          {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
       </div>
+
+      {/* Mobile Menu Drawer */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden border-t border-slate-200 bg-white animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="px-6 py-5 space-y-6 max-h-[calc(100vh-64px)] overflow-y-auto">
+            {/* Platform features */}
+            <div className="space-y-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                Core Platform
+              </span>
+              {PLATFORM_FEATURES.map((item) => (
+                <MenuLinkItem key={item.title} item={item} onClick={() => setIsMobileMenuOpen(false)} interactive={false} />
+              ))}
+            </div>
+
+            {/* Checkout & fulfillment */}
+            <div className="space-y-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                Checkout & Fulfillment
+              </span>
+              {CHECKOUT_FULFILLMENT.map((item) => (
+                <MenuLinkItem key={item.title} item={item} onClick={() => setIsMobileMenuOpen(false)} interactive={false} />
+              ))}
+            </div>
+
+            {/* Company links */}
+            <div className="space-y-1 pt-2 border-t border-slate-100">
+              {COMPANY_LINKS.map((item) => {
+                const style = ICON_STYLES[item.color];
+                return (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="p-2.5 rounded-lg hover:bg-slate-50 font-bold text-xs text-slate-800 flex items-center gap-2 transition-colors"
+                  >
+                    <item.icon className={`w-4 h-4 ${style.text}`} />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* Auth actions */}
+            <div className="pt-4 border-t border-slate-100 space-y-2">
+              {mounted && isAuthenticated && user ? (
+                <>
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="w-full px-4 py-3 bg-blue-50 text-blue-700 font-bold text-sm rounded-xl border border-blue-200 flex items-center justify-center gap-2"
+                  >
+                    <LayoutDashboard className="w-4 h-4" />
+                    <span>Control Panel</span>
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full px-4 py-3 text-red-600 font-bold text-sm rounded-xl border border-red-200 bg-red-50 flex items-center justify-center gap-2"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Sign Out ({user.fullName || user.email})</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="w-full px-4 py-3 text-slate-700 font-bold text-sm rounded-xl border border-slate-200 flex items-center justify-center gap-2"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    <span>Sign In</span>
+                  </Link>
+                  <Link
+                    href="/register"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="w-full px-4 py-3 bg-blue-600 text-white font-bold text-sm rounded-xl shadow-md shadow-blue-600/20 flex items-center justify-center gap-2"
+                  >
+                    <span>Launch Store</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 }
