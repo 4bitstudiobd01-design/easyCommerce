@@ -27,7 +27,7 @@ export class OrderStateService {
         return [OrderStatusEnum.DELIVERED, OrderStatusEnum.RETURNED].includes(newStatus);
       
       case OrderStatusEnum.DELIVERED:
-        return [OrderStatusEnum.RETURNED].includes(newStatus);
+        return [OrderStatusEnum.COMPLETED, OrderStatusEnum.RETURNED].includes(newStatus);
       
       case OrderStatusEnum.CANCELLED:
         // Terminal state

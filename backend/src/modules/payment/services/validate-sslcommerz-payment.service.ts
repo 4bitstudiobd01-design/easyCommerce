@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PaymentEntity, PaymentTransactionStatusEnum } from '../entities/payment.entity';
@@ -9,6 +9,8 @@ import axios from 'axios';
 
 @Injectable()
 export class ValidateSslCommerzPaymentService {
+  private readonly logger = new Logger(ValidateSslCommerzPaymentService.name);
+
   constructor(
     @InjectRepository(PaymentEntity)
     private readonly paymentRepository: Repository<PaymentEntity>,
@@ -62,9 +64,27 @@ export class ValidateSslCommerzPaymentService {
         try {
           const res = await axios.get(
             `${validationUrl}?val_id=${dto.val_id}&store_id=${storeId}&store_passwd=${storePass}&format=json`,
+            { timeout: 10000 },
           );
-          if (res.data?.status === 'VALID' || res.data?.status === 'VALIDATED') {
+
+          const gatewayStatus = res.data?.status;
+          const isStatusValid = gatewayStatus === 'VALID' || gatewayStatus === 'VALIDATED';
+
+          // The gateway's own response is the authority on how much was actually paid —
+          // never the (spoofable) IPN body. Underpaying must not mark an order PAID.
+          const paidAmount = Number(res.data?.amount);
+          const expectedAmount = Number(payment.amount);
+          const isAmountValid =
+            Number.isFinite(paidAmount) &&
+            Number.isFinite(expectedAmount) &&
+            Math.abs(paidAmount - expectedAmount) < 0.01;
+
+          if (isStatusValid && isAmountValid) {
             isValidated = true;
+          } else if (isStatusValid && !isAmountValid) {
+            this.logger.error(
+              `SSLCommerz amount mismatch for tran_id ${dto.tran_id}: gateway reported ${res.data?.amount}, expected ${payment.amount}. Rejecting.`,
+            );
           }
         } catch (err) {
           // Validation API call failed — treat as not validated rather than trusting the callback.
@@ -79,10 +99,23 @@ export class ValidateSslCommerzPaymentService {
         await this.paymentRepository.save(payment);
 
         // Update Order Status
-        const order = await this.orderRepository.findOne({ where: { id: payment.orderId } });
+        const order = await this.orderRepository.findOne({
+          where: { id: payment.orderId, tenantId: payment.tenantId },
+        });
         if (order) {
           order.paymentStatus = PaymentStatusEnum.PAID;
-          order.orderStatus = OrderStatusEnum.CONFIRMED;
+
+          // Record the payment, but never resurrect an order that has already left the
+          // pending state — a late IPN on a cancelled order is a refund case, not a
+          // confirmation. Advancing it here would bypass the order state machine.
+          if (order.orderStatus === OrderStatusEnum.PENDING) {
+            order.orderStatus = OrderStatusEnum.CONFIRMED;
+          } else if (order.orderStatus !== OrderStatusEnum.CONFIRMED) {
+            this.logger.warn(
+              `Payment ${dto.tran_id} validated for order ${order.orderNumber} in status ${order.orderStatus}; recording payment without changing order status.`,
+            );
+          }
+
           await this.orderRepository.save(order);
           return { success: true, orderNumber: order.orderNumber };
         }
