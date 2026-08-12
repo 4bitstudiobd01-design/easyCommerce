@@ -62,15 +62,16 @@ export default function DashboardOverviewPage() {
         </div>
       </div>
 
-      {/* 5. Recent Orders */}
-      <RecentOrdersTable />
-
-      {/* 6. Low Stock & Top Products */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div>
-          <LowStockList />
+      {/* 5 & 6. Recent Orders and Inventory/Products stacked */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Side: Recent Orders (2/3 width) */}
+        <div className="lg:col-span-2">
+          <RecentOrdersTable />
         </div>
-        <div>
+
+        {/* Right Side: Low Stock & Top Products (1/3 width, stacked) */}
+        <div className="lg:col-span-1 flex flex-col gap-6">
+          <LowStockList />
           <TopProductsList />
         </div>
       </div>

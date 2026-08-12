@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ArrowRight, CheckCircle2 } from 'lucide-react';
+import { ChevronRight, CheckCircle2, ShoppingBag, Package, Truck } from 'lucide-react';
 import { useGetMerchantOrdersQuery } from '@/features/order/api/orderApi';
 import { useGetInventoryStocksQuery } from '@/features/inventory/api/inventoryApi';
 import { useGetMyStoreQuery } from '@/features/tenant/api/tenantApi';
@@ -18,11 +18,13 @@ export function NeedsAttention() {
   if (isLoading) {
     return (
       <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm h-full flex flex-col">
-        <h3 className="text-[15px] font-bold text-slate-900 mb-4">Needs attention</h3>
-        <div className="space-y-4">
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-3/4" />
-          <Skeleton className="h-4 w-5/6" />
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-[15px] font-bold text-slate-900">Needs attention</h3>
+        </div>
+        <div className="space-y-3">
+          <Skeleton className="h-16 w-full rounded-xl" />
+          <Skeleton className="h-16 w-full rounded-xl" />
+          <Skeleton className="h-16 w-full rounded-xl" />
         </div>
       </div>
     );
@@ -39,68 +41,99 @@ export function NeedsAttention() {
 
   const attentionItems = [];
 
+  // For demo/development, if we want to ensure the UI shows up perfectly like the image when they have issues:
   if (pendingOrders > 0) {
     attentionItems.push({
       id: 'pending_orders',
-      message: `${pendingOrders} order${pendingOrders === 1 ? '' : 's'} awaiting confirmation`,
-      color: 'bg-red-500',
-      actionText: 'View orders',
+      title: `${pendingOrders} orders awaiting confirmation`,
+      subtitle: 'Review and confirm pending orders',
       actionLink: '/dashboard/orders?status=PENDING',
+      Icon: ShoppingBag,
+      colors: {
+        bg: 'bg-red-50/40 hover:bg-red-50',
+        border: 'border-red-100',
+        iconBg: 'bg-red-100/50',
+        iconColor: 'text-red-500',
+        chevron: 'text-slate-500 group-hover:text-slate-700'
+      }
     });
   }
 
   if (lowStockProducts > 0) {
     attentionItems.push({
       id: 'low_stock',
-      message: `${lowStockProducts} product${lowStockProducts === 1 ? ' is' : 's are'} low in stock`,
-      color: 'bg-amber-500',
-      actionText: 'Manage inventory',
+      title: `${lowStockProducts} products are low in stock`,
+      subtitle: 'Restock to avoid missing sales',
       actionLink: '/dashboard/products',
+      Icon: Package,
+      colors: {
+        bg: 'bg-amber-50/40 hover:bg-amber-50',
+        border: 'border-amber-100/70',
+        iconBg: 'bg-amber-100/50',
+        iconColor: 'text-amber-500',
+        chevron: 'text-amber-500 group-hover:text-amber-600'
+      }
     });
   }
 
   if (!hasCourier && store) {
     attentionItems.push({
       id: 'no_courier',
-      message: 'Courier is not connected',
-      color: 'bg-amber-500',
-      actionText: 'Connect courier',
+      title: 'Courier is not connected',
+      subtitle: 'Connect a courier to start shipping',
       actionLink: '/dashboard/settings',
+      Icon: Truck,
+      colors: {
+        bg: 'bg-orange-50/40 hover:bg-orange-50',
+        border: 'border-orange-100/70',
+        iconBg: 'bg-orange-100/50',
+        iconColor: 'text-orange-500',
+        chevron: 'text-orange-500 group-hover:text-orange-600'
+      }
     });
   }
 
+  // To exactly match the design even if data is 0 for demo purposes, uncomment this block or rely on seeded data.
+  // The user seeded data, so it should trigger naturally if there are pending orders etc.
+  
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm h-full flex flex-col">
-      <h3 className="text-[15px] font-bold text-slate-900 mb-4">Needs attention</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-[15px] font-bold text-slate-900">Needs attention</h3>
+        <Link href="/dashboard/orders" className="text-[13px] font-semibold text-blue-600 hover:text-blue-700">
+          View all
+        </Link>
+      </div>
 
       {attentionItems.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-6 text-center h-full">
-          <div className="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center mb-3">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+        <div className="flex flex-col items-center justify-center py-8 text-center h-full flex-1">
+          <div className="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center mb-3">
+            <CheckCircle2 className="w-6 h-6 text-emerald-600" />
           </div>
           <p className="text-sm font-bold text-slate-900">Everything looks good</p>
-          <p className="text-xs text-slate-500 mt-1">Your store has no outstanding issues.</p>
+          <p className="text-xs text-slate-500 mt-1 max-w-[200px]">Your store has no outstanding issues that need attention.</p>
         </div>
       ) : (
-        <ul className="space-y-4">
+        <div className="flex flex-col gap-3">
           {attentionItems.map((item) => (
-            <li key={item.id} className="flex items-start gap-3">
-              <span className={`w-2 h-2 mt-1.5 rounded-full shrink-0 ${item.color}`}></span>
-              <div>
-                <p className="text-[13px] font-medium text-slate-900 leading-tight">
-                  {item.message}
-                </p>
-                <Link
-                  href={item.actionLink}
-                  className="inline-flex items-center gap-1 mt-1 text-[12px] font-semibold text-blue-600 hover:text-blue-700 hover:underline group"
-                >
-                  {item.actionText}
-                  <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                </Link>
+            <Link 
+              key={item.id} 
+              href={item.actionLink}
+              className={`flex items-center justify-between p-3.5 rounded-xl border transition-colors group ${item.colors.bg} ${item.colors.border}`}
+            >
+              <div className="flex items-center gap-3.5">
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${item.colors.iconBg}`}>
+                  <item.Icon className={`w-4 h-4 ${item.colors.iconColor}`} />
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[13px] font-bold text-slate-800 tracking-tight">{item.title}</span>
+                  <span className="text-[12px] text-slate-500 font-medium">{item.subtitle}</span>
+                </div>
               </div>
-            </li>
+              <ChevronRight className={`w-4 h-4 shrink-0 transition-transform group-hover:translate-x-0.5 ${item.colors.chevron}`} />
+            </Link>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );
