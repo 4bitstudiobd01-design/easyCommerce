@@ -43,6 +43,7 @@ export class SteadfastCourierAdapter implements ICourierAdapter {
             'Secret-Key': secretKey,
             'Content-Type': 'application/json',
           },
+          timeout: 10000,
         },
       );
 

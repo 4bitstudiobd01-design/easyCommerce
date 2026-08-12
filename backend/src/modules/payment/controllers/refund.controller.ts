@@ -1,12 +1,15 @@
 import { Controller, Post, Get, Param, Body, UseGuards, Request } from '@nestjs/common';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../../common/guards/roles.guard';
+import { Roles } from '../../../common/decorators/roles.decorator';
+import { UserRoleEnum } from '../../user/entities/user.entity';
 import { CreateRefundService } from '../services/create-refund.service';
 import { ProcessRefundService } from '../services/process-refund.service';
 import { FindRefundsByOrderService } from '../services/find-refunds-by-order.service';
 import { CreateRefundDto } from '../dto/create-refund.dto';
 
 @Controller('orders/:orderId/refunds')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class RefundController {
   constructor(
     private readonly createRefundService: CreateRefundService,
@@ -15,6 +18,7 @@ export class RefundController {
   ) {}
 
   @Post()
+  @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
   async create(
     @Param('orderId') orderId: string,
     @Body() dto: Omit<CreateRefundDto, 'orderId'>,
@@ -25,11 +29,13 @@ export class RefundController {
   }
 
   @Get()
+  @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
   async findAll(@Param('orderId') orderId: string, @Request() req: any) {
     return this.findRefundsByOrderService.execute(orderId, req.user.tenantId);
   }
 
   @Post(':refundId/process')
+  @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
   async process(
     @Param('refundId') refundId: string,
     @Request() req: any,

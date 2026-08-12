@@ -59,25 +59,27 @@ export class SyncConsignmentService {
     }
 
     // Process tracking events safely (avoid duplicates based on status + timestamp)
-    for (const event of trackingResult.events) {
-      const exists = await this.consignmentEventRepository.findOne({
-        where: {
-          consignmentId: consignment.id,
-          status: event.status,
-          eventTimestamp: event.timestamp,
-        },
-      });
+    const existingEvents = await this.consignmentEventRepository.find({
+      where: { consignmentId: consignment.id },
+    });
+    const existingEventKeys = new Set(
+      existingEvents.map((e) => `${e.status}|${e.eventTimestamp.getTime()}`),
+    );
 
-      if (!exists) {
-        const newEvent = this.consignmentEventRepository.create({
+    const newEvents = trackingResult.events
+      .filter((event) => !existingEventKeys.has(`${event.status}|${event.timestamp.getTime()}`))
+      .map((event) =>
+        this.consignmentEventRepository.create({
           consignmentId: consignment.id,
           status: event.status,
           eventTimestamp: event.timestamp,
           location: event.location,
           description: event.description,
-        });
-        await this.consignmentEventRepository.save(newEvent);
-      }
+        }),
+      );
+
+    if (newEvents.length > 0) {
+      await this.consignmentEventRepository.save(newEvents);
     }
 
     // Detect state changes

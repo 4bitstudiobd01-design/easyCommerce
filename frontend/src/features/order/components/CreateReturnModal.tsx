@@ -14,7 +14,7 @@ export function CreateReturnModal({ order, onClose }: CreateReturnModalProps) {
   const [selectedItems, setSelectedItems] = useState<Record<string, { quantity: number; reason: string }>>({});
   const [note, setNote] = useState('');
 
-  const returnableItems = order.items.filter(i => true); // In a real app, verify item return window
+  const returnableItems = order.items;
 
   const handleToggleItem = (itemId: string) => {
     if (selectedItems[itemId]) {
@@ -53,6 +53,19 @@ export function CreateReturnModal({ order, onClose }: CreateReturnModalProps) {
     if (itemsToReturn.length === 0) {
       toast.error('Select at least one item to return');
       return;
+    }
+
+    for (const returnItem of itemsToReturn) {
+      const orderItem = order.items.find((i) => i.id === returnItem.orderItemId);
+      if (!orderItem) continue;
+      if (!Number.isInteger(returnItem.quantity) || returnItem.quantity < 1) {
+        toast.error(`Enter a valid return quantity for ${orderItem.productTitle}`);
+        return;
+      }
+      if (returnItem.quantity > orderItem.quantity) {
+        toast.error(`Return quantity for ${orderItem.productTitle} cannot exceed purchased quantity (${orderItem.quantity})`);
+        return;
+      }
     }
 
     try {

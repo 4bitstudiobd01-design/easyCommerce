@@ -27,13 +27,17 @@ export class PathaoCourierAdapter implements ICourierAdapter {
     // Real credentials exist — a failure here must surface as a real failure,
     // never as a fabricated "BOOKED" result.
     try {
-      const tokenRes = await axios.post('https://api-hermes.pathao.com/aladdin/api/v1/issue-token', {
-        client_id: clientId,
-        client_secret: clientSecret,
-        username: this.configService.get<string>('PATHAO_USERNAME'),
-        password: this.configService.get<string>('PATHAO_PASSWORD'),
-        grant_type: 'password',
-      });
+      const tokenRes = await axios.post(
+        'https://api-hermes.pathao.com/aladdin/api/v1/issue-token',
+        {
+          client_id: clientId,
+          client_secret: clientSecret,
+          username: this.configService.get<string>('PATHAO_USERNAME'),
+          password: this.configService.get<string>('PATHAO_PASSWORD'),
+          grant_type: 'password',
+        },
+        { timeout: 10000 },
+      );
 
       const token = tokenRes.data?.access_token;
 
@@ -58,6 +62,7 @@ export class PathaoCourierAdapter implements ICourierAdapter {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
+          timeout: 10000,
         },
       );
 

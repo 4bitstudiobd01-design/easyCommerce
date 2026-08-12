@@ -3,11 +3,12 @@ import { Response } from 'express';
 import { BulkUpdateOrderStatusService, BulkUpdateStatusDto } from '../services/bulk-update-order-status.service';
 import { ExportOrdersService, ExportOrdersDto } from '../services/export-orders.service';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import { UserRoleEnum } from '../../user/entities/user.entity';
 
 @Controller('orders/bulk')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class BulkOrderController {
   constructor(
     private readonly bulkUpdateStatusService: BulkUpdateOrderStatusService,

@@ -11,7 +11,8 @@ import { Skeleton } from '@/components/ui/Skeleton';
 export function NeedsAttention() {
   const { data: store, isLoading: isStoreLoading } = useGetMyStoreQuery();
   const { data: response, isLoading: isOrdersLoading } = useGetMerchantOrdersQuery(undefined, { skip: !store });
-  const orders = response?.data || [];
+  const rawOrders = response?.data ?? response;
+  const orders = Array.isArray(rawOrders) ? rawOrders : [];
   const { data: stocks = [], isLoading: isStocksLoading } = useGetInventoryStocksQuery(undefined, { skip: !store });
 
   const isLoading = isStoreLoading || isOrdersLoading || isStocksLoading;

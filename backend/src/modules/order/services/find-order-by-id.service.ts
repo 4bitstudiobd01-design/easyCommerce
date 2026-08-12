@@ -16,14 +16,9 @@ export class FindOrderByIdService {
     private readonly consignmentRepository: Repository<ConsignmentEntity>,
   ) {}
 
-  async execute(id: string, tenantId?: string): Promise<OrderEntity> {
-    const where: any = { id };
-    if (tenantId) {
-      where.tenantId = tenantId;
-    }
-
+  async execute(id: string, tenantId: string): Promise<OrderEntity> {
     const order = await this.orderRepository.findOne({
-      where,
+      where: { id, tenantId },
       relations: ['items'],
     });
 
@@ -32,15 +27,16 @@ export class FindOrderByIdService {
     }
 
     // Fetch decoupled domain data
-    const statusHistory = await this.statusHistoryRepository.find({
-      where: { orderId: id },
-      order: { createdAt: 'DESC' },
-    });
-
-    const consignment = await this.consignmentRepository.findOne({
-      where: { orderId: id },
-      relations: ['events'],
-    });
+    const [statusHistory, consignment] = await Promise.all([
+      this.statusHistoryRepository.find({
+        where: { orderId: id, tenantId },
+        order: { createdAt: 'DESC' },
+      }),
+      this.consignmentRepository.findOne({
+        where: { orderId: id, tenantId },
+        relations: ['events'],
+      }),
+    ]);
 
     if (consignment && consignment.events) {
       consignment.events.sort((a, b) => b.eventTimestamp.getTime() - a.eventTimestamp.getTime());

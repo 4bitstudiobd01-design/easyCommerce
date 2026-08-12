@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { OrderEntity } from '../../order/entities/order.entity';
+import { OrderItemEntity } from '../../order/entities/order-item.entity';
 import { ProductEntity } from '../../catalog/entities/product.entity';
 
 export interface NetProfitMetricsResponse {
@@ -18,36 +19,40 @@ export class NetProfitService {
   constructor(
     @InjectRepository(OrderEntity)
     private readonly orderRepository: Repository<OrderEntity>,
-    @InjectRepository(ProductEntity)
-    private readonly productRepository: Repository<ProductEntity>,
+    @InjectRepository(OrderItemEntity)
+    private readonly orderItemRepository: Repository<OrderItemEntity>,
   ) {}
 
   async calculateNetProfit(tenantId: string): Promise<NetProfitMetricsResponse> {
-    const orders = await this.orderRepository.find({
-      where: { tenantId },
-      relations: ['items'],
-    });
+    const orderTotals = await this.orderRepository
+      .createQueryBuilder('order')
+      .select('COALESCE(SUM(order.grandTotal), 0)', 'grossRevenue')
+      .addSelect('COALESCE(SUM(order.deliveryFee), 0)', 'totalDeliveryFees')
+      .addSelect('COUNT(order.id)', 'totalCompletedOrdersCount')
+      .where('order.tenantId = :tenantId', { tenantId })
+      .andWhere('order.orderStatus NOT IN (:...excludedStatuses)', {
+        excludedStatuses: ['CANCELLED', 'RETURNED'],
+      })
+      .getRawOne<{ grossRevenue: string; totalDeliveryFees: string; totalCompletedOrdersCount: string }>();
 
-    const validOrders = orders.filter(
-      (o) => o.orderStatus !== 'CANCELLED' && o.orderStatus !== 'RETURNED',
-    );
+    const productCostRow = await this.orderItemRepository
+      .createQueryBuilder('item')
+      .leftJoin(OrderEntity, 'order', 'order.id = item.orderId')
+      .leftJoin(ProductEntity, 'product', 'product.id = item.productId')
+      .select(
+        'COALESCE(SUM(COALESCE(product.costPrice, item.unitPrice * 0.6) * item.quantity), 0)',
+        'totalProductCost',
+      )
+      .where('order.tenantId = :tenantId', { tenantId })
+      .andWhere('order.orderStatus NOT IN (:...excludedStatuses)', {
+        excludedStatuses: ['CANCELLED', 'RETURNED'],
+      })
+      .getRawOne<{ totalProductCost: string }>();
 
-    const grossRevenue = validOrders.reduce((sum, o) => sum + Number(o.grandTotal || 0), 0);
-    const totalDeliveryFees = validOrders.reduce((sum, o) => sum + Number(o.deliveryFee || 0), 0);
-
-    const products = await this.productRepository.find({ where: { tenantId } });
-    const productCostMap = new Map<string, number>();
-    products.forEach((p) => {
-      productCostMap.set(p.id, Number(p.costPrice || 0));
-    });
-
-    let totalProductCost = 0;
-    validOrders.forEach((o) => {
-      o.items?.forEach((item) => {
-        const costPrice = productCostMap.get(item.productId) || Number(item.unitPrice || 0) * 0.6;
-        totalProductCost += costPrice * item.quantity;
-      });
-    });
+    const grossRevenue = Number(orderTotals?.grossRevenue || 0);
+    const totalDeliveryFees = Number(orderTotals?.totalDeliveryFees || 0);
+    const totalCompletedOrdersCount = Number(orderTotals?.totalCompletedOrdersCount || 0);
+    const totalProductCost = Number(productCostRow?.totalProductCost || 0);
 
     const netProfit = Number((grossRevenue - totalProductCost).toFixed(2));
     const profitMarginPercentage =
@@ -59,7 +64,7 @@ export class NetProfitService {
       totalDeliveryFees: Number(totalDeliveryFees.toFixed(2)),
       netProfit,
       profitMarginPercentage,
-      totalCompletedOrdersCount: validOrders.length,
+      totalCompletedOrdersCount,
     };
   }
 }

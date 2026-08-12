@@ -155,8 +155,17 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
   };
 
 
-  const orders = ordersResponse?.data || [];
-  const meta = ordersResponse?.meta || { page: 1, limit: 20, total: 0, totalPages: 1 };
+  const rawOrdersData = ordersResponse?.data ?? ordersResponse;
+  const orders: Order[] = Array.isArray(rawOrdersData)
+    ? rawOrdersData
+    : Array.isArray((rawOrdersData as any)?.data)
+    ? (rawOrdersData as any).data
+    : Array.isArray((ordersResponse as any)?.data)
+    ? (ordersResponse as any).data
+    : [];
+
+  const rawMeta = (rawOrdersData as any)?.meta || (ordersResponse as any)?.meta;
+  const meta = rawMeta || { page: 1, limit: 20, total: orders.length, totalPages: 1 };
 
   // Sync Search with URL
   useEffect(() => {

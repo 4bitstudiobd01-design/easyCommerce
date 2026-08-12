@@ -51,7 +51,8 @@ function getInitials(name: string) {
 
 export function RecentOrdersTable() {
   const { data: response, isLoading } = useGetMerchantOrdersQuery();
-  const orders = response?.data || [];
+  const rawOrders = response?.data ?? response;
+  const orders: Order[] = Array.isArray(rawOrders) ? rawOrders : [];
 
   if (isLoading) {
     return (

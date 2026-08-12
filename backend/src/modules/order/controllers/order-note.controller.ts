@@ -2,11 +2,12 @@ import { Controller, Post, Get, Body, Param, UseGuards, Req, HttpStatus } from '
 import { OrderNoteService, CreateOrderNoteDto } from '../services/order-note.service';
 import { OrderTimelineService } from '../services/order-timeline.service';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import { UserRoleEnum } from '../../user/entities/user.entity';
 
 @Controller('orders/:orderId')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class OrderNoteController {
   constructor(
     private readonly orderNoteService: OrderNoteService,

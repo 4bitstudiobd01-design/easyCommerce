@@ -29,6 +29,9 @@ export class OrderNoteEntity {
   @Column({ type: 'varchar', length: 255 })
   createdBy: string; // User ID who created the note
 
+  @Column({ type: 'uuid' })
+  tenantId: string;
+
   @CreateDateColumn()
   createdAt: Date;
 }

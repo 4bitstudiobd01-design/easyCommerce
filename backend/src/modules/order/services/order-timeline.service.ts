@@ -43,12 +43,26 @@ export class OrderTimelineService {
 
     const events: TimelineEvent[] = [];
 
-    // 1. Status Changes
-    const histories = await this.statusHistoryRepository.find({
-      where: { orderId },
-      order: { createdAt: 'ASC' },
-    });
+    const [histories, notes, consignments, returns] = await Promise.all([
+      this.statusHistoryRepository.find({
+        where: { orderId, tenantId },
+        order: { createdAt: 'ASC' },
+      }),
+      this.orderNoteRepository.find({
+        where: { orderId, tenantId },
+        order: { createdAt: 'ASC' },
+      }),
+      this.consignmentRepository.find({
+        where: { orderId, tenantId },
+        order: { createdAt: 'ASC' },
+      }),
+      this.returnRepository.find({
+        where: { orderId, tenantId },
+        order: { requestedAt: 'ASC' },
+      }),
+    ]);
 
+    // 1. Status Changes
     histories.forEach((h) => {
       events.push({
         id: h.id,
@@ -65,11 +79,6 @@ export class OrderTimelineService {
     });
 
     // 2. Internal Notes & Customer Messages
-    const notes = await this.orderNoteRepository.find({
-      where: { orderId },
-      order: { createdAt: 'ASC' },
-    });
-
     notes.forEach((n) => {
       events.push({
         id: n.id,
@@ -85,11 +94,6 @@ export class OrderTimelineService {
     });
 
     // 3. Consignments / Shipping
-    const consignments = await this.consignmentRepository.find({
-      where: { orderId },
-      order: { createdAt: 'ASC' },
-    });
-
     consignments.forEach((c) => {
       events.push({
         id: c.id,
@@ -107,11 +111,6 @@ export class OrderTimelineService {
     });
 
     // 4. Returns
-    const returns = await this.returnRepository.find({
-      where: { orderId },
-      order: { requestedAt: 'ASC' },
-    });
-
     returns.forEach((r) => {
       events.push({
         id: r.id,

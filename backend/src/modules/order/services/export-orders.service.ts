@@ -17,12 +17,12 @@ export class ExportOrdersService {
     private readonly orderRepository: Repository<OrderEntity>,
   ) {}
 
-  async execute(tenantId: string, storeId: string, dto: ExportOrdersDto): Promise<stream.Readable> {
+  private buildBaseQuery(tenantId: string, storeId: string, dto: ExportOrdersDto) {
     const qb = this.orderRepository.createQueryBuilder('order')
-      .leftJoinAndSelect('order.items', 'items')
       .where('order.tenantId = :tenantId', { tenantId })
       .andWhere('order.storeSlug = :storeId', { storeId })
-      .orderBy('order.createdAt', 'DESC');
+      .orderBy('order.createdAt', 'DESC')
+      .addOrderBy('order.id', 'DESC');
 
     if (dto.selectAllMatching && dto.filters) {
       if (dto.filters.status && dto.filters.status !== 'ALL') {
@@ -43,15 +43,15 @@ export class ExportOrdersService {
       qb.andWhere('1 = 0'); // Returns empty if no selection
     }
 
-    const orders = await qb.getMany();
+    return qb;
+  }
 
-    // Create a robust CSV stream
-    const readable = new stream.Readable({
-      read() {}
-    });
-
-    // Add UTF-8 BOM for Excel compatibility
-    readable.push('\\uFEFF');
+  async execute(tenantId: string, storeId: string, dto: ExportOrdersDto): Promise<stream.Readable> {
+    const BATCH_SIZE = 500;
+    const buildBaseQuery = (offset: number) =>
+      this.buildBaseQuery(tenantId, storeId, dto).skip(offset).take(BATCH_SIZE);
+    const formatCsvRow = this.formatCsvRow;
+    const sanitizeCsvFormula = this.sanitizeCsvFormula;
 
     const headers = [
       'Order Number',
@@ -69,28 +69,57 @@ export class ExportOrdersService {
       'Grand Total',
     ];
 
-    readable.push(this.formatCsvRow(headers) + '\\n');
+    let offset = 0;
+    let headerSent = false;
+    let exhausted = false;
 
-    for (const order of orders) {
-      const row = [
-        order.orderNumber,
-        order.createdAt.toISOString(),
-        order.customerName,
-        order.customerPhone,
-        this.sanitizeCsvFormula(order.shippingAddress),
-        order.city,
-        order.orderStatus,
-        order.paymentMethod,
-        order.paymentStatus,
-        order.subtotal.toString(),
-        order.deliveryFee.toString(),
-        order.discountAmount.toString(),
-        order.grandTotal.toString(),
-      ];
-      readable.push(this.formatCsvRow(row) + '\\n');
-    }
+    const readable = new stream.Readable({
+      async read() {
+        if (exhausted) {
+          this.push(null);
+          return;
+        }
 
-    readable.push(null); // End of stream
+        if (!headerSent) {
+          this.push('﻿');
+          this.push(formatCsvRow(headers) + '\n');
+          headerSent = true;
+        }
+
+        const batch = await buildBaseQuery(offset).getMany();
+        offset += BATCH_SIZE;
+
+        if (batch.length === 0) {
+          exhausted = true;
+          this.push(null);
+          return;
+        }
+
+        for (const order of batch) {
+          const row = [
+            order.orderNumber,
+            order.createdAt.toISOString(),
+            order.customerName,
+            order.customerPhone,
+            sanitizeCsvFormula(order.shippingAddress),
+            order.city,
+            order.orderStatus,
+            order.paymentMethod,
+            order.paymentStatus,
+            order.subtotal.toString(),
+            order.deliveryFee.toString(),
+            order.discountAmount.toString(),
+            order.grandTotal.toString(),
+          ];
+          this.push(formatCsvRow(row) + '\n');
+        }
+
+        if (batch.length < BATCH_SIZE) {
+          exhausted = true;
+        }
+      },
+    });
+
     return readable;
   }
 

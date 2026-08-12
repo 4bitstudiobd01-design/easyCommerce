@@ -18,9 +18,14 @@ export function RefundModal({ order, onClose }: RefundModalProps) {
     e.preventDefault();
     
     const refundAmount = parseFloat(amount);
-    
+
     if (isNaN(refundAmount) || refundAmount <= 0) {
       toast.error('Please enter a valid refund amount');
+      return;
+    }
+
+    if (refundAmount > Number(order.grandTotal)) {
+      toast.error(`Refund amount cannot exceed the order total (৳${Number(order.grandTotal).toLocaleString()})`);
       return;
     }
 
@@ -35,7 +40,7 @@ export function RefundModal({ order, onClose }: RefundModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl flex flex-col">
+      <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh]">
         <div className="flex items-center justify-between p-6 border-b border-slate-100">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-600">
@@ -48,7 +53,7 @@ export function RefundModal({ order, onClose }: RefundModalProps) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
           
           {(order.paymentStatus === 'COD_PENDING' || order.paymentStatus === 'UNPAID') ? (
             <div className="p-4 bg-amber-50 rounded-xl border border-amber-200 text-sm text-amber-800 flex items-start gap-3">

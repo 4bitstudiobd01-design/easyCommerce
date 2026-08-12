@@ -38,6 +38,8 @@ export class ProcessRefundService {
     // For demonstration, we simulate success.
     const mockGatewaySuccess = true;
 
+    const order = await this.orderRepository.findOne({ where: { id: refund.orderId, tenantId } });
+
     if (mockGatewaySuccess) {
       refund.status = RefundStatusEnum.COMPLETED;
       refund.completedAt = new Date();
@@ -45,7 +47,6 @@ export class ProcessRefundService {
       await this.refundRepository.save(refund);
 
       // Check if order payment status should be updated
-      const order = await this.orderRepository.findOne({ where: { id: refund.orderId } });
       if (order) {
         // Find total refunded
         const existingRefunds = await this.refundRepository.find({
@@ -68,7 +69,7 @@ export class ProcessRefundService {
     // Audit log
     await this.auditRepository.save(this.auditRepository.create({
       orderId: refund.orderId,
-      newStatus: (await this.orderRepository.findOne({ where: { id: refund.orderId } }))?.orderStatus,
+      newStatus: order?.orderStatus,
       changedBy: actor,
       reason: `Refund ${refund.refundNumber} transitioned to ${refund.status} for ${refund.amount} ${refund.currency}`,
       tenantId,

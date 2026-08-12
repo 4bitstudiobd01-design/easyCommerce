@@ -28,7 +28,9 @@ export class ListMerchantOrdersService {
 
     // Tenant Isolation
     query.where('order.tenantId = :tenantId', { tenantId });
-    query.leftJoinAndSelect('order.items', 'items');
+    // The list view only renders an item-quantity count, so only select id/quantity from the
+    // join instead of full item rows (product title, price, sku, etc).
+    query.leftJoin('order.items', 'items').addSelect(['items.id', 'items.quantity']);
 
     if (search) {
       query.andWhere(

@@ -10,7 +10,8 @@ import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-function weekOverWeekTrend(orders: Order[], valueFn: (o: Order) => number): number | undefined {
+function weekOverWeekTrend(ordersInput: Order[], valueFn: (o: Order) => number): number | undefined {
+  const orders = Array.isArray(ordersInput) ? ordersInput : [];
   if (orders.length === 0) return undefined;
 
   const now = Date.now();
@@ -33,7 +34,8 @@ function weekOverWeekTrend(orders: Order[], valueFn: (o: Order) => number): numb
   return Math.round(((thisWeek - lastWeek) / lastWeek) * 1000) / 10;
 }
 
-function generateSparklineData(orders: Order[], valueFn: (o: Order) => number = () => 1) {
+function generateSparklineData(ordersInput: Order[], valueFn: (o: Order) => number = () => 1) {
+  const orders = Array.isArray(ordersInput) ? ordersInput : [];
   const now = new Date();
   const data = [];
   for (let i = 6; i >= 0; i--) {
@@ -65,8 +67,10 @@ function generateSparklineData(orders: Order[], valueFn: (o: Order) => number = 
 export function KpiSection() {
   const { data: store, isLoading: isStoreLoading } = useGetMyStoreQuery();
   const { data: response, isLoading: isOrdersLoading } = useGetMerchantOrdersQuery(undefined, { skip: !store });
-  const orders = response?.data || [];
-  const { data: products = [], isLoading: isProductsLoading } = useGetProductsQuery(undefined, { skip: !store });
+  const rawOrders = response?.data ?? response;
+  const orders: Order[] = Array.isArray(rawOrders) ? rawOrders : [];
+  const { data: productsRaw = [], isLoading: isProductsLoading } = useGetProductsQuery(undefined, { skip: !store });
+  const products = (Array.isArray(productsRaw) ? productsRaw : Array.isArray((productsRaw as any)?.data) ? (productsRaw as any).data : []) as any[];
 
   const isLoading = isStoreLoading || isOrdersLoading || isProductsLoading;
 

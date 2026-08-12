@@ -1,8 +1,11 @@
-import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, DataSource } from 'typeorm';
-import { OrderEntity, OrderStatusEnum } from '../entities/order.entity';
+import { OrderEntity, OrderStatusEnum, PaymentStatusEnum } from '../entities/order.entity';
 import { OrderStatusHistoryEntity } from '../entities/order-status-history.entity';
+import { OrderStateService } from './order-state.service';
+import { AdjustStockService } from '../../inventory/services/adjust-stock.service';
+import { StockAdjustmentAction } from '../../inventory/dto/adjust-stock.dto';
 
 export interface BulkUpdateStatusDto {
   orderIds?: string[];
@@ -29,6 +32,8 @@ export class BulkUpdateOrderStatusService {
     @InjectRepository(OrderStatusHistoryEntity)
     private readonly statusHistoryRepository: Repository<OrderStatusHistoryEntity>,
     private readonly dataSource: DataSource,
+    private readonly orderStateService: OrderStateService,
+    private readonly adjustStockService: AdjustStockService,
   ) {}
 
   async execute(tenantId: string, storeId: string, dto: BulkUpdateStatusDto, userId: string): Promise<BulkUpdateResult> {
@@ -78,66 +83,97 @@ export class BulkUpdateOrderStatusService {
     const batchSize = 50;
     for (let i = 0; i < targetOrderIds.length; i += batchSize) {
       const batchIds = targetOrderIds.slice(i, i + batchSize);
-      
+
       const orders = await this.orderRepository.find({
         where: { id: In(batchIds), tenantId, storeSlug: storeId },
+        relations: ['items'],
       });
 
+      const foundIds = new Set(orders.map((o) => o.id));
+      for (const missingId of batchIds) {
+        if (!foundIds.has(missingId)) {
+          result.failed++;
+          result.errors.push({ orderId: missingId, reason: 'Order not found for this store.' });
+        }
+      }
+
+      const ordersToUpdate: OrderEntity[] = [];
       for (const order of orders) {
-        try {
-          this.validateTransition(order, dto.targetStatus);
-          
-          await this.dataSource.transaction(async (manager) => {
-            const history = new OrderStatusHistoryEntity();
-            history.order = order;
-            history.previousStatus = order.orderStatus;
-            history.newStatus = dto.targetStatus;
-            history.reason = dto.reason ? `Bulk Operation: ${dto.reason}` : 'Bulk status update';
-            history.changedBy = userId;
-            await manager.save(OrderStatusHistoryEntity, history);
-
-            order.orderStatus = dto.targetStatus;
-            await manager.save(OrderEntity, order);
-          });
-
-          result.successful++;
-        } catch (error: any) {
+        if (!this.orderStateService.canTransition(order.orderStatus, dto.targetStatus)) {
           result.failed++;
           result.errors.push({
             orderId: order.id,
             orderNumber: order.orderNumber,
-            reason: error.message,
+            reason: `Invalid order status transition from ${order.orderStatus} to ${dto.targetStatus}`,
           });
+          continue;
+        }
+        ordersToUpdate.push(order);
+      }
+
+      if (ordersToUpdate.length === 0) {
+        continue;
+      }
+
+      const previousStatusByOrderId = new Map(ordersToUpdate.map((o) => [o.id, o.orderStatus]));
+
+      try {
+        await this.dataSource.transaction(async (manager) => {
+          const updateFields: Partial<OrderEntity> = { orderStatus: dto.targetStatus };
+          if (dto.targetStatus === OrderStatusEnum.DELIVERED) {
+            updateFields.paymentStatus = PaymentStatusEnum.PAID;
+          }
+
+          await manager.update(
+            OrderEntity,
+            { id: In(ordersToUpdate.map((o) => o.id)) },
+            updateFields,
+          );
+
+          const histories = ordersToUpdate.map((order) =>
+            manager.create(OrderStatusHistoryEntity, {
+              orderId: order.id,
+              previousStatus: previousStatusByOrderId.get(order.id),
+              newStatus: dto.targetStatus,
+              changedBy: userId,
+              reason: dto.reason ? `Bulk Operation: ${dto.reason}` : 'Bulk status update',
+              tenantId,
+            }),
+          );
+          await manager.insert(OrderStatusHistoryEntity, histories);
+        });
+
+        result.successful += ordersToUpdate.length;
+      } catch (error: any) {
+        result.failed += ordersToUpdate.length;
+        for (const order of ordersToUpdate) {
+          result.errors.push({ orderId: order.id, orderNumber: order.orderNumber, reason: error.message });
+        }
+        continue;
+      }
+
+      // Restore stock for orders newly cancelled via bulk action (outside the core transaction,
+      // consistent with the single-order update path — inventory drift is reconciled separately).
+      if (dto.targetStatus === OrderStatusEnum.CANCELLED) {
+        for (const order of ordersToUpdate) {
+          for (const item of order.items) {
+            try {
+              await this.adjustStockService.execute(tenantId, {
+                productId: item.productId,
+                quantity: item.quantity,
+                action: StockAdjustmentAction.ADD,
+              });
+            } catch (e) {
+              this.logger.error(
+                `Failed to restore stock for bulk-cancelled order ${order.orderNumber}, product ${item.productId}`,
+                e as Error,
+              );
+            }
+          }
         }
       }
     }
 
     return result;
-  }
-
-  private validateTransition(order: OrderEntity, targetStatus: OrderStatusEnum) {
-    if (order.orderStatus === targetStatus) {
-      throw new Error(`Order is already ${targetStatus}`);
-    }
-
-    if (order.orderStatus === OrderStatusEnum.CANCELLED) {
-      throw new Error('Cannot modify a cancelled order');
-    }
-
-    if (order.orderStatus === OrderStatusEnum.RETURNED) {
-      throw new Error('Cannot modify a returned order');
-    }
-
-    if (targetStatus === OrderStatusEnum.CANCELLED) {
-      if (order.orderStatus === OrderStatusEnum.DELIVERED || order.orderStatus === OrderStatusEnum.SHIPPED) {
-        throw new Error('Cannot cancel a shipped or delivered order');
-      }
-    }
-
-    if (targetStatus === OrderStatusEnum.COMPLETED) {
-       if (order.orderStatus !== OrderStatusEnum.DELIVERED) {
-         throw new Error('Only delivered orders can be marked as completed');
-       }
-    }
   }
 }

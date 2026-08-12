@@ -32,6 +32,7 @@ export class OrderNoteService {
       content: dto.content,
       isCustomerVisible: dto.isCustomerVisible || false,
       createdBy: userId,
+      tenantId,
     });
 
     return await this.orderNoteRepository.save(note);
@@ -47,7 +48,7 @@ export class OrderNoteService {
     }
 
     return await this.orderNoteRepository.find({
-      where: { orderId },
+      where: { orderId, tenantId },
       order: { createdAt: 'DESC' },
     });
   }
