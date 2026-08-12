@@ -2,7 +2,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useGetMyStoresQuery, Store } from '../api/tenantApi';
-import { ChevronDown, Plus, Check, Store as StoreIcon, Globe, Sparkles } from 'lucide-react';
+import { ChevronDown, Plus, Check, Store as StoreIcon, Globe, Sparkles, ExternalLink, Settings } from 'lucide-react';
+import Link from 'next/link';
 import { toast } from 'sonner';
 
 interface StoreSwitcherDropdownProps {
@@ -37,15 +38,26 @@ export function StoreSwitcherDropdown({
     }
   }, [stores]);
 
-  // Close dropdown on click outside
+  // Close dropdown on click outside or Escape key
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     }
+    
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    }
+
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   const handleSelectStore = (store: Store) => {
@@ -124,52 +136,78 @@ export function StoreSwitcherDropdown({
 
       {/* DROPDOWN POPUP MENU */}
       {isOpen && (
-        <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-slate-900 border border-slate-700/90 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150 p-1.5 space-y-1">
-          <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800 flex items-center justify-between">
-            <span>Your Stores ({stores.length})</span>
-            <Sparkles className="w-3 h-3 text-purple-400" />
+        <div className="absolute left-0 right-0 bottom-full mb-2 z-50 bg-slate-900 border border-slate-700/90 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150 p-1.5 space-y-1">
+          
+          {/* STORE ACTIONS */}
+          <div className="flex flex-col space-y-0.5 p-1">
+            <Link
+              href={`/store/${activeStore?.slug}`}
+              target="_blank"
+              onClick={() => setIsOpen(false)}
+              className="w-full p-2.5 rounded-xl flex items-center gap-2.5 text-left text-slate-300 hover:bg-slate-800/80 hover:text-white font-medium transition-colors"
+            >
+              <ExternalLink className="w-4 h-4 text-slate-400" />
+              <span className="text-xs">View Store</span>
+            </Link>
+            <Link
+              href="/dashboard/settings"
+              onClick={() => setIsOpen(false)}
+              className="w-full p-2.5 rounded-xl flex items-center gap-2.5 text-left text-slate-300 hover:bg-slate-800/80 hover:text-white font-medium transition-colors"
+            >
+              <Settings className="w-4 h-4 text-slate-400" />
+              <span className="text-xs">Store Settings</span>
+            </Link>
           </div>
 
-          {/* STORE ITEMS LIST */}
-          <div className="max-h-56 overflow-y-auto space-y-0.5 custom-scrollbar">
-            {stores.map((store) => {
-              const isSelected = activeStore?.id === store.id;
-              const storeInitial = store.name.charAt(0).toUpperCase();
+          {stores.length > 1 && (
+            <>
+              <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-t border-b border-slate-800 flex items-center justify-between">
+                <span>Switch Store</span>
+                <Sparkles className="w-3 h-3 text-purple-400" />
+              </div>
 
-              return (
-                <button
-                  key={store.id}
-                  type="button"
-                  onClick={() => handleSelectStore(store)}
-                  className={`w-full p-2.5 rounded-xl flex items-center justify-between text-left transition-colors ${
-                    isSelected
-                      ? 'bg-blue-600/20 text-white border border-blue-500/30 font-bold'
-                      : 'text-slate-300 hover:bg-slate-800/80 hover:text-white font-medium'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div
-                      className={`w-7 h-7 rounded-lg font-extrabold text-xs flex items-center justify-center flex-shrink-0 ${
+              {/* STORE ITEMS LIST */}
+              <div className="max-h-48 overflow-y-auto space-y-0.5 custom-scrollbar p-1">
+                {stores.map((store) => {
+                  const isSelected = activeStore?.id === store.id;
+                  const storeInitial = store.name.charAt(0).toUpperCase();
+
+                  return (
+                    <button
+                      key={store.id}
+                      type="button"
+                      onClick={() => handleSelectStore(store)}
+                      className={`w-full p-2.5 rounded-xl flex items-center justify-between text-left transition-colors ${
                         isSelected
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-slate-800 text-slate-400 border border-slate-700'
+                          ? 'bg-blue-600/20 text-white border border-blue-500/30 font-bold'
+                          : 'text-slate-300 hover:bg-slate-800/80 hover:text-white font-medium'
                       }`}
                     >
-                      {storeInitial}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs truncate">{store.name}</p>
-                      <p className="text-[10px] text-slate-400 truncate">
-                        {store.slug}.easycommerce.app
-                      </p>
-                    </div>
-                  </div>
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div
+                          className={`w-7 h-7 rounded-lg font-extrabold text-xs flex items-center justify-center flex-shrink-0 ${
+                            isSelected
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-slate-800 text-slate-400 border border-slate-700'
+                          }`}
+                        >
+                          {storeInitial}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs truncate">{store.name}</p>
+                          <p className="text-[10px] text-slate-400 truncate">
+                            {store.slug}.easycommerce.app
+                          </p>
+                        </div>
+                      </div>
 
-                  {isSelected && <Check className="w-4 h-4 text-blue-400 flex-shrink-0 ml-2" />}
-                </button>
-              );
-            })}
-          </div>
+                      {isSelected && <Check className="w-4 h-4 text-blue-400 flex-shrink-0 ml-2" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
 
           {/* CREATE NEW STORE BUTTON */}
           <div className="pt-1 border-t border-slate-800">

@@ -1,13 +1,10 @@
 'use client';
 
-import React from 'react';
+import { createPortal } from 'react-dom';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { toast } from 'sonner';
 import { usePathname } from 'next/navigation';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '@/store';
-import { logout } from '@/features/auth/slices/authSlice';
-import { useRouter } from 'next/navigation';
+import { StoreSwitcherDropdown } from '@/features/tenant/components/StoreSwitcherDropdown';
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -15,37 +12,25 @@ import {
   FolderTree,
   Users,
   Truck,
-  Sparkles,
-  TrendingUp,
-  MessageSquare,
   Tag,
-  Star,
-  Layers,
-  ArrowRightLeft,
-  ShieldCheck,
   Settings,
-  LogOut,
   Store as StoreIcon,
+  Layers,
+  CreditCard,
+  Megaphone,
+  BarChart2,
+  MonitorSmartphone,
+  FileText
 } from 'lucide-react';
-import { StoreSwitcherDropdown } from '@/features/tenant/components/StoreSwitcherDropdown';
-import { useState } from 'react';
 
 interface SidebarProps {
-  isOpen?: boolean;
+  isMobileOpen?: boolean;
+  isDesktopCollapsed?: boolean;
   onClose?: () => void;
 }
 
-export const Sidebar = ({ isOpen = false, onClose }: SidebarProps) => {
+export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onClose }: SidebarProps) => {
   const pathname = usePathname();
-  const { user } = useSelector((state: RootState) => state.auth);
-  const dispatch = useDispatch();
-  const router = useRouter();
-
-  const handleLogout = () => {
-    dispatch(logout());
-    toast.success('Logged out successfully.');
-    router.push('/login');
-  };
 
   const isActive = (path: string) => {
     if (path === '/dashboard' && pathname === '/dashboard') return true;
@@ -53,19 +38,65 @@ export const Sidebar = ({ isOpen = false, onClose }: SidebarProps) => {
     return false;
   };
 
+
+  const [tooltipData, setTooltipData] = useState<{
+    show: boolean;
+    label: string;
+    badge?: string;
+    top: number;
+    left: number;
+  }>({ show: false, label: '', top: 0, left: 0 });
+
+
+
+  const handleTooltipEnter = (e: React.MouseEvent | React.FocusEvent, label: string, badge?: string) => {
+    if (!isDesktopCollapsed) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    setTooltipData({
+      show: true,
+      label,
+      badge,
+      top: rect.top + rect.height / 2,
+      left: rect.right + 12,
+    });
+  };
+
+  const handleTooltipLeave = () => {
+    setTooltipData(prev => ({ ...prev, show: false }));
+  };
+
   const navItemClass = (path: string) => {
     const active = isActive(path);
-    return `w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
-      active
-        ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/20'
-        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-    }`;
+    const baseClasses = `flex items-center transition-colors group rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500`;
+    const sizeClasses = isDesktopCollapsed 
+      ? 'w-11 h-11 justify-center mx-auto' 
+      : 'w-full px-3 py-2 justify-between';
+    const activeClasses = active
+      ? 'bg-blue-600 text-white font-semibold'
+      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 font-medium';
+    return `${baseClasses} ${sizeClasses} ${activeClasses}`;
+  };
+
+  const iconClass = isDesktopCollapsed ? "w-5 h-5 shrink-0" : "w-4 h-4 shrink-0";
+  const iconStroke = isDesktopCollapsed ? 1.75 : 2;
+
+
+  
+  const NavGroupHeader = ({ children }: { children: React.ReactNode }) => {
+    if (isDesktopCollapsed) {
+      return children === 'Main Menu' ? null : <div className="h-3" />;
+    }
+    return (
+      <div className="px-3 pb-1 pt-5 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+        {children}
+      </div>
+    );
   };
 
   return (
     <>
       {/* Mobile Overlay */}
-      {isOpen && (
+      {isMobileOpen && (
         <div
           className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 md:hidden"
           onClick={onClose}
@@ -74,169 +105,269 @@ export const Sidebar = ({ isOpen = false, onClose }: SidebarProps) => {
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed md:sticky top-0 left-0 z-50 h-screen w-64 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 shrink-0 transition-transform duration-300 ease-in-out ${
-          isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-        }`}
+        className={`fixed md:sticky top-0 left-0 z-50 h-screen bg-[#0F172A] text-slate-300 flex flex-col shrink-0 transition-all duration-300 ease-in-out
+          ${isMobileOpen ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0'}
+          ${isDesktopCollapsed ? 'md:w-[72px]' : 'md:w-64'}
+        `}
       >
         {/* Brand Header */}
-        <div className="p-5 border-b border-slate-800 flex items-center justify-between">
+        <div className={`p-5 flex items-center ${isDesktopCollapsed ? 'justify-center px-0' : 'justify-between'}`}>
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="p-2 bg-blue-600 rounded-xl text-white shadow-lg shadow-blue-600/30">
-              <StoreIcon className="w-5 h-5" />
+            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white shrink-0 shadow-sm shadow-blue-500/20">
+              <StoreIcon className="w-4 h-4" />
             </div>
-            <div>
-              <span className="font-extrabold text-base text-white tracking-tight block leading-none">
-                EasyCommerce
-              </span>
-              <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider block mt-1">
-                Merchant Admin
-              </span>
-            </div>
+            {!isDesktopCollapsed && (
+              <div>
+                <span className="font-extrabold text-sm text-white tracking-tight block leading-none">
+                  EasyCommerce
+                </span>
+                <span className="text-[10px] text-blue-400 font-semibold mt-1 block leading-none">
+                  Merchant Admin
+                </span>
+              </div>
+            )}
           </Link>
         </div>
 
-        {/* Navigation Section Links (Scrollable area) */}
-        <nav className="flex-1 overflow-y-auto p-4 space-y-1 text-xs font-semibold [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-700/50 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-slate-600/80">
+        {/* Navigation Links */}
+                        <nav className="flex-1 overflow-y-auto px-3 pb-4 space-y-0.5 text-[13px] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-700/50 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-slate-600/80 overflow-x-hidden">
           
-          <div className="mb-6 pb-4 border-b border-slate-800/60">
-            <StoreSwitcherDropdown onCreateNewStore={() => router.push('/dashboard/create-store')} />
-          </div>
-
-          {/* --- Main Menu --- */}
-          <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-            Main Menu
-          </div>
-
-          <Link href="/dashboard" className={navItemClass('/dashboard')}>
-            <LayoutDashboard className="w-4 h-4" />
-            <span>Dashboard</span>
+          <NavGroupHeader>Main Menu</NavGroupHeader>
+          <Link 
+            href="/dashboard" 
+            className={navItemClass('/dashboard')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Dashboard")}
+            onFocus={(e) => handleTooltipEnter(e, "Dashboard")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <LayoutDashboard className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Dashboard</span>}
+            </div>
           </Link>
 
-          <Link href="/dashboard/orders" className={navItemClass('/dashboard/orders')}>
-            <ShoppingCart className="w-4 h-4" />
-            <span>Orders & Sales</span>
+          <NavGroupHeader>Sales</NavGroupHeader>
+          <Link 
+            href="/dashboard/orders" 
+            className={navItemClass('/dashboard/orders')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Orders", "24")}
+            onFocus={(e) => handleTooltipEnter(e, "Orders", "24")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <ShoppingCart className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Orders</span>}
+            </div>
+            {!isDesktopCollapsed && (
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-600 text-white leading-none">
+                24
+              </span>
+            )}
+          </Link>
+          <Link 
+            href="/dashboard/customers" 
+            className={navItemClass('/dashboard/customers')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Customers")}
+            onFocus={(e) => handleTooltipEnter(e, "Customers")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <Users className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Customers</span>}
+            </div>
           </Link>
 
-          <Link href="/dashboard/products" className={navItemClass('/dashboard/products')}>
-            <Package className="w-4 h-4" />
-            <span>Products & Catalog</span>
+          <NavGroupHeader>Catalog</NavGroupHeader>
+          <Link 
+            href="/dashboard/products" 
+            className={navItemClass('/dashboard/products')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Products")}
+            onFocus={(e) => handleTooltipEnter(e, "Products")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <Package className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Products</span>}
+            </div>
+          </Link>
+          <Link 
+            href="/dashboard/categories" 
+            className={navItemClass('/dashboard/categories')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Categories")}
+            onFocus={(e) => handleTooltipEnter(e, "Categories")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <FolderTree className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Categories</span>}
+            </div>
+          </Link>
+          <Link 
+            href="/dashboard/inventory" 
+            className={navItemClass('/dashboard/inventory')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Inventory")}
+            onFocus={(e) => handleTooltipEnter(e, "Inventory")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <Layers className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Inventory</span>}
+            </div>
           </Link>
 
-          <Link href="/dashboard/categories" className={navItemClass('/dashboard/categories')}>
-            <FolderTree className="w-4 h-4" />
-            <span>Categories</span>
+          <NavGroupHeader>Operations</NavGroupHeader>
+          <Link 
+            href="/dashboard/payments" 
+            className={navItemClass('/dashboard/payments')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Payments")}
+            onFocus={(e) => handleTooltipEnter(e, "Payments")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <CreditCard className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Payments</span>}
+            </div>
+          </Link>
+          <Link 
+            href="/dashboard/logistics" 
+            className={navItemClass('/dashboard/logistics')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Courier")}
+            onFocus={(e) => handleTooltipEnter(e, "Courier")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <Truck className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Courier</span>}
+            </div>
           </Link>
 
-          <Link href="/dashboard/customers" className={navItemClass('/dashboard/customers')}>
-            <Users className="w-4 h-4" />
-            <span>Customers</span>
+          <NavGroupHeader>Marketing</NavGroupHeader>
+          <Link 
+            href="/dashboard/coupons" 
+            className={navItemClass('/dashboard/coupons')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Coupons")}
+            onFocus={(e) => handleTooltipEnter(e, "Coupons")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <Tag className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Coupons</span>}
+            </div>
+          </Link>
+          <Link 
+            href="/dashboard/marketing" 
+            className={navItemClass('/dashboard/marketing')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Marketing")}
+            onFocus={(e) => handleTooltipEnter(e, "Marketing")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <Megaphone className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Marketing</span>}
+            </div>
+          </Link>
+          <Link 
+            href="/dashboard/analytics" 
+            className={navItemClass('/dashboard/analytics')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Analytics")}
+            onFocus={(e) => handleTooltipEnter(e, "Analytics")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <BarChart2 className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Analytics</span>}
+            </div>
           </Link>
 
-          <Link href="/dashboard/logistics" className={navItemClass('/dashboard/logistics')}>
-            <Truck className="w-4 h-4" />
-            <span>Logistics & Shipments</span>
+          <NavGroupHeader>Store</NavGroupHeader>
+          <Link 
+            href="/dashboard/themes" 
+            className={navItemClass('/dashboard/themes')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Storefront")}
+            onFocus={(e) => handleTooltipEnter(e, "Storefront")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <MonitorSmartphone className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Storefront</span>}
+            </div>
+          </Link>
+          <Link 
+            href="/dashboard/pages" 
+            className={navItemClass('/dashboard/pages')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Pages")}
+            onFocus={(e) => handleTooltipEnter(e, "Pages")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <FileText className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Pages</span>}
+            </div>
           </Link>
 
-          {/* --- Shop & Growth --- */}
-          <div className="px-3 py-2 pt-6 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-            Shop & Growth
-          </div>
-
-          <Link href="/dashboard/themes" className={navItemClass('/dashboard/themes').replace('bg-blue-600', 'bg-amber-600').replace('shadow-blue-600', 'shadow-amber-600')}>
-            <Sparkles className={`w-4 h-4 ${isActive('/dashboard/themes') ? '' : 'text-amber-400'}`} />
-            <span>Theme Marketplace</span>
-          </Link>
-
-          <Link href="/dashboard/net-profit" className={navItemClass('/dashboard/net-profit').replace('bg-blue-600', 'bg-emerald-600').replace('shadow-blue-600', 'shadow-emerald-600')}>
-            <TrendingUp className={`w-4 h-4 ${isActive('/dashboard/net-profit') ? '' : 'text-emerald-400'}`} />
-            <span>Net Profit Analytics</span>
-          </Link>
-
-          <Link href="/dashboard/email-marketing" className={navItemClass('/dashboard/email-marketing')}>
-            <MessageSquare className={`w-4 h-4 ${isActive('/dashboard/email-marketing') ? '' : 'text-blue-400'}`} />
-            <span>Email Marketing</span>
-          </Link>
-
-          <Link href="/dashboard/marketing" className={navItemClass('/dashboard/marketing').replace('bg-blue-600', 'bg-purple-600').replace('shadow-blue-600', 'shadow-purple-600')}>
-            <TrendingUp className={`w-4 h-4 ${isActive('/dashboard/marketing') ? '' : 'text-purple-400'}`} />
-            <span>Marketing & Pixels</span>
-          </Link>
-
-          <Link href="/dashboard/coupons" className={navItemClass('/dashboard/coupons')}>
-            <Tag className="w-4 h-4" />
-            <span>Promo Coupons</span>
-          </Link>
-
-          <Link href="/dashboard/sms" className={navItemClass('/dashboard/sms')}>
-            <MessageSquare className="w-4 h-4" />
-            <span>SMS Alerts</span>
-          </Link>
-
-          <Link href="/dashboard/reviews" className={navItemClass('/dashboard/reviews')}>
-            <Star className={`w-4 h-4 ${isActive('/dashboard/reviews') ? '' : 'text-amber-400'}`} />
-            <span>Customer Reviews</span>
-          </Link>
-
-          <Link href="/dashboard/abandoned-carts" className={navItemClass('/dashboard/abandoned-carts').replace('bg-blue-600', 'bg-orange-600').replace('shadow-blue-600', 'shadow-orange-600')}>
-            <ShoppingCart className={`w-4 h-4 ${isActive('/dashboard/abandoned-carts') ? '' : 'text-orange-400'}`} />
-            <span>Abandoned Carts</span>
-          </Link>
-
-
-          {/* --- Operations & Inventory --- */}
-          <div className="px-3 py-2 pt-6 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-            Operations & Inventory
-          </div>
-
-          <Link href="/dashboard/inventory" className={navItemClass('/dashboard/inventory')}>
-            <Layers className="w-4 h-4" />
-            <span>Inventory Control</span>
-          </Link>
-
-          <Link href="/dashboard/warehouse-transfers" className={navItemClass('/dashboard/warehouse-transfers')}>
-            <ArrowRightLeft className={`w-4 h-4 ${isActive('/dashboard/warehouse-transfers') ? '' : 'text-blue-400'}`} />
-            <span>Warehouse Transfers</span>
-          </Link>
-
-          <Link href="/dashboard/staff" className={navItemClass('/dashboard/staff')}>
-            <ShieldCheck className={`w-4 h-4 ${isActive('/dashboard/staff') ? '' : 'text-blue-400'}`} />
-            <span>Staff & Roles</span>
-          </Link>
-
-
-          {/* --- Settings & Setup --- */}
-          <div className="px-3 py-2 pt-6 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-            Settings & Setup
-          </div>
-
-          <Link href="/dashboard/settings" className={navItemClass('/dashboard/settings')}>
-            <Settings className="w-4 h-4" />
-            <span>Store Settings</span>
+          <NavGroupHeader>Settings</NavGroupHeader>
+          <Link 
+            href="/dashboard/settings" 
+            className={navItemClass('/dashboard/settings')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Store Settings")}
+            onFocus={(e) => handleTooltipEnter(e, "Store Settings")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <Settings className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Store Settings</span>}
+            </div>
           </Link>
         </nav>
 
-        {/* Sidebar Footer User Info */}
-        <div className="p-4 border-t border-slate-800">
-          <div className="flex items-center justify-between p-2 rounded-xl bg-slate-800/50">
-            <div className="flex items-center gap-2.5 truncate">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 text-white font-bold text-xs flex items-center justify-center shrink-0">
-                {user?.fullName ? user.fullName[0].toUpperCase() : 'M'}
-              </div>
-              <div className="truncate">
-                <p className="text-xs font-bold text-white truncate">{user?.fullName || 'Merchant Account'}</p>
-                <p className="text-[10px] text-slate-400 truncate">{user?.email || 'merchant@easycommerce.com'}</p>
-              </div>
-            </div>
-            <button
-              onClick={handleLogout}
-              title="Sign Out"
-              className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
+        {/* Sidebar Footer Store Switcher */}
+        <div className={`p-4 bg-[#0F172A] ${isDesktopCollapsed ? 'hidden' : 'block'}`}>
+          <StoreSwitcherDropdown />
         </div>
+        {isDesktopCollapsed && (
+          <div className="p-4 bg-[#0F172A] flex justify-center pb-6">
+            <Link href="/dashboard/settings" title="Store Settings">
+              <Settings className="w-5 h-5 text-slate-400 hover:text-slate-200 transition-colors" />
+            </Link>
+          </div>
+        )}
       </aside>
+
+      {/* Portal Tooltip */}
+      {typeof window !== 'undefined' && createPortal(
+        <div
+          className={`fixed px-2.5 py-1.5 bg-slate-800 text-white text-[12px] font-medium rounded-md shadow-lg z-[9999] whitespace-nowrap flex items-center gap-1.5 pointer-events-none before:content-[''] before:absolute before:right-full before:top-1/2 before:-translate-y-1/2 before:border-[4px] before:border-transparent before:border-r-slate-800 transition-opacity duration-150 ${tooltipData.show ? 'opacity-100' : 'opacity-0'}`}
+          style={{
+            top: tooltipData.top,
+            left: tooltipData.left,
+            transform: 'translateY(-50%)',
+            visibility: tooltipData.show ? 'visible' : 'hidden',
+            transitionDelay: tooltipData.show ? '150ms' : '0ms'
+          }}
+        >
+          {tooltipData.label}
+          {tooltipData.badge && (
+            <span className="ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-600 text-white leading-none">
+              {tooltipData.badge}
+            </span>
+          )}
+        </div>,
+        document.body
+      )}
     </>
   );
 };

@@ -2,23 +2,24 @@
 
 import React, { useEffect } from 'react';
 import { toast } from 'sonner';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store';
 import { useGetMyStoreQuery } from '@/features/tenant/api/tenantApi';
-import { Sparkles, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { DashboardRenderer } from '@/features/admin/components/core/DashboardRenderer';
-import { MERCHANT_WIDGET_REGISTRY } from '@/features/dashboard/config/merchant.widgets';
+
+// New Dashboard Components
+import { DashboardHeaderTitle } from '@/features/dashboard/components/home/DashboardHeaderTitle';
+import { KpiSection } from '@/features/dashboard/components/home/KpiSection';
+import { NeedsAttention } from '@/features/dashboard/components/home/NeedsAttention';
+import { RecentOrdersTable } from '@/features/dashboard/components/home/RecentOrdersTable';
+import { LowStockList } from '@/features/dashboard/components/home/LowStockList';
+import { TopProductsList } from '@/features/dashboard/components/home/TopProductsList';
+import { SetupChecklist } from '@/features/dashboard/components/home/SetupChecklist';
+import { RevenueChart } from '@/features/analytics/components/RevenueChart';
 
 export default function DashboardOverviewPage() {
-  const { user } = useSelector((state: RootState) => state.auth);
   const router = useRouter();
+  const { data: store, refetch: refetchStore } = useGetMyStoreQuery();
 
-  const {
-    data: store,
-    refetch: refetchStore,
-  } = useGetMyStoreQuery();
-
+  // Handle theme payment redirects
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -41,41 +42,38 @@ export default function DashboardOverviewPage() {
   }, [store, router, refetchStore]);
 
   return (
-    <div className="space-y-3">
-      {/* Welcome Banner — Compact */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 px-5 border border-blue-500 shadow-sm">
-        <div className="relative z-10 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="p-1.5 bg-white/15 rounded-lg shrink-0">
-              <Sparkles className="w-4 h-4 text-white" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-lg font-bold tracking-tight truncate">
-                {store?.name ? `${store.name} Control Center` : 'Merchant Control Center'}
-              </h1>
-              <p className="text-blue-200 text-xs mt-0.5 truncate">
-                Welcome back, {user?.fullName || 'Store Owner'} · <span className="text-white/80 font-medium">{store?.slug ? `${store.slug}.easycommerce.app` : 'EasyCommerce'}</span>
-              </p>
-            </div>
-          </div>
+    <div className="space-y-6 max-w-[1200px] mx-auto pb-8">
+      {/* 1. Header Area */}
+      <DashboardHeaderTitle />
 
-          <button
-            onClick={() => router.push('/dashboard/products/create')}
-            className="px-3 py-2 bg-white/15 hover:bg-white/25 text-white font-bold text-xs rounded-lg flex items-center gap-1.5 transition-all active:scale-95 shrink-0 border border-white/20"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Add Product</span>
-          </button>
+      {/* 2. New Merchant Setup Checklist */}
+      <SetupChecklist />
+
+      {/* 3. KPI Metrics (4 Cards) */}
+      <KpiSection />
+
+      {/* 4. Sales Overview & Needs Attention */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <RevenueChart />
+        </div>
+        <div className="lg:col-span-1">
+          <NeedsAttention />
         </div>
       </div>
 
-      {/* Dynamic Widget Grid via Registry */}
-      <DashboardRenderer 
-        registry={MERCHANT_WIDGET_REGISTRY} 
-        layoutId="merchant-dashboard-default"
-        flattenLayout={true}
-      />
+      {/* 5. Recent Orders */}
+      <RecentOrdersTable />
+
+      {/* 6. Low Stock & Top Products */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div>
+          <LowStockList />
+        </div>
+        <div>
+          <TopProductsList />
+        </div>
+      </div>
     </div>
   );
 }
-

@@ -54,10 +54,12 @@ export const billingApi = createApi({
   endpoints: (builder) => ({
     getPlans: builder.query<Plan[], void>({
       query: () => '/plans',
+      transformResponse: (response: { data: Plan[] }) => response.data,
     }),
     getMySubscription: builder.query<SubscriptionSnapshot, void>({
       query: () => '/subscription',
       providesTags: ['Subscription'],
+      transformResponse: (response: { data: SubscriptionSnapshot }) => response.data,
     }),
     initiatePlanRenewal: builder.mutation<InitiatePlanRenewalResponse, { planCode: PlanCode }>({
       query: (body) => ({
@@ -66,6 +68,7 @@ export const billingApi = createApi({
         body,
       }),
       invalidatesTags: ['Subscription'],
+      transformResponse: (response: { data: InitiatePlanRenewalResponse }) => response.data,
     }),
   }),
 });

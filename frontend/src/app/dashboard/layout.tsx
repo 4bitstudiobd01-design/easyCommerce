@@ -41,23 +41,36 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [user, isStoreSuccess, isStoreLoading, isStoreFetching, store, pathname, router]);
 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false);
 
   // Prevent hydration mismatch and hide content until authenticated
   if (!isMounted || !isAuthenticated) return null;
+
+  const handleMenuClick = () => {
+    if (window.innerWidth < 768) {
+      setIsMobileOpen(true);
+    } else {
+      setIsDesktopCollapsed(!isDesktopCollapsed);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-900/5 text-slate-900 flex font-sans">
       <Toaster position="top-right" richColors />
       
       {/* 1. Left Sidebar Navigation */}
-      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      <Sidebar 
+        isMobileOpen={isMobileOpen} 
+        isDesktopCollapsed={isDesktopCollapsed} 
+        onClose={() => setIsMobileOpen(false)} 
+      />
 
       {/* 2. Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         
         {/* Top Sticky Header */}
-        <DashboardHeader onMenuClick={() => setIsSidebarOpen(true)} />
+        <DashboardHeader onMenuClick={handleMenuClick} />
 
         {/* Dashboard Body Container */}
         <main className="flex-1 p-4 md:p-8 space-y-8 max-w-7xl mx-auto w-full">

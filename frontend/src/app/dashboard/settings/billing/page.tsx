@@ -94,7 +94,7 @@ export default function BillingSettingsPage() {
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
                     Current Plan
                   </span>
-                  <h3 className="font-extrabold text-lg text-slate-900">{snapshot?.plan.name}</h3>
+                  <h3 className="font-extrabold text-lg text-slate-900">{snapshot?.plan?.name ?? 'No Plan'}</h3>
                 </div>
               </div>
 
@@ -110,18 +110,18 @@ export default function BillingSettingsPage() {
               <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Store Limit</span>
                 <span className="text-sm font-extrabold text-slate-900 block mt-0.5">
-                  {snapshot?.plan.maxStores === null ? 'Unlimited' : `Up to ${snapshot?.plan.maxStores}`}
+                  {snapshot?.plan?.maxStores === null ? 'Unlimited' : `Up to ${snapshot?.plan?.maxStores ?? '—'}`}
                 </span>
               </div>
               <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Staff per Store</span>
                 <span className="text-sm font-extrabold text-slate-900 block mt-0.5">
-                  {snapshot?.plan.maxStaffPerStore === null ? 'Unlimited' : `Up to ${snapshot?.plan.maxStaffPerStore}`}
+                  {snapshot?.plan?.maxStaffPerStore === null ? 'Unlimited' : `Up to ${snapshot?.plan?.maxStaffPerStore ?? '—'}`}
                 </span>
               </div>
             </div>
 
-            {snapshot?.plan.monthlyPriceBdt !== undefined && Number(snapshot.plan.monthlyPriceBdt) > 0 && (
+            {snapshot?.plan?.monthlyPriceBdt !== undefined && Number(snapshot?.plan?.monthlyPriceBdt) > 0 && (
               <p className="text-[11px] text-slate-400 font-medium">
                 Renews on{' '}
                 {new Date(snapshot.subscription.currentPeriodEnd).toLocaleDateString('en-US', {
