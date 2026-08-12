@@ -114,7 +114,7 @@ export class GetMerchantAnalyticsService {
         totalRevenue: data.revenue,
       }))
       .sort((a, b) => b.totalRevenue - a.totalRevenue)
-      .slice(0, 3);
+      .slice(0, 10);
 
     return {
       totalSales,
