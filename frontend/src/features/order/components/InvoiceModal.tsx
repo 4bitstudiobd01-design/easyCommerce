@@ -10,6 +10,17 @@ interface InvoiceModalProps {
   order: Order | null;
 }
 
+// Money columns arrive as numeric strings from the API (Postgres decimal), and an
+// invoice must never silently print a blank or unformatted amount.
+function formatMoney(value: number | string | null | undefined): string {
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return '0.00';
+  return amount.toLocaleString('en-BD', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
 export function InvoiceModal({ isOpen, onClose, order }: InvoiceModalProps) {
   if (!isOpen || !order) return null;
 
@@ -105,8 +116,8 @@ export function InvoiceModal({ isOpen, onClose, order }: InvoiceModalProps) {
                     <td className="p-3 font-bold text-slate-900">{item.productTitle}</td>
                     <td className="p-3 font-mono text-slate-400 text-[11px]">{item.sku}</td>
                     <td className="p-3 text-center font-bold">{item.quantity}</td>
-                    <td className="p-3 text-right">৳{item.unitPrice.toLocaleString()}</td>
-                    <td className="p-3 text-right font-extrabold">৳{item.totalPrice.toLocaleString()}</td>
+                    <td className="p-3 text-right">৳{formatMoney(item.unitPrice)}</td>
+                    <td className="p-3 text-right font-extrabold">৳{formatMoney(item.totalPrice)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -118,17 +129,24 @@ export function InvoiceModal({ isOpen, onClose, order }: InvoiceModalProps) {
             <div className="w-64 space-y-1.5 text-xs font-semibold">
               <div className="flex justify-between text-slate-500">
                 <span>Subtotal:</span>
-                <span className="font-bold text-slate-900">৳{order.subtotal.toLocaleString()}</span>
+                <span className="font-bold text-slate-900">৳{formatMoney(order.subtotal)}</span>
               </div>
 
               <div className="flex justify-between text-slate-500">
                 <span>Delivery Charge:</span>
-                <span className="font-bold text-slate-900">৳{order.deliveryFee}</span>
+                <span className="font-bold text-slate-900">৳{formatMoney(order.deliveryFee)}</span>
               </div>
+
+              {Number(order.discountAmount) > 0 && (
+                <div className="flex justify-between text-slate-500">
+                  <span>Discount:</span>
+                  <span className="font-bold text-emerald-700">-৳{formatMoney(order.discountAmount)}</span>
+                </div>
+              )}
 
               <div className="pt-2 border-t border-slate-200 flex justify-between font-black text-sm text-slate-900">
                 <span>Grand Total:</span>
-                <span className="text-blue-600">৳{order.grandTotal.toLocaleString()}</span>
+                <span className="text-blue-600">৳{formatMoney(order.grandTotal)}</span>
               </div>
             </div>
           </div>

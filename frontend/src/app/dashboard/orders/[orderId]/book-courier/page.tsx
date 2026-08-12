@@ -16,11 +16,19 @@ export default function BookCourierPage() {
   const [note, setNote] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  const { data: response } = useGetMerchantOrdersQuery();
-  const orders = response?.data || [];
+  const { data: response, isLoading: isOrdersLoading } = useGetMerchantOrdersQuery();
+  const orders = Array.isArray(response?.data) ? response!.data : [];
   const [bookCourier, { isLoading }] = useBookCourierMutation();
 
   const order = orders.find(o => o.id === orderId);
+
+  if (isOrdersLoading) {
+    return (
+      <div className="max-w-2xl mx-auto my-8 p-8 bg-white rounded-3xl border border-slate-200 text-center">
+        <p className="text-sm font-medium text-slate-500">Loading order...</p>
+      </div>
+    );
+  }
 
   if (!order) {
     return (

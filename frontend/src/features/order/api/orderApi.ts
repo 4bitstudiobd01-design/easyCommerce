@@ -217,6 +217,17 @@ export const orderApi = createApi({
         params: params || {},
       }),
       providesTags: ['Order'],
+      // The controller returns { data, meta } and the response interceptor wraps it
+      // again, so the body is { data: { data: Order[], meta } }. Unwrap the envelope
+      // and always hand consumers an array, never an object.
+      transformResponse: (response: any) => {
+        const payload = response?.data ?? response;
+        const data = Array.isArray(payload) ? payload : payload?.data;
+        return {
+          data: Array.isArray(data) ? data : [],
+          meta: payload?.meta ?? response?.meta ?? null,
+        };
+      },
     }),
     getOrderById: builder.query<Order, string>({
       query: (id) => `/${id}`,

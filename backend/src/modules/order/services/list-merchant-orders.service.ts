@@ -28,9 +28,20 @@ export class ListMerchantOrdersService {
 
     // Tenant Isolation
     query.where('order.tenantId = :tenantId', { tenantId });
-    // The list view only renders an item-quantity count, so only select id/quantity from the
-    // join instead of full item rows (product title, price, sku, etc).
-    query.leftJoin('order.items', 'items').addSelect(['items.id', 'items.quantity']);
+    // Rows from this query also back the invoice and thermal-label modals, which print
+    // per-item pricing — so those columns must be selected here, not just the quantity
+    // the table itself displays. Still narrowed to the printed fields rather than
+    // selecting whole item rows.
+    query
+      .leftJoin('order.items', 'items')
+      .addSelect([
+        'items.id',
+        'items.quantity',
+        'items.productTitle',
+        'items.sku',
+        'items.unitPrice',
+        'items.totalPrice',
+      ]);
 
     if (search) {
       query.andWhere(
