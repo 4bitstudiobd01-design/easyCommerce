@@ -6,7 +6,8 @@ import { Users } from 'lucide-react';
 
 export default function CustomersPage() {
   const { data: store } = useGetMyStoreQuery();
-  const { data: orders = [] } = useGetMerchantOrdersQuery(undefined, { skip: !store });
+  const { data: response } = useGetMerchantOrdersQuery(undefined, { skip: !store });
+  const orders = response?.data || [];
 
   return (
     <div className="space-y-6">

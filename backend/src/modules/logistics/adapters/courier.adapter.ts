@@ -1,3 +1,5 @@
+import { ConsignmentStatusEnum } from '../entities/consignment.entity';
+
 export interface CourierBookingPayload {
   invoice: string;
   recipientName: string;
@@ -18,6 +20,20 @@ export interface CourierBookingResult {
   status: string;
 }
 
+export interface CourierTrackingEvent {
+  status: ConsignmentStatusEnum;
+  timestamp: Date;
+  location?: string;
+  description?: string;
+}
+
+export interface CourierTrackingResult {
+  trackingCode: string;
+  currentStatus: ConsignmentStatusEnum;
+  events: CourierTrackingEvent[];
+}
+
 export interface ICourierAdapter {
   bookParcel(payload: CourierBookingPayload): Promise<CourierBookingResult>;
+  trackParcel(trackingCode: string, payload: any): Promise<CourierTrackingResult>;
 }

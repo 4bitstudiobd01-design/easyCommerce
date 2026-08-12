@@ -7,4 +7,7 @@ export class UpdateOrderStatusDto {
   @IsEnum(OrderStatusEnum)
   @IsNotEmpty()
   orderStatus: OrderStatusEnum;
+
+  @ApiProperty({ required: false, example: 'Customer requested cancellation' })
+  reason?: string;
 }

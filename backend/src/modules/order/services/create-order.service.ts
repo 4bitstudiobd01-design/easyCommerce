@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { OrderEntity, OrderStatusEnum, PaymentStatusEnum } from '../entities/order.entity';
+import { OrderEntity, OrderStatusEnum, PaymentStatusEnum, PaymentMethodEnum } from '../entities/order.entity';
 import { OrderItemEntity } from '../entities/order-item.entity';
 import { CreateOrderDto } from '../dto/create-order.dto';
 import { FindStoreBySlugService } from '../../tenant/services/find-store-by-slug.service';
@@ -119,7 +119,7 @@ export class CreateOrderService {
       couponCode: appliedCouponCode,
       grandTotal,
       paymentMethod: dto.paymentMethod,
-      paymentStatus: PaymentStatusEnum.UNPAID,
+      paymentStatus: dto.paymentMethod === PaymentMethodEnum.COD ? PaymentStatusEnum.COD_PENDING : PaymentStatusEnum.UNPAID,
       orderStatus: OrderStatusEnum.PENDING,
       storeSlug: dto.storeSlug,
       tenantId,

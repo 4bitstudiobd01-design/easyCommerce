@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConsignmentEntity, ConsignmentStatusEnum, CourierProviderEnum } from '../entities/consignment.entity';
 import { OrderEntity, OrderStatusEnum, PaymentStatusEnum } from '../../order/entities/order.entity';
+import { OrderStatusHistoryEntity } from '../../order/entities/order-status-history.entity';
 import { StoreEntity } from '../../tenant/entities/store.entity';
 import { CreateCourierBookingDto } from '../dto/create-courier-booking.dto';
 import { SteadfastCourierAdapter } from '../adapters/steadfast.adapter';
@@ -16,19 +17,25 @@ export class CreateCourierBookingService {
     private readonly consignmentRepository: Repository<ConsignmentEntity>,
     @InjectRepository(OrderEntity)
     private readonly orderRepository: Repository<OrderEntity>,
+    @InjectRepository(OrderStatusHistoryEntity)
+    private readonly orderStatusHistoryRepository: Repository<OrderStatusHistoryEntity>,
     @InjectRepository(StoreEntity)
     private readonly storeRepository: Repository<StoreEntity>,
     private readonly steadfastAdapter: SteadfastCourierAdapter,
     private readonly pathaoAdapter: PathaoCourierAdapter,
   ) {}
 
-  async execute(dto: CreateCourierBookingDto, tenantId: string): Promise<ConsignmentEntity> {
+  async execute(dto: CreateCourierBookingDto, tenantId: string, userId: string): Promise<ConsignmentEntity> {
     const order = await this.orderRepository.findOne({
       where: { id: dto.orderId, tenantId },
     });
 
     if (!order) {
       throw new NotFoundException(`Order with ID "${dto.orderId}" not found.`);
+    }
+
+    if (order.orderStatus !== OrderStatusEnum.READY_TO_SHIP) {
+      throw new BadRequestException(`Order must be in READY_TO_SHIP status to book a courier. Current status: ${order.orderStatus}`);
     }
 
     const existingConsignment = await this.consignmentRepository.findOne({
@@ -95,9 +102,15 @@ export class CreateCourierBookingService {
 
     const savedConsignment = await this.consignmentRepository.save(consignment);
 
-    // Update order status to SHIPPED
-    order.orderStatus = OrderStatusEnum.SHIPPED;
-    await this.orderRepository.save(order);
+    // Create a history log for the booking event without mutating the order state
+    const history = this.orderStatusHistoryRepository.create({
+      orderId: order.id,
+      newStatus: order.orderStatus, // Status remains READY_TO_SHIP
+      changedBy: userId,
+      reason: `Courier booked via ${dto.courierProvider}. Consignment ID: ${bookingResult.trackingCode}`,
+      tenantId,
+    });
+    await this.orderStatusHistoryRepository.save(history);
 
     return savedConsignment;
   }

@@ -15,7 +15,8 @@ function timeAgo(dateStr: string): string {
 }
 
 export function RecentBusinessActivityWidget() {
-  const { data: orders = [], isLoading } = useGetMerchantOrdersQuery();
+  const { data: response, isLoading } = useGetMerchantOrdersQuery();
+  const orders = response?.data || [];
 
   const recentOrders = [...orders]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())

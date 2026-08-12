@@ -29,7 +29,7 @@ export class NetProfitService {
     });
 
     const validOrders = orders.filter(
-      (o) => o.orderStatus !== 'CANCELLED' && o.orderStatus !== 'RETURNED' && o.orderStatus !== 'PAYMENT_FAILED',
+      (o) => o.orderStatus !== 'CANCELLED' && o.orderStatus !== 'RETURNED',
     );
 
     const grossRevenue = validOrders.reduce((sum, o) => sum + Number(o.grandTotal || 0), 0);

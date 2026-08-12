@@ -4,7 +4,9 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
+import { ConsignmentEventEntity } from './consignment-event.entity';
 
 export enum CourierProviderEnum {
   STEADFAST = 'STEADFAST',
@@ -14,8 +16,12 @@ export enum CourierProviderEnum {
 
 export enum ConsignmentStatusEnum {
   BOOKED = 'BOOKED',
+  PICKED_UP = 'PICKED_UP',
   IN_TRANSIT = 'IN_TRANSIT',
+  OUT_FOR_DELIVERY = 'OUT_FOR_DELIVERY',
   DELIVERED = 'DELIVERED',
+  DELIVERY_FAILED = 'DELIVERY_FAILED',
+  RETURNED = 'RETURNED',
   CANCELLED = 'CANCELLED',
 }
 
@@ -54,15 +60,17 @@ export class ConsignmentEntity {
   @Column({ type: 'decimal', precision: 12, scale: 2, default: 60 })
   deliveryCharge: number;
 
-  @Column({
-    type: 'enum',
-    enum: ConsignmentStatusEnum,
-    default: ConsignmentStatusEnum.BOOKED,
-  })
+  @Column({ type: 'enum', enum: ConsignmentStatusEnum, default: ConsignmentStatusEnum.BOOKED })
   status: ConsignmentStatusEnum;
+
+  @OneToMany(() => ConsignmentEventEntity, (event) => event.consignment)
+  events: ConsignmentEventEntity[];
 
   @Column({ type: 'uuid' })
   tenantId: string;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  lastSyncAt?: Date;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;

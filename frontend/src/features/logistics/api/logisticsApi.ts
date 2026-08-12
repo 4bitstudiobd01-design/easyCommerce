@@ -52,7 +52,15 @@ export const logisticsApi = createApi({
       providesTags: ['Consignment'],
       transformResponse: (response: { data: Consignment[] }) => response.data,
     }),
+    syncConsignment: builder.mutation<Consignment, string>({
+      query: (orderId) => ({
+        url: `/consignments/order/${orderId}/sync`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['Consignment'],
+      transformResponse: (response: { data: Consignment }) => response.data,
+    }),
   }),
 });
 
-export const { useBookCourierMutation, useGetMerchantConsignmentsQuery } = logisticsApi;
+export const { useBookCourierMutation, useGetMerchantConsignmentsQuery, useSyncConsignmentMutation } = logisticsApi;

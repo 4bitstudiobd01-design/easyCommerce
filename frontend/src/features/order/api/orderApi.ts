@@ -6,6 +6,7 @@ export type OrderStatusType =
   | 'ON_HOLD'
   | 'CONFIRMED'
   | 'PROCESSING'
+  | 'READY_TO_SHIP'
   | 'SHIPPED'
   | 'DELIVERED'
   | 'COMPLETED'
@@ -60,6 +61,10 @@ export interface Order {
   customerPhone: string;
   customerEmail?: string;
   shippingAddress: string;
+  area?: string;
+  thana?: string;
+  district?: string;
+  division?: string;
   city: string;
   deliveryFee: number;
   subtotal: number;
@@ -67,11 +72,15 @@ export interface Order {
   couponCode?: string;
   grandTotal: number;
   paymentMethod: 'COD' | 'BKASH' | 'NAGAD' | 'SSLCOMMERZ';
-  paymentStatus: 'UNPAID' | 'PAID' | 'REFUNDED';
+  paymentStatus: 'UNPAID' | 'PAID' | 'REFUNDED' | 'COD_PENDING' | 'COD_COLLECTED' | 'FAILED';
   orderStatus: OrderStatusType;
   storeSlug: string;
   tenantId: string;
   items: OrderItem[];
+  customerNote?: string;
+  internalNote?: string;
+  consignment?: any;
+  statusHistory?: any[];
   createdAt: string;
 }
 
@@ -107,9 +116,64 @@ export interface CreateOrderRequest {
   items: CreateOrderItemRequest[];
 }
 
+export interface EditOrderRequest {
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string;
+  shippingAddress: string;
+  city: string;
+  area?: string;
+  thana?: string;
+  district?: string;
+  division?: string;
+  customerNote?: string;
+  internalNote?: string;
+  deliveryFee: number;
+  discountAmount: number;
+  items: { productId: string; quantity: number }[];
+}
+
 export interface UpdateOrderStatusRequest {
   id: string;
   orderStatus: OrderStatusType;
+  reason?: string;
+}
+
+export interface ReturnItem {
+  id: string;
+  orderItemId: string;
+  quantity: number;
+  reason?: string;
+  condition?: string;
+  restockDecision?: boolean;
+  inspectionNote?: string;
+  orderItem: OrderItem;
+}
+
+export interface Return {
+  id: string;
+  returnNumber: string;
+  orderId: string;
+  status: 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'PICKUP_PENDING' | 'IN_TRANSIT' | 'RECEIVED' | 'INSPECTED' | 'ACCEPTED' | 'CANCELLED';
+  reason?: string;
+  note?: string;
+  rejectionReason?: string;
+  items: ReturnItem[];
+  requestedAt: string;
+}
+
+export interface Refund {
+  id: string;
+  refundNumber: string;
+  orderId: string;
+  paymentId: string;
+  returnId?: string;
+  amount: number;
+  currency: string;
+  method: string;
+  status: 'REQUESTED' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+  reason?: string;
+  createdAt: string;
 }
 
 export const orderApi = createApi({
@@ -128,7 +192,7 @@ export const orderApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ['Order', 'AbandonedCart'],
+  tagTypes: ['Order', 'AbandonedCart', 'OrderKpi'],
   endpoints: (builder) => ({
     createPublicOrder: builder.mutation<Order, CreateOrderRequest>({
       query: (orderData) => ({
@@ -147,16 +211,46 @@ export const orderApi = createApi({
       },
       transformResponse: (response: { data: PublicOrderTracking[] }) => response.data,
     }),
-    getMerchantOrders: builder.query<Order[], void>({
-      query: () => '',
+    getMerchantOrders: builder.query<{ data: Order[]; meta: any }, { page?: number; limit?: number; status?: string; paymentStatus?: string; search?: string; sortBy?: string; sortOrder?: string; } | void>({
+      query: (params) => ({
+        url: '',
+        params: params || {},
+      }),
       providesTags: ['Order'],
-      transformResponse: (response: { data: Order[] }) => response.data,
+    }),
+    getOrderById: builder.query<Order, string>({
+      query: (id) => `/${id}`,
+      providesTags: (result, error, id) => [{ type: 'Order', id }],
+      transformResponse: (response: { data: Order }) => response.data,
+    }),
+    getMerchantOrderKpis: builder.query<any, void>({
+      query: () => '/kpi',
+      providesTags: ['OrderKpi', 'Order'],
+      transformResponse: (response: { data: any }) => response.data,
+    }),
+    editOrder: builder.mutation<Order, { id: string; data: EditOrderRequest }>({
+      query: ({ id, data }) => ({
+        url: `/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Order', id }, 'Order'],
+      transformResponse: (response: { data: Order }) => response.data,
     }),
     updateOrderStatus: builder.mutation<Order, UpdateOrderStatusRequest>({
-      query: ({ id, orderStatus }) => ({
+      query: ({ id, orderStatus, reason }) => ({
         url: `/${id}/status`,
         method: 'PATCH',
-        body: { orderStatus },
+        body: { orderStatus, reason },
+      }),
+      invalidatesTags: ['Order'],
+      transformResponse: (response: { data: Order }) => response.data,
+    }),
+    updateOrderPaymentStatus: builder.mutation<Order, { id: string; paymentStatus: string }>({
+      query: ({ id, paymentStatus }) => ({
+        url: `/${id}/payment-status`,
+        method: 'PATCH',
+        body: { paymentStatus },
       }),
       invalidatesTags: ['Order'],
       transformResponse: (response: { data: Order }) => response.data,
@@ -194,6 +288,93 @@ export const orderApi = createApi({
         body,
       }),
     }),
+
+    // --- CHUNK 8: COD PAYMENT ENDPOINT ---
+    collectCodPayment: builder.mutation<Order, string>({
+      query: (id) => ({
+        url: `/orders/${id}/payment/cod/collect`,
+        method: 'POST',
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: 'Order', id },
+      ],
+      transformResponse: (response: { data: Order }) => response.data,
+    }),
+
+    // --- CHUNK 9: RETURNS & REFUNDS ENDPOINTS ---
+    getReturnsByOrder: builder.query<Return[], string>({
+      query: (orderId) => `/orders/${orderId}/returns`,
+      providesTags: (result, error, arg) => [{ type: 'Order', id: arg }],
+    }),
+    createReturn: builder.mutation<Return, { orderId: string; items: { orderItemId: string; quantity: number; reason: string }[]; note?: string }>({
+      query: ({ orderId, ...body }) => ({
+        url: `/orders/${orderId}/returns`,
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: (result, error, arg) => [{ type: 'Order', id: arg.orderId }],
+    }),
+    updateReturnStatus: builder.mutation<Return, { orderId: string; returnId: string; status: string; rejectionReason?: string; condition?: string; inspectionNote?: string; restockDecision?: boolean }>({
+      query: ({ orderId, returnId, ...body }) => ({
+        url: `/orders/${orderId}/returns/${returnId}/status`,
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: (result, error, arg) => [{ type: 'Order', id: arg.orderId }],
+    }),
+    getRefundsByOrder: builder.query<Refund[], string>({
+      query: (orderId) => `/orders/${orderId}/refunds`,
+      providesTags: (result, error, arg) => [{ type: 'Order', id: arg }],
+    }),
+    createRefund: builder.mutation<Refund, { orderId: string; amount: number; returnId?: string; reason?: string }>({
+      query: ({ orderId, ...body }) => ({
+        url: `/orders/${orderId}/refunds`,
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: (result, error, arg) => [{ type: 'Order', id: arg.orderId }],
+    }),
+    processRefund: builder.mutation<Refund, { orderId: string; refundId: string }>({
+      query: ({ orderId, refundId }) => ({
+        url: `/orders/${orderId}/refunds/${refundId}/process`,
+        method: 'POST',
+      }),
+      invalidatesTags: (result, error, arg) => [{ type: 'Order', id: arg.orderId }],
+    }),
+    
+    // --- CHUNK 10: BULK OPERATIONS ---
+    bulkUpdateOrderStatus: builder.mutation<{ total: number; successful: number; failed: number; errors: any[] }, { orderIds?: string[]; selectAllMatching?: boolean; filters?: any; targetStatus: OrderStatusType; reason?: string }>({
+      query: (body) => ({
+        url: '/orders/bulk/status',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Order', 'OrderKpi'],
+      transformResponse: (response: { data: { total: number; successful: number; failed: number; errors: any[] } }) => response.data,
+    }),
+
+    // --- CHUNK 11: NOTES & TIMELINE ---
+    getOrderTimeline: builder.query<any[], string>({
+      query: (orderId) => `/orders/${orderId}/timeline`,
+      providesTags: (result, error, id) => [{ type: 'Order', id: `${id}-timeline` }],
+      transformResponse: (response: { data: any[] }) => response.data,
+    }),
+    getOrderNotes: builder.query<any[], string>({
+      query: (orderId) => `/orders/${orderId}/notes`,
+      providesTags: (result, error, id) => [{ type: 'Order', id: `${id}-notes` }],
+      transformResponse: (response: { data: any[] }) => response.data,
+    }),
+    createOrderNote: builder.mutation<any, { orderId: string; content: string; isCustomerVisible?: boolean }>({
+      query: ({ orderId, ...body }) => ({
+        url: `/orders/${orderId}/notes`,
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: (result, error, arg) => [
+        { type: 'Order', id: `${arg.orderId}-notes` },
+        { type: 'Order', id: `${arg.orderId}-timeline` },
+      ],
+    }),
   }),
 });
 
@@ -202,8 +383,23 @@ export const {
   useTrackPublicOrderQuery,
   useLazyTrackPublicOrderQuery,
   useGetMerchantOrdersQuery,
+  useGetOrderByIdQuery,
+  useGetMerchantOrderKpisQuery,
+  useEditOrderMutation,
   useUpdateOrderStatusMutation,
+  useUpdateOrderPaymentStatusMutation,
   useGetMerchantAbandonedCartsQuery,
   useSendRecoverySmsMutation,
   useTrackAbandonedCartMutation,
+  useCollectCodPaymentMutation,
+  useGetReturnsByOrderQuery,
+  useCreateReturnMutation,
+  useUpdateReturnStatusMutation,
+  useGetRefundsByOrderQuery,
+  useCreateRefundMutation,
+  useProcessRefundMutation,
+  useBulkUpdateOrderStatusMutation,
+  useGetOrderTimelineQuery,
+  useGetOrderNotesQuery,
+  useCreateOrderNoteMutation,
 } = orderApi;

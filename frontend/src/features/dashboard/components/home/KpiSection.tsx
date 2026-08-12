@@ -64,7 +64,8 @@ function generateSparklineData(orders: Order[], valueFn: (o: Order) => number = 
 
 export function KpiSection() {
   const { data: store, isLoading: isStoreLoading } = useGetMyStoreQuery();
-  const { data: orders = [], isLoading: isOrdersLoading } = useGetMerchantOrdersQuery(undefined, { skip: !store });
+  const { data: response, isLoading: isOrdersLoading } = useGetMerchantOrdersQuery(undefined, { skip: !store });
+  const orders = response?.data || [];
   const { data: products = [], isLoading: isProductsLoading } = useGetProductsQuery(undefined, { skip: !store });
 
   const isLoading = isStoreLoading || isOrdersLoading || isProductsLoading;

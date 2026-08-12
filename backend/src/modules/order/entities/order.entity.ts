@@ -13,13 +13,12 @@ export enum OrderStatusEnum {
   ON_HOLD = 'ON_HOLD',
   CONFIRMED = 'CONFIRMED',
   PROCESSING = 'PROCESSING',
+  READY_TO_SHIP = 'READY_TO_SHIP',
   SHIPPED = 'SHIPPED',
   DELIVERED = 'DELIVERED',
   COMPLETED = 'COMPLETED',
   CANCELLED = 'CANCELLED',
   RETURNED = 'RETURNED',
-  PAYMENT_ON_PROCESS = 'PAYMENT_ON_PROCESS',
-  PAYMENT_FAILED = 'PAYMENT_FAILED',
 }
 
 export enum PaymentMethodEnum {
@@ -33,6 +32,9 @@ export enum PaymentStatusEnum {
   UNPAID = 'UNPAID',
   PAID = 'PAID',
   REFUNDED = 'REFUNDED',
+  COD_PENDING = 'COD_PENDING',
+  COD_COLLECTED = 'COD_COLLECTED',
+  FAILED = 'FAILED',
 }
 
 @Entity('orders')
@@ -42,6 +44,9 @@ export class OrderEntity {
 
   @Column({ type: 'varchar', length: 50, unique: true })
   orderNumber: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  customerId?: string;
 
   @Column({ type: 'varchar', length: 255 })
   customerName: string;
@@ -55,8 +60,26 @@ export class OrderEntity {
   @Column({ type: 'text' })
   shippingAddress: string;
 
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  area?: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  thana?: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  district?: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  division?: string;
+
   @Column({ type: 'varchar', length: 100, default: 'Dhaka' })
   city: string;
+
+  @Column({ type: 'text', nullable: true })
+  customerNote?: string;
+
+  @Column({ type: 'text', nullable: true })
+  internalNote?: string;
 
   @Column({ type: 'decimal', precision: 12, scale: 2, default: 60 })
   deliveryFee: number;
@@ -96,4 +119,8 @@ export class OrderEntity {
 
   @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt: Date;
+
+  // Virtual properties for aggregated domain data (not mapped to DB columns in this entity)
+  statusHistory?: any[]; // OrderStatusHistoryEntity[]
+  consignment?: any;     // ConsignmentEntity
 }

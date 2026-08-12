@@ -15,14 +15,19 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CreateOrderService } from './services/create-order.service';
 import { ListMerchantOrdersService } from './services/list-merchant-orders.service';
+import { OrderKpiService } from './services/order-kpi.service';
 import { FindOrderByIdService } from './services/find-order-by-id.service';
 import { UpdateOrderStatusService } from './services/update-order-status.service';
 import { TrackPublicOrderService } from './services/track-public-order.service';
 import { GenerateOrderInvoiceService } from './services/generate-order-invoice.service';
 import { GenerateThermalLabelService } from './services/generate-thermal-label.service';
 import { FindStoreByUserService } from '../tenant/services/find-store-by-user.service';
+import { CollectCodService } from './services/collect-cod.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { EditOrderDto } from './dto/edit-order.dto';
+import { OrderListDto } from './dto/order-list.dto';
+import { EditOrderService } from './services/edit-order.service';
 
 @ApiTags('Orders & Sales')
 @Controller('orders')
@@ -30,12 +35,15 @@ export class OrderController {
   constructor(
     private readonly createOrderService: CreateOrderService,
     private readonly listMerchantOrdersService: ListMerchantOrdersService,
+    private readonly orderKpiService: OrderKpiService,
     private readonly findOrderByIdService: FindOrderByIdService,
     private readonly updateOrderStatusService: UpdateOrderStatusService,
     private readonly trackPublicOrderService: TrackPublicOrderService,
     private readonly generateOrderInvoiceService: GenerateOrderInvoiceService,
     private readonly generateThermalLabelService: GenerateThermalLabelService,
     private readonly findStoreByUserService: FindStoreByUserService,
+    private readonly editOrderService: EditOrderService,
+    private readonly collectCodService: CollectCodService,
   ) {}
 
   private async getMerchantTenantId(userId: string, storeId?: string): Promise<string> {
@@ -74,13 +82,27 @@ export class OrderController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List all sales orders for merchant store' })
-  @ApiResponse({ status: 200, description: 'List of store orders' })
+  @ApiResponse({ status: 200, description: 'Paginated list of store orders' })
   async listMerchantOrders(
+    @CurrentUser('sub') userId: string,
+    @Query() dto: OrderListDto,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
+    return this.listMerchantOrdersService.execute(tenantId, dto);
+  }
+
+  @Get('kpi')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get KPI metrics for orders' })
+  @ApiResponse({ status: 200, description: 'Order KPI metrics' })
+  async getOrderKpis(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') storeId?: string,
   ) {
     const tenantId = await this.getMerchantTenantId(userId, storeId);
-    return this.listMerchantOrdersService.execute(tenantId);
+    return this.orderKpiService.execute(tenantId);
   }
 
   @Get(':id/invoice')
@@ -133,6 +155,35 @@ export class OrderController {
     @Headers('x-store-id') storeId?: string,
   ) {
     const tenantId = await this.getMerchantTenantId(userId, storeId);
-    return this.updateOrderStatusService.execute(id, tenantId, dto);
+    return this.updateOrderStatusService.execute(id, tenantId, userId, dto);
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Edit an existing order' })
+  @ApiResponse({ status: 200, description: 'Order updated successfully' })
+  async editOrder(
+    @CurrentUser('sub') userId: string,
+    @Param('id') id: string,
+    @Body() dto: EditOrderDto,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
+    return this.editOrderService.execute(id, tenantId, userId, dto);
+  }
+
+  @Post(':id/payment/cod/collect')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Mark COD payment as collected' })
+  @ApiResponse({ status: 200, description: 'COD payment marked as collected' })
+  async collectCodPayment(
+    @CurrentUser('sub') userId: string,
+    @Param('id') id: string,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
+    return this.collectCodService.execute(id, tenantId, userId);
   }
 }

@@ -1,12 +1,22 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useGetMerchantOrdersQuery, useUpdateOrderStatusMutation, Order } from '../api/orderApi';
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { 
+  useGetMerchantOrdersQuery, 
+  useGetMerchantOrderKpisQuery,
+  useUpdateOrderStatusMutation, 
+  Order, 
+  OrderStatusType 
+} from '../api/orderApi';
+import { BulkActionPreviewModal } from './BulkActionPreviewModal';
 import { InvoiceModal } from './InvoiceModal';
+import { useBulkUpdateOrderStatusMutation } from '../api/orderApi';
 import { ThermalLabelModal } from './ThermalLabelModal';
+import { useDebounce } from '@/hooks/useDebounce';
 import {
   ShoppingCart,
-  Phone,
   MapPin,
   Clock,
   CheckCircle2,
@@ -19,15 +29,12 @@ import {
   Tag,
   Plus,
   Calendar,
-  DollarSign,
   Users,
   Search,
   Download,
   Filter,
   ArrowUpDown,
   Eye,
-  Edit2,
-  ExternalLink,
   MoreHorizontal,
   ChevronLeft,
   ChevronRight,
@@ -41,43 +48,140 @@ interface OrderListTableProps {
   onCreateOrderClick?: () => void;
 }
 
-type OrderStatusFilterType =
-  | 'ALL'
-  | 'PENDING'
-  | 'ON_HOLD'
-  | 'CONFIRMED'
-  | 'PROCESSING'
-  | 'SHIPPED'
-  | 'DELIVERED'
-  | 'COMPLETED'
-  | 'CANCELLED'
-  | 'RETURNED'
-  | 'PAYMENT_ON_PROCESS'
-  | 'PAYMENT_FAILED';
-
 export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: OrderListTableProps) {
-  const { data: orders = [], isLoading, refetch } = useGetMerchantOrdersQuery();
-  const [updateOrderStatus, { isLoading: isUpdating }] = useUpdateOrderStatusMutation();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
-  const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState<Order | null>(null);
-  const [selectedThermalOrder, setSelectedThermalOrder] = useState<Order | null>(null);
+  // Read params from URL
+  const urlPage = parseInt(searchParams.get('page') || '1', 10);
+  const urlLimit = parseInt(searchParams.get('limit') || '20', 10);
+  const urlStatus = searchParams.get('status') as OrderStatusType | null;
+  const urlPaymentStatus = searchParams.get('paymentStatus');
+  const urlSearch = searchParams.get('search') || '';
+  const urlSortOrder = (searchParams.get('sortOrder') as 'ASC' | 'DESC') || 'DESC';
 
-  const [selectedFilter, setSelectedFilter] = useState<OrderStatusFilterType>('ALL');
-  const [searchQuery, setSearchQuery] = useState('');
+  // Local State synchronized with URL where necessary
+  const [searchInput, setSearchInput] = useState(urlSearch);
+  const debouncedSearch = useDebounce(searchInput, 500);
 
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
-
-  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
-  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
-  const [isColumnsOpen, setIsColumnsOpen] = useState(false);
-  const [paymentStatusFilter, setPaymentStatusFilter] = useState<'ALL' | 'UNPAID' | 'PAID' | 'REFUNDED'>('ALL');
-  const [visibleColumns, setVisibleColumns] = useState({ type: true, amount: true });
+  const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState<Order | null>(null);
+  const [selectedThermalOrder, setSelectedThermalOrder] = useState<Order | null>(null);
   const [openRowMenuId, setOpenRowMenuId] = useState<string | null>(null);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
-  // Calculate Metrics
-  const confirmedCount = orders.filter((o) => o.orderStatus === 'CONFIRMED').length;
-  const totalAmountSum = orders.reduce((sum, o) => sum + Number(o.grandTotal || 0), 0);
-  const uniqueCustomersCount = new Set(orders.map((o) => o.customerPhone)).size;
+  // Queries
+  const { data: kpis, isLoading: isKpisLoading } = useGetMerchantOrderKpisQuery();
+  
+  const queryParams = {
+    page: urlPage,
+    limit: urlLimit,
+    status: (urlStatus as string) === 'ALL' ? undefined : urlStatus || undefined,
+    paymentStatus: urlPaymentStatus === 'ALL' ? undefined : urlPaymentStatus || undefined,
+    search: debouncedSearch || undefined,
+    sortBy: 'createdAt',
+    sortOrder: urlSortOrder,
+  };
+
+  const { data: ordersResponse, isLoading: isOrdersLoading, isFetching } = useGetMerchantOrdersQuery(queryParams);
+  const [updateOrderStatus, { isLoading: isUpdating }] = useUpdateOrderStatusMutation();
+
+  const [selectAllMatching, setSelectAllMatching] = useState(false);
+  const [bulkAction, setBulkAction] = useState<{ title: string; targetStatus: OrderStatusType; requireReason?: boolean } | null>(null);
+
+  const [bulkUpdateStatus, { isLoading: isBulkUpdating }] = useBulkUpdateOrderStatusMutation();
+
+  const handleBulkActionConfirm = async (reason?: string) => {
+    if (!bulkAction) return;
+
+    try {
+      const result = await bulkUpdateStatus({
+        orderIds: selectAllMatching ? undefined : selectedOrders,
+        selectAllMatching,
+        filters: selectAllMatching ? queryParams : undefined,
+        targetStatus: bulkAction.targetStatus,
+        reason,
+      }).unwrap();
+
+      toast.success(`Successfully updated ${result.successful} orders. Failed: ${result.failed}`);
+      setBulkAction(null);
+      setSelectedOrders([]);
+      setSelectAllMatching(false);
+    } catch (err: any) {
+      toast.error(err?.data?.message || 'Bulk operation failed.');
+    }
+  };
+
+  const handleExportSelectedCsv = async () => {
+    try {
+      toast.info('Preparing export...');
+      const token = localStorage.getItem('easycommerce_token');
+      const storeId = localStorage.getItem('easycommerce_active_store_id');
+      
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1'}/orders/bulk/export`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'x-store-id': storeId || '',
+        },
+        body: JSON.stringify({
+          orderIds: selectAllMatching ? undefined : selectedOrders,
+          selectAllMatching,
+          filters: selectAllMatching ? queryParams : undefined,
+        }),
+      });
+
+      if (!res.ok) throw new Error('Export failed');
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `orders-export-${new Date().getTime()}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Export completed successfully');
+      // If we only wanted to export without keeping selection, we can reset:
+      // setSelectedOrders([]); 
+      // setSelectAllMatching(false);
+    } catch (err) {
+      toast.error('Failed to export orders');
+    }
+  };
+
+
+  const orders = ordersResponse?.data || [];
+  const meta = ordersResponse?.meta || { page: 1, limit: 20, total: 0, totalPages: 1 };
+
+  // Sync Search with URL
+  useEffect(() => {
+    updateUrlParams({ search: debouncedSearch, page: '1' });
+  }, [debouncedSearch]);
+
+  const updateUrlParams = (updates: Record<string, string | null>) => {
+    const current = new URLSearchParams(Array.from(searchParams.entries()));
+    Object.entries(updates).forEach(([key, value]) => {
+      if (!value || value === 'ALL') {
+        current.delete(key);
+      } else {
+        current.set(key, value);
+      }
+    });
+    
+    // Always keep page at 1 when changing filters, unless explicitly changing page
+    if (!updates.hasOwnProperty('page') && Object.keys(updates).some(k => k !== 'sortOrder' && k !== 'page')) {
+      current.set('page', '1');
+    }
+
+    const search = current.toString();
+    const query = search ? `?${search}` : '';
+    router.replace(`${pathname}${query}`);
+  };
 
   const handleStatusChange = async (orderId: string, newStatus: any) => {
     try {
@@ -88,15 +192,20 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
     }
   };
 
+  
   const toggleSelectAll = () => {
-    if (selectedOrders.length === orders.length) {
+    if (selectedOrders.length === orders.length && orders.length > 0) {
       setSelectedOrders([]);
+      setSelectAllMatching(false);
     } else {
       setSelectedOrders(orders.map((o) => o.id));
+      setSelectAllMatching(false);
     }
   };
 
+
   const toggleSelectOrder = (id: string) => {
+    if (selectAllMatching) setSelectAllMatching(false);
     if (selectedOrders.includes(id)) {
       setSelectedOrders(selectedOrders.filter((item) => item !== id));
     } else {
@@ -105,13 +214,13 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
   };
 
   const handleExportCsv = () => {
-    if (filteredOrders.length === 0) {
-      toast.error('No orders to export.');
+    if (orders.length === 0) {
+      toast.error('No orders on this page to export.');
       return;
     }
 
     const headers = ['Order Number', 'Customer Name', 'Phone', 'Status', 'Payment Status', 'Grand Total', 'Created At'];
-    const rows = filteredOrders.map((o) => [
+    const rows = orders.map((o) => [
       o.orderNumber,
       o.customerName,
       o.customerPhone,
@@ -132,63 +241,20 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
     link.download = `orders-export-${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
     URL.revokeObjectURL(url);
-
-    toast.success(`Exported ${filteredOrders.length} orders to CSV.`);
+    toast.success(`Exported current page to CSV.`);
   };
 
-  // Filtered & Sorted Orders
-  const filteredOrders = orders
-    .filter((order) => {
-      const matchesFilter = selectedFilter === 'ALL' || order.orderStatus === selectedFilter;
-
-      const matchesPaymentStatus =
-        paymentStatusFilter === 'ALL' || order.paymentStatus === paymentStatusFilter;
-
-      const matchesSearch =
-        !searchQuery ||
-        order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.customerPhone.includes(searchQuery);
-
-      return matchesFilter && matchesPaymentStatus && matchesSearch;
-    })
-    .sort((a, b) => {
-      const diff = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      return sortOrder === 'newest' ? diff : -diff;
-    });
-
-  const filterPills: { id: OrderStatusFilterType; label: string; activeColor: string; textColor: string }[] = [
-    { id: 'ALL', label: 'All Orders', activeColor: 'bg-slate-900 text-white', textColor: 'text-slate-700 hover:bg-slate-100' },
-    { id: 'PENDING', label: 'Placed', activeColor: 'bg-purple-600 text-white', textColor: 'text-purple-600 hover:bg-purple-50' },
-    { id: 'ON_HOLD', label: 'On Hold', activeColor: 'bg-amber-600 text-white', textColor: 'text-amber-600 hover:bg-amber-50' },
-    { id: 'CONFIRMED', label: 'Confirmed', activeColor: 'bg-blue-600 text-white', textColor: 'text-blue-600 hover:bg-blue-50' },
-    { id: 'PROCESSING', label: 'Processing', activeColor: 'bg-indigo-600 text-white', textColor: 'text-indigo-600 hover:bg-indigo-50' },
-    { id: 'SHIPPED', label: 'Shipped', activeColor: 'bg-cyan-600 text-white', textColor: 'text-cyan-600 hover:bg-cyan-50' },
-    { id: 'DELIVERED', label: 'Delivered', activeColor: 'bg-emerald-600 text-white', textColor: 'text-emerald-600 hover:bg-emerald-50' },
-    { id: 'COMPLETED', label: 'Completed', activeColor: 'bg-green-600 text-white', textColor: 'text-green-600 hover:bg-green-50' },
-    { id: 'CANCELLED', label: 'Cancelled', activeColor: 'bg-red-600 text-white', textColor: 'text-red-600 hover:bg-red-50' },
-    { id: 'RETURNED', label: 'Returned', activeColor: 'bg-orange-600 text-white', textColor: 'text-orange-600 hover:bg-orange-50' },
-    { id: 'PAYMENT_ON_PROCESS', label: 'Payment OnProcess', activeColor: 'bg-violet-600 text-white', textColor: 'text-violet-600 hover:bg-violet-50' },
-    { id: 'PAYMENT_FAILED', label: 'Payment Failed', activeColor: 'bg-rose-600 text-white', textColor: 'text-rose-600 hover:bg-rose-50' },
+  const filterTabs = [
+    { id: 'ALL', label: 'All Orders' },
+    { id: 'PENDING', label: 'New' },
+    { id: 'CONFIRMED', label: 'Confirmed' },
+    { id: 'PROCESSING', label: 'Processing' },
+    { id: 'READY_TO_SHIP', label: 'Ready to Ship' },
+    { id: 'SHIPPED', label: 'Shipped' },
+    { id: 'DELIVERED', label: 'Delivered' },
+    { id: 'CANCELLED', label: 'Cancelled' },
+    { id: 'RETURNED', label: 'Returned' },
   ];
-
-  if (isLoading) {
-    return (
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-          <div className="h-6 w-32 bg-slate-200 animate-pulse rounded-lg" />
-          <div className="h-10 w-32 bg-slate-200 animate-pulse rounded-xl" />
-        </div>
-        <table className="w-full text-left text-xs">
-          <tbody>
-            <TableRowSkeleton columns={8} />
-            <TableRowSkeleton columns={8} />
-            <TableRowSkeleton columns={8} />
-          </tbody>
-        </table>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -204,231 +270,258 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
         order={selectedThermalOrder}
       />
 
-      {/* 1. TOP HEADER TITLE & CREATE ORDER ACTION BUTTON */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight">Orders</h2>
-          <span className="w-6 h-6 rounded-full bg-purple-600 text-white font-extrabold text-xs flex items-center justify-center shadow-md shadow-purple-600/30">
-            {orders.length}
-          </span>
-        </div>
+      
+      {/* BULK ACTION PREVIEW MODAL */}
+      {bulkAction && (
+        <BulkActionPreviewModal
+          isOpen={true}
+          onClose={() => setBulkAction(null)}
+          onConfirm={handleBulkActionConfirm}
+          actionTitle={bulkAction.title}
+          targetStatus={bulkAction.targetStatus}
+          selectedCount={selectedOrders.length}
+          isAllMatching={selectAllMatching}
+          totalMatching={meta.total}
+          isLoading={isBulkUpdating}
+          requireReason={bulkAction.requireReason}
+        />
+      )}
 
-        <button
-          type="button"
-          onClick={onCreateOrderClick || (() => toast('Manual order creation is coming soon.'))}
-          className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-purple-600/30 flex items-center gap-2 transition-all active:scale-95"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Create Order</span>
-        </button>
-      </div>
-
-      {/* 2. TOP 4 METRIC SUMMARY CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Today's Date */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-purple-100/60 text-purple-600 rounded-2xl border border-purple-200/60">
-            <Calendar className="w-6 h-6" />
-          </div>
-          <div>
-            <span className="text-[11px] font-bold text-slate-400 block">Today's date</span>
-            <span className="text-base font-black text-slate-900 block mt-0.5">
-              {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
-            </span>
-          </div>
-        </div>
-
-        {/* Card 2: Total Orders (Confirmed) */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-purple-100/60 text-purple-600 rounded-2xl border border-purple-200/60">
-            <Tag className="w-6 h-6" />
-          </div>
-          <div>
-            <span className="text-[11px] font-bold text-slate-400 block">Total Orders (Confirmed)</span>
-            <span className="text-xl font-black text-slate-900 block mt-0.5">{confirmedCount}</span>
-          </div>
-        </div>
-
-        {/* Card 3: Total Amount */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-purple-100/60 text-purple-600 rounded-2xl border border-purple-200/60 flex items-center justify-center font-bold text-xl">
-            ৳
-          </div>
-          <div>
-            <span className="text-[11px] font-bold text-slate-400 block">Total Amount</span>
-            <span className="text-xl font-black text-slate-900 block mt-0.5">
-              ৳{totalAmountSum.toLocaleString()}
-            </span>
-          </div>
-        </div>
-
-        {/* Card 4: Total Customer Served */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-purple-100/60 text-purple-600 rounded-2xl border border-purple-200/60">
-            <Users className="w-6 h-6" />
-          </div>
-          <div>
-            <span className="text-[11px] font-bold text-slate-400 block">Total Customer Served</span>
-            <span className="text-xl font-black text-slate-900 block mt-0.5">{uniqueCustomersCount}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* 3. SEARCH BAR WITH RELOCATED TOOL BUTTONS (FILTERS, SORT, COLUMNS, EXPORT) */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        {/* Search Bar with All Fields Dropdown */}
-        <div className="flex items-center gap-2 flex-1 max-w-lg">
-          <div className="relative">
-            <select className="appearance-none pl-3 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-600 cursor-pointer">
-              <option>All Fields</option>
-              <option>Order ID</option>
-              <option>Phone Number</option>
-              <option>Customer Name</option>
-            </select>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-3 pointer-events-none" />
-          </div>
-
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-2.5" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search with order ID or Phone number..."
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-600"
-            />
-          </div>
-        </div>
-
-        {/* Relocated Tool Buttons: Filters, Sort, Columns, Export */}
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => {
-                setIsFiltersOpen((v) => !v);
-                setIsColumnsOpen(false);
-              }}
-              className="px-3.5 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-sm hover:bg-slate-50 transition-colors"
-            >
-              <Filter className="w-3.5 h-3.5 text-slate-500" />
-              <span>Filters</span>
-              {paymentStatusFilter !== 'ALL' && (
-                <span className="w-1.5 h-1.5 rounded-full bg-purple-600" />
-              )}
-            </button>
-
-            {isFiltersOpen && (
-              <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-lg z-10 p-3 space-y-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                  Payment Status
-                </span>
-                {(['ALL', 'UNPAID', 'PAID', 'REFUNDED'] as const).map((status) => (
-                  <button
-                    key={status}
-                    type="button"
-                    onClick={() => {
-                      setPaymentStatusFilter(status);
-                      setIsFiltersOpen(false);
-                    }}
-                    className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                      paymentStatusFilter === status
-                        ? 'bg-purple-50 text-purple-700'
-                        : 'text-slate-600 hover:bg-slate-50'
-                    }`}
+      {/* BULK SELECTION TOOLBAR */}
+      {selectedOrders.length > 0 && (
+        <div className="bg-slate-900 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between shadow-xl sticky top-4 z-50 animate-in slide-in-from-top-4 fade-in duration-200">
+          <div className="flex items-center gap-4 text-white mb-4 sm:mb-0">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-800 font-bold text-sm">
+              {selectAllMatching ? meta.total : selectedOrders.length}
+            </div>
+            <div className="text-sm">
+              <span className="font-bold">orders selected</span>
+              {!selectAllMatching && selectedOrders.length === orders.length && meta.total > orders.length && (
+                <div className="text-slate-400 mt-0.5 text-xs">
+                  All {orders.length} orders on this page are selected.{' '}
+                  <button 
+                    onClick={() => setSelectAllMatching(true)}
+                    className="text-blue-400 hover:text-blue-300 font-bold underline"
                   >
-                    {status === 'ALL' ? 'All Payment Statuses' : status.charAt(0) + status.slice(1).toLowerCase()}
+                    Select all {meta.total} matching orders
                   </button>
-                ))}
-              </div>
-            )}
+                </div>
+              )}
+              {selectAllMatching && (
+                <div className="text-blue-400 mt-0.5 text-xs font-bold">
+                  All {meta.total} matching orders are selected.
+                </div>
+              )}
+            </div>
           </div>
-
-          <button
-            type="button"
-            onClick={() => setSortOrder((s) => (s === 'newest' ? 'oldest' : 'newest'))}
-            className="p-2 bg-white border border-slate-200 text-slate-700 rounded-xl shadow-sm hover:bg-slate-50 transition-colors"
-            title={sortOrder === 'newest' ? 'Sorted: Newest first (click for oldest first)' : 'Sorted: Oldest first (click for newest first)'}
-          >
-            <ArrowUpDown className="w-3.5 h-3.5 text-slate-500" />
-          </button>
-
-          <div className="relative">
+          <div className="flex flex-wrap items-center gap-2">
             <button
-              type="button"
-              onClick={() => {
-                setIsColumnsOpen((v) => !v);
-                setIsFiltersOpen(false);
-              }}
-              className="px-3.5 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-sm hover:bg-slate-50 transition-colors"
+              onClick={() => setBulkAction({ title: 'Confirm', targetStatus: 'CONFIRMED' })}
+              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-bold transition-colors"
             >
-              <span>Columns</span>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              Confirm
             </button>
-
-            {isColumnsOpen && (
-              <div className="absolute right-0 mt-2 w-44 bg-white border border-slate-200 rounded-xl shadow-lg z-10 p-3 space-y-1">
-                <label className="flex items-center gap-2 px-1 py-1.5 text-xs font-semibold text-slate-700 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={visibleColumns.type}
-                    onChange={() => setVisibleColumns((c) => ({ ...c, type: !c.type }))}
-                    className="rounded border-slate-300 text-purple-600 focus:ring-purple-600"
-                  />
-                  Type
-                </label>
-                <label className="flex items-center gap-2 px-1 py-1.5 text-xs font-semibold text-slate-700 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={visibleColumns.amount}
-                    onChange={() => setVisibleColumns((c) => ({ ...c, amount: !c.amount }))}
-                    className="rounded border-slate-300 text-purple-600 focus:ring-purple-600"
-                  />
-                  Amount
-                </label>
-              </div>
-            )}
+            <button
+              onClick={() => setBulkAction({ title: 'Mark Processing', targetStatus: 'PROCESSING' })}
+              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-bold transition-colors"
+            >
+              Processing
+            </button>
+            <button
+              onClick={() => setBulkAction({ title: 'Mark Ready to Ship', targetStatus: 'READY_TO_SHIP' })}
+              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-bold transition-colors"
+            >
+              Ready to Ship
+            </button>
+            <button
+              onClick={() => setBulkAction({ title: 'Cancel', targetStatus: 'CANCELLED', requireReason: true })}
+              className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-xs font-bold transition-colors"
+            >
+              Cancel
+            </button>
+            <div className="w-px h-6 bg-slate-700 mx-1 hidden sm:block"></div>
+            <button
+              onClick={handleExportSelectedCsv}
+              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Export {selectAllMatching ? 'All' : 'Selected'}
+            </button>
+            <button
+              onClick={() => { setSelectedOrders([]); setSelectAllMatching(false); }}
+              className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg transition-colors ml-1"
+            >
+              <XCircle className="w-5 h-5" />
+            </button>
           </div>
+        </div>
+      )}
 
+
+      {/* 1. Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight">Orders</h2>
+          <p className="text-sm text-slate-500 font-medium mt-1">Manage, review and fulfill customer orders.</p>
+        </div>
+
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={handleExportCsv}
-            className="px-4 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs rounded-xl border border-purple-200/80 flex items-center gap-1.5 transition-colors shadow-sm"
+            className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 flex items-center gap-2 shadow-sm transition-colors"
           >
-            <Download className="w-3.5 h-3.5 text-purple-600" />
+            <Download className="w-4 h-4" />
             <span>Export</span>
+          </button>
+          <button
+            type="button"
+            onClick={onCreateOrderClick || (() => toast('Manual order creation coming soon.'))}
+            className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-purple-600/30 flex items-center gap-2 transition-all active:scale-95"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Create Order ▾</span>
           </button>
         </div>
       </div>
 
-      {/* 4. NON-SCROLLABLE FULL WRAPPED STATUS PILLS ROW */}
-      <div className="flex flex-wrap items-center gap-1.5 p-2 bg-slate-100/60 rounded-2xl border border-slate-200/80">
-        {filterPills.map((pill) => {
-          const isSelected = selectedFilter === pill.id;
+      {/* 2. KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <button 
+          onClick={() => updateUrlParams({ status: 'ALL' })}
+          className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col text-left hover:border-purple-300 transition-colors"
+        >
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Orders</span>
+          <span className="text-2xl font-black text-slate-900 mt-2">
+            {isKpisLoading ? '-' : kpis?.totalOrders?.toLocaleString()}
+          </span>
+        </button>
+        <button 
+          onClick={() => updateUrlParams({ status: 'PENDING' })}
+          className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col text-left hover:border-amber-300 transition-colors"
+        >
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pending Confirmation</span>
+          <span className="text-2xl font-black text-slate-900 mt-2">
+            {isKpisLoading ? '-' : kpis?.pendingConfirmation?.toLocaleString()}
+          </span>
+        </button>
+        <button 
+          onClick={() => updateUrlParams({ status: 'READY_TO_SHIP' })}
+          className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col text-left hover:border-blue-300 transition-colors"
+        >
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Ready to Ship</span>
+          <span className="text-2xl font-black text-slate-900 mt-2">
+            {isKpisLoading ? '-' : kpis?.readyToShip?.toLocaleString()}
+          </span>
+        </button>
+        <button 
+          onClick={() => updateUrlParams({ status: 'DELIVERED' })}
+          className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col text-left hover:border-emerald-300 transition-colors"
+        >
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Delivered</span>
+          <span className="text-2xl font-black text-slate-900 mt-2">
+            {isKpisLoading ? '-' : kpis?.delivered?.toLocaleString()}
+          </span>
+        </button>
+      </div>
+
+      {/* 3. Toolbar (Search & Filters) */}
+      <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-center gap-3">
+        <button
+          onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+          className="px-4 py-2 bg-slate-50 border border-slate-200 text-slate-700 rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-slate-100 transition-colors"
+        >
+          <Filter className="w-4 h-4" />
+          <span>Filters</span>
+          {(urlPaymentStatus && urlPaymentStatus !== 'ALL') && (
+            <span className="w-5 h-5 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center text-[10px]">1</span>
+          )}
+        </button>
+
+        <div className="relative">
+          <select 
+            value={urlPaymentStatus || 'ALL'}
+            onChange={(e) => updateUrlParams({ paymentStatus: e.target.value })}
+            className="appearance-none pl-4 pr-9 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-600 cursor-pointer"
+          >
+            <option value="ALL">Payment: All</option>
+            <option value="UNPAID">Payment: Unpaid (COD)</option>
+            <option value="PAID">Payment: Paid</option>
+            <option value="REFUNDED">Payment: Refunded</option>
+          </select>
+          <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-2.5 pointer-events-none" />
+        </div>
+
+        <div className="relative">
+          <select 
+            value={urlLimit.toString()}
+            onChange={(e) => updateUrlParams({ limit: e.target.value, page: '1' })}
+            className="appearance-none pl-4 pr-9 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-600 cursor-pointer"
+          >
+            <option value="20">Show: 20</option>
+            <option value="50">Show: 50</option>
+            <option value="100">Show: 100</option>
+          </select>
+          <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-2.5 pointer-events-none" />
+        </div>
+        
+        <button
+          onClick={() => updateUrlParams({ sortOrder: urlSortOrder === 'DESC' ? 'ASC' : 'DESC' })}
+          className="px-4 py-2 bg-slate-50 border border-slate-200 text-slate-700 rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-slate-100 transition-colors"
+          title={`Sorted ${urlSortOrder === 'DESC' ? 'Newest' : 'Oldest'} First`}
+        >
+          <ArrowUpDown className="w-4 h-4" />
+          <span>{urlSortOrder === 'DESC' ? 'Newest' : 'Oldest'}</span>
+        </button>
+
+        <div className="flex-1 min-w-[200px]">
+          <div className="relative">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Search by order ID, customer, phone..."
+              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-600"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* 4. Status Tabs */}
+      <div className="flex items-center gap-1 overflow-x-auto pb-2 scrollbar-hide border-b border-slate-200">
+        {filterTabs.map((tab) => {
+          const isActive = (urlStatus || 'ALL') === tab.id;
           return (
             <button
-              key={pill.id}
-              type="button"
-              onClick={() => setSelectedFilter(pill.id)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all ${
-                isSelected
-                  ? `${pill.activeColor} shadow-md`
-                  : `${pill.textColor} bg-white/80 border border-slate-200/60`
+              key={tab.id}
+              onClick={() => updateUrlParams({ status: tab.id })}
+              className={`px-4 py-2 text-xs font-bold whitespace-nowrap border-b-2 transition-colors ${
+                isActive 
+                  ? 'border-purple-600 text-purple-700' 
+                  : 'border-transparent text-slate-500 hover:text-slate-800'
               }`}
             >
-              {pill.label}
+              {tab.label}
             </button>
           );
         })}
       </div>
 
-      {/* 5. ORDERS DATA TABLE */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+      {/* 5. Orders Table */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden relative">
+        {/* Loading Overlay (Optional for soft refreshes) */}
+        {isFetching && !isOrdersLoading && (
+          <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] z-10 flex items-center justify-center">
+            <div className="w-6 h-6 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
+        
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs text-slate-700">
-            <thead className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-500">
+            <thead className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
               <tr>
-                <th className="px-4 py-3.5 w-10">
+                <th className="px-4 py-3.5 w-10 text-center">
                   <input
                     type="checkbox"
                     checked={selectedOrders.length === orders.length && orders.length > 0}
@@ -436,57 +529,56 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                     className="rounded border-slate-300 text-purple-600 focus:ring-purple-600 cursor-pointer"
                   />
                 </th>
-                <th className="px-4 py-3.5 font-bold">Order</th>
-                <th className="px-6 py-3.5 font-bold">Customer</th>
-                <th className="px-6 py-3.5 font-bold">Date</th>
-                <th className="px-6 py-3.5 font-bold">Status</th>
-                {visibleColumns.type && <th className="px-4 py-3.5 font-bold">Type</th>}
-                {visibleColumns.amount && <th className="px-6 py-3.5 font-bold">Amount</th>}
-                <th className="px-6 py-3.5 font-bold text-right">Actions</th>
+                <th className="px-4 py-3.5">Order</th>
+                <th className="px-6 py-3.5">Customer</th>
+                <th className="px-4 py-3.5">Items</th>
+                <th className="px-6 py-3.5">Date</th>
+                <th className="px-6 py-3.5">Total</th>
+                <th className="px-4 py-3.5">Payment</th>
+                <th className="px-4 py-3.5">Delivery</th>
+                <th className="px-6 py-3.5">Status</th>
+                <th className="px-4 py-3.5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium">
-              {filteredOrders.length === 0 ? (
+              {isOrdersLoading ? (
+                <>
+                  <TableRowSkeleton columns={10} />
+                  <TableRowSkeleton columns={10} />
+                  <TableRowSkeleton columns={10} />
+                  <TableRowSkeleton columns={10} />
+                  <TableRowSkeleton columns={10} />
+                </>
+              ) : orders?.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={6 + (visibleColumns.type ? 1 : 0) + (visibleColumns.amount ? 1 : 0)}
-                    className="text-center py-12 text-slate-400 text-xs"
-                  >
-                    No orders found matching the filter or search criteria.
+                  <td colSpan={10} className="text-center py-16">
+                    <Package className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+                    <h3 className="text-sm font-bold text-slate-700">No orders found</h3>
+                    <p className="text-xs text-slate-500 mt-1">Try changing your filters or search criteria.</p>
+                    <button 
+                      onClick={() => router.push(pathname)}
+                      className="mt-4 px-4 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50"
+                    >
+                      Clear Filters
+                    </button>
                   </td>
                 </tr>
               ) : (
-                filteredOrders.map((order) => {
+                orders?.map((order) => {
                   const isChecked = selectedOrders.includes(order.id);
                   const customerInitials = order.customerName
-                    ? order.customerName
-                        .split(' ')
-                        .map((n) => n[0])
-                        .join('')
-                        .slice(0, 2)
-                        .toUpperCase()
+                    ? order.customerName.substring(0, 2).toUpperCase()
                     : 'CU';
 
-                  const formattedDate = new Date(order.createdAt).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                  });
-
-                  const formattedTime = new Date(order.createdAt).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  });
+                  const formattedDate = new Date(order.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                  const itemCount = order.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
 
                   return (
                     <tr
                       key={order.id}
-                      className={`hover:bg-slate-50/80 transition-colors ${
-                        isChecked ? 'bg-purple-50/30' : ''
-                      }`}
+                      className={`hover:bg-slate-50/80 transition-colors ${isChecked ? 'bg-purple-50/30' : ''}`}
                     >
-                      {/* Checkbox */}
-                      <td className="px-4 py-4">
+                      <td className="px-4 py-4 text-center">
                         <input
                           type="checkbox"
                           checked={isChecked}
@@ -495,189 +587,111 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                         />
                       </td>
 
-                      {/* Order Number & Details */}
                       <td className="px-4 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center shrink-0 border border-slate-200">
-                            <Package className="w-4 h-4 text-slate-500" />
-                          </div>
-
-                          <div>
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-extrabold text-slate-900 text-xs">
-                                #{order.orderNumber}
-                              </span>
-                              <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 font-bold text-[9px] rounded-md border border-blue-100">
-                                Online
-                              </span>
-                              <button
-                                onClick={() => setSelectedInvoiceOrder(order)}
-                                className="text-slate-400 hover:text-purple-600"
-                                title="Quick View"
-                              >
-                                <Eye className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-
-                            <span className="text-[10px] text-slate-400 font-mono block mt-0.5">
-                              ORD-{order.orderNumber?.slice(-3)} • {order.items?.length || 1} items
-                            </span>
-                          </div>
-                        </div>
+                        <span className="font-extrabold text-slate-900 cursor-pointer hover:text-purple-600">
+                          #{order.orderNumber}
+                        </span>
                       </td>
 
-                      {/* Customer Info */}
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2.5">
                           <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-600 font-extrabold text-[10px] flex items-center justify-center shrink-0 border border-slate-200">
                             {customerInitials}
                           </div>
                           <div>
-                            <span className="font-extrabold text-slate-900 text-xs block">
-                              {order.customerName}
-                            </span>
-                            <span className="text-[10px] text-slate-400 font-mono block">
-                              {order.customerPhone}
-                            </span>
+                            <span className="font-bold text-slate-900 block">{order.customerName}</span>
+                            <span className="text-[10px] text-slate-400 block">{order.customerPhone}</span>
                           </div>
                         </div>
                       </td>
 
-                      {/* Date & Time */}
-                      <td className="px-6 py-4">
-                        <div>
-                          <span className="font-bold text-slate-800 text-xs block">
-                            {formattedDate}
-                          </span>
-                          <span className="text-[10px] text-slate-400 block font-mono">
-                            {formattedTime}
-                          </span>
-                        </div>
+                      <td className="px-4 py-4 text-slate-600">{itemCount} items</td>
+                      <td className="px-6 py-4 text-slate-600">{formattedDate}</td>
+                      <td className="px-6 py-4 font-black text-slate-900">৳{Number(order.grandTotal).toLocaleString()}</td>
+
+                      <td className="px-4 py-4">
+                        <span className={`px-2 py-1 rounded-md text-[10px] font-bold border ${
+                          order.paymentStatus === 'PAID' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                          order.paymentStatus === 'REFUNDED' ? 'bg-slate-50 text-slate-700 border-slate-200' :
+                          order.paymentMethod === 'COD' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                          'bg-red-50 text-red-700 border-red-200'
+                        }`}>
+                          {order.paymentStatus === 'UNPAID' && order.paymentMethod === 'COD' ? 'COD' : order.paymentStatus}
+                        </span>
                       </td>
 
-                      {/* Order Status Dropdown with All 11 Statuses */}
+                      <td className="px-4 py-4 text-slate-600">{order.city || '-'}</td>
+
                       <td className="px-6 py-4">
                         <select
                           value={order.orderStatus}
                           onChange={(e) => handleStatusChange(order.id, e.target.value)}
                           disabled={isUpdating}
-                          className={`px-3 py-1.5 rounded-full font-extrabold text-[10px] border focus:outline-none cursor-pointer transition-colors ${
-                            order.orderStatus === 'CONFIRMED'
-                              ? 'bg-blue-50 text-blue-600 border-blue-200'
-                              : order.orderStatus === 'DELIVERED' || order.orderStatus === 'COMPLETED'
-                              ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
-                              : order.orderStatus === 'CANCELLED' || order.orderStatus === 'PAYMENT_FAILED'
-                              ? 'bg-red-50 text-red-600 border-red-200'
-                              : order.orderStatus === 'SHIPPED'
-                              ? 'bg-cyan-50 text-cyan-600 border-cyan-200'
-                              : order.orderStatus === 'PROCESSING'
-                              ? 'bg-indigo-50 text-indigo-600 border-indigo-200'
-                              : order.orderStatus === 'RETURNED'
-                              ? 'bg-orange-50 text-orange-600 border-orange-200'
-                              : 'bg-amber-50 text-amber-600 border-amber-200'
+                          className={`px-3 py-1 rounded-full font-bold text-[10px] border focus:outline-none cursor-pointer transition-colors ${
+                            ['DELIVERED', 'COMPLETED'].includes(order.orderStatus) ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                            ['CANCELLED', 'RETURNED'].includes(order.orderStatus) ? 'bg-red-50 text-red-600 border-red-200' :
+                            order.orderStatus === 'PROCESSING' ? 'bg-blue-50 text-blue-600 border-blue-200' :
+                            order.orderStatus === 'READY_TO_SHIP' || order.orderStatus === 'SHIPPED' ? 'bg-cyan-50 text-cyan-600 border-cyan-200' :
+                            'bg-amber-50 text-amber-600 border-amber-200'
                           }`}
                         >
-                          <option value="PENDING">Placed (Pending)</option>
+                          <option value="PENDING">New (Pending)</option>
                           <option value="ON_HOLD">On Hold</option>
                           <option value="CONFIRMED">Confirmed</option>
                           <option value="PROCESSING">Processing</option>
+                          <option value="READY_TO_SHIP">Ready to Ship</option>
                           <option value="SHIPPED">Shipped</option>
                           <option value="DELIVERED">Delivered</option>
                           <option value="COMPLETED">Completed</option>
                           <option value="CANCELLED">Cancelled</option>
                           <option value="RETURNED">Returned</option>
-                          <option value="PAYMENT_ON_PROCESS">Payment OnProcess</option>
-                          <option value="PAYMENT_FAILED">Payment Failed</option>
                         </select>
                       </td>
 
-                      {/* Type (Delivery Provider) */}
-                      {visibleColumns.type && (
-                        <td className="px-4 py-4">
-                          <span className="px-2.5 py-1 bg-slate-100 text-slate-700 font-bold text-[10px] rounded-lg border border-slate-200 flex items-center gap-1 w-fit">
-                            <Printer className="w-3 h-3 text-slate-500" />
-                            <span>Own</span>
-                          </span>
-                        </td>
-                      )}
-
-                      {/* Amount */}
-                      {visibleColumns.amount && (
-                        <td className="px-6 py-4">
-                          <span className="font-black text-slate-900 text-xs">
-                            ৳{Number(order.grandTotal).toFixed(2)}
-                          </span>
-                        </td>
-                      )}
-
-                      {/* Action Icons */}
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          {/* Invoice Print Button */}
-                          <button
-                            type="button"
-                            onClick={() => setSelectedInvoiceOrder(order)}
-                            className="p-1.5 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                            title="Print Invoice"
+                      <td className="px-4 py-4 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Link
+                            href={`/dashboard/orders/${order.id}`}
+                            className="p-1.5 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                            title="View Order Details"
                           >
-                            <Printer className="w-3.5 h-3.5" />
-                          </button>
-
-                          {/* Thermal Label Print Button */}
-                          <button
-                            type="button"
-                            onClick={() => setSelectedThermalOrder(order)}
-                            className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                            title="Print Thermal Shipping Sticker"
-                          >
-                            <Tag className="w-3.5 h-3.5" />
-                          </button>
-
-                          {/* Dispatch Courier Button */}
-                          {onDispatchCourierClick && (
-                            <button
-                              type="button"
-                              onClick={() => onDispatchCourierClick(order)}
-                              className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                              title="Dispatch via Courier"
-                            >
-                              <Truck className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-
+                            <Eye className="w-4 h-4" />
+                          </Link>
+                          
                           <div className="relative">
                             <button
                               type="button"
                               onClick={() => setOpenRowMenuId((id) => (id === order.id ? null : order.id))}
-                              className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+                              className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors"
                             >
-                              <MoreHorizontal className="w-3.5 h-3.5" />
+                              <MoreHorizontal className="w-4 h-4" />
                             </button>
 
                             {openRowMenuId === order.id && (
-                              <div className="absolute right-0 mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-lg z-10 py-1">
+                              <div className="absolute right-0 mt-1 w-40 bg-white border border-slate-200 rounded-xl shadow-lg z-10 py-1">
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(order.orderNumber);
-                                    toast.success('Order number copied.');
-                                    setOpenRowMenuId(null);
-                                  }}
-                                  className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                  onClick={() => setSelectedInvoiceOrder(order)}
+                                  className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
                                 >
-                                  Copy order number
+                                  <Printer className="w-3.5 h-3.5" /> Print Invoice
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(order.customerPhone);
-                                    toast.success('Customer phone copied.');
-                                    setOpenRowMenuId(null);
-                                  }}
-                                  className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                  onClick={() => setSelectedThermalOrder(order)}
+                                  className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
                                 >
-                                  Copy customer phone
+                                  <Tag className="w-3.5 h-3.5" /> Print Label
                                 </button>
+                                {onDispatchCourierClick && (
+                                  <button
+                                    type="button"
+                                    onClick={() => onDispatchCourierClick(order)}
+                                    className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                                  >
+                                    <Truck className="w-3.5 h-3.5" /> Dispatch
+                                  </button>
+                                )}
                               </div>
                             )}
                           </div>
@@ -690,46 +704,37 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
             </tbody>
           </table>
         </div>
-
-        {/* 6. PAGINATION FOOTER BAR */}
-        <div className="p-4 bg-white border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs font-semibold text-slate-500">
-          <div className="flex items-center gap-2">
-            <span>Showing 1-{filteredOrders.length} of {orders.length}</span>
-            <div className="relative">
-              <select className="appearance-none pl-2.5 pr-7 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:outline-none">
-                <option>20</option>
-                <option>50</option>
-                <option>100</option>
-              </select>
-              <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 top-2 pointer-events-none" />
+        
+        {/* Pagination Footer */}
+        {orders.length > 0 && (
+          <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-semibold text-slate-500">
+            <div>
+              Showing {((meta.page - 1) * meta.limit) + 1} to {Math.min(meta.page * meta.limit, meta.total)} of {meta.total} orders
             </div>
-            <span>per page</span>
+            
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => updateUrlParams({ page: (meta.page - 1).toString() })}
+                disabled={meta.page <= 1 || isFetching}
+                className="px-3 py-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              
+              <div className="px-4 py-2 bg-white border border-slate-200 rounded-lg">
+                Page {meta.page} of {meta.totalPages || 1}
+              </div>
+
+              <button
+                onClick={() => updateUrlParams({ page: (meta.page + 1).toString() })}
+                disabled={meta.page >= meta.totalPages || isFetching}
+                className="px-3 py-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 transition-colors"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-slate-700 flex items-center gap-1 disabled:opacity-50"
-              disabled
-            >
-              <ChevronLeft className="w-3.5 h-3.5" />
-              <span>Previous</span>
-            </button>
-
-            <span className="w-8 h-8 rounded-xl bg-purple-600 text-white font-extrabold text-xs flex items-center justify-center shadow-sm">
-              1
-            </span>
-
-            <button
-              type="button"
-              className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-slate-700 flex items-center gap-1 disabled:opacity-50"
-              disabled
-            >
-              <span>Next</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

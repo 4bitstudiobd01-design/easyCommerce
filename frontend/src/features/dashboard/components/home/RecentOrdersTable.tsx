@@ -50,7 +50,8 @@ function getInitials(name: string) {
 }
 
 export function RecentOrdersTable() {
-  const { data: orders = [], isLoading } = useGetMerchantOrdersQuery();
+  const { data: response, isLoading } = useGetMerchantOrdersQuery();
+  const orders = response?.data || [];
 
   if (isLoading) {
     return (

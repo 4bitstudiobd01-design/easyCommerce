@@ -32,7 +32,8 @@ function weekOverWeekTrend(orders: Order[], valueFn: (o: Order) => number): numb
 
 export function MerchantRevenueKpiWidget() {
   const { data: store, isLoading: isStoreLoading } = useGetMyStoreQuery();
-  const { data: orders = [], isLoading: isOrdersLoading } = useGetMerchantOrdersQuery(undefined, { skip: !store });
+  const { data: response, isLoading: isOrdersLoading } = useGetMerchantOrdersQuery(undefined, { skip: !store });
+  const orders = response?.data || [];
 
   const totalSales = orders.reduce((acc, order) => acc + Number(order.grandTotal), 0);
   const isLoading = isStoreLoading || isOrdersLoading;
@@ -56,7 +57,8 @@ export function MerchantRevenueKpiWidget() {
 
 export function MerchantOrdersKpiWidget() {
   const { data: store, isLoading: isStoreLoading } = useGetMyStoreQuery();
-  const { data: orders = [], isLoading: isOrdersLoading } = useGetMerchantOrdersQuery(undefined, { skip: !store });
+  const { data: response, isLoading: isOrdersLoading } = useGetMerchantOrdersQuery(undefined, { skip: !store });
+  const orders = response?.data || [];
 
   const isLoading = isStoreLoading || isOrdersLoading;
   const trendPercent = weekOverWeekTrend(orders, () => 1);
@@ -99,7 +101,8 @@ export function MerchantProductsKpiWidget() {
 
 export function MerchantCustomersKpiWidget() {
   const { data: store, isLoading: isStoreLoading } = useGetMyStoreQuery();
-  const { data: orders = [], isLoading: isOrdersLoading } = useGetMerchantOrdersQuery(undefined, { skip: !store });
+  const { data: response, isLoading: isOrdersLoading } = useGetMerchantOrdersQuery(undefined, { skip: !store });
+  const orders = response?.data || [];
 
   const activeCustomersCount = orders.length > 0 ? new Set(orders.map(o => o.customerPhone)).size : 0;
   const isLoading = isStoreLoading || isOrdersLoading;

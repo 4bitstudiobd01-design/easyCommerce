@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { OrderEntity, OrderStatusEnum, PaymentStatusEnum } from '../entities/order.entity';
+import { OrderStatusHistoryEntity } from '../entities/order-status-history.entity';
 import { UpdateOrderStatusDto } from '../dto/update-order-status.dto';
 import { TriggerOrderStatusSmsService } from '../../sms/services/trigger-order-status-sms.service';
 import { ConsignmentEntity } from '../../logistics/entities/consignment.entity';
+import { OrderStateService } from './order-state.service';
+import { AdjustStockService } from '../../inventory/services/adjust-stock.service';
+import { StockAdjustmentAction } from '../../inventory/dto/adjust-stock.dto';
 
 @Injectable()
 export class UpdateOrderStatusService {
@@ -14,9 +18,12 @@ export class UpdateOrderStatusService {
     @InjectRepository(ConsignmentEntity)
     private readonly consignmentRepository: Repository<ConsignmentEntity>,
     private readonly triggerOrderStatusSmsService: TriggerOrderStatusSmsService,
+    private readonly orderStateService: OrderStateService,
+    private readonly adjustStockService: AdjustStockService,
+    private readonly dataSource: DataSource,
   ) {}
 
-  async execute(id: string, tenantId: string, dto: UpdateOrderStatusDto): Promise<OrderEntity> {
+  async execute(id: string, tenantId: string, userId: string, dto: UpdateOrderStatusDto): Promise<OrderEntity> {
     const order = await this.orderRepository.findOne({
       where: { id, tenantId },
       relations: ['items'],
@@ -26,13 +33,51 @@ export class UpdateOrderStatusService {
       throw new NotFoundException(`Order with ID "${id}" not found.`);
     }
 
+    // 1. Enforce business rules
+    this.orderStateService.assertTransition(order.orderStatus, dto.orderStatus);
+
+    const previousStatus = order.orderStatus;
     order.orderStatus = dto.orderStatus;
 
     if (dto.orderStatus === OrderStatusEnum.DELIVERED) {
       order.paymentStatus = PaymentStatusEnum.PAID;
     }
 
-    const savedOrder = await this.orderRepository.save(order);
+    // 2. Perform Transactional update
+    let savedOrder: OrderEntity;
+    
+    await this.dataSource.transaction(async (manager) => {
+      // Create history record
+      const history = manager.create(OrderStatusHistoryEntity, {
+        orderId: order.id,
+        previousStatus,
+        newStatus: order.orderStatus,
+        changedBy: userId,
+        reason: dto.reason,
+        tenantId,
+      });
+
+      // Save order and history atomicaly
+      savedOrder = await manager.save(order);
+      await manager.save(history);
+    });
+
+    // 3. Handle domain side-effects outside core transaction to interact with loosely coupled modules safely
+    // (Inventory)
+    if (dto.orderStatus === OrderStatusEnum.CANCELLED) {
+      for (const item of order.items) {
+        try {
+          await this.adjustStockService.execute(tenantId, {
+            productId: item.productId,
+            quantity: item.quantity,
+            action: StockAdjustmentAction.ADD,
+          });
+        } catch (e) {
+          // Log error but do not fail the request; inventory drift should be handled by reconcilliation
+          console.error(`Failed to restore stock for cancelled order ${order.orderNumber}, product ${item.productId}`, e);
+        }
+      }
+    }
 
     // Fetch consignment if shipped
     let consignment: ConsignmentEntity | null = null;
@@ -40,16 +85,16 @@ export class UpdateOrderStatusService {
       consignment = await this.consignmentRepository.findOne({ where: { orderId: order.id } });
     }
 
-    // Trigger Order Status Mutation SMS
+    // 4. Trigger SMS
     try {
       await this.triggerOrderStatusSmsService.execute({
-        orderNumber: savedOrder.orderNumber,
-        customerPhone: savedOrder.customerPhone,
-        customerName: savedOrder.customerName,
-        storeName: savedOrder.storeSlug,
-        grandTotal: Number(savedOrder.grandTotal),
+        orderNumber: savedOrder!.orderNumber,
+        customerPhone: savedOrder!.customerPhone,
+        customerName: savedOrder!.customerName,
+        storeName: savedOrder!.storeSlug,
+        grandTotal: Number(savedOrder!.grandTotal),
         orderStatus: dto.orderStatus,
-        tenantId: savedOrder.tenantId,
+        tenantId: savedOrder!.tenantId,
         courierProvider: consignment?.courierProvider,
         trackingCode: consignment?.trackingCode,
       });
@@ -57,6 +102,6 @@ export class UpdateOrderStatusService {
       // Non-blocking SMS trigger
     }
 
-    return savedOrder;
+    return savedOrder!;
   }
 }

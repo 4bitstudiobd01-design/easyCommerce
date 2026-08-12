@@ -52,13 +52,13 @@ export function SetupChecklist() {
     {
       id: 'payment',
       label: 'Connect payment gateway',
-      completed: Boolean(store?.sslCommerzStoreId),
+      completed: Boolean((store as any)?.sslCommerzStoreId),
       link: '/dashboard/settings', // Adjust if you have a specific payment settings page
     },
     {
       id: 'courier',
       label: 'Connect courier service',
-      completed: Boolean(store?.steadfastApiKey || store?.pathaoClientId),
+      completed: Boolean((store as any)?.steadfastApiKey || (store as any)?.pathaoClientId),
       link: '/dashboard/settings',
     },
   ];

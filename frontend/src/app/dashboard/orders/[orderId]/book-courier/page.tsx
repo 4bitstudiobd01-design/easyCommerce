@@ -16,7 +16,8 @@ export default function BookCourierPage() {
   const [note, setNote] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  const { data: orders = [] } = useGetMerchantOrdersQuery();
+  const { data: response } = useGetMerchantOrdersQuery();
+  const orders = response?.data || [];
   const [bookCourier, { isLoading }] = useBookCourierMutation();
 
   const order = orders.find(o => o.id === orderId);

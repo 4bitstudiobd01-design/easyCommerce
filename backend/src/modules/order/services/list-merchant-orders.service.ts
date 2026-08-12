@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Brackets } from 'typeorm';
 import { OrderEntity } from '../entities/order.entity';
+import { OrderListDto, PaginatedOrderResponse } from '../dto/order-list.dto';
 
 @Injectable()
 export class ListMerchantOrdersService {
@@ -10,11 +11,71 @@ export class ListMerchantOrdersService {
     private readonly orderRepository: Repository<OrderEntity>,
   ) {}
 
-  async execute(tenantId: string): Promise<OrderEntity[]> {
-    return this.orderRepository.find({
-      where: { tenantId },
-      relations: ['items'],
-      order: { createdAt: 'DESC' },
-    });
+  async execute(tenantId: string, dto: OrderListDto): Promise<PaginatedOrderResponse> {
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      status,
+      paymentStatus,
+      dateFrom,
+      dateTo,
+      sortBy = 'createdAt',
+      sortOrder = 'DESC',
+    } = dto;
+
+    const query = this.orderRepository.createQueryBuilder('order');
+
+    // Tenant Isolation
+    query.where('order.tenantId = :tenantId', { tenantId });
+    query.leftJoinAndSelect('order.items', 'items');
+
+    if (search) {
+      query.andWhere(
+        new Brackets((qb) => {
+          qb.where('order.orderNumber ILIKE :search', { search: `%${search}%` })
+            .orWhere('order.customerName ILIKE :search', { search: `%${search}%` })
+            .orWhere('order.customerPhone ILIKE :search', { search: `%${search}%` });
+        }),
+      );
+    }
+
+    if (status) {
+      query.andWhere('order.orderStatus = :status', { status });
+    }
+
+    if (paymentStatus) {
+      query.andWhere('order.paymentStatus = :paymentStatus', { paymentStatus });
+    }
+
+    if (dateFrom) {
+      query.andWhere('order.createdAt >= :dateFrom', { dateFrom });
+    }
+
+    if (dateTo) {
+      query.andWhere('order.createdAt <= :dateTo', { dateTo });
+    }
+
+    // Sort mapping to prevent injection
+    const allowedSortFields = ['createdAt', 'grandTotal', 'orderNumber'];
+    const sortField = allowedSortFields.includes(sortBy) ? sortBy : 'createdAt';
+    const sortDir = sortOrder === 'ASC' ? 'ASC' : 'DESC';
+
+    query.orderBy(`order.${sortField}`, sortDir);
+
+    const skip = (page - 1) * limit;
+    query.skip(skip).take(limit);
+
+    const [data, total] = await query.getManyAndCount();
+
+    return {
+      data,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 }

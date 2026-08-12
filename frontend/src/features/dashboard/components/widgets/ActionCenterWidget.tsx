@@ -5,7 +5,8 @@ import { useGetMerchantOrdersQuery } from '@/features/order/api/orderApi';
 import { useGetMerchantConsignmentsQuery } from '@/features/logistics/api/logisticsApi';
 
 export function ActionCenterWidget() {
-  const { data: orders = [], isLoading: isOrdersLoading } = useGetMerchantOrdersQuery();
+  const { data: response, isLoading: isOrdersLoading } = useGetMerchantOrdersQuery();
+  const orders = response?.data || [];
   const { data: consignments = [], isLoading: isConsignmentsLoading } = useGetMerchantConsignmentsQuery();
   const isLoading = isOrdersLoading || isConsignmentsLoading;
 

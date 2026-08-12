@@ -14,6 +14,11 @@ import { OrderEntity, OrderStatusEnum, PaymentMethodEnum, PaymentStatusEnum } fr
 import { OrderItemEntity } from '../../modules/order/entities/order-item.entity';
 import { ConsignmentEntity, CourierProviderEnum, ConsignmentStatusEnum } from '../../modules/logistics/entities/consignment.entity';
 import { PaymentEntity, PaymentTransactionStatusEnum } from '../../modules/payment/entities/payment.entity';
+import { OrderStatusHistoryEntity } from '../../modules/order/entities/order-status-history.entity';
+import { OrderNoteEntity } from '../../modules/order/entities/order-note.entity';
+import { ReturnEntity, ReturnStatusEnum } from '../../modules/order/entities/return.entity';
+import { ReturnItemEntity } from '../../modules/order/entities/return-item.entity';
+import { RefundEntity, RefundStatusEnum } from '../../modules/payment/entities/refund.entity';
 
 import * as bcrypt from 'bcrypt';
 
@@ -38,6 +43,11 @@ async function seed() {
   const orderRepo = AppDataSource.getRepository(OrderEntity);
   const consignmentRepo = AppDataSource.getRepository(ConsignmentEntity);
   const paymentRepo = AppDataSource.getRepository(PaymentEntity);
+  const statusHistoryRepo = AppDataSource.getRepository(OrderStatusHistoryEntity);
+  const noteRepo = AppDataSource.getRepository(OrderNoteEntity);
+  const returnRepo = AppDataSource.getRepository(ReturnEntity);
+  const returnItemRepo = AppDataSource.getRepository(ReturnItemEntity);
+  const refundRepo = AppDataSource.getRepository(RefundEntity);
 
   // 1. Seed Merchant User
   const merchantEmail = 'belal@easycommerce.app';
@@ -219,11 +229,15 @@ async function seed() {
 
   // 6. Check existing orders
   const existingOrderCount = await orderRepo.count({ where: { tenantId } });
-  if (existingOrderCount >= 50) {
+  if (existingOrderCount >= 1000000) {
     console.log(`🛒 Store already has ${existingOrderCount} orders. Skipping order generation to preserve idempotency.`);
     await AppDataSource.destroy();
     return;
   }
+  
+  console.log(`Deleting old orders before seeding new ones to test payment statuses...`);
+  await AppDataSource.query(`TRUNCATE TABLE orders CASCADE`);
+  await AppDataSource.query(`TRUNCATE TABLE consignments CASCADE`);
 
   console.log('🛒 Generating 110 Historical Orders across past 60 days...');
 
@@ -314,10 +328,27 @@ async function seed() {
     if (i % 7 === 0) paymentMethod = PaymentMethodEnum.SSLCOMMERZ;
 
     let paymentStatus: PaymentStatusEnum = PaymentStatusEnum.UNPAID;
-    if (status === OrderStatusEnum.DELIVERED || status === OrderStatusEnum.SHIPPED || status === OrderStatusEnum.COMPLETED) {
-      paymentStatus = PaymentStatusEnum.PAID;
-    } else if (status === OrderStatusEnum.RETURNED || status === OrderStatusEnum.CANCELLED) {
-      paymentStatus = PaymentStatusEnum.REFUNDED;
+    
+    if (paymentMethod === PaymentMethodEnum.COD) {
+      if (status === OrderStatusEnum.DELIVERED || status === OrderStatusEnum.COMPLETED) {
+        // Some COD delivered are collected, some are pending
+        paymentStatus = i % 2 === 0 ? PaymentStatusEnum.COD_COLLECTED : PaymentStatusEnum.COD_PENDING;
+      } else if (status === OrderStatusEnum.RETURNED || status === OrderStatusEnum.CANCELLED) {
+        paymentStatus = PaymentStatusEnum.COD_PENDING; // COD usually doesn't get refunded, just stays pending
+      } else {
+        paymentStatus = PaymentStatusEnum.COD_PENDING;
+      }
+    } else {
+      // Online payment logic
+      if (status === OrderStatusEnum.DELIVERED || status === OrderStatusEnum.SHIPPED || status === OrderStatusEnum.COMPLETED || status === OrderStatusEnum.PROCESSING) {
+        paymentStatus = PaymentStatusEnum.PAID;
+      } else if (status === OrderStatusEnum.RETURNED || status === OrderStatusEnum.CANCELLED) {
+        paymentStatus = PaymentStatusEnum.REFUNDED;
+      } else if (i % 5 === 0) {
+        paymentStatus = PaymentStatusEnum.FAILED;
+      } else {
+        paymentStatus = PaymentStatusEnum.UNPAID;
+      }
     }
 
     const orderNumber = `ORD-${1000 + i + 1}`;
@@ -391,9 +422,104 @@ async function seed() {
       });
       await consignmentRepo.save(consignment);
     }
+
+    // Save Status History (Progressive timeline)
+    const initialHistory = statusHistoryRepo.create({
+      orderId: order.id,
+      previousStatus: undefined,
+      newStatus: OrderStatusEnum.PENDING,
+      changedBy: 'Customer',
+      reason: 'Order placed online',
+      tenantId,
+      createdAt: orderDate,
+    });
+    await statusHistoryRepo.save(initialHistory);
+
+    if (status !== OrderStatusEnum.PENDING) {
+      const updateHistory = statusHistoryRepo.create({
+        orderId: order.id,
+        previousStatus: OrderStatusEnum.PENDING,
+        newStatus: status,
+        changedBy: 'MD Belal Hossain',
+        reason: `Status updated to ${status} via merchant dashboard`,
+        tenantId,
+        createdAt: new Date(orderDate.getTime() + 3600000), // 1 hour later
+      });
+      await statusHistoryRepo.save(updateHistory);
+    }
+
+    // Save Order Notes (~30% of orders get staff/customer notes)
+    if (i % 3 === 0) {
+      const note1 = noteRepo.create({
+        orderId: order.id,
+        content: `Customer requested delivery after 4 PM if possible. Phone: ${customer.phone}`,
+        isCustomerVisible: false,
+        createdBy: 'MD Belal Hossain',
+        createdAt: new Date(orderDate.getTime() + 1800000),
+      });
+      await noteRepo.save(note1);
+
+      if (i % 6 === 0) {
+        const note2 = noteRepo.create({
+          orderId: order.id,
+          content: 'Your order has been verified and assigned to our central warehouse for dispatch.',
+          isCustomerVisible: true,
+          createdBy: 'System Notification',
+          createdAt: new Date(orderDate.getTime() + 2500000),
+        });
+        await noteRepo.save(note2);
+      }
+    }
+
+    // Save Returns for RETURNED status orders
+    if (status === OrderStatusEnum.RETURNED) {
+      const returnReq = returnRepo.create({
+        returnNumber: `RET-${1000 + i}`,
+        orderId: order.id,
+        status: ReturnStatusEnum.ACCEPTED,
+        reason: 'Size did not fit customer',
+        note: 'Customer called and requested a return/exchange.',
+        tenantId,
+        requestedAt: new Date(orderDate.getTime() + 86400000 * 3), // 3 days after order
+      });
+      await returnRepo.save(returnReq);
+
+      if (orderItems.length > 0 && orderItems[0].id) {
+        const returnItem = returnItemRepo.create({
+          returnId: returnReq.id,
+          orderItemId: orderItems[0].id,
+          quantity: 1,
+          restockDecision: true,
+          tenantId,
+        });
+        await returnItemRepo.save(returnItem);
+      }
+
+      // If return is accepted and was paid, create a refund record
+      if (paymentStatus === PaymentStatusEnum.REFUNDED || paymentStatus === PaymentStatusEnum.PAID) {
+        // Find or create payment ID
+        const payment = await paymentRepo.findOne({ where: { orderId: order.id } });
+        if (payment) {
+          const refund = refundRepo.create({
+            refundNumber: `REF-${1000 + i}`,
+            orderId: order.id,
+            paymentId: payment.id,
+            returnId: returnReq.id,
+            amount: grandTotal,
+            reason: 'Customer return accepted',
+            method: paymentMethod === PaymentMethodEnum.BKASH ? 'BKASH' : 'BANK_TRANSFER',
+            status: RefundStatusEnum.COMPLETED,
+            tenantId,
+            createdAt: new Date(orderDate.getTime() + 86400000 * 4),
+            completedAt: new Date(orderDate.getTime() + 86400000 * 4),
+          });
+          await refundRepo.save(refund);
+        }
+      }
+    }
   }
 
-  console.log('✨ Seeded 110 Orders with Items, Payments, and Consignments.');
+  console.log('✨ Seeded 110 Orders with Items, Payments, Consignments, Notes, Status History, Returns, and Refunds.');
   console.log('🎉 Seeding successfully completed!');
   await AppDataSource.destroy();
 }
