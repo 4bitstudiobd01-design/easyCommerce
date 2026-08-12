@@ -6,6 +6,7 @@ import { CouponEntity } from './entities/coupon.entity';
 import { CreateCouponService } from './services/create-coupon.service';
 import { ListMerchantCouponsService } from './services/list-merchant-coupons.service';
 import { ValidatePublicCouponService } from './services/validate-public-coupon.service';
+import { ApplyCouponService } from './services/apply-coupon.service';
 import { CouponController } from './coupon.controller';
 import { TenantModule } from '../tenant/tenant.module';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -28,12 +29,14 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     CreateCouponService,
     ListMerchantCouponsService,
     ValidatePublicCouponService,
+    ApplyCouponService,
     JwtAuthGuard,
   ],
   exports: [
     CreateCouponService,
     ListMerchantCouponsService,
     ValidatePublicCouponService,
+    ApplyCouponService,
     TypeOrmModule,
   ],
 })

@@ -32,7 +32,7 @@ export class CreateCourierBookingService {
     }
 
     const existingConsignment = await this.consignmentRepository.findOne({
-      where: { orderId: order.id },
+      where: { orderId: order.id, tenantId },
     });
 
     if (existingConsignment) {

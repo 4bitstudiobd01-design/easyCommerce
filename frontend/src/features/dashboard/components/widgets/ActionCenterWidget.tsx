@@ -1,23 +1,25 @@
 import React from 'react';
 import { WidgetCard } from '@/features/admin/components/core/WidgetCard';
-import { Target, ShoppingBag, PackageCheck, Truck, MessageSquare, AlertCircle } from 'lucide-react';
+import { Target, ShoppingBag, PackageCheck, Truck } from 'lucide-react';
 import { useGetMerchantOrdersQuery } from '@/features/order/api/orderApi';
+import { useGetMerchantConsignmentsQuery } from '@/features/logistics/api/logisticsApi';
 
 export function ActionCenterWidget() {
-  const { data: orders = [], isLoading } = useGetMerchantOrdersQuery(undefined, { skip: false });
+  const { data: orders = [], isLoading: isOrdersLoading } = useGetMerchantOrdersQuery();
+  const { data: consignments = [], isLoading: isConsignmentsLoading } = useGetMerchantConsignmentsQuery();
+  const isLoading = isOrdersLoading || isConsignmentsLoading;
 
-  // Compute dummy numbers based on orders if needed, or use placeholders
-  const pendingOrders = orders.filter(o => o.orderStatus === 'PENDING').length || 3;
-  const readyToShip = 5;
-  const pendingBooking = 2;
-  const refundRequests = 1;
+  const pendingOrders = orders.filter((o) => o.orderStatus === 'PENDING').length;
+
+  const bookedOrderIds = new Set(consignments.map((c) => c.orderId));
+  const confirmedOrders = orders.filter((o) => o.orderStatus === 'CONFIRMED' || o.orderStatus === 'PROCESSING');
+  const readyToShip = confirmedOrders.filter((o) => !bookedOrderIds.has(o.id)).length;
+  const inTransit = consignments.filter((c) => c.status === 'BOOKED' || c.status === 'IN_TRANSIT').length;
 
   const actions = [
     { label: 'Pending Orders', count: pendingOrders, icon: ShoppingBag, color: 'text-blue-700', bg: 'bg-blue-50', border: 'border-blue-100' },
     { label: 'Ready To Ship', count: readyToShip, icon: PackageCheck, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
-    { label: 'Pending Courier', count: pendingBooking, icon: Truck, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
-    { label: 'Refund Requests', count: refundRequests, icon: AlertCircle, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
-    { label: 'Pending Messages', count: 4, icon: MessageSquare, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
+    { label: 'In Transit', count: inTransit, icon: Truck, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
   ];
 
   return (

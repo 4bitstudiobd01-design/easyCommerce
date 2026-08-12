@@ -31,7 +31,21 @@ export default function SuperAdminOverviewPage() {
       </div>
 
       {/* DYNAMIC WIDGET REGISTRY RENDERER */}
-      <DashboardRenderer />
+      {/* This page is only reachable by SUPER_ADMIN (server-side @Roles guard on
+          every /admin/* endpoint), so the super-admin is granted every admin.*
+          widget permission here. There is no granular admin-staff permission
+          system yet — when one exists, source this from the logged-in user's
+          real permission set instead. */}
+      <DashboardRenderer
+        userPermissions={[
+          'admin.infrastructure.read',
+          'admin.finance.read',
+          'admin.stores.read',
+          'admin.stores.manage',
+          'admin.orders.read',
+          'admin.audit.read',
+        ]}
+      />
 
       {/* 2 Quick Overview Box Lists */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

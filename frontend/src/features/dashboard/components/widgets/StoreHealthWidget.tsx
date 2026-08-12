@@ -1,13 +1,19 @@
 import React from 'react';
 import { WidgetCard } from '@/features/admin/components/core/WidgetCard';
 import { HeartPulse, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { useGetMyStoreQuery } from '@/features/tenant/api/tenantApi';
 
 export function StoreHealthWidget() {
+  const { data: store, isLoading } = useGetMyStoreQuery();
+
+  const hasCourier = Boolean(store?.steadfastApiKey || store?.pathaoClientId);
+  const hasPixel = Boolean(store?.facebookPixelId || store?.tiktokPixelId || store?.googleTagManagerId);
+
   const healthItems = [
-    { label: 'Store Status', status: 'Active', isGood: true },
-    { label: 'Custom Domain', status: 'Connected', isGood: true },
-    { label: 'Payment Gateway', status: 'Pending Setup', isGood: false },
-    { label: 'Courier Integration', status: 'Active', isGood: true },
+    { label: 'Store Profile', status: store ? 'Set up' : 'Not set up', isGood: Boolean(store) },
+    { label: 'Custom Domain', status: store?.domain ? 'Connected' : 'Not connected', isGood: Boolean(store?.domain) },
+    { label: 'Courier Integration', status: hasCourier ? 'Connected' : 'Not connected', isGood: hasCourier },
+    { label: 'Marketing Pixels', status: hasPixel ? 'Connected' : 'Not connected', isGood: hasPixel },
   ];
 
   const goodCount = healthItems.filter(i => i.isGood).length;
@@ -20,6 +26,7 @@ export function StoreHealthWidget() {
       icon={HeartPulse}
       iconBgColor="bg-blue-50/80"
       iconTextColor="text-blue-600"
+      isLoading={isLoading}
       compact={true}
     >
       <div className="flex flex-col gap-2 mt-1">

@@ -8,6 +8,8 @@ export interface SendSmsPayload {
   recipientPhone: string;
   message: string;
   tenantId: string;
+  gateway?: string;
+  wasSent?: boolean;
 }
 
 @Injectable()
@@ -27,11 +29,19 @@ export class SendSmsService {
       `[SMS DISPATCH ${isSandbox ? 'SANDBOX' : 'LIVE'}] Phone: ${payload.recipientPhone} | Message: "${payload.message}"`,
     );
 
+    // Reflect the actual driver result — never log SENT unless the gateway
+    // call genuinely succeeded.
+    const status = isSandbox
+      ? SmsStatusEnum.SANDBOX
+      : payload.wasSent
+        ? SmsStatusEnum.SENT
+        : SmsStatusEnum.FAILED;
+
     const smsLog = this.smsLogRepository.create({
       recipientPhone: payload.recipientPhone,
       message: payload.message,
-      gateway: 'BULKSMSBD',
-      status: isSandbox ? SmsStatusEnum.SANDBOX : SmsStatusEnum.SENT,
+      gateway: payload.gateway || 'BULKSMSBD',
+      status,
       tenantId: payload.tenantId,
     });
 

@@ -144,6 +144,10 @@ export const MERCHANT_WIDGET_REGISTRY: Record<string, RegisteredWidget> = {
   },
   'announcements': {
     ...baseWidgetSettings,
+    // Disabled: there is no platform-announcements backend yet — this widget
+    // previously showed fabricated content with fake dates. Re-enable once a
+    // real announcements/CMS-broadcast API exists for the merchant dashboard.
+    isEnabled: false,
     id: 'announcements',
     name: 'Announcements',
     description: 'Platform announcements',

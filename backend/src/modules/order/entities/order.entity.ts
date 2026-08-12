@@ -64,6 +64,12 @@ export class OrderEntity {
   @Column({ type: 'decimal', precision: 12, scale: 2 })
   subtotal: number;
 
+  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
+  discountAmount: number;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  couponCode?: string;
+
   @Column({ type: 'decimal', precision: 12, scale: 2 })
   grandTotal: number;
 

@@ -55,12 +55,35 @@ export class DashboardFacadeService {
     const orders = await this.orderRepository.find();
     const users = await this.userRepository.find();
 
+    const now = new Date();
+    const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+    const revenueInRange = (from: Date, to: Date) =>
+      orders
+        .filter((o) => o.createdAt >= from && o.createdAt < to)
+        .reduce((sum, o) => sum + Number(o.grandTotal || 0), 0);
+
+    const growthPercent = (current: number, previous: number): number => {
+      if (previous <= 0) return current > 0 ? 100 : 0;
+      return Math.round(((current - previous) / previous) * 1000) / 10;
+    };
+
     const totalRevenueBdt = orders.reduce((sum, o) => sum + Number(o.grandTotal || 0), 0);
+    const thisMonthRevenue = revenueInRange(startOfThisMonth, now);
+    const lastMonthRevenue = revenueInRange(startOfLastMonth, startOfThisMonth);
+
     const activeMerchants = users.filter(u => u.isActive && (u.role === UserRoleEnum.STORE_OWNER || u.role === UserRoleEnum.SUPER_ADMIN)).length;
     const suspendedMerchants = users.filter(u => !u.isActive).length;
+    const newMerchantsThisMonth = users.filter(
+      (u) => u.createdAt >= startOfThisMonth && u.createdAt < now,
+    ).length;
 
     const activeStores = stores.filter(s => s.isActive).length;
     const suspendedStores = stores.filter(s => !s.isActive).length;
+    // No dedicated trial-plan flag exists yet on StoreEntity; report 0 rather
+    // than fabricating a percentage until subscription plans are modeled.
+    const trialStores = 0;
 
     const todayOrders = orders.length;
     const pendingOrders = orders.filter(o => o.orderStatus === OrderStatusEnum.PENDING).length;
@@ -74,21 +97,21 @@ export class DashboardFacadeService {
       },
       kpis: {
         totalRevenueBdt,
-        totalRevenueGrowthPercent: 18.4,
-        monthlyRevenueBdt: Math.round(totalRevenueBdt * 0.35),
-        monthlyRevenueGrowthPercent: 12.2,
-        quarterlyGrowthPercent: 24.5,
+        totalRevenueGrowthPercent: growthPercent(thisMonthRevenue, lastMonthRevenue),
+        monthlyRevenueBdt: thisMonthRevenue,
+        monthlyRevenueGrowthPercent: growthPercent(thisMonthRevenue, lastMonthRevenue),
+        quarterlyGrowthPercent: growthPercent(thisMonthRevenue, lastMonthRevenue),
       },
       merchantSummary: {
         totalMerchants: users.length,
         activeMerchants,
-        newMerchantsThisMonth: Math.max(1, Math.round(users.length * 0.15)),
+        newMerchantsThisMonth,
         suspendedMerchants,
       },
       storeSummary: {
         totalStores: stores.length,
         activeStores,
-        trialStores: Math.round(stores.length * 0.2),
+        trialStores,
         suspendedStores,
       },
       orderSummary: {

@@ -11,6 +11,7 @@ import { TenantModule } from '../tenant/tenant.module';
 import { CatalogModule } from '../catalog/catalog.module';
 import { InventoryModule } from '../inventory/inventory.module';
 import { SmsModule } from '../sms/sms.module';
+import { CouponModule } from '../coupon/coupon.module';
 import { CreateOrderService } from './services/create-order.service';
 import { ListMerchantOrdersService } from './services/list-merchant-orders.service';
 import { FindOrderByIdService } from './services/find-order-by-id.service';
@@ -36,6 +37,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     CatalogModule,
     InventoryModule,
     SmsModule,
+    CouponModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

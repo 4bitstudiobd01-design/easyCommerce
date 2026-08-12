@@ -129,50 +129,49 @@ export function DashboardRenderer({
     switch (widgetId) {
       case 'platform-health':
         return {
-          status: infra?.overallStatus,
-          statusLabel: infra?.overallLabel,
-          services: infra?.microservices,
+          data: infra
+            ? {
+                overallStatus: infra.overallStatus,
+                overallLabel: infra.overallLabel,
+                items: infra.microservices,
+              }
+            : undefined,
           isLoading: isInfraLoading,
           isError: isInfraError,
           onRefresh: refetchInfra,
         };
       case 'revenue-kpis':
         return {
-          totalRevenueBdt: summary?.kpis?.totalRevenueBdt,
-          totalRevenueGrowthPercent: summary?.kpis?.totalRevenueGrowthPercent,
-          monthlyRevenueBdt: summary?.kpis?.monthlyRevenueBdt,
-          monthlyRevenueGrowthPercent: summary?.kpis?.monthlyRevenueGrowthPercent,
-          quarterlyGrowthPercent: summary?.kpis?.quarterlyGrowthPercent,
+          data: summary?.kpis
+            ? {
+                totalRevenueBdt: summary.kpis.totalRevenueBdt,
+                totalRevenueTrendPercent: summary.kpis.totalRevenueGrowthPercent,
+                monthlyRevenueBdt: summary.kpis.monthlyRevenueBdt,
+                monthlyRevenueTrendPercent: summary.kpis.monthlyRevenueGrowthPercent,
+                revenueGrowthPercent: summary.kpis.quarterlyGrowthPercent,
+              }
+            : undefined,
           isLoading: isSummaryLoading,
           isError: isSummaryError,
           onRefresh: refetchSummary,
         };
       case 'merchant-overview':
         return {
-          totalMerchants: summary?.merchantSummary?.totalMerchants,
-          activeMerchants: summary?.merchantSummary?.activeMerchants,
-          newMerchantsThisMonth: summary?.merchantSummary?.newMerchantsThisMonth,
-          suspendedMerchants: summary?.merchantSummary?.suspendedMerchants,
+          data: summary?.merchantSummary,
           isLoading: isSummaryLoading,
           isError: isSummaryError,
           onRefresh: refetchSummary,
         };
       case 'store-overview':
         return {
-          totalStores: summary?.storeSummary?.totalStores,
-          activeStores: summary?.storeSummary?.activeStores,
-          trialStores: summary?.storeSummary?.trialStores,
-          suspendedStores: summary?.storeSummary?.suspendedStores,
+          data: summary?.storeSummary,
           isLoading: isSummaryLoading,
           isError: isSummaryError,
           onRefresh: refetchSummary,
         };
       case 'orders-overview':
         return {
-          todayOrders: summary?.orderSummary?.todayOrders,
-          pendingOrders: summary?.orderSummary?.pendingOrders,
-          completedOrders: summary?.orderSummary?.completedOrders,
-          cancelledOrders: summary?.orderSummary?.cancelledOrders,
+          data: summary?.orderSummary,
           isLoading: isSummaryLoading,
           isError: isSummaryError,
           onRefresh: refetchSummary,

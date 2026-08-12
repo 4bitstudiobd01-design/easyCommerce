@@ -63,6 +63,8 @@ export interface Order {
   city: string;
   deliveryFee: number;
   subtotal: number;
+  discountAmount: number;
+  couponCode?: string;
   grandTotal: number;
   paymentMethod: 'COD' | 'BKASH' | 'NAGAD' | 'SSLCOMMERZ';
   paymentStatus: 'UNPAID' | 'PAID' | 'REFUNDED';
@@ -101,6 +103,7 @@ export interface CreateOrderRequest {
   shippingAddress: string;
   city: string;
   paymentMethod: 'COD' | 'BKASH' | 'NAGAD' | 'SSLCOMMERZ';
+  couponCode?: string;
   items: CreateOrderItemRequest[];
 }
 

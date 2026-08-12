@@ -9,6 +9,7 @@ import { ProductEntity } from '../../catalog/entities/product.entity';
 import { AdjustStockService } from '../../inventory/services/adjust-stock.service';
 import { StockAdjustmentAction } from '../../inventory/dto/adjust-stock.dto';
 import { TriggerOrderStatusSmsService } from '../../sms/services/trigger-order-status-sms.service';
+import { ApplyCouponService } from '../../coupon/services/apply-coupon.service';
 
 @Injectable()
 export class CreateOrderService {
@@ -22,6 +23,7 @@ export class CreateOrderService {
     private readonly findStoreBySlugService: FindStoreBySlugService,
     private readonly adjustStockService: AdjustStockService,
     private readonly triggerOrderStatusSmsService: TriggerOrderStatusSmsService,
+    private readonly applyCouponService: ApplyCouponService,
   ) {}
 
   async execute(dto: CreateOrderDto): Promise<OrderEntity> {
@@ -38,49 +40,70 @@ export class CreateOrderService {
 
     let subtotal = 0;
     const orderItems: OrderItemEntity[] = [];
+    const deductedItems: { productId: string; quantity: number }[] = [];
 
     // Process order items
-    for (const itemDto of dto.items) {
-      const product = await this.productRepository.findOne({
-        where: { id: itemDto.productId, tenantId },
-        relations: ['variants'],
-      });
+    try {
+      for (const itemDto of dto.items) {
+        const product = await this.productRepository.findOne({
+          where: { id: itemDto.productId, tenantId },
+          relations: ['variants'],
+        });
 
-      if (!product) {
-        throw new NotFoundException(`Product with ID "${itemDto.productId}" not found.`);
-      }
+        if (!product) {
+          throw new NotFoundException(`Product with ID "${itemDto.productId}" not found.`);
+        }
 
-      const unitPrice = Number(product.basePrice);
-      const totalPrice = unitPrice * itemDto.quantity;
-      subtotal += totalPrice;
+        const unitPrice = Number(product.basePrice);
+        const totalPrice = unitPrice * itemDto.quantity;
+        subtotal += totalPrice;
 
-      const sku = product.variants?.[0]?.sku || `SKU-${product.id.slice(0, 6)}`;
+        const sku = product.variants?.[0]?.sku || `SKU-${product.id.slice(0, 6)}`;
 
-      const orderItem = this.orderItemRepository.create({
-        productId: product.id,
-        productTitle: product.title,
-        sku,
-        unitPrice,
-        quantity: itemDto.quantity,
-        totalPrice,
-        tenantId,
-      });
+        const orderItem = this.orderItemRepository.create({
+          productId: product.id,
+          productTitle: product.title,
+          sku,
+          unitPrice,
+          quantity: itemDto.quantity,
+          totalPrice,
+          tenantId,
+        });
 
-      orderItems.push(orderItem);
+        orderItems.push(orderItem);
 
-      // Adjust physical stock count in Inventory module
-      try {
+        // Adjust physical stock count in Inventory module.
+        // Throws if there isn't enough stock on hand — caught below so we can
+        // roll back any deductions already made for earlier items in this order.
         await this.adjustStockService.execute(tenantId, {
           productId: product.id,
           quantity: itemDto.quantity,
           action: StockAdjustmentAction.REMOVE,
         });
+        deductedItems.push({ productId: product.id, quantity: itemDto.quantity });
+      }
+    } catch (err) {
+      await this.rollbackStock(tenantId, deductedItems);
+      throw err;
+    }
+
+    let discountAmount = 0;
+    let appliedCouponCode: string | undefined;
+
+    if (dto.couponCode) {
+      try {
+        // Re-validate and atomically increment usage server-side — never trust
+        // a discount amount the client claims to have already applied.
+        const applied = await this.applyCouponService.execute(tenantId, dto.couponCode, subtotal);
+        discountAmount = applied.discountAmount;
+        appliedCouponCode = applied.code;
       } catch (err) {
-        // Continue even if stock adjustment is non-blocking
+        await this.rollbackStock(tenantId, deductedItems);
+        throw err;
       }
     }
 
-    const grandTotal = subtotal + deliveryFee;
+    const grandTotal = Math.max(0, subtotal + deliveryFee - discountAmount);
     const orderNumber = `ORD-${Date.now().toString().slice(-6)}`;
 
     const order = this.orderRepository.create({
@@ -92,6 +115,8 @@ export class CreateOrderService {
       city: dto.city,
       deliveryFee,
       subtotal,
+      discountAmount,
+      couponCode: appliedCouponCode,
       grandTotal,
       paymentMethod: dto.paymentMethod,
       paymentStatus: PaymentStatusEnum.UNPAID,
@@ -119,5 +144,22 @@ export class CreateOrderService {
     }
 
     return savedOrder;
+  }
+
+  private async rollbackStock(
+    tenantId: string,
+    deductedItems: { productId: string; quantity: number }[],
+  ): Promise<void> {
+    for (const deducted of deductedItems) {
+      try {
+        await this.adjustStockService.execute(tenantId, {
+          productId: deducted.productId,
+          quantity: deducted.quantity,
+          action: StockAdjustmentAction.ADD,
+        });
+      } catch (rollbackErr) {
+        // Best-effort rollback; the original error is still surfaced to the caller.
+      }
+    }
   }
 }

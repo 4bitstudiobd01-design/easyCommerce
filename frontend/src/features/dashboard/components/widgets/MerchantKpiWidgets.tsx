@@ -2,15 +2,41 @@ import React from 'react';
 import { DollarSign, ShoppingCart, Package, Users } from 'lucide-react';
 import { MetricCard } from '@/features/admin/components/core/MetricCard';
 import { useGetMyStoreQuery } from '@/features/tenant/api/tenantApi';
-import { useGetMerchantOrdersQuery } from '@/features/order/api/orderApi';
+import { useGetMerchantOrdersQuery, Order } from '@/features/order/api/orderApi';
 import { useGetProductsQuery } from '@/features/catalog/api/catalogApi';
+
+const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+function weekOverWeekTrend(orders: Order[], valueFn: (o: Order) => number): number | undefined {
+  if (orders.length === 0) return undefined;
+
+  const now = Date.now();
+  const thisWeekStart = now - ONE_WEEK_MS;
+  const lastWeekStart = now - 2 * ONE_WEEK_MS;
+
+  let thisWeek = 0;
+  let lastWeek = 0;
+
+  for (const order of orders) {
+    const createdAt = new Date(order.createdAt).getTime();
+    if (createdAt >= thisWeekStart) {
+      thisWeek += valueFn(order);
+    } else if (createdAt >= lastWeekStart) {
+      lastWeek += valueFn(order);
+    }
+  }
+
+  if (lastWeek <= 0) return thisWeek > 0 ? 100 : undefined;
+  return Math.round(((thisWeek - lastWeek) / lastWeek) * 1000) / 10;
+}
 
 export function MerchantRevenueKpiWidget() {
   const { data: store, isLoading: isStoreLoading } = useGetMyStoreQuery();
   const { data: orders = [], isLoading: isOrdersLoading } = useGetMerchantOrdersQuery(undefined, { skip: !store });
-  
+
   const totalSales = orders.reduce((acc, order) => acc + Number(order.grandTotal), 0);
   const isLoading = isStoreLoading || isOrdersLoading;
+  const trendPercent = weekOverWeekTrend(orders, (o) => Number(o.grandTotal));
 
   return (
     <MetricCard
@@ -21,7 +47,7 @@ export function MerchantRevenueKpiWidget() {
       iconBgColor="bg-blue-50"
       iconTextColor="text-blue-600"
       isLoading={isLoading}
-      trendPercent={12.5}
+      trendPercent={trendPercent}
       trendLabel="vs last week"
       compact={true}
     />
@@ -31,8 +57,9 @@ export function MerchantRevenueKpiWidget() {
 export function MerchantOrdersKpiWidget() {
   const { data: store, isLoading: isStoreLoading } = useGetMyStoreQuery();
   const { data: orders = [], isLoading: isOrdersLoading } = useGetMerchantOrdersQuery(undefined, { skip: !store });
-  
+
   const isLoading = isStoreLoading || isOrdersLoading;
+  const trendPercent = weekOverWeekTrend(orders, () => 1);
 
   return (
     <MetricCard
@@ -43,7 +70,7 @@ export function MerchantOrdersKpiWidget() {
       iconBgColor="bg-blue-50"
       iconTextColor="text-blue-600"
       isLoading={isLoading}
-      trendPercent={8.2}
+      trendPercent={trendPercent}
       trendLabel="vs last week"
       compact={true}
     />
@@ -53,7 +80,7 @@ export function MerchantOrdersKpiWidget() {
 export function MerchantProductsKpiWidget() {
   const { data: store, isLoading: isStoreLoading } = useGetMyStoreQuery();
   const { data: products = [], isLoading: isProductsLoading } = useGetProductsQuery(undefined, { skip: !store });
-  
+
   const isLoading = isStoreLoading || isProductsLoading;
 
   return (
@@ -73,7 +100,7 @@ export function MerchantProductsKpiWidget() {
 export function MerchantCustomersKpiWidget() {
   const { data: store, isLoading: isStoreLoading } = useGetMyStoreQuery();
   const { data: orders = [], isLoading: isOrdersLoading } = useGetMerchantOrdersQuery(undefined, { skip: !store });
-  
+
   const activeCustomersCount = orders.length > 0 ? new Set(orders.map(o => o.customerPhone)).size : 0;
   const isLoading = isStoreLoading || isOrdersLoading;
 
@@ -81,13 +108,11 @@ export function MerchantCustomersKpiWidget() {
     <MetricCard
       label="Store Customers"
       value={activeCustomersCount}
-      subtitle="Row-level security context"
+      subtitle="Unique customers who have ordered"
       icon={Users}
       iconBgColor="bg-blue-50"
       iconTextColor="text-blue-600"
       isLoading={isLoading}
-      trendPercent={18.4}
-      trendLabel="vs last week"
       compact={true}
     />
   );

@@ -80,18 +80,20 @@ export class StockTransferService {
     sourceStock.quantityOnHand -= dto.quantity;
     destStock.quantityOnHand += dto.quantity;
 
-    await this.inventoryStockRepository.save([sourceStock, destStock]);
+    return this.inventoryStockRepository.manager.transaction(async (manager) => {
+      await manager.save([sourceStock, destStock]);
 
-    const transferLog = this.stockTransferRepository.create({
-      fromWarehouseId: dto.fromWarehouseId,
-      toWarehouseId: dto.toWarehouseId,
-      productId: dto.productId,
-      quantity: dto.quantity,
-      notes: dto.notes,
-      tenantId,
+      const transferLog = manager.create(StockTransferEntity, {
+        fromWarehouseId: dto.fromWarehouseId,
+        toWarehouseId: dto.toWarehouseId,
+        productId: dto.productId,
+        quantity: dto.quantity,
+        notes: dto.notes,
+        tenantId,
+      });
+
+      return manager.save(transferLog);
     });
-
-    return this.stockTransferRepository.save(transferLog);
   }
 
   async listStockTransfers(tenantId: string): Promise<StockTransferEntity[]> {

@@ -1,15 +1,16 @@
 import React from 'react';
 import { WidgetCard } from '@/features/admin/components/core/WidgetCard';
 import { AlertTriangle, PackageX, PackageMinus } from 'lucide-react';
-import { useGetProductsQuery } from '@/features/catalog/api/catalogApi';
+import { useGetInventoryStocksQuery } from '@/features/inventory/api/inventoryApi';
 
 export function InventoryAlertsWidget() {
-  const { data: products = [], isLoading } = useGetProductsQuery(undefined, { skip: false });
+  const { data: stocks = [], isLoading } = useGetInventoryStocksQuery();
 
-  // Use dummy logic if needed
-  const outOfStock = 2;
-  const lowStock = 8;
-  const restockRequired = 5;
+  const outOfStock = stocks.filter((s) => s.isOutOfStock).length;
+  const lowStock = stocks.filter((s) => s.isLowStock && !s.isOutOfStock).length;
+  const restockRequired = stocks.filter(
+    (s) => (s.availableQuantity ?? s.quantityOnHand) <= s.reorderPoint,
+  ).length;
 
   return (
     <WidgetCard

@@ -49,7 +49,12 @@ export class AdjustStockService {
         stock.quantityOnHand = qty;
         break;
       case StockAdjustmentAction.REMOVE:
-        stock.quantityOnHand = Math.max(0, stock.quantityOnHand - qty);
+        if (stock.quantityOnHand - qty < 0) {
+          throw new BadRequestException(
+            `Insufficient stock for product ${dto.productId}: ${stock.quantityOnHand} on hand, ${qty} requested.`,
+          );
+        }
+        stock.quantityOnHand -= qty;
         break;
       default:
         throw new BadRequestException(`Invalid adjustment action: ${dto.action}`);

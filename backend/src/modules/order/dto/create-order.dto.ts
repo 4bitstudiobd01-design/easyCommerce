@@ -61,6 +61,11 @@ export class CreateOrderDto {
   @IsEnum(PaymentMethodEnum)
   paymentMethod: PaymentMethodEnum;
 
+  @ApiProperty({ example: 'WELCOME10', required: false, description: 'Applied promo coupon code' })
+  @IsOptional()
+  @IsString()
+  couponCode?: string;
+
   @ApiProperty({ type: [CreateOrderItemDto] })
   @IsArray()
   @ValidateNested({ each: true })

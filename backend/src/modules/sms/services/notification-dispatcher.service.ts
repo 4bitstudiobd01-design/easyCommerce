@@ -45,26 +45,27 @@ export class NotificationDispatcherService {
       const activeSmsDriver = store?.smsDriver || SmsDriverEnum.BULKSMSBD;
 
       if (activeSmsDriver !== SmsDriverEnum.DISABLED) {
-        if (activeSmsDriver === SmsDriverEnum.GREENWEB) {
-          await this.greenwebSmsDriver.sendSms({
-            phone: payload.recipientPhone,
-            message: payload.smsMessage,
-            apiKey: store?.smsApiKey,
-            senderId: store?.smsSenderId,
-          });
-        } else {
-          await this.bulkSmsBdDriver.sendSms({
-            phone: payload.recipientPhone,
-            message: payload.smsMessage,
-            apiKey: store?.smsApiKey,
-            senderId: store?.smsSenderId,
-          });
-        }
+        const driverResult =
+          activeSmsDriver === SmsDriverEnum.GREENWEB
+            ? await this.greenwebSmsDriver.sendSms({
+                phone: payload.recipientPhone,
+                message: payload.smsMessage,
+                apiKey: store?.smsApiKey,
+                senderId: store?.smsSenderId,
+              })
+            : await this.bulkSmsBdDriver.sendSms({
+                phone: payload.recipientPhone,
+                message: payload.smsMessage,
+                apiKey: store?.smsApiKey,
+                senderId: store?.smsSenderId,
+              });
 
         await this.sendSmsService.execute({
           recipientPhone: payload.recipientPhone,
           message: payload.smsMessage,
           tenantId: payload.tenantId,
+          gateway: driverResult.gatewayResponse?.gateway || activeSmsDriver,
+          wasSent: driverResult.success,
         });
       }
     }

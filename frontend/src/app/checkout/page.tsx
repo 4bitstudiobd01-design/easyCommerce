@@ -41,6 +41,7 @@ export default function CheckoutPage() {
   // Promo Coupon state
   const [promoCodeInput, setPromoCodeInput] = useState('');
   const [appliedDiscount, setAppliedDiscount] = useState<number>(0);
+  const [appliedCouponCode, setAppliedCouponCode] = useState('');
   const [promoSuccessMsg, setPromoSuccessMsg] = useState('');
   const [promoErrorMsg, setPromoErrorMsg] = useState('');
 
@@ -71,9 +72,11 @@ export default function CheckoutPage() {
       }).unwrap();
 
       setAppliedDiscount(result.calculatedDiscount);
+      setAppliedCouponCode(result.code);
       setPromoSuccessMsg(result.message);
     } catch (err: any) {
       setAppliedDiscount(0);
+      setAppliedCouponCode('');
       setPromoErrorMsg(err?.data?.message || 'Invalid promo coupon code.');
     }
   };
@@ -96,6 +99,7 @@ export default function CheckoutPage() {
         shippingAddress,
         city,
         paymentMethod: paymentMethod === 'SSLCOMMERZ' ? 'SSLCOMMERZ' : 'COD',
+        couponCode: appliedCouponCode || undefined,
         items: cartItems.map((i) => ({
           productId: i.productId,
           quantity: i.quantity,
