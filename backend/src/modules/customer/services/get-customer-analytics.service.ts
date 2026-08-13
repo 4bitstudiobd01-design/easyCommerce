@@ -48,10 +48,12 @@ export class GetCustomerAnalyticsService {
 
   private parseDateBoundary(dto: CustomerAnalyticsQueryDto): { dateFrom: Date; dateTo: Date } {
     const now = new Date();
-    let dateFrom = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // default 30 days
     let dateTo = new Date();
+    let dateFrom = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // default 30 days
 
-    if (dto.dateFrom) {
+    if (dto.dateRange === 'ALL') {
+      dateFrom = new Date(0); // Beginning of epoch for All Time
+    } else if (dto.dateFrom) {
       dateFrom = new Date(dto.dateFrom);
     } else if (dto.dateRange && dto.dateRange !== 'ALL') {
       const days = parseInt(dto.dateRange, 10);
@@ -111,8 +113,6 @@ export class GetCustomerAnalyticsService {
       [tenantId, dateFrom.toISOString(), dateTo.toISOString()],
     );
 
-    // Repeat customers within the same window as the revenue figures above — mixing an
-    // all-time count into a date-filtered response made the metric contradict its own header.
     const repeatCustRaw = await this.customerRepository.manager.query(
       `
       SELECT COUNT(cnt)::int AS "repeatCustomers"
@@ -129,8 +129,6 @@ export class GetCustomerAnalyticsService {
       [tenantId, dateFrom.toISOString(), dateTo.toISOString()],
     );
 
-    // Customers created in the same window, so LTV divides like-for-like instead of
-    // spreading windowed revenue across the all-time customer base.
     const customersInWindow = await this.customerRepository
       .createQueryBuilder('c')
       .where('c.tenantId = :tenantId', { tenantId })
@@ -142,7 +140,7 @@ export class GetCustomerAnalyticsService {
     const repeatCustomers = Number(repeatCustRaw[0]?.repeatCustomers || 0);
 
     const avgOrderValue = averageMoney(totalRevenue, totalOrdersCount);
-    const avgCustomerLtv = averageMoney(totalRevenue, customersInWindow);
+    const avgCustomerLtv = averageMoney(totalRevenue, customersInWindow || totalCustomersRes);
 
     return {
       totalCustomers: totalCustomersRes,
