@@ -74,12 +74,33 @@ export function OrderDetailPanel({
       if (event.key === 'Escape') onClose();
     };
 
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    // position:fixed (not just overflow:hidden) is needed to reliably stop
+    // background scroll on mobile Safari, which otherwise still allows touch-scroll.
+    const scrollY = window.scrollY;
+    const body = document.body;
+    const previousStyles = {
+      position: body.style.position,
+      top: body.style.top,
+      left: body.style.left,
+      right: body.style.right,
+      overflow: body.style.overflow,
+    };
+
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollY}px`;
+    body.style.left = '0';
+    body.style.right = '0';
+    body.style.overflow = 'hidden';
+
     document.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      document.body.style.overflow = previousOverflow;
+      body.style.position = previousStyles.position;
+      body.style.top = previousStyles.top;
+      body.style.left = previousStyles.left;
+      body.style.right = previousStyles.right;
+      body.style.overflow = previousStyles.overflow;
+      window.scrollTo(0, scrollY);
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen, onClose]);
@@ -118,7 +139,7 @@ export function OrderDetailPanel({
         role="dialog"
         aria-modal="true"
         aria-label={`Details for order ${order.orderNumber}`}
-        className="fixed inset-y-0 right-0 z-[70] h-screen w-full sm:w-[420px] bg-white border-l border-slate-200 shadow-2xl flex flex-col animate-drawer-in"
+        className="fixed inset-y-0 right-0 z-[70] w-full sm:w-[420px] bg-white border-l border-slate-200 shadow-2xl flex flex-col overflow-hidden animate-drawer-in"
       >
       {/* Header */}
       <div className="flex items-start justify-between p-5 pb-3">
