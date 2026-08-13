@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import {
   useGetCustomerByIdQuery,
@@ -129,7 +130,50 @@ export function CustomerDetailDrawer({
   const [deleteNote, { isLoading: isDeletingNote }] = useDeleteCustomerNoteMutation();
   const [updateCustomerStatus, { isLoading: isUpdatingStatus }] = useUpdateCustomerStatusMutation();
 
-  if (!customerId) return null;
+  // Portal target isn't available during SSR/first paint.
+  const [mounted, setMounted] = useState(false);
+  React.useEffect(() => setMounted(true), []);
+
+  // Close on Escape and lock background scroll while the drawer is open.
+  React.useEffect(() => {
+    if (!customerId) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+
+    // position:fixed (not just overflow:hidden) is needed to reliably stop
+    // background scroll on mobile Safari, which otherwise still allows touch-scroll.
+    const scrollY = window.scrollY;
+    const body = document.body;
+    const previousStyles = {
+      position: body.style.position,
+      top: body.style.top,
+      left: body.style.left,
+      right: body.style.right,
+      overflow: body.style.overflow,
+    };
+
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollY}px`;
+    body.style.left = '0';
+    body.style.right = '0';
+    body.style.overflow = 'hidden';
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      body.style.position = previousStyles.position;
+      body.style.top = previousStyles.top;
+      body.style.left = previousStyles.left;
+      body.style.right = previousStyles.right;
+      body.style.overflow = previousStyles.overflow;
+      window.scrollTo(0, scrollY);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [customerId, onClose]);
+
+  if (!customerId || !mounted) return null;
 
   const initials = customer
     ? `${customer.firstName?.charAt(0) || ''}${customer.lastName?.charAt(0) || ''}`.toUpperCase()
@@ -257,13 +301,24 @@ export function CustomerDetailDrawer({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/40 backdrop-blur-xs flex justify-end">
+  return createPortal(
+    <>
       {/* Backdrop */}
-      <div className="flex-1" onClick={onClose} />
+      <div
+        onClick={onClose}
+        aria-hidden="true"
+        className="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-[1px] animate-backdrop-in"
+      />
 
-      {/* Drawer Panel */}
-      <div className="w-full max-w-lg bg-white h-full shadow-2xl flex flex-col border-l border-slate-200 animate-in slide-in-from-right duration-200">
+      {/* Drawer Panel — pinned to the viewport with inset-y-0 rather than h-full, which
+          depended on an ancestor's height, and rendered through a portal so `fixed` is
+          not captured by a transformed ancestor in the dashboard layout. */}
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label="Customer details"
+        className="fixed inset-y-0 right-0 z-[70] w-full max-w-lg bg-white shadow-2xl flex flex-col border-l border-slate-200 overflow-hidden animate-drawer-in"
+      >
         {/* Drawer Header */}
         <div className="p-5 border-b border-slate-200/80 flex items-center justify-between bg-slate-50/50">
           <h2 className="font-extrabold text-base text-slate-900">Customer Details</h2>
@@ -1032,7 +1087,7 @@ export function CustomerDetailDrawer({
             )}
           </div>
         )}
-      </div>
+      </aside>
 
       {/* Address Form Modal */}
       <AddressModal
@@ -1044,6 +1099,7 @@ export function CustomerDetailDrawer({
           setEditingAddress(null);
         }}
       />
-    </div>
+    </>,
+    document.body,
   );
 }

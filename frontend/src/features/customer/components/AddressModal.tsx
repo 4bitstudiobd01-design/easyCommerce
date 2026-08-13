@@ -111,8 +111,9 @@ export function AddressModal({
 
   const isLoading = isCreating || isUpdating;
 
+  // z-80 keeps this above the customer detail drawer (z-70) it is opened from.
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[80] overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
       {/* Backdrop click */}
       <div className="fixed inset-0" onClick={onClose} />
 
