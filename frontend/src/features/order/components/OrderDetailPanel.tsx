@@ -90,6 +90,14 @@ export function OrderDetailPanel({
   const itemCount = order.items?.length ?? 0;
   const canConfirm = order.orderStatus === 'PENDING';
 
+  // Once an order has left the fulfilment pipeline there is nothing left to edit
+  // or ship, so those actions are hidden rather than shown and rejected server-side.
+  const isTerminal = ['DELIVERED', 'COMPLETED', 'CANCELLED', 'RETURNED'].includes(
+    order.orderStatus,
+  );
+  const canEdit = ['PENDING', 'ON_HOLD', 'CONFIRMED', 'PROCESSING'].includes(order.orderStatus);
+  const canBookCourier = !consignment && !isTerminal;
+
   const handleCopyAddress = () => {
     const address = [order.shippingAddress, order.area, order.city, order.district]
       .filter(Boolean)
@@ -103,14 +111,14 @@ export function OrderDetailPanel({
       <div
         onClick={onClose}
         aria-hidden="true"
-        className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-[1px] animate-backdrop-in"
+        className="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-[1px] animate-backdrop-in"
       />
 
       <aside
         role="dialog"
         aria-modal="true"
         aria-label={`Details for order ${order.orderNumber}`}
-        className="fixed top-0 right-0 z-50 h-full w-full sm:w-[420px] bg-white border-l border-slate-200 shadow-2xl flex flex-col animate-drawer-in"
+        className="fixed inset-y-0 right-0 z-[70] h-screen w-full sm:w-[420px] bg-white border-l border-slate-200 shadow-2xl flex flex-col animate-drawer-in"
       >
       {/* Header */}
       <div className="flex items-start justify-between p-5 pb-3">
@@ -148,29 +156,34 @@ export function OrderDetailPanel({
 
       {/* Actions */}
       <div className="flex items-center gap-2 px-5 pb-4 border-b border-slate-100">
-        <button
-          type="button"
-          disabled={!canConfirm || isConfirming}
-          onClick={() => onConfirm?.(order)}
-          className="flex-1 px-3 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-        >
-          <CheckCircle2 className="w-3.5 h-3.5" />
-          {isConfirming ? 'Confirming…' : 'Confirm'}
-        </button>
-        <Link
-          href={`/dashboard/orders/${order.id}/edit`}
-          className="flex-1 px-3 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-slate-50 transition-colors"
-        >
-          <Pencil className="w-3.5 h-3.5" />
-          Edit Order
-        </Link>
+        {canConfirm && (
+          <button
+            type="button"
+            disabled={isConfirming}
+            onClick={() => onConfirm?.(order)}
+            className="flex-1 px-3 py-2 bg-blue-600 border border-blue-600 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            {isConfirming ? 'Confirming…' : 'Confirm'}
+          </button>
+        )}
+        {canEdit && (
+          <Link
+            href={`/dashboard/orders/${order.id}/edit`}
+            className="flex-1 px-3 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-slate-50 transition-colors"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+            Edit Order
+          </Link>
+        )}
         <Link
           href={`/dashboard/orders/${order.id}`}
-          aria-label="Open full order page"
-          className="px-3 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-slate-50 transition-colors"
+          className={`px-3 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-slate-50 transition-colors ${
+            canConfirm || canEdit ? '' : 'flex-1'
+          }`}
         >
           <MoreHorizontal className="w-3.5 h-3.5" />
-          More
+          {canConfirm || canEdit ? 'More' : 'View full order'}
         </Link>
       </div>
 
@@ -329,9 +342,9 @@ export function OrderDetailPanel({
                     {consignment.courierProvider}
                   </span>
                 ) : (
-                  <span className="text-slate-400">Not selected</span>
+                  <span className="text-slate-400">{isTerminal ? '—' : 'Not selected'}</span>
                 )}
-                {!consignment && onBookCourier && (
+                {canBookCourier && onBookCourier && (
                   <button
                     type="button"
                     onClick={() => onBookCourier(order)}
