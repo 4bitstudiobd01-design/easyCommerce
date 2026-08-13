@@ -17,7 +17,8 @@ interface EditOrderPageProps {
 export function EditOrderPage({ orderId }: EditOrderPageProps) {
   const router = useRouter();
   const { data: order, isLoading: isLoadingOrder, error: orderError } = useGetOrderByIdQuery(orderId);
-  const { data: products } = useGetProductsQuery();
+  const { data: productRes } = useGetProductsQuery();
+  const products = productRes?.data || [];
   const [editOrder, { isLoading: isSaving }] = useEditOrderMutation();
 
   const [formData, setFormData] = useState<EditOrderRequest>({
@@ -155,7 +156,7 @@ export function EditOrderPage({ orderId }: EditOrderPageProps) {
     }
   };
 
-  const filteredProducts = products?.filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase()) || p.id.includes(searchQuery)).slice(0, 10);
+  const filteredProducts = products?.filter(p => (p.name || p.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || p.id.includes(searchQuery)).slice(0, 10);
 
   return (
     <form onSubmit={handleSubmit} className="max-w-6xl mx-auto space-y-6 pb-12">

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsUUID, IsNumber, IsEnum, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsUUID, IsNumber, IsEnum, IsOptional, IsString } from 'class-validator';
 
 export enum StockAdjustmentAction {
   ADD = 'ADD',
@@ -25,4 +25,9 @@ export class AdjustStockDto {
   @ApiProperty({ enum: StockAdjustmentAction, example: StockAdjustmentAction.ADD, description: 'Action type: ADD, SET, REMOVE' })
   @IsEnum(StockAdjustmentAction)
   action: StockAdjustmentAction;
+
+  @ApiProperty({ example: 'Stock Received', description: 'Reason for adjustment', required: false })
+  @IsOptional()
+  @IsString()
+  reason?: string;
 }

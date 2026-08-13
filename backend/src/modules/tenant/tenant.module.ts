@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TenantEntity } from './entities/tenant.entity';
 import { StoreEntity } from './entities/store.entity';
+import { StaffMemberEntity } from '../staff/entities/staff.entity';
 import { ThemePurchaseEntity } from './entities/theme-purchase.entity';
 import { UserModule } from '../user/user.module';
 import { CreateStoreService } from './services/create-store.service';
@@ -21,7 +22,7 @@ import { BillingModule } from '../billing/billing.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([TenantEntity, StoreEntity, ThemePurchaseEntity]),
+    TypeOrmModule.forFeature([TenantEntity, StoreEntity, ThemePurchaseEntity, StaffMemberEntity]),
     UserModule,
     BillingModule,
     JwtModule.registerAsync({

@@ -62,9 +62,9 @@ export function ReviewManagementTable() {
       (filter === 'PENDING' && !r.isApproved);
 
     const matchesSearch =
-      r.reviewerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.comment.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (r.product?.title || '').toLowerCase().includes(searchQuery.toLowerCase());
+      (r.reviewerName || r.customerName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (r.comment || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (r.product?.title || r.product?.name || '').toLowerCase().includes(searchQuery.toLowerCase());
 
     return matchesFilter && matchesSearch;
   });

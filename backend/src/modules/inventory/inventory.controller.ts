@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Param,
   Body,
   Headers,
   UseGuards,
@@ -14,6 +15,7 @@ import { CreateWarehouseService } from './services/create-warehouse.service';
 import { ListWarehousesService } from './services/list-warehouses.service';
 import { AdjustStockService } from './services/adjust-stock.service';
 import { GetInventoryStockService } from './services/get-inventory-stock.service';
+import { ListStockMovementsService } from './services/list-stock-movements.service';
 import { FindStoreByUserService } from '../tenant/services/find-store-by-user.service';
 import { CreateWarehouseDto } from './dto/create-warehouse.dto';
 import { AdjustStockDto } from './dto/adjust-stock.dto';
@@ -26,6 +28,7 @@ export class InventoryController {
     private readonly listWarehousesService: ListWarehousesService,
     private readonly adjustStockService: AdjustStockService,
     private readonly getInventoryStockService: GetInventoryStockService,
+    private readonly listStockMovementsService: ListStockMovementsService,
     private readonly findStoreByUserService: FindStoreByUserService,
   ) {}
 
@@ -82,6 +85,20 @@ export class InventoryController {
   ) {
     const tenantId = await this.getMerchantTenantId(userId, storeId);
     return this.adjustStockService.execute(tenantId, dto);
+  }
+
+  @Get('movements/:productId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get stock movement logs for a product' })
+  @ApiResponse({ status: 200, description: 'Stock movement history' })
+  async getStockMovements(
+    @CurrentUser('sub') userId: string,
+    @Param('productId') productId: string,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
+    return this.listStockMovementsService.execute(productId, tenantId);
   }
 
   @Get('stocks')

@@ -81,14 +81,15 @@ export function MerchantOrdersKpiWidget() {
 
 export function MerchantProductsKpiWidget() {
   const { data: store, isLoading: isStoreLoading } = useGetMyStoreQuery();
-  const { data: products = [], isLoading: isProductsLoading } = useGetProductsQuery(undefined, { skip: !store });
+  const { data: productRes, isLoading: isProductsLoading } = useGetProductsQuery(undefined, { skip: !store });
+  const totalCount = productRes?.meta?.total ?? (productRes?.data?.length || 0);
 
   const isLoading = isStoreLoading || isProductsLoading;
 
   return (
     <MetricCard
       label="Active Products"
-      value={products.length}
+      value={totalCount}
       subtitle="Decoupled stock modeling"
       icon={Package}
       iconBgColor="bg-blue-50"

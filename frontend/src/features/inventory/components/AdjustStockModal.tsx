@@ -36,7 +36,8 @@ export function AdjustStockModal({
   const [action, setAction] = useState<'ADD' | 'SET' | 'REMOVE'>('ADD');
   const [errorMsg, setErrorMsg] = useState('');
 
-  const { data: products = [] } = useGetProductsQuery();
+  const { data: productRes } = useGetProductsQuery();
+  const products = productRes?.data || [];
   const { data: warehouses = [] } = useGetWarehousesQuery();
   const [adjustStock, { isLoading }] = useAdjustStockMutation();
 

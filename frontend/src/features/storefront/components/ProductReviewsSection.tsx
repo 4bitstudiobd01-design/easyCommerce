@@ -104,7 +104,7 @@ export function ProductReviewsSection({ productId }: ProductReviewsSectionProps)
         </div>
       ) : (
         <div className="space-y-4">
-          {reviews.map((rev) => (
+          {reviews.map((rev: any) => (
             <div key={rev.id} className="p-4 bg-slate-50/70 border border-slate-200/80 rounded-2xl space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">

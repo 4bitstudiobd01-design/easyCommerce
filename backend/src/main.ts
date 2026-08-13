@@ -1,13 +1,25 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { join } from 'path';
 import { AppModule } from './app.module';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.enableCors();
+
+  // Uploaded product images are served straight from disk at /uploads/**. This is
+  // registered before the global API prefix so the URLs stored on product_images
+  // resolve without the /api/v1 prefix.
+  app.useStaticAssets(process.env.UPLOAD_DIR || join(process.cwd(), 'uploads'), {
+    prefix: '/uploads/',
+    index: false,
+    // Uploaded files are immutable — a new upload always gets a fresh UUID name.
+    maxAge: '30d',
+  });
 
   app.setGlobalPrefix('api/v1');
 

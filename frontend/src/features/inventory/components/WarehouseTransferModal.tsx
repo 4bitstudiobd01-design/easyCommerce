@@ -21,7 +21,8 @@ import { useRouter } from 'next/navigation';
 export function WarehouseTransferModal() {
   const { data: warehouses = [] } = useGetWarehousesQuery();
   const { data: stockItems = [] } = useGetInventoryStockQuery();
-  const { data: products = [] } = useGetProductsQuery();
+  const { data: productRes } = useGetProductsQuery();
+  const products = productRes?.data || [];
   const { data: transfers = [] } = useGetStockTransfersQuery();
   const router = useRouter();
 

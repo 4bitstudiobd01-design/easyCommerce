@@ -5,10 +5,12 @@ import {
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { ProductEntity } from './product.entity';
 
 @Entity('product_images')
+@Index('IDX_product_images_product_tenant', ['productId', 'tenantId'])
 export class ProductImageEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -21,6 +23,9 @@ export class ProductImageEntity {
 
   @Column({ type: 'boolean', default: false })
   isPrimary: boolean;
+
+  @Column({ type: 'int', default: 0 })
+  sortOrder: number;
 
   @Column({ type: 'uuid' })
   productId: string;

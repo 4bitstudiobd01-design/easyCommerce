@@ -29,7 +29,8 @@ export default function AdjustStockPage() {
   const [action, setAction] = useState<'ADD' | 'SET' | 'REMOVE'>('ADD');
   const [errorMsg, setErrorMsg] = useState('');
 
-  const { data: products = [] } = useGetProductsQuery();
+  const { data: productRes } = useGetProductsQuery();
+  const products = productRes?.data || [];
   const { data: warehouses = [] } = useGetWarehousesQuery();
   const [adjustStock, { isLoading }] = useAdjustStockMutation();
   const router = useRouter();

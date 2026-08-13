@@ -16,7 +16,8 @@ export default function CreateWarehouseTransferPage() {
   
   const { data: warehouses = [] } = useGetWarehousesQuery();
   const { data: stockItems = [] } = useGetInventoryStockQuery();
-  const { data: products = [] } = useGetProductsQuery();
+  const { data: productRes } = useGetProductsQuery();
+  const products = productRes?.data || [];
   const [createTransfer, { isLoading: isTransferring }] = useCreateStockTransferMutation();
 
   const [fromWarehouseId, setFromWarehouseId] = useState('');

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ProductEntity } from '../entities/product.entity';
@@ -23,8 +23,18 @@ export class FindPublicStoreProductsService {
 
     const products = await this.productRepository.find({
       where: { tenantId: store.tenantId, isPublished: true },
-      relations: ['category', 'images', 'variants'],
+      relations: ['category', 'brand', 'collections', 'images', 'variants'],
       order: { createdAt: 'DESC' },
+    });
+
+    // Security: Strip internal merchant costPrice from public storefront response for products and variants
+    products.forEach((p) => {
+      delete (p as any).costPrice;
+      if (p.variants && Array.isArray(p.variants)) {
+        p.variants.forEach((v) => {
+          delete (v as any).costPrice;
+        });
+      }
     });
 
     return {

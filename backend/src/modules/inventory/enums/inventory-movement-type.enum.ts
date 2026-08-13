@@ -1,0 +1,8 @@
+export enum MovementType {
+  IN = 'IN',
+  OUT = 'OUT',
+  ADJUSTMENT = 'ADJUSTMENT',
+  INITIAL_STOCK = 'INITIAL_STOCK',
+  RESERVED = 'RESERVED',
+  RELEASED = 'RELEASED',
+}

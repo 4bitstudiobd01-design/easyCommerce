@@ -9,7 +9,8 @@ import { Skeleton } from '@/components/ui/Skeleton';
 
 export function SetupChecklist() {
   const { data: store, isLoading: isStoreLoading } = useGetMyStoreQuery();
-  const { data: products = [], isLoading: isProductsLoading } = useGetProductsQuery(undefined, { skip: !store });
+  const { data: productRes, isLoading: isProductsLoading } = useGetProductsQuery(undefined, { skip: !store });
+  const products = productRes?.data || [];
 
   const isLoading = isStoreLoading || isProductsLoading;
 

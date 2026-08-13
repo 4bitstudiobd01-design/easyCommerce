@@ -117,7 +117,7 @@ export default function StorefrontPage() {
     const matchesCategory = selectedCategory === 'ALL' || p.category?.name === selectedCategory;
     const matchesSearch =
       !searchQuery ||
-      p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (p.name || p.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.description?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });

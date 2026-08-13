@@ -1,0 +1,6 @@
+export enum TaxCategory {
+  STANDARD_VAT = 'STANDARD_VAT',
+  REDUCED = 'REDUCED',
+  ZERO_RATED = 'ZERO_RATED',
+  EXEMPT = 'EXEMPT',
+}

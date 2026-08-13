@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { WarehouseEntity } from './entities/warehouse.entity';
 import { InventoryStockEntity } from './entities/inventory-stock.entity';
+import { InventoryMovementEntity } from './entities/inventory-movement.entity';
 import { StockTransferEntity } from './entities/stock-transfer.entity';
 import { ProductEntity } from '../catalog/entities/product.entity';
 import { TenantModule } from '../tenant/tenant.module';
@@ -12,6 +13,7 @@ import { CreateWarehouseService } from './services/create-warehouse.service';
 import { ListWarehousesService } from './services/list-warehouses.service';
 import { AdjustStockService } from './services/adjust-stock.service';
 import { GetInventoryStockService } from './services/get-inventory-stock.service';
+import { ListStockMovementsService } from './services/list-stock-movements.service';
 import { StockTransferService } from './services/stock-transfer.service';
 import { InventoryController } from './inventory.controller';
 import { StockTransferController } from './controllers/stock-transfer.controller';
@@ -22,6 +24,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     TypeOrmModule.forFeature([
       WarehouseEntity,
       InventoryStockEntity,
+      InventoryMovementEntity,
       StockTransferEntity,
       ProductEntity,
     ]),
@@ -42,6 +45,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     ListWarehousesService,
     AdjustStockService,
     GetInventoryStockService,
+    ListStockMovementsService,
     StockTransferService,
     JwtAuthGuard,
   ],
@@ -50,6 +54,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     ListWarehousesService,
     AdjustStockService,
     GetInventoryStockService,
+    ListStockMovementsService,
     StockTransferService,
     TypeOrmModule,
   ],
