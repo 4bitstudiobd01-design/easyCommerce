@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { createBaseQueryWithReauth } from '@/store/baseQueryWithReauth';
 import { RootState } from '@/store';
 
 export type PlanCode = 'FREE' | 'GROWTH' | 'ENTERPRISE';
@@ -40,16 +41,7 @@ const API_ROOT = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/
 
 export const billingApi = createApi({
   reducerPath: 'billingApi',
-  baseQuery: fetchBaseQuery({
-    baseUrl: `${API_ROOT}/billing`,
-    prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as RootState).auth.token || localStorage.getItem('easycommerce_token');
-      if (token) {
-        headers.set('authorization', `Bearer ${token}`);
-      }
-      return headers;
-    },
-  }),
+  baseQuery: createBaseQueryWithReauth(`${API_ROOT}/billing`),
   tagTypes: ['Subscription'],
   endpoints: (builder) => ({
     getPlans: builder.query<Plan[], void>({

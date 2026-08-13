@@ -112,20 +112,28 @@ export class ListProductsService {
       ? params.sortBy
       : 'createdAt';
 
-    // The product-level sort must be applied BEFORE any joined-collection ordering.
-    // TypeORM builds a DISTINCT id subquery for skip/take, and every ORDER BY term is
-    // carried into it in declaration order. Ordering by images.* first therefore sorted
-    // products by whether they happened to have a primary image instead of by the
-    // requested field, so `sortBy=name` came back in the wrong order.
+    // Only product columns may appear in ORDER BY here. skip/take makes TypeORM build a
+    // DISTINCT id subquery, and adding a joined column (images.isPrimary) to that
+    // subquery corrupts both the page and the count — a tenant with 34 products
+    // returned 4 rows and reported total: 4. Image ordering is applied in memory below.
     query.addOrderBy(`p.${sortByParam}`, sortOrder);
     query.addOrderBy('p.id', 'ASC');
-    query.addOrderBy('images.isPrimary', 'DESC');
-    query.addOrderBy('images.sortOrder', 'ASC');
 
     query.skip(skip).take(limit);
 
     const [products, total] = await query.getManyAndCount();
     const totalPages = Math.ceil(total / limit) || 0;
+
+    // Primary image first, then by sortOrder. Done here rather than in SQL because a
+    // joined ORDER BY breaks the paginated DISTINCT subquery (see note above).
+    products.forEach((product) => {
+      if (Array.isArray(product.images)) {
+        product.images.sort(
+          (a, b) =>
+            Number(b.isPrimary) - Number(a.isPrimary) || (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
+        );
+      }
+    });
 
     // Attach inventory stock info to products without N+1 query overhead
     if (products.length > 0) {

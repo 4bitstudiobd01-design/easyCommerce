@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { createBaseQueryWithReauth } from '@/store/baseQueryWithReauth';
 import { RootState } from '@/store';
 
 export interface AnalyticsOverview {
@@ -25,20 +26,7 @@ export interface NetProfitMetrics {
 
 export const analyticsApi = createApi({
   reducerPath: 'analyticsApi',
-  baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_URL?.replace('/orders', '') || 'http://localhost:5001/api/v1',
-    prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as RootState).auth.token || localStorage.getItem('easycommerce_token');
-      if (token) {
-        headers.set('authorization', `Bearer ${token}`);
-      }
-      const activeStoreId = localStorage.getItem('easycommerce_active_store_id');
-      if (activeStoreId) {
-        headers.set('x-store-id', activeStoreId);
-      }
-      return headers;
-    },
-  }),
+  baseQuery: createBaseQueryWithReauth(process.env.NEXT_PUBLIC_API_URL?.replace('/orders', '') || 'http://localhost:5001/api/v1'),
   tagTypes: ['Analytics'],
   endpoints: (builder) => ({
     getAnalyticsOverview: builder.query<AnalyticsOverview, void>({

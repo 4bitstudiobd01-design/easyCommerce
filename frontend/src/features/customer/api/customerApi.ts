@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { createBaseQueryWithReauth } from '@/store/baseQueryWithReauth';
 import { RootState } from '@/store';
 
 export type CustomerStatusType = 'ACTIVE' | 'INACTIVE' | 'BLOCKED';
@@ -242,20 +243,7 @@ export interface CustomerListQueryParams {
 
 export const customerApi = createApi({
   reducerPath: 'customerApi',
-  baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1/customers',
-    prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as RootState).auth.token || (typeof window !== 'undefined' ? localStorage.getItem('easycommerce_token') : null);
-      if (token) {
-        headers.set('authorization', `Bearer ${token}`);
-      }
-      const activeStoreId = typeof window !== 'undefined' ? localStorage.getItem('easycommerce_active_store_id') : null;
-      if (activeStoreId) {
-        headers.set('x-store-id', activeStoreId);
-      }
-      return headers;
-    },
-  }),
+  baseQuery: createBaseQueryWithReauth(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1/customers'),
   tagTypes: ['Customer', 'CustomerKpi', 'CustomerAddress', 'CustomerOrders', 'CustomerNote', 'CustomerActivity', 'CustomerAnalytics', 'CustomerSegment'],
   endpoints: (builder) => ({
     getCustomers: builder.query<{ data: Customer[]; meta: any }, CustomerListQueryParams | void>({

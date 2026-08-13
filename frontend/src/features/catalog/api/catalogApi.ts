@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { createBaseQueryWithReauth } from '@/store/baseQueryWithReauth';
 import { RootState } from '@/store';
 
 export type ProductType = 'PHYSICAL' | 'DIGITAL' | 'SERVICE';
@@ -531,20 +532,7 @@ export interface CreateShippingProfileRequest {
 
 export const catalogApi = createApi({
   reducerPath: 'catalogApi',
-  baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1/catalog',
-    prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as RootState).auth.token || localStorage.getItem('easycommerce_token');
-      if (token) {
-        headers.set('authorization', `Bearer ${token}`);
-      }
-      const activeStoreId = localStorage.getItem('easycommerce_active_store_id');
-      if (activeStoreId) {
-        headers.set('x-store-id', activeStoreId);
-      }
-      return headers;
-    },
-  }),
+  baseQuery: createBaseQueryWithReauth(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1/catalog'),
   tagTypes: ['Product', 'Category', 'Brand', 'Collection', 'Attribute', 'Review', 'ProductMedia', 'Inventory', 'Variant', 'ShippingProfile', 'RelatedProduct', 'ProductAnalytics'],
   endpoints: (builder) => ({
     getProducts: builder.query<ProductListResponse, ProductListParams | void>({

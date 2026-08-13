@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UserModule } from '../user/user.module';
 import { RegisterMerchantService } from './services/register-merchant.service';
 import { LoginService } from './services/login.service';
+import { RefreshTokenService } from './services/refresh-token.service';
 import { AuthController } from './auth.controller';
 
 @Module({
@@ -19,7 +20,7 @@ import { AuthController } from './auth.controller';
     }),
   ],
   controllers: [AuthController],
-  providers: [RegisterMerchantService, LoginService],
-  exports: [RegisterMerchantService, LoginService, JwtModule],
+  providers: [RegisterMerchantService, LoginService, RefreshTokenService],
+  exports: [RegisterMerchantService, LoginService, RefreshTokenService, JwtModule],
 })
 export class AuthModule {}

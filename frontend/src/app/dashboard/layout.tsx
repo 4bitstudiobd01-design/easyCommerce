@@ -8,6 +8,7 @@ import { Sidebar } from '@/features/dashboard/components/Sidebar';
 import { useGetMyStoreQuery } from '@/features/tenant/api/tenantApi';
 import { DashboardHeader } from '@/features/dashboard/components/DashboardHeader';
 import { Toaster } from 'sonner';
+import { ConnectionStatusBanner } from '@/components/ui/ConnectionStatusBanner';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, token, isAuthenticated } = useSelector((state: RootState) => state.auth);
@@ -44,8 +45,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false);
 
-  // Prevent hydration mismatch and hide content until authenticated
-  if (!isMounted || !isAuthenticated) return null;
+  // Prevent hydration mismatch before the client knows the auth state.
+  if (!isMounted) return null;
+
+  // Session ended (expired refresh token, or explicit logout). The redirect above is
+  // already running; show a short message instead of a blank page so the screen never
+  // looks like "your store has no data".
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
+        <div className="text-center max-w-sm">
+          <h2 className="text-base font-extrabold text-slate-900">Your session has ended</h2>
+          <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+            Please sign in again to continue managing your store.
+          </p>
+          <button
+            type="button"
+            onClick={() => router.push('/login')}
+            className="mt-4 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-600/20 transition-colors"
+          >
+            Go to Sign In
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const handleMenuClick = () => {
     if (window.innerWidth < 768) {
@@ -71,6 +95,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         
         {/* Top Sticky Header */}
         <DashboardHeader onMenuClick={handleMenuClick} />
+
+        <ConnectionStatusBanner />
 
         {/* Dashboard Body Container */}
         <main className="flex-1 p-4 md:p-8 space-y-8 max-w-7xl mx-auto w-full">

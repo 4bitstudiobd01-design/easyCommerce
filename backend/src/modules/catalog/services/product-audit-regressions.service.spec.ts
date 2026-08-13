@@ -79,10 +79,10 @@ describe('Product module audit regressions', () => {
       expect((result.data[0] as any).stockInfo.onHand).toBe(40);
     });
 
-    it('orders by the requested product field before any joined image ordering', async () => {
-      // Ordering by images.* first pushed the image columns ahead of the product sort in
-      // the DISTINCT id subquery TypeORM builds for skip/take, so `sortBy=name` came back
-      // ordered by whether a product happened to have a primary image.
+    it('never puts a joined column in ORDER BY on the paginated query', async () => {
+      // skip/take makes TypeORM build a DISTINCT id subquery and every ORDER BY term is
+      // copied into it. Including images.isPrimary there corrupted the page AND the
+      // count: a tenant with 34 products returned 4 rows and reported total: 4.
       const { service, queryBuilder } = buildService([]);
       const dto = new ProductListDto();
       dto.sortBy = 'name';
@@ -90,9 +90,30 @@ describe('Product module audit regressions', () => {
 
       await service.execute('tenant-1', dto);
 
-      const orderedFields = queryBuilder.addOrderBy.mock.calls.map((c: any[]) => c[0]);
+      const orderedFields = queryBuilder.addOrderBy.mock.calls.map((c: any[]) => String(c[0]));
       expect(orderedFields[0]).toBe('p.name');
-      expect(orderedFields.indexOf('p.name')).toBeLessThan(orderedFields.indexOf('images.isPrimary'));
+      expect(orderedFields.every((f) => f.startsWith('p.'))).toBe(true);
+    });
+
+    it('returns the primary image first without ordering by it in SQL', async () => {
+      const productRow: any = {
+        id: 'p1',
+        name: 'With images',
+        trackInventory: true,
+        lowStockThreshold: 10,
+        allowBackorder: false,
+        images: [
+          { id: 'i1', isPrimary: false, sortOrder: 2 },
+          { id: 'i2', isPrimary: true, sortOrder: 5 },
+          { id: 'i3', isPrimary: false, sortOrder: 1 },
+        ],
+      };
+      const { service, queryBuilder } = buildService([]);
+      queryBuilder.getManyAndCount.mockResolvedValue([[productRow], 1]);
+
+      const result = await service.execute('tenant-1', new ProductListDto());
+
+      expect(result.data[0].images.map((i: any) => i.id)).toEqual(['i2', 'i3', 'i1']);
     });
 
     it('applies the stockStatus filter in SQL instead of ignoring it', async () => {

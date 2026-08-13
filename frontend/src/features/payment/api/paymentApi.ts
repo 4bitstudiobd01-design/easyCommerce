@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { createBaseQueryWithReauth } from '@/store/baseQueryWithReauth';
 import { RootState } from '@/store';
 
 export interface InitiatePaymentResponse {
@@ -22,16 +23,7 @@ export interface PaymentRecord {
 
 export const paymentApi = createApi({
   reducerPath: 'paymentApi',
-  baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1/payments',
-    prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as RootState).auth.token || localStorage.getItem('easycommerce_token');
-      if (token) {
-        headers.set('authorization', `Bearer ${token}`);
-      }
-      return headers;
-    },
-  }),
+  baseQuery: createBaseQueryWithReauth(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1/payments'),
   tagTypes: ['Payment'],
   endpoints: (builder) => ({
     initiatePayment: builder.mutation<InitiatePaymentResponse, { orderId: string }>({

@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { createBaseQueryWithReauth } from '@/store/baseQueryWithReauth';
 import { RootState } from '@/store';
 
 export interface NewsletterSubscriber {
@@ -43,21 +44,7 @@ export interface PublicSubscribeRequest {
 
 export const emailMarketingApi = createApi({
   reducerPath: 'emailMarketingApi',
-  baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_URL?.replace('/orders', '') || 'http://localhost:5001/api/v1',
-    prepareHeaders: (headers, { getState }) => {
-      const state = getState() as RootState;
-      const token = state.auth.token || (typeof window !== 'undefined' ? localStorage.getItem('easycommerce_token') : null);
-      const activeStoreId = state.tenant?.currentStore?.id || (typeof window !== 'undefined' ? localStorage.getItem('easycommerce_active_store_id') : null);
-      if (token) {
-        headers.set('authorization', `Bearer ${token}`);
-      }
-      if (activeStoreId) {
-        headers.set('x-store-id', activeStoreId);
-      }
-      return headers;
-    },
-  }),
+  baseQuery: createBaseQueryWithReauth(process.env.NEXT_PUBLIC_API_URL?.replace('/orders', '') || 'http://localhost:5001/api/v1'),
   tagTypes: ['EmailSubscribers', 'EmailCampaigns'],
   endpoints: (builder) => ({
     getSubscribers: builder.query<NewsletterSubscriber[], void>({

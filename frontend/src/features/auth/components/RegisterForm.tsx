@@ -36,6 +36,7 @@ export function RegisterForm() {
         setCredentials({
           user: response.user,
           token: response.accessToken,
+          refreshToken: response.refreshToken,
         })
       );
 

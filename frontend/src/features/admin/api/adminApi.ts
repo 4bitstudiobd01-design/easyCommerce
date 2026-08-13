@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { createBaseQueryWithReauth } from '@/store/baseQueryWithReauth';
 import { RootState } from '@/store';
 
 export interface PlatformStatsOverview {
@@ -167,16 +168,7 @@ export interface CreateContactMessageRequest {
 
 export const adminApi = createApi({
   reducerPath: 'adminApi',
-  baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1/admin',
-    prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as RootState).auth.token || localStorage.getItem('easycommerce_token');
-      if (token) {
-        headers.set('authorization', `Bearer ${token}`);
-      }
-      return headers;
-    },
-  }),
+  baseQuery: createBaseQueryWithReauth(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1/admin'),
   tagTypes: ['AdminStats', 'AdminStores', 'AdminOrders', 'PlatformConfig', 'AdminSummary', 'AdminAnalytics', 'AdminOperations', 'AdminInfra', 'AdminContactMessages'],
   endpoints: (builder) => ({
     getPlatformStats: builder.query<PlatformStatsOverview, void>({

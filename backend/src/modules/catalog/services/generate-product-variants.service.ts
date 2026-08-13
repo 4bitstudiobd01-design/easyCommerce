@@ -126,8 +126,28 @@ export class GenerateProductVariantsService {
           variant.options = optionMetas;
           variant = await queryRunner.manager.save(ProductVariantEntity, variant);
         } else {
+          // Derive a SKU from the parent product plus the option values. Generated
+          // variants previously had sku = null, which left them unidentifiable in
+          // inventory, order lines and CSV export. Uniqueness is enforced by the
+          // (tenantId, sku) index, so fall back to a suffixed value on collision.
+          const skuSuffix = combo
+            .map((item) => item.option.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))
+            .join('-');
+          const baseSku = product.sku ? `${product.sku}-${skuSuffix}` : null;
+
+          let variantSku: string | undefined = baseSku || undefined;
+          if (variantSku) {
+            const clash = await queryRunner.manager.findOne(ProductVariantEntity, {
+              where: { sku: variantSku, tenantId },
+            });
+            if (clash) {
+              variantSku = `${baseSku}-${Date.now().toString().slice(-5)}`;
+            }
+          }
+
           variant = queryRunner.manager.create(ProductVariantEntity, {
             title,
+            sku: variantSku,
             combinationKey,
             options: optionMetas,
             price: product.basePrice,
