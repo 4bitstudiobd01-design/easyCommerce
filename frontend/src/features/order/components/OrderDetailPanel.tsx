@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { Order } from '../api/orderApi';
 import {
@@ -66,6 +67,10 @@ export function OrderDetailPanel({
 }: OrderDetailPanelProps) {
   const isOpen = Boolean(order);
 
+  // Portal target isn't available during SSR/first paint.
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
+
   // Close on Escape and lock background scroll while the drawer is open.
   React.useEffect(() => {
     if (!isOpen) return;
@@ -105,7 +110,7 @@ export function OrderDetailPanel({
     };
   }, [isOpen, onClose]);
 
-  if (!order) return null;
+  if (!order || !mounted) return null;
 
   const consignment = order.consignment;
   const itemCount = order.items?.length ?? 0;
@@ -126,7 +131,7 @@ export function OrderDetailPanel({
     navigator.clipboard?.writeText(address);
   };
 
-  return (
+  return createPortal(
     <>
       {/* Backdrop */}
       <div
@@ -401,6 +406,7 @@ export function OrderDetailPanel({
         </section>
       </div>
       </aside>
-    </>
+    </>,
+    document.body,
   );
 }
