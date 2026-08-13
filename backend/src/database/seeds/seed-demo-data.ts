@@ -19,6 +19,7 @@ import { OrderNoteEntity } from '../../modules/order/entities/order-note.entity'
 import { ReturnEntity, ReturnStatusEnum } from '../../modules/order/entities/return.entity';
 import { ReturnItemEntity } from '../../modules/order/entities/return-item.entity';
 import { RefundEntity, RefundStatusEnum } from '../../modules/payment/entities/refund.entity';
+import { CustomerEntity, CustomerStatusEnum, CustomerSourceEnum } from '../../modules/customer/entities/customer.entity';
 
 import * as bcrypt from 'bcrypt';
 
@@ -48,6 +49,7 @@ async function seed() {
   const returnRepo = AppDataSource.getRepository(ReturnEntity);
   const returnItemRepo = AppDataSource.getRepository(ReturnItemEntity);
   const refundRepo = AppDataSource.getRepository(RefundEntity);
+  const customerRepo = AppDataSource.getRepository(CustomerEntity);
 
   // 1. Seed Merchant User
   const merchantEmail = 'belal@easycommerce.app';
@@ -235,14 +237,21 @@ async function seed() {
     return;
   }
   
-  console.log(`Deleting old orders before seeding new ones to test payment statuses...`);
-  await AppDataSource.query(`TRUNCATE TABLE orders CASCADE`);
-  await AppDataSource.query(`TRUNCATE TABLE consignments CASCADE`);
+  // Scoped deletes, never TRUNCATE: this database is multi-tenant, and TRUNCATE ... CASCADE
+  // wiped every tenant's orders/customers (and, through the FK cascade, their addresses,
+  // notes and activities) rather than just this store's demo data.
+  console.log(`Deleting existing demo orders and customers for tenant ${tenantId}...`);
+  await AppDataSource.query(
+    `DELETE FROM consignments WHERE "orderId" IN (SELECT id FROM orders WHERE "tenantId" = $1)`,
+    [tenantId],
+  );
+  await AppDataSource.query(`DELETE FROM orders WHERE "tenantId" = $1`, [tenantId]);
+  await AppDataSource.query(`DELETE FROM customers WHERE "tenantId" = $1`, [tenantId]);
 
   console.log('🛒 Generating 110 Historical Orders across past 60 days...');
 
   // Bangladeshi Demo Customers
-  const customerList = [
+  const rawCustomerList = [
     { name: 'Rahim Hossain', phone: '01711000111', city: 'Dhaka', address: 'House 12, Road 5, Dhanmondi' },
     { name: 'Karim Ahmed', phone: '01819000222', city: 'Dhaka', address: 'Plot 45, Sector 7, Uttara' },
     { name: 'Hasan Mahmud', phone: '01912000333', city: 'Chattogram', address: 'GEC Circle, Nasirabad' },
@@ -259,6 +268,27 @@ async function seed() {
     { name: 'Shakib Al Hasan', phone: '01618004444', city: 'Dhaka', address: 'Banani Block E' },
     { name: 'Tamim Iqbal', phone: '01519005555', city: 'Chattogram', address: 'Kazir Dewri Road' },
   ];
+
+  const seededCustomers: (CustomerEntity & { address: string; city: string; name: string })[] = [];
+  for (const c of rawCustomerList) {
+    const parts = c.name.split(' ');
+    const firstName = parts[0];
+    const lastName = parts.slice(1).join(' ') || 'Customer';
+    const email = `${c.name.toLowerCase().replace(/\s+/g, '.')}@example.com`;
+
+    const cust = customerRepo.create({
+      tenantId,
+      storeId: store.id,
+      firstName,
+      lastName,
+      email,
+      phone: c.phone,
+      status: CustomerStatusEnum.ACTIVE,
+      source: CustomerSourceEnum.ONLINE_STORE,
+    });
+    const saved = await customerRepo.save(cust);
+    seededCustomers.push(Object.assign(saved, { address: c.address, city: c.city, name: c.name }));
+  }
 
   // Status breakdown target for 110 orders:
   // DELIVERED: 55, SHIPPED: 16, PROCESSING: 11, CONFIRMED: 11, PENDING: 8, CANCELLED: 6, RETURNED: 3
@@ -282,7 +312,7 @@ async function seed() {
 
   for (let i = 0; i < statusPool.length; i++) {
     const status = statusPool[i];
-    const customer = customerList[i % customerList.length];
+    const customer = seededCustomers[i % seededCustomers.length];
 
     // Distribute date randomly over last 60 days
     const daysAgo = Math.floor(Math.random() * 58);
@@ -355,9 +385,10 @@ async function seed() {
 
     const order = orderRepo.create({
       orderNumber,
+      customerId: customer.id,
       customerName: customer.name,
       customerPhone: customer.phone,
-      customerEmail: `${customer.name.toLowerCase().replace(/\s+/g, '.')}@example.com`,
+      customerEmail: customer.email,
       shippingAddress: customer.address,
       city: customer.city,
       deliveryFee,
@@ -452,6 +483,7 @@ async function seed() {
     if (i % 3 === 0) {
       const note1 = noteRepo.create({
         orderId: order.id,
+        tenantId,
         content: `Customer requested delivery after 4 PM if possible. Phone: ${customer.phone}`,
         isCustomerVisible: false,
         createdBy: 'MD Belal Hossain',
@@ -462,6 +494,7 @@ async function seed() {
       if (i % 6 === 0) {
         const note2 = noteRepo.create({
           orderId: order.id,
+          tenantId,
           content: 'Your order has been verified and assigned to our central warehouse for dispatch.',
           isCustomerVisible: true,
           createdBy: 'System Notification',

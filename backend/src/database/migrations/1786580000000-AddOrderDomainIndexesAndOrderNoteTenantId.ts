@@ -23,7 +23,7 @@ export class AddOrderDomainIndexesAndOrderNoteTenantId1786580000000 implements M
 
         // IDX_orders_tenantId_createdAt was created as (createdAt, tenantId), which is the wrong
         // leading column for the mandatory tenant-scoped access pattern used by every order query.
-        await queryRunner.query(`DROP INDEX "public"."IDX_orders_tenantId_createdAt"`);
+        await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_orders_tenantId_createdAt"`);
         await queryRunner.query(`CREATE INDEX "IDX_orders_tenantId_createdAt" ON "orders" ("tenantId", "createdAt")`);
     }
 
