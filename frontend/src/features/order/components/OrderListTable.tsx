@@ -651,9 +651,8 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
         </div>
       )}
 
-      {/* 4. List + detail panel */}
-      <div className="flex flex-col lg:flex-row gap-4 items-start">
-        <div className="flex-1 min-w-0 space-y-4">
+      {/* 4. Order list (detail drawer overlays the page, so the list stays full width) */}
+      <div className="space-y-4">
       {/* Status Tabs */}
       <div className="flex items-center gap-1 overflow-x-auto pb-2 scrollbar-hide border-b border-slate-200">
         {filterTabs.map((tab) => {
@@ -925,16 +924,15 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
           </div>
         )}
       </div>
-        </div>
-
-        <OrderDetailPanel
-          order={previewOrder}
-          onClose={() => setPreviewOrderId(null)}
-          onConfirm={handlePanelConfirm}
-          onBookCourier={onDispatchCourierClick}
-          isConfirming={isUpdating}
-        />
       </div>
+
+      <OrderDetailPanel
+        order={previewOrder}
+        onClose={() => setPreviewOrderId(null)}
+        onConfirm={handlePanelConfirm}
+        onBookCourier={onDispatchCourierClick}
+        isConfirming={isUpdating}
+      />
     </div>
   );
 }

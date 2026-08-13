@@ -17,6 +17,20 @@ module.exports = {
           900: '#1e3a8a',
         },
       },
+      keyframes: {
+        'drawer-in': {
+          from: { transform: 'translateX(100%)' },
+          to: { transform: 'translateX(0)' },
+        },
+        'backdrop-in': {
+          from: { opacity: '0' },
+          to: { opacity: '1' },
+        },
+      },
+      animation: {
+        'drawer-in': 'drawer-in 250ms cubic-bezier(0.32, 0.72, 0, 1)',
+        'backdrop-in': 'backdrop-in 200ms ease-out',
+      },
     },
   },
   plugins: [],

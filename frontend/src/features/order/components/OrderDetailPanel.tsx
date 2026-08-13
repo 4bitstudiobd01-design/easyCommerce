@@ -64,6 +64,26 @@ export function OrderDetailPanel({
   onBookCourier,
   isConfirming,
 }: OrderDetailPanelProps) {
+  const isOpen = Boolean(order);
+
+  // Close on Escape and lock background scroll while the drawer is open.
+  React.useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
   if (!order) return null;
 
   const consignment = order.consignment;
@@ -78,10 +98,20 @@ export function OrderDetailPanel({
   };
 
   return (
-    <aside
-      aria-label={`Details for order ${order.orderNumber}`}
-      className="w-full lg:w-[360px] lg:shrink-0 bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col max-h-[calc(100vh-2rem)] lg:sticky lg:top-4 overflow-hidden"
-    >
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        aria-hidden="true"
+        className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-[1px] animate-backdrop-in"
+      />
+
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Details for order ${order.orderNumber}`}
+        className="fixed top-0 right-0 z-50 h-full w-full sm:w-[420px] bg-white border-l border-slate-200 shadow-2xl flex flex-col animate-drawer-in"
+      >
       {/* Header */}
       <div className="flex items-start justify-between p-5 pb-3">
         <div className="min-w-0">
@@ -336,6 +366,7 @@ export function OrderDetailPanel({
           </dl>
         </section>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }
