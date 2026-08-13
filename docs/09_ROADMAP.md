@@ -50,3 +50,28 @@
 - [ ] Custom App/Plugin ecosystem.
 - [ ] Multi-currency & Cross-border shipping.
 - [ ] Advanced Marketing Automation & AI recommendations.
+
+---
+
+## Scope Decisions
+
+### Customer Module — Communication History (descoped 2026-08-14)
+
+Customer Communication History (a per-customer log of emails/SMS sent) was listed
+under the Customer module's activity chunk but is **not implemented, and is
+deliberately out of scope for that module**.
+
+**Rationale:** message dispatch and its delivery state already belong to the `sms` and
+`email-marketing` modules, which own the channel, provider status and retry semantics.
+Duplicating that log inside `customer` would mean two systems recording overlapping
+information with no single source of truth — exactly the pattern the module boundaries
+in [`05_SYSTEM_ARCHITECTURE.md`](05_SYSTEM_ARCHITECTURE.md) exist to prevent.
+
+**Where it should live instead:** when a merchant-facing "what have we sent this
+customer" view is needed, it should read from the `sms`/`email-marketing` modules
+(or the planned CRM module) via their own services, and the Customer detail drawer
+should render that as a consuming view rather than owning a `communications` table.
+
+**What exists today:** `customer_activities` records customer-lifecycle events
+(status changes, notes, order events). That is not a communication log and is not
+intended to become one.

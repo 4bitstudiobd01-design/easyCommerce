@@ -9,6 +9,14 @@ import {
 } from 'typeorm';
 import { CustomerEntity } from './customer.entity';
 
+/**
+ * Customer-lifecycle events (status changes, notes, order events).
+ *
+ * This is deliberately NOT a communication log. Sent emails/SMS and their delivery
+ * state are owned by the `sms` and `email-marketing` modules; mirroring them here
+ * would create two overlapping records with no source of truth. See the
+ * "Customer Module — Communication History" scope decision in docs/09_ROADMAP.md.
+ */
 @Entity('customer_activities')
 @Index('IDX_customer_activities_customerId', ['customerId'])
 @Index('IDX_customer_activities_tenantId', ['tenantId'])

@@ -12,6 +12,7 @@ import { OrderNoteEntity } from './entities/order-note.entity';
 import { ProductEntity } from '../catalog/entities/product.entity';
 import { ConsignmentEntity } from '../logistics/entities/consignment.entity';
 import { TenantModule } from '../tenant/tenant.module';
+import { CustomerModule } from '../customer/customer.module';
 import { CatalogModule } from '../catalog/catalog.module';
 import { InventoryModule } from '../inventory/inventory.module';
 import { SmsModule } from '../sms/sms.module';
@@ -59,6 +60,7 @@ import { OrderTimelineService } from './services/order-timeline.service';
       PaymentEntity,
     ]),
     TenantModule,
+    CustomerModule,
     CatalogModule,
     InventoryModule,
     SmsModule,

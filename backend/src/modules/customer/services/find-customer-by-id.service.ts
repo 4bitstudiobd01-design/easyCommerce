@@ -33,7 +33,9 @@ export class FindCustomerByIdService {
       throw new NotFoundException(`Customer with ID ${id} not found.`);
     }
 
-    // Single aggregated SQL query to fetch exact customer order statistics
+    // Orders are linked by customerId from creation onward, and historical rows were
+    // backfilled (1786660000000). The customerPhone match is kept as a fallback for any
+    // order the backfill could not resolve — dropping it would hide that history.
     const statsRaw = await this.dataSource.query(
       `
       SELECT 

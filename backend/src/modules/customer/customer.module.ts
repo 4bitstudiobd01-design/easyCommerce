@@ -13,6 +13,7 @@ import { CustomerController } from './customer.controller';
 import { TenantModule } from '../tenant/tenant.module';
 
 import { CreateCustomerService } from './services/create-customer.service';
+import { FindOrCreateCustomerService } from './services/find-or-create-customer.service';
 import { ListCustomersService } from './services/list-customers.service';
 import { GetCustomerKpiService } from './services/get-customer-kpi.service';
 import { FindCustomerByIdService } from './services/find-customer-by-id.service';
@@ -62,6 +63,7 @@ import { ManageCustomerSegmentService } from './services/manage-customer-segment
   controllers: [CustomerController],
   providers: [
     CreateCustomerService,
+    FindOrCreateCustomerService,
     ListCustomersService,
     GetCustomerKpiService,
     FindCustomerByIdService,
@@ -86,6 +88,7 @@ import { ManageCustomerSegmentService } from './services/manage-customer-segment
   ],
   exports: [
     CreateCustomerService,
+    FindOrCreateCustomerService,
     ListCustomersService,
     GetCustomerKpiService,
     FindCustomerByIdService,

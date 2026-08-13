@@ -10,6 +10,7 @@ import { AdjustStockService } from '../../inventory/services/adjust-stock.servic
 import { StockAdjustmentAction } from '../../inventory/dto/adjust-stock.dto';
 import { TriggerOrderStatusSmsService } from '../../sms/services/trigger-order-status-sms.service';
 import { ApplyCouponService } from '../../coupon/services/apply-coupon.service';
+import { FindOrCreateCustomerService } from '../../customer/services/find-or-create-customer.service';
 
 @Injectable()
 export class CreateOrderService {
@@ -24,6 +25,7 @@ export class CreateOrderService {
     private readonly adjustStockService: AdjustStockService,
     private readonly triggerOrderStatusSmsService: TriggerOrderStatusSmsService,
     private readonly applyCouponService: ApplyCouponService,
+    private readonly findOrCreateCustomerService: FindOrCreateCustomerService,
   ) {}
 
   async execute(dto: CreateOrderDto): Promise<OrderEntity> {
@@ -106,8 +108,20 @@ export class CreateOrderService {
     const grandTotal = Math.max(0, subtotal + deliveryFee - discountAmount);
     const orderNumber = `ORD-${Date.now().toString().slice(-6)}`;
 
+    // Link the order to a durable customer record. Matching orders to customers by phone
+    // string alone silently detached a customer's history the moment their phone was
+    // edited; customerId survives that. Returns null on failure so checkout still
+    // completes — the order keeps its own denormalised name/phone either way.
+    const customer = await this.findOrCreateCustomerService.execute(tenantId, {
+      phone: dto.customerPhone,
+      name: dto.customerName,
+      email: dto.customerEmail,
+      storeId: store.id,
+    });
+
     const order = this.orderRepository.create({
       orderNumber,
+      customerId: customer?.id,
       customerName: dto.customerName,
       customerPhone: dto.customerPhone,
       customerEmail: dto.customerEmail,
