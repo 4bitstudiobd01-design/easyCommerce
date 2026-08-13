@@ -18,6 +18,7 @@ export class ListMerchantOrdersService {
       search,
       status,
       paymentStatus,
+      courier,
       dateFrom,
       dateTo,
       sortBy = 'createdAt',
@@ -59,6 +60,20 @@ export class ListMerchantOrdersService {
 
     if (paymentStatus) {
       query.andWhere('order.paymentStatus = :paymentStatus', { paymentStatus });
+    }
+
+    if (courier && courier !== 'ALL') {
+      // Consignments belong to the logistics module, so this stays a scoped subquery
+      // rather than an ORM relation join across the module boundary.
+      query.andWhere(
+        `EXISTS (
+          SELECT 1 FROM consignments c
+          WHERE c."orderId" = order.id
+            AND c."tenantId" = :tenantId
+            AND c."courierProvider" = :courier
+        )`,
+        { courier },
+      );
     }
 
     if (dateFrom) {

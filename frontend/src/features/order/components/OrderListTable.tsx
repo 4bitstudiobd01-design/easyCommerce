@@ -12,6 +12,7 @@ import {
 } from '../api/orderApi';
 import { BulkActionPreviewModal } from './BulkActionPreviewModal';
 import { InvoiceModal } from './InvoiceModal';
+import { OrderDetailPanel } from './OrderDetailPanel';
 import { useBulkUpdateOrderStatusMutation } from '../api/orderApi';
 import { ThermalLabelModal } from './ThermalLabelModal';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -58,6 +59,8 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
   const urlLimit = parseInt(searchParams.get('limit') || '20', 10);
   const urlStatus = searchParams.get('status') as OrderStatusType | null;
   const urlPaymentStatus = searchParams.get('paymentStatus');
+  const urlCourier = searchParams.get('courier');
+  const urlDateRange = searchParams.get('dateRange');
   const urlSearch = searchParams.get('search') || '';
   const urlSortOrder = (searchParams.get('sortOrder') as 'ASC' | 'DESC') || 'DESC';
 
@@ -68,17 +71,28 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState<Order | null>(null);
   const [selectedThermalOrder, setSelectedThermalOrder] = useState<Order | null>(null);
+  const [previewOrderId, setPreviewOrderId] = useState<string | null>(null);
   const [openRowMenuId, setOpenRowMenuId] = useState<string | null>(null);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
   // Queries
   const { data: kpis, isLoading: isKpisLoading } = useGetMerchantOrderKpisQuery();
   
+  // Relative range in the URL keeps shared links meaningful; resolved to a concrete
+  // timestamp only when building the request.
+  const dateFrom = (() => {
+    const days = Number(urlDateRange);
+    if (!Number.isFinite(days) || days <= 0) return undefined;
+    return new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+  })();
+
   const queryParams = {
     page: urlPage,
     limit: urlLimit,
     status: (urlStatus as string) === 'ALL' ? undefined : urlStatus || undefined,
     paymentStatus: urlPaymentStatus === 'ALL' ? undefined : urlPaymentStatus || undefined,
+    courier: urlCourier === 'ALL' ? undefined : urlCourier || undefined,
+    dateFrom,
     search: debouncedSearch || undefined,
     sortBy: 'createdAt',
     sortOrder: urlSortOrder,
@@ -200,6 +214,32 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
       toast.error(err?.data?.message || 'Failed to update order status.');
     }
   };
+
+  // Resolved from the current page rather than held in state, so the panel reflects
+  // refreshed list data (and closes on its own if the order leaves the active filter).
+  const previewOrder = orders.find((o) => o.id === previewOrderId) ?? null;
+
+  const handlePanelConfirm = (order: Order) => handleStatusChange(order.id, 'CONFIRMED');
+
+  const dateRangeLabels: Record<string, string> = {
+    '7': 'Last 7 days',
+    '30': 'Last 30 days',
+    '90': 'Last 90 days',
+  };
+
+  const activeFilterChips: { key: string; label: string }[] = [
+    urlStatus && urlStatus !== ('ALL' as OrderStatusType)
+      ? { key: 'status', label: `Status: ${String(urlStatus).replace(/_/g, ' ')}` }
+      : null,
+    urlPaymentStatus && urlPaymentStatus !== 'ALL'
+      ? { key: 'paymentStatus', label: `Payment: ${urlPaymentStatus}` }
+      : null,
+    urlCourier && urlCourier !== 'ALL' ? { key: 'courier', label: `Courier: ${urlCourier}` } : null,
+    urlDateRange && urlDateRange !== 'ALL'
+      ? { key: 'dateRange', label: `Date: ${dateRangeLabels[urlDateRange] ?? urlDateRange}` }
+      : null,
+    urlSearch ? { key: 'search', label: `Search: ${urlSearch}` } : null,
+  ].filter((chip): chip is { key: string; label: string } => chip !== null);
 
   
   const toggleSelectAll = () => {
@@ -396,42 +436,83 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
 
       {/* 2. KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <button 
-          onClick={() => updateUrlParams({ status: 'ALL' })}
-          className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col text-left hover:border-purple-300 transition-colors"
-        >
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Orders</span>
-          <span className="text-2xl font-black text-slate-900 mt-2">
-            {isKpisLoading ? '-' : kpis?.totalOrders?.toLocaleString()}
-          </span>
-        </button>
-        <button 
-          onClick={() => updateUrlParams({ status: 'PENDING' })}
-          className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col text-left hover:border-amber-300 transition-colors"
-        >
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pending Confirmation</span>
-          <span className="text-2xl font-black text-slate-900 mt-2">
-            {isKpisLoading ? '-' : kpis?.pendingConfirmation?.toLocaleString()}
-          </span>
-        </button>
-        <button 
-          onClick={() => updateUrlParams({ status: 'READY_TO_SHIP' })}
-          className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col text-left hover:border-blue-300 transition-colors"
-        >
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Ready to Ship</span>
-          <span className="text-2xl font-black text-slate-900 mt-2">
-            {isKpisLoading ? '-' : kpis?.readyToShip?.toLocaleString()}
-          </span>
-        </button>
-        <button 
-          onClick={() => updateUrlParams({ status: 'DELIVERED' })}
-          className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col text-left hover:border-emerald-300 transition-colors"
-        >
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Delivered</span>
-          <span className="text-2xl font-black text-slate-900 mt-2">
-            {isKpisLoading ? '-' : kpis?.delivered?.toLocaleString()}
-          </span>
-        </button>
+        {[
+          {
+            id: 'ALL',
+            label: 'Total Orders',
+            value: kpis?.totalOrders,
+            trend: kpis?.trends?.totalOrders,
+            icon: <Calendar className="w-5 h-5" />,
+            iconClass: 'bg-blue-50 text-blue-600',
+            hoverClass: 'hover:border-purple-300',
+          },
+          {
+            id: 'PENDING',
+            label: 'Pending Confirmation',
+            value: kpis?.pendingConfirmation,
+            action: 'View orders',
+            icon: <Clock className="w-5 h-5" />,
+            iconClass: 'bg-amber-50 text-amber-600',
+            hoverClass: 'hover:border-amber-300',
+          },
+          {
+            id: 'READY_TO_SHIP',
+            label: 'Ready to Ship',
+            value: kpis?.readyToShip,
+            action: 'View orders',
+            icon: <Truck className="w-5 h-5" />,
+            iconClass: 'bg-sky-50 text-sky-600',
+            hoverClass: 'hover:border-blue-300',
+          },
+          {
+            id: 'DELIVERED',
+            label: 'Delivered',
+            value: kpis?.delivered,
+            trend: kpis?.trends?.delivered,
+            icon: <CheckCircle2 className="w-5 h-5" />,
+            iconClass: 'bg-emerald-50 text-emerald-600',
+            hoverClass: 'hover:border-emerald-300',
+          },
+        ].map((card) => (
+          <button
+            key={card.id}
+            onClick={() => updateUrlParams({ status: card.id })}
+            className={`bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col text-left transition-colors ${card.hoverClass}`}
+          >
+            <div className="flex items-start gap-3">
+              <span
+                className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${card.iconClass}`}
+              >
+                {card.icon}
+              </span>
+              <div className="min-w-0">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                  {card.label}
+                </span>
+                <span className="text-2xl font-black text-slate-900 mt-1 block">
+                  {isKpisLoading ? '—' : (card.value ?? 0).toLocaleString()}
+                </span>
+              </div>
+            </div>
+
+            {typeof card.trend === 'number' ? (
+              <span
+                className={`mt-3 text-[11px] font-bold ${
+                  card.trend >= 0 ? 'text-emerald-600' : 'text-rose-600'
+                }`}
+              >
+                {card.trend >= 0 ? '↑' : '↓'} {Math.abs(card.trend)}%{' '}
+                <span className="text-slate-400 font-semibold">vs last 7 days</span>
+              </span>
+            ) : card.action ? (
+              <span className="mt-3 text-[11px] font-bold text-blue-600">{card.action} →</span>
+            ) : (
+              <span className="mt-3 text-[11px] font-semibold text-slate-400">
+                No prior data
+              </span>
+            )}
+          </button>
+        ))}
       </div>
 
       {/* 3. Toolbar (Search & Filters) */}
@@ -448,7 +529,7 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
         </button>
 
         <div className="relative">
-          <select 
+          <select
             value={urlPaymentStatus || 'ALL'}
             onChange={(e) => updateUrlParams({ paymentStatus: e.target.value })}
             className="appearance-none pl-4 pr-9 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-600 cursor-pointer"
@@ -457,6 +538,33 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
             <option value="UNPAID">Payment: Unpaid (COD)</option>
             <option value="PAID">Payment: Paid</option>
             <option value="REFUNDED">Payment: Refunded</option>
+          </select>
+          <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-2.5 pointer-events-none" />
+        </div>
+
+        <div className="relative">
+          <select
+            value={urlCourier || 'ALL'}
+            onChange={(e) => updateUrlParams({ courier: e.target.value })}
+            className="appearance-none pl-4 pr-9 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-600 cursor-pointer"
+          >
+            <option value="ALL">Courier: All</option>
+            <option value="STEADFAST">Courier: Steadfast</option>
+            <option value="PATHAO">Courier: Pathao</option>
+          </select>
+          <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-2.5 pointer-events-none" />
+        </div>
+
+        <div className="relative">
+          <select
+            value={urlDateRange || 'ALL'}
+            onChange={(e) => updateUrlParams({ dateRange: e.target.value })}
+            className="appearance-none pl-4 pr-9 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-600 cursor-pointer"
+          >
+            <option value="ALL">Date: All time</option>
+            <option value="7">Date: Last 7 days</option>
+            <option value="30">Date: Last 30 days</option>
+            <option value="90">Date: Last 90 days</option>
           </select>
           <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-2.5 pointer-events-none" />
         </div>
@@ -497,21 +605,80 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
         </div>
       </div>
 
-      {/* 4. Status Tabs */}
+      {/* Active filter chips */}
+      {activeFilterChips.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">
+            Filters
+          </span>
+          {activeFilterChips.map((chip) => (
+            <span
+              key={chip.key}
+              className="inline-flex items-center gap-1.5 pl-3 pr-1.5 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 shadow-sm"
+            >
+              {chip.label}
+              <button
+                type="button"
+                onClick={() => {
+                  // The search box is debounced into the URL, so clearing the chip alone
+                  // would be undone on the next debounce tick.
+                  if (chip.key === 'search') setSearchInput('');
+                  updateUrlParams({ [chip.key]: null });
+                }}
+                aria-label={`Remove ${chip.label} filter`}
+                className="p-0.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
+              >
+                <XCircle className="w-3.5 h-3.5" />
+              </button>
+            </span>
+          ))}
+          <button
+            type="button"
+            onClick={() => {
+              setSearchInput('');
+              updateUrlParams({
+                status: null,
+                paymentStatus: null,
+                courier: null,
+                dateRange: null,
+                search: null,
+              });
+            }}
+            className="text-xs font-bold text-blue-600 hover:text-blue-700 ml-1"
+          >
+            Clear all
+          </button>
+        </div>
+      )}
+
+      {/* 4. List + detail panel */}
+      <div className="flex flex-col lg:flex-row gap-4 items-start">
+        <div className="flex-1 min-w-0 space-y-4">
+      {/* Status Tabs */}
       <div className="flex items-center gap-1 overflow-x-auto pb-2 scrollbar-hide border-b border-slate-200">
         {filterTabs.map((tab) => {
           const isActive = (urlStatus || 'ALL') === tab.id;
+          const count = tab.id === 'ALL' ? meta.total : kpis?.statusCounts?.[tab.id];
           return (
             <button
               key={tab.id}
               onClick={() => updateUrlParams({ status: tab.id })}
-              className={`px-4 py-2 text-xs font-bold whitespace-nowrap border-b-2 transition-colors ${
-                isActive 
-                  ? 'border-purple-600 text-purple-700' 
+              className={`px-4 py-2 text-xs font-bold whitespace-nowrap border-b-2 transition-colors flex items-center gap-1.5 ${
+                isActive
+                  ? 'border-purple-600 text-purple-700'
                   : 'border-transparent text-slate-500 hover:text-slate-800'
               }`}
             >
               {tab.label}
+              {typeof count === 'number' && (
+                <span
+                  className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${
+                    isActive ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-500'
+                  }`}
+                >
+                  {count}
+                </span>
+              )}
             </button>
           );
         })}
@@ -585,7 +752,13 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                   return (
                     <tr
                       key={order.id}
-                      className={`hover:bg-slate-50/80 transition-colors ${isChecked ? 'bg-purple-50/30' : ''}`}
+                      className={`hover:bg-slate-50/80 transition-colors ${
+                        previewOrderId === order.id
+                          ? 'bg-blue-50/60'
+                          : isChecked
+                          ? 'bg-purple-50/30'
+                          : ''
+                      }`}
                     >
                       <td className="px-4 py-4 text-center">
                         <input
@@ -597,9 +770,16 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                       </td>
 
                       <td className="px-4 py-4">
-                        <span className="font-extrabold text-slate-900 cursor-pointer hover:text-purple-600">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPreviewOrderId((current) => (current === order.id ? null : order.id))
+                          }
+                          aria-expanded={previewOrderId === order.id}
+                          className="font-extrabold text-slate-900 cursor-pointer hover:text-purple-600 transition-colors"
+                        >
                           #{order.orderNumber}
-                        </span>
+                        </button>
                       </td>
 
                       <td className="px-6 py-4">
@@ -744,6 +924,16 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
             </div>
           </div>
         )}
+      </div>
+        </div>
+
+        <OrderDetailPanel
+          order={previewOrder}
+          onClose={() => setPreviewOrderId(null)}
+          onConfirm={handlePanelConfirm}
+          onBookCourier={onDispatchCourierClick}
+          isConfirming={isUpdating}
+        />
       </div>
     </div>
   );

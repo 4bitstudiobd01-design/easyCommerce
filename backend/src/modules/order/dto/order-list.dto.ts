@@ -34,6 +34,11 @@ export class OrderListDto {
   @IsEnum(PaymentStatusEnum)
   paymentStatus?: PaymentStatusEnum;
 
+  @ApiPropertyOptional({ description: 'Filter by courier provider handling the order' })
+  @IsOptional()
+  @IsString()
+  courier?: string;
+
   @ApiPropertyOptional({ description: 'Start date for filtering orders (ISO string)' })
   @IsOptional()
   @IsString()

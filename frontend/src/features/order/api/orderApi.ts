@@ -15,6 +15,18 @@ export type OrderStatusType =
   | 'PAYMENT_ON_PROCESS'
   | 'PAYMENT_FAILED';
 
+export interface OrderKpiMetrics {
+  totalOrders: number;
+  pendingConfirmation: number;
+  readyToShip: number;
+  delivered: number;
+  statusCounts?: Record<string, number>;
+  trends?: {
+    totalOrders: number | null;
+    delivered: number | null;
+  };
+}
+
 export interface OrderItem {
   id: string;
   productId: string;
@@ -234,7 +246,7 @@ export const orderApi = createApi({
       providesTags: (result, error, id) => [{ type: 'Order', id }],
       transformResponse: (response: { data: Order }) => response.data,
     }),
-    getMerchantOrderKpis: builder.query<any, void>({
+    getMerchantOrderKpis: builder.query<OrderKpiMetrics, void>({
       query: () => '/kpi',
       providesTags: ['OrderKpi', 'Order'],
       transformResponse: (response: { data: any }) => response.data,
