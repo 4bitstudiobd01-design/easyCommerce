@@ -505,7 +505,7 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
             </div>
             <div className="p-5 space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-purple-50 text-purple-700 font-extrabold flex items-center justify-center border border-purple-100 text-sm">
+                <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-700 font-extrabold flex items-center justify-center border border-blue-100 text-sm">
                   {order.customerName.substring(0, 2).toUpperCase()}
                 </div>
                 <div>
@@ -515,7 +515,7 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
               <div className="space-y-2 pt-2 border-t border-slate-100 text-xs">
                 <div className="flex justify-between">
                   <span className="font-medium text-slate-500">Phone</span>
-                  <a href={`tel:${order.customerPhone}`} className="font-bold text-purple-600 hover:underline">{order.customerPhone}</a>
+                  <a href={`tel:${order.customerPhone}`} className="font-bold text-blue-600 hover:underline">{order.customerPhone}</a>
                 </div>
                 {order.customerEmail && (
                   <div className="flex justify-between">

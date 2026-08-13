@@ -64,7 +64,7 @@ export function OrderActivityFeed({ orderId }: OrderActivityFeedProps) {
   const getEventIcon = (type: string) => {
     switch (type) {
       case 'INTERNAL_NOTE':
-        return <MessageSquare className="w-4 h-4 text-purple-600" />;
+        return <MessageSquare className="w-4 h-4 text-blue-600" />;
       case 'CUSTOMER_COMMUNICATION':
         return <MessageSquare className="w-4 h-4 text-blue-600" />;
       case 'STATUS_CHANGE':
@@ -81,7 +81,7 @@ export function OrderActivityFeed({ orderId }: OrderActivityFeedProps) {
   const getEventBadge = (type: string) => {
     switch (type) {
       case 'INTERNAL_NOTE':
-        return <span className="bg-purple-50 text-purple-700 font-bold text-[10px] px-2 py-0.5 rounded-full border border-purple-100">Internal Note</span>;
+        return <span className="bg-blue-50 text-blue-700 font-bold text-[10px] px-2 py-0.5 rounded-full border border-blue-100">Internal Note</span>;
       case 'CUSTOMER_COMMUNICATION':
         return <span className="bg-blue-50 text-blue-700 font-bold text-[10px] px-2 py-0.5 rounded-full border border-blue-100">Customer Msg</span>;
       case 'STATUS_CHANGE':
@@ -139,7 +139,7 @@ export function OrderActivityFeed({ orderId }: OrderActivityFeedProps) {
           value={noteContent}
           onChange={(e) => setNoteContent(e.target.value)}
           placeholder="Write an internal staff note or customer update..."
-          className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-600 focus:border-transparent outline-none transition-all resize-none"
+          className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none transition-all resize-none"
         />
 
         <div className="flex items-center justify-between">
@@ -148,7 +148,7 @@ export function OrderActivityFeed({ orderId }: OrderActivityFeedProps) {
               type="checkbox"
               checked={isCustomerVisible}
               onChange={(e) => setIsCustomerVisible(e.target.checked)}
-              className="w-4 h-4 rounded border-slate-300 text-purple-600 focus:ring-purple-600 cursor-pointer"
+              className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-600 cursor-pointer"
             />
             <span>Visible to Customer</span>
           </label>
@@ -156,7 +156,7 @@ export function OrderActivityFeed({ orderId }: OrderActivityFeedProps) {
           <button
             type="submit"
             disabled={isCreatingNote || !noteContent.trim()}
-            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-md shadow-purple-600/20 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-600/20 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50"
           >
             {isCreatingNote ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
             <span>Post Note</span>

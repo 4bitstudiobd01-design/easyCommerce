@@ -213,7 +213,7 @@ export function EditOrderPage({ orderId }: EditOrderPageProps) {
 
               <div className="pt-2">
                 {!showProductSearch ? (
-                  <button type="button" onClick={() => setShowProductSearch(true)} className="flex items-center gap-2 text-sm font-bold text-purple-600 hover:text-purple-700 transition-colors px-4 py-2 bg-purple-50 hover:bg-purple-100 rounded-lg">
+                  <button type="button" onClick={() => setShowProductSearch(true)} className="flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors px-4 py-2 bg-blue-50 hover:bg-blue-100 rounded-lg">
                     <Plus className="w-4 h-4" /> Add Product
                   </button>
                 ) : (
@@ -238,7 +238,7 @@ export function EditOrderPage({ orderId }: EditOrderPageProps) {
                               <p className="text-sm font-bold text-slate-900">{p.title}</p>
                               <p className="text-xs text-slate-500">৳{Number(p.basePrice).toLocaleString()}</p>
                             </div>
-                            <span className="text-xs font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded">Add</span>
+                            <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">Add</span>
                           </div>
                         ))}
                       </div>

@@ -73,7 +73,7 @@ export function BulkActionPreviewModal({
                 placeholder="e.g. Customer requested cancellation"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-600 focus:border-transparent transition-all outline-none"
+                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all outline-none"
               />
             </div>
           )}
@@ -94,7 +94,7 @@ export function BulkActionPreviewModal({
             disabled={isLoading}
             className={
               "px-5 py-2.5 text-white font-bold rounded-xl transition-all flex items-center shadow-sm disabled:opacity-50 active:scale-95 " +
-              (targetStatus === 'CANCELLED' ? 'bg-red-600 hover:bg-red-700 shadow-red-600/20' : 'bg-purple-600 hover:bg-purple-700 shadow-purple-600/20')
+              (targetStatus === 'CANCELLED' ? 'bg-red-600 hover:bg-red-700 shadow-red-600/20' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20')
             }
           >
             {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}

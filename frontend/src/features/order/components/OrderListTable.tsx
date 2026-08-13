@@ -426,7 +426,7 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
           <button
             type="button"
             onClick={onCreateOrderClick || (() => toast('Manual order creation coming soon.'))}
-            className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-purple-600/30 flex items-center gap-2 transition-all active:scale-95"
+            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-600/30 flex items-center gap-2 transition-all active:scale-95"
           >
             <Plus className="w-4 h-4" />
             <span>Create Order ▾</span>
@@ -444,7 +444,7 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
             trend: kpis?.trends?.totalOrders,
             icon: <Calendar className="w-5 h-5" />,
             iconClass: 'bg-blue-50 text-blue-600',
-            hoverClass: 'hover:border-purple-300',
+            hoverClass: 'hover:border-blue-300',
           },
           {
             id: 'PENDING',
@@ -477,7 +477,7 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
           <button
             key={card.id}
             onClick={() => updateUrlParams({ status: card.id })}
-            className={`bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col text-left transition-colors ${card.hoverClass}`}
+            className={`bg-white p-5 rounded-2xl border border-slate-200 flex flex-col text-left transition-colors ${card.hoverClass}`}
           >
             <div className="flex items-start gap-3">
               <span
@@ -486,10 +486,8 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                 {card.icon}
               </span>
               <div className="min-w-0">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-                  {card.label}
-                </span>
-                <span className="text-2xl font-black text-slate-900 mt-1 block">
+                <span className="text-sm font-semibold text-slate-500 block">{card.label}</span>
+                <span className="text-3xl font-black text-slate-900 mt-1 block tracking-tight">
                   {isKpisLoading ? '—' : (card.value ?? 0).toLocaleString()}
                 </span>
               </div>
@@ -524,7 +522,7 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
           <Filter className="w-4 h-4" />
           <span>Filters</span>
           {(urlPaymentStatus && urlPaymentStatus !== 'ALL') && (
-            <span className="w-5 h-5 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center text-[10px]">1</span>
+            <span className="w-5 h-5 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center text-[10px]">1</span>
           )}
         </button>
 
@@ -532,7 +530,7 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
           <select
             value={urlPaymentStatus || 'ALL'}
             onChange={(e) => updateUrlParams({ paymentStatus: e.target.value })}
-            className="appearance-none pl-4 pr-9 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-600 cursor-pointer"
+            className="appearance-none pl-4 pr-9 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer"
           >
             <option value="ALL">Payment: All</option>
             <option value="UNPAID">Payment: Unpaid (COD)</option>
@@ -546,7 +544,7 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
           <select
             value={urlCourier || 'ALL'}
             onChange={(e) => updateUrlParams({ courier: e.target.value })}
-            className="appearance-none pl-4 pr-9 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-600 cursor-pointer"
+            className="appearance-none pl-4 pr-9 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer"
           >
             <option value="ALL">Courier: All</option>
             <option value="STEADFAST">Courier: Steadfast</option>
@@ -559,7 +557,7 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
           <select
             value={urlDateRange || 'ALL'}
             onChange={(e) => updateUrlParams({ dateRange: e.target.value })}
-            className="appearance-none pl-4 pr-9 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-600 cursor-pointer"
+            className="appearance-none pl-4 pr-9 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer"
           >
             <option value="ALL">Date: All time</option>
             <option value="7">Date: Last 7 days</option>
@@ -573,7 +571,7 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
           <select 
             value={urlLimit.toString()}
             onChange={(e) => updateUrlParams({ limit: e.target.value, page: '1' })}
-            className="appearance-none pl-4 pr-9 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-600 cursor-pointer"
+            className="appearance-none pl-4 pr-9 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer"
           >
             <option value="20">Show: 20</option>
             <option value="50">Show: 50</option>
@@ -599,7 +597,7 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Search by order ID, customer, phone..."
-              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-600"
+              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600"
             />
           </div>
         </div>
@@ -664,7 +662,7 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
               onClick={() => updateUrlParams({ status: tab.id })}
               className={`px-4 py-2 text-xs font-bold whitespace-nowrap border-b-2 transition-colors flex items-center gap-1.5 ${
                 isActive
-                  ? 'border-purple-600 text-purple-700'
+                  ? 'border-blue-600 text-blue-700'
                   : 'border-transparent text-slate-500 hover:text-slate-800'
               }`}
             >
@@ -672,7 +670,7 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
               {typeof count === 'number' && (
                 <span
                   className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${
-                    isActive ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-500'
+                    isActive ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
                   }`}
                 >
                   {count}
@@ -688,7 +686,7 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
         {/* Loading Overlay (Optional for soft refreshes) */}
         {isFetching && !isOrdersLoading && (
           <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] z-10 flex items-center justify-center">
-            <div className="w-6 h-6 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
           </div>
         )}
         
@@ -701,7 +699,7 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                     type="checkbox"
                     checked={selectedOrders.length === orders.length && orders.length > 0}
                     onChange={toggleSelectAll}
-                    className="rounded border-slate-300 text-purple-600 focus:ring-purple-600 cursor-pointer"
+                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-600 cursor-pointer"
                   />
                 </th>
                 <th className="px-4 py-3.5">Order</th>
@@ -755,7 +753,7 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                         previewOrderId === order.id
                           ? 'bg-blue-50/60'
                           : isChecked
-                          ? 'bg-purple-50/30'
+                          ? 'bg-blue-50/30'
                           : ''
                       }`}
                     >
@@ -764,7 +762,7 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                           type="checkbox"
                           checked={isChecked}
                           onChange={() => toggleSelectOrder(order.id)}
-                          className="rounded border-slate-300 text-purple-600 focus:ring-purple-600 cursor-pointer"
+                          className="rounded border-slate-300 text-blue-600 focus:ring-blue-600 cursor-pointer"
                         />
                       </td>
 
@@ -775,7 +773,7 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                             setPreviewOrderId((current) => (current === order.id ? null : order.id))
                           }
                           aria-expanded={previewOrderId === order.id}
-                          className="font-extrabold text-slate-900 cursor-pointer hover:text-purple-600 transition-colors"
+                          className="font-extrabold text-slate-900 cursor-pointer hover:text-blue-600 transition-colors"
                         >
                           #{order.orderNumber}
                         </button>
@@ -798,11 +796,11 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                       <td className="px-6 py-4 font-black text-slate-900">৳{Number(order.grandTotal).toLocaleString()}</td>
 
                       <td className="px-4 py-4">
-                        <span className={`px-2 py-1 rounded-md text-[10px] font-bold border ${
-                          order.paymentStatus === 'PAID' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                          order.paymentStatus === 'REFUNDED' ? 'bg-slate-50 text-slate-700 border-slate-200' :
-                          order.paymentMethod === 'COD' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                          'bg-red-50 text-red-700 border-red-200'
+                        <span className={`px-2 py-1 rounded-md text-[10px] font-bold ${
+                          order.paymentStatus === 'PAID' ? 'bg-emerald-50 text-emerald-700' :
+                          order.paymentStatus === 'REFUNDED' ? 'bg-slate-100 text-slate-600' :
+                          order.paymentMethod === 'COD' ? 'bg-amber-50 text-amber-700' :
+                          'bg-rose-50 text-rose-700'
                         }`}>
                           {order.paymentStatus === 'UNPAID' && order.paymentMethod === 'COD' ? 'COD' : order.paymentStatus}
                         </span>
@@ -815,12 +813,13 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                           value={order.orderStatus}
                           onChange={(e) => handleStatusChange(order.id, e.target.value)}
                           disabled={isUpdating}
-                          className={`px-3 py-1 rounded-full font-bold text-[10px] border focus:outline-none cursor-pointer transition-colors ${
-                            ['DELIVERED', 'COMPLETED'].includes(order.orderStatus) ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
-                            ['CANCELLED', 'RETURNED'].includes(order.orderStatus) ? 'bg-red-50 text-red-600 border-red-200' :
-                            order.orderStatus === 'PROCESSING' ? 'bg-blue-50 text-blue-600 border-blue-200' :
-                            order.orderStatus === 'READY_TO_SHIP' || order.orderStatus === 'SHIPPED' ? 'bg-cyan-50 text-cyan-600 border-cyan-200' :
-                            'bg-amber-50 text-amber-600 border-amber-200'
+                          className={`px-3 py-1 rounded-md font-bold text-[10px] border-0 focus:outline-none cursor-pointer transition-colors appearance-none ${
+                            ['DELIVERED', 'COMPLETED'].includes(order.orderStatus) ? 'bg-emerald-50 text-emerald-700' :
+                            ['CANCELLED', 'RETURNED'].includes(order.orderStatus) ? 'bg-rose-50 text-rose-700' :
+                            order.orderStatus === 'PROCESSING' ? 'bg-blue-50 text-blue-700' :
+                            order.orderStatus === 'SHIPPED' ? 'bg-violet-50 text-violet-700' :
+                            order.orderStatus === 'READY_TO_SHIP' ? 'bg-sky-50 text-sky-700' :
+                            'bg-amber-50 text-amber-700'
                           }`}
                         >
                           <option value="PENDING">New (Pending)</option>
@@ -840,7 +839,7 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                         <div className="flex items-center justify-end gap-1">
                           <Link
                             href={`/dashboard/orders/${order.id}`}
-                            className="p-1.5 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
                             title="View Order Details"
                           >
                             <Eye className="w-4 h-4" />

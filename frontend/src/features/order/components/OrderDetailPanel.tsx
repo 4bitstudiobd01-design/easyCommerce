@@ -29,23 +29,24 @@ function formatMoney(value: number | string | null | undefined): string {
   return amount.toLocaleString('en-BD');
 }
 
+// Kept in sync with the status colours used in the orders table.
 function statusBadgeClass(status: string): string {
   switch (status) {
     case 'DELIVERED':
     case 'COMPLETED':
-      return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      return 'bg-emerald-50 text-emerald-700';
     case 'SHIPPED':
-      return 'bg-violet-50 text-violet-700 border-violet-200';
+      return 'bg-violet-50 text-violet-700';
     case 'READY_TO_SHIP':
-      return 'bg-blue-50 text-blue-700 border-blue-200';
+      return 'bg-sky-50 text-sky-700';
     case 'PROCESSING':
     case 'CONFIRMED':
-      return 'bg-sky-50 text-sky-700 border-sky-200';
+      return 'bg-blue-50 text-blue-700';
     case 'CANCELLED':
     case 'RETURNED':
-      return 'bg-rose-50 text-rose-700 border-rose-200';
+      return 'bg-rose-50 text-rose-700';
     default:
-      return 'bg-amber-50 text-amber-700 border-amber-200';
+      return 'bg-amber-50 text-amber-700';
   }
 }
 
@@ -154,17 +155,17 @@ export function OrderDetailPanel({
           </h3>
           <div className="flex flex-wrap items-center gap-1.5 mt-2">
             <span
-              className={`px-2 py-0.5 rounded-md border text-[10px] font-bold ${statusBadgeClass(
+              className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${statusBadgeClass(
                 order.orderStatus,
               )}`}
             >
               {order.orderStatus.replace(/_/g, ' ')}
             </span>
-            <span className="px-2 py-0.5 rounded-md border border-amber-200 bg-amber-50 text-amber-700 text-[10px] font-bold">
+            <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[10px] font-bold">
               {order.paymentMethod}
             </span>
             {consignment?.courierProvider && (
-              <span className="px-2 py-0.5 rounded-md border border-slate-200 bg-slate-50 text-slate-600 text-[10px] font-bold">
+              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-bold">
                 {consignment.courierProvider}
               </span>
             )}
@@ -346,7 +347,7 @@ export function OrderDetailPanel({
             <div className="flex justify-between items-center">
               <dt className="text-slate-500">Payment Status</dt>
               <dd>
-                <span className="px-2 py-0.5 rounded-md border border-amber-200 bg-amber-50 text-amber-700 text-[10px] font-bold">
+                <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[10px] font-bold">
                   {order.paymentStatus.replace(/_/g, ' ')}
                 </span>
               </dd>
@@ -364,7 +365,7 @@ export function OrderDetailPanel({
               <dt className="text-slate-500">Courier</dt>
               <dd className="flex items-center gap-2">
                 {consignment?.courierProvider ? (
-                  <span className="px-2 py-0.5 rounded-md border border-slate-200 bg-slate-50 text-slate-700 text-[10px] font-bold">
+                  <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-bold">
                     {consignment.courierProvider}
                   </span>
                 ) : (
@@ -389,7 +390,7 @@ export function OrderDetailPanel({
             <div className="flex justify-between items-center">
               <dt className="text-slate-500">Status</dt>
               <dd>
-                <span className="px-2 py-0.5 rounded-md border border-slate-200 bg-slate-50 text-slate-600 text-[10px] font-bold">
+                <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-bold">
                   {consignment?.status ?? 'Not Booked'}
                 </span>
               </dd>

@@ -51,9 +51,9 @@ export function AbandonedCartsTable() {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="px-3.5 py-2 bg-purple-50 border border-purple-100 rounded-xl flex items-center gap-2">
-            <ShoppingCart className="w-4 h-4 text-purple-600" />
-            <span className="font-extrabold text-xs text-purple-900">
+          <div className="px-3.5 py-2 bg-blue-50 border border-blue-100 rounded-xl flex items-center gap-2">
+            <ShoppingCart className="w-4 h-4 text-blue-600" />
+            <span className="font-extrabold text-xs text-blue-900">
               {carts.length} Incomplete Carts
             </span>
           </div>
@@ -99,7 +99,7 @@ export function AbandonedCartsTable() {
                           {cart.customerName || 'Anonymous Customer'}
                         </span>
                         <div className="flex items-center gap-2 text-slate-500 text-[11px] mt-0.5">
-                          <Phone className="w-3 h-3 text-purple-600" />
+                          <Phone className="w-3 h-3 text-blue-600" />
                           <span>{cart.customerPhone}</span>
                         </div>
                       </div>
@@ -110,7 +110,7 @@ export function AbandonedCartsTable() {
                         {cart.itemsJson && cart.itemsJson.length > 0 ? (
                           cart.itemsJson.map((item: any, idx: number) => (
                             <div key={idx} className="font-semibold text-slate-800 text-xs flex items-center gap-1.5">
-                              <span className="w-2 h-2 rounded-full bg-purple-500" />
+                              <span className="w-2 h-2 rounded-full bg-blue-500" />
                               <span>{item.title || item.productTitle} × {item.quantity}</span>
                             </div>
                           ))
@@ -138,7 +138,7 @@ export function AbandonedCartsTable() {
                       <button
                         type="button"
                         onClick={() => handleSendSms(cart)}
-                        className="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs rounded-xl shadow-md shadow-purple-700/20 inline-flex items-center gap-1.5 transition-all active:scale-95"
+                        className="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-700/20 inline-flex items-center gap-1.5 transition-all active:scale-95"
                       >
                         <Send className="w-3.5 h-3.5" />
                         <span>Send Recovery SMS</span>
