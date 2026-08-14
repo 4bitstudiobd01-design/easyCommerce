@@ -14,6 +14,7 @@ import { useGetMyStoreQuery } from '@/features/tenant/api/tenantApi';
 import { ProductSeoConfig } from '@/features/catalog/components/ProductSeoConfig';
 import { ProductRelatedManager } from '@/features/catalog/components/ProductRelatedManager';
 import { ProductAnalyticsView } from '@/features/catalog/components/ProductAnalyticsView';
+import { ProductVariantInventoryView } from '@/features/inventory/components/ProductVariantInventoryView';
 import {
   ArrowLeft,
   Edit,
@@ -587,26 +588,9 @@ export default function ProductDetailsPage() {
         )}
 
         {activeTab === 'inventory' && (
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
-            <h3 className="text-sm font-extrabold text-slate-900">Inventory &amp; Stock</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-              {[
-                { label: 'On Hand', value: stock?.onHand ?? 0, tone: 'text-slate-900' },
-                { label: 'Reserved', value: stock?.reserved ?? 0, tone: 'text-amber-600' },
-                { label: 'Available', value: stock?.available ?? 0, tone: 'text-emerald-600' },
-                { label: 'Low Stock Threshold', value: product.lowStockThreshold ?? 10, tone: 'text-slate-900' },
-              ].map((c) => (
-                <div key={c.label} className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                  <span className="text-[10px] text-slate-500 block">{c.label}</span>
-                  <span className={`text-base font-extrabold ${c.tone}`}>{c.value}</span>
-                </div>
-              ))}
-            </div>
-            <p className="text-[11px] text-slate-500">
-              Stock is summed across every warehouse holding this product.
-            </p>
-          </div>
+          <ProductVariantInventoryView productId={product.id} product={product} />
         )}
+
 
         {activeTab === 'attributes' && (
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">

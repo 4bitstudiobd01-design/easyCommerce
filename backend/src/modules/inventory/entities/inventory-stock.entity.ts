@@ -6,11 +6,16 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { WarehouseEntity } from './warehouse.entity';
 import { ProductEntity } from '../../catalog/entities/product.entity';
+import { ProductVariantEntity } from '../../catalog/entities/product-variant.entity';
 
 @Entity('inventory_stocks')
+@Index('IDX_inventory_stocks_tenant_prod', ['tenantId', 'productId'])
+@Index('IDX_inventory_stocks_tenant_wh', ['tenantId', 'warehouseId'])
+@Index('IDX_inventory_stocks_tenant_var', ['tenantId', 'variantId'])
 export class InventoryStockEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -24,6 +29,10 @@ export class InventoryStockEntity {
 
   @Column({ type: 'uuid', nullable: true })
   variantId?: string;
+
+  @ManyToOne(() => ProductVariantEntity, { onDelete: 'CASCADE', nullable: true })
+  @JoinColumn({ name: 'variantId' })
+  variant?: ProductVariantEntity;
 
   @Column({ type: 'uuid' })
   warehouseId: string;

@@ -1,9 +1,9 @@
 'use client';
 
 import React, { Suspense } from 'react';
-import { StockAdjustmentView } from '@/features/inventory/components/StockAdjustmentView';
+import { InventoryHistoryView } from '@/features/inventory/components/InventoryHistoryView';
 
-export default function AdjustStockPage() {
+export default function StoreInventoryHistoryPage() {
   return (
     <Suspense
       fallback={
@@ -13,7 +13,7 @@ export default function AdjustStockPage() {
         </div>
       }
     >
-      <StockAdjustmentView />
+      <InventoryHistoryView />
     </Suspense>
   );
 }

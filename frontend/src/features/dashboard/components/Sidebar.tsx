@@ -207,7 +207,7 @@ export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onCl
               {!isDesktopCollapsed && <span>Categories</span>}
             </div>
           </Link>
-          <Link 
+          {/* <Link 
             href="/dashboard/inventory" 
             className={navItemClass('/dashboard/inventory')}
             onMouseEnter={(e) => handleTooltipEnter(e, "Inventory")}
@@ -219,7 +219,7 @@ export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onCl
               <Layers className={iconClass} strokeWidth={iconStroke} />
               {!isDesktopCollapsed && <span>Inventory</span>}
             </div>
-          </Link>
+          </Link> */}
 
           <NavGroupHeader>Operations</NavGroupHeader>
           <Link 
@@ -250,7 +250,7 @@ export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onCl
           </Link>
 
           <NavGroupHeader>Marketing</NavGroupHeader>
-          <Link 
+          {/* <Link 
             href="/dashboard/coupons" 
             className={navItemClass('/dashboard/coupons')}
             onMouseEnter={(e) => handleTooltipEnter(e, "Coupons")}
@@ -262,7 +262,7 @@ export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onCl
               <Tag className={iconClass} strokeWidth={iconStroke} />
               {!isDesktopCollapsed && <span>Coupons</span>}
             </div>
-          </Link>
+          </Link> */}
           <Link 
             href="/dashboard/marketing" 
             className={navItemClass('/dashboard/marketing')}

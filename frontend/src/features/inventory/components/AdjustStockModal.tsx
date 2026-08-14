@@ -63,10 +63,12 @@ export function AdjustStockModal({
         warehouseId: warehouseId || undefined,
         quantity: Number(quantity),
         action,
+        reason: 'Manual Adjustment',
       }).unwrap();
 
       toast.success('Stock level updated.');
       onClose();
+
     } catch (err: any) {
       const message = err?.data?.message || 'Failed to adjust stock level.';
       setErrorMsg(message);

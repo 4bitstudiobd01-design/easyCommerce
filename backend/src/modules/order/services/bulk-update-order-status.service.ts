@@ -162,7 +162,9 @@ export class BulkUpdateOrderStatusService {
                 productId: item.productId,
                 quantity: item.quantity,
                 action: StockAdjustmentAction.ADD,
+                reason: `Bulk order cancellation restock (${order.orderNumber})`,
               });
+
             } catch (e) {
               this.logger.error(
                 `Failed to restore stock for bulk-cancelled order ${order.orderNumber}, product ${item.productId}`,

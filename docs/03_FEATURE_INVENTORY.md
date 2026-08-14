@@ -33,7 +33,12 @@
   * Product ↔ Category assignment with correlated product counting, category product tab view, and product list filtering.
   * Merchant bulk management toolbar: batch status switcher, hierarchical bulk move, and safe cascade deletion (product unlinking).
   * Two-stage RFC 4180 CSV import with live validation preview, duplicate detection, and topological transaction execution; formula-sanitized UTF-8 CSV exporter.
-* **INV-001 Inventory Management (Decoupled)**: Multi-warehouse stock tracking, low stock alerts, stock adjustment logs.
+* **INV-001 Inventory Domain & Foundation (Decoupled)**:
+  * Canonical source of truth for stock quantities: physical `quantityOnHand`, pending `quantityReserved`, and computed `availableStock` (`onHand - reserved`).
+  * Explicit decoupling from Catalog: Products and Product Variants hold metadata/presentation, while Inventory manages warehouse stocks, reorder points, and reservation state.
+  * Multi-tenant data integrity: partial unique indexes preventing duplicate stock records per product/variant, database CHECK constraints (`onHand >= 0`, `reserved >= 0`, `reorderPoint >= 0`), and multi-tenant query indexing.
+  * Append-only immutable stock movement ledger (`inventory_movements`) supporting `IN`, `OUT`, `ADJUSTMENT`, `INITIAL_STOCK`, `RESERVED`, `RELEASED`, `RETURNED`, and `TRANSFER`.
+  * Authoritative domain service (`InventoryDomainService`) for stock calculations, status evaluation (`IN_STOCK`, `LOW_STOCK`, `OUT_OF_STOCK`, `NOT_TRACKED`), and adjustment/reservation validations.
 
 ### 5. Sales & Order Module
 * **SAL-001 Cart & Checkout**: Single-page checkout, guest checkout, saved cart sessions.
