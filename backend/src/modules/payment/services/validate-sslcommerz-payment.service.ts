@@ -5,6 +5,9 @@ import { PaymentEntity, PaymentTransactionStatusEnum } from '../entities/payment
 import { OrderEntity, OrderStatusEnum, PaymentStatusEnum } from '../../order/entities/order.entity';
 import { ConfigService } from '@nestjs/config';
 import { SslCommerzCallbackDto } from '../dto/sslcommerz-callback.dto';
+import { RecordPaymentEventService } from './record-payment-event.service';
+import { PaymentEventTypeEnum } from '../enums/payment-event-type.enum';
+import { resolvePaymentMethodFromCardType } from '../enums/payment-method.enum';
 import axios from 'axios';
 
 @Injectable()
@@ -17,6 +20,7 @@ export class ValidateSslCommerzPaymentService {
     @InjectRepository(OrderEntity)
     private readonly orderRepository: Repository<OrderEntity>,
     private readonly configService: ConfigService,
+    private readonly recordPaymentEventService: RecordPaymentEventService,
   ) {}
 
   async execute(dto: SslCommerzCallbackDto): Promise<{ success: boolean; orderNumber?: string }> {
@@ -36,6 +40,30 @@ export class ValidateSslCommerzPaymentService {
       // Already processed (or already failed) — do not re-process a terminal payment.
       return { success: false };
     }
+
+    // Webhook idempotency: SSLCommerz can deliver the same IPN more than once.
+    // val_id identifies the gateway event, so a replay is recorded once and
+    // never produces a second order update or a second payment record.
+    if (dto.val_id) {
+      const alreadyApplied = await this.recordPaymentEventService.hasProcessed(
+        payment.id,
+        dto.val_id,
+      );
+      if (alreadyApplied) {
+        this.logger.warn(
+          `Duplicate SSLCommerz callback for tran_id ${dto.tran_id} ignored (val_id ${dto.val_id}).`,
+        );
+        return { success: false };
+      }
+    }
+
+    await this.recordPaymentEventService.execute({
+      tenantId: payment.tenantId,
+      paymentId: payment.id,
+      type: PaymentEventTypeEnum.WEBHOOK_RECEIVED,
+      message: 'SSLCommerz callback received',
+      externalEventId: dto.val_id,
+    });
 
     const statusUpper = (dto.status || '').toUpperCase();
 
@@ -96,7 +124,24 @@ export class ValidateSslCommerzPaymentService {
         payment.valId = dto.val_id;
         payment.cardType = dto.card_type;
         payment.bankTranId = dto.bank_tran_id;
+        payment.paidAt = new Date();
+        // The gateway reports which instrument was actually used; the gateway
+        // itself stays whatever initiated the payment.
+        payment.paymentMethod = resolvePaymentMethodFromCardType(dto.card_type);
         await this.paymentRepository.save(payment);
+
+        await this.recordPaymentEventService.execute({
+          tenantId: payment.tenantId,
+          paymentId: payment.id,
+          type: PaymentEventTypeEnum.PAYMENT_VERIFIED,
+          message: 'Payment verified against SSLCommerz validation API',
+        });
+        await this.recordPaymentEventService.execute({
+          tenantId: payment.tenantId,
+          paymentId: payment.id,
+          type: PaymentEventTypeEnum.PAYMENT_SUCCEEDED,
+          message: `Payment of ${payment.amount} ${payment.currency} captured`,
+        });
 
         // Update Order Status
         const order = await this.orderRepository.findOne({
@@ -117,13 +162,30 @@ export class ValidateSslCommerzPaymentService {
           }
 
           await this.orderRepository.save(order);
+
+          await this.recordPaymentEventService.execute({
+            tenantId: payment.tenantId,
+            paymentId: payment.id,
+            type: PaymentEventTypeEnum.ORDER_UPDATED,
+            message: `Order ${order.orderNumber} marked as paid`,
+          });
+
           return { success: true, orderNumber: order.orderNumber };
         }
       }
     }
 
     payment.status = PaymentTransactionStatusEnum.FAILED;
+    payment.failureReason = 'Gateway validation failed or was not confirmed';
     await this.paymentRepository.save(payment);
+
+    await this.recordPaymentEventService.execute({
+      tenantId: payment.tenantId,
+      paymentId: payment.id,
+      type: PaymentEventTypeEnum.PAYMENT_FAILED,
+      message: 'Payment could not be validated with the gateway',
+    });
+
     return { success: false };
   }
 }

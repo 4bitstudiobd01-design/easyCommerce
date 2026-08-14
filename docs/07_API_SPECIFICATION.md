@@ -78,6 +78,48 @@
 * `GET /v1/orders/:id` - Get order status & tracking
 * `POST /v1/admin/orders/:id/fulfill` - Trigger courier booking
 
+### Payments — Merchant Dashboard (implemented)
+All routes below require `Authorization: Bearer <jwt>` and are scoped to the caller's
+tenant server-side. `X-Store-Id` selects the active store for multi-store merchants.
+Reads require the `orders:read` permission; export requires `orders:manage`.
+
+* `GET /v1/payments/transactions` - Paginated, filterable, searchable transaction list.
+  * Query: `page`, `limit` (max 100), `search`, `status`, `gateway`, `paymentMethod`,
+    `dateRange` (`today|yesterday|7d|30d|90d|custom`), `dateFrom`, `dateTo`, `timezone`,
+    `minAmount`, `maxAmount`, `currency`, `sortBy`, `sortOrder`.
+  * `search` matches transaction number, gateway reference, order number, customer name/phone.
+  ```json
+  {
+    "success": true,
+    "data": {
+      "data": [{
+        "id": "uuid",
+        "transactionNumber": "TXN-10245",
+        "gatewayTransactionId": "SSLCZ-8F92...",
+        "orderId": "uuid",
+        "orderNumber": "EC-1024",
+        "customer": { "id": "uuid", "name": "Rahim Hossain", "phone": "+8801712345678" },
+        "gateway": "SSLCOMMERZ", "gatewayLabel": "SSLCommerz",
+        "paymentMethod": "BKASH", "paymentMethodLabel": "bKash",
+        "amount": 4500, "refundedAmount": 0, "currency": "BDT",
+        "status": "COMPLETED", "isRefundable": true,
+        "createdAt": "2025-08-14T04:46:00.000Z", "paidAt": "2025-08-14T04:46:00.000Z"
+      }],
+      "meta": { "page": 1, "limit": 10, "total": 245, "totalPages": 25 }
+    }
+  }
+  ```
+* `GET /v1/payments/transactions/summary` - KPIs, donut overview, top methods, gateways.
+  Accepts the same filters (except `page`/`limit`); the `status` filter is deliberately
+  **not** applied so the paid/pending/refunded split stays visible while the table is narrowed.
+  `changePercent` is `null` when the previous period is zero.
+* `GET /v1/payments/transactions/export` - CSV of the **entire filtered set** (not one page),
+  capped at 10,000 rows (`X-Export-Row-Count`, `X-Export-Truncated` headers). Requires `orders:manage`.
+* `GET /v1/payments/transactions/:id` - Full payment details incl. refunds and lifecycle timeline.
+  Returns `404` for another tenant's payment so existence is never leaked.
+* `GET /v1/payments/gateways` - The merchant's gateways. Never returns credentials.
+* `POST /v1/payments/transactions/seed-demo-data` - Seeds demo data; disabled in production.
+
 ### Payment & Courier Webhooks
 * `POST /v1/webhooks/payments/bkash` - bKash callback listener
   ```json

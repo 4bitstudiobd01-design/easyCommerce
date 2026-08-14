@@ -3,6 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PaymentEntity, PaymentTransactionStatusEnum } from '../entities/payment.entity';
 import { OrderEntity } from '../../order/entities/order.entity';
+import { PaymentGatewayEnum } from '../enums/payment-gateway.enum';
+import { PaymentMethodTypeEnum } from '../enums/payment-method.enum';
+import { PaymentEventTypeEnum } from '../enums/payment-event-type.enum';
+import { RecordPaymentEventService } from './record-payment-event.service';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import * as querystring from 'querystring';
@@ -20,7 +24,17 @@ export class InitiateSslCommerzPaymentService {
     @InjectRepository(OrderEntity)
     private readonly orderRepository: Repository<OrderEntity>,
     private readonly configService: ConfigService,
+    private readonly recordPaymentEventService: RecordPaymentEventService,
   ) {}
+
+  /**
+   * Allocates the next merchant-facing transaction number for a tenant.
+   * Numbering is per-tenant so merchants never see gaps caused by other stores.
+   */
+  private async generateTransactionNumber(tenantId: string): Promise<string> {
+    const count = await this.paymentRepository.count({ where: { tenantId } });
+    return `TXN-${10000 + count + 1}`;
+  }
 
   async execute(orderId: string): Promise<SslCommerzInitiateResponse> {
     const order = await this.orderRepository.findOne({ where: { id: orderId } });
@@ -89,14 +103,26 @@ export class InitiateSslCommerzPaymentService {
         const payment = this.paymentRepository.create({
           orderId: order.id,
           orderNumber: order.orderNumber,
+          customerId: order.customerId,
+          transactionNumber: await this.generateTransactionNumber(order.tenantId),
           tranId,
           amount: Number(order.grandTotal),
           currency: 'BDT',
+          gateway: PaymentGatewayEnum.SSLCOMMERZ,
+          // The instrument is unknown until the gateway reports card_type back.
+          paymentMethod: PaymentMethodTypeEnum.CARD,
           status: PaymentTransactionStatusEnum.PENDING,
           tenantId: order.tenantId,
         });
 
         await this.paymentRepository.save(payment);
+
+        await this.recordPaymentEventService.execute({
+          tenantId: order.tenantId,
+          paymentId: payment.id,
+          type: PaymentEventTypeEnum.PAYMENT_INITIATED,
+          message: 'Payment initiated via SSLCommerz',
+        });
 
         return {
           gatewayUrl: resData.GatewayPageURL,

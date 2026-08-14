@@ -53,6 +53,14 @@
 * **PAY-001 Local Gateways**: bKash, Nagad, Rocket, Upay, SSLCommerz, Shurjopay, Foster Payments.
 * **PAY-002 Cash on Delivery (COD)**: Native COD option with automated phone verification OTP to prevent fake orders.
 * **PAY-003 Refunds & Webhooks**: Instant webhooks for payment status, partial/full refund handling.
+* **PAY-004 Transactions Dashboard** *(implemented)*: Merchant Admin `Payments → Transactions` workspace at `/dashboard/payments`.
+  * **Gateway vs. Method separation**: a payment records both the processor (`gateway`: SSLCommerz, bKash, Nagad, Stripe, PayPal, COD, Manual) and the instrument the customer actually used (`paymentMethod`: bKash, Nagad, Rocket, Upay, Card, Bank Transfer, COD). These are distinct axes — e.g. gateway `SSLCOMMERZ` + method `BKASH`.
+  * **Canonical statuses**: `PENDING`, `PROCESSING`, `COMPLETED`, `FAILED`, `CANCELLED`, `PARTIALLY_REFUNDED`, `REFUNDED`. The two refund states are written only by the refund domain, never by a client request.
+  * **KPI definitions**: *Total Received* = gross captured volume (`COMPLETED` + `PARTIALLY_REFUNDED` + `REFUNDED`); *Paid* = captured volume net of refunds; *Pending* = `PENDING` + `PROCESSING`; *Refunded* = `SUM(payments.refundedAmount)`. Refunds are counted once — never double-counted from refund rows.
+  * **Period comparison**: every KPI is compared against the equally-long window immediately preceding the selected range. A zero baseline yields `changePercent: null` so the UI renders a neutral state instead of `Infinity%`/`NaN%`.
+  * **Analytics**: donut overview, top payment methods and gateway summary are computed with SQL `SUM`/`COUNT`/`GROUP BY` — payments are never loaded into Node.js to be aggregated.
+  * **Timeline & idempotency**: `payment_events` is an append-only lifecycle log powering the payment timeline. Its partial unique index on `(paymentId, externalEventId)` is the webhook idempotency ledger — a replayed gateway callback cannot create a duplicate payment, order update or refund.
+  * **Security**: every query is `tenantId`-scoped (a foreign payment returns 404, never 403, so existence is not leaked); reads require `orders:read` and export/refund require `orders:manage` via `PermissionsGuard`; gateway references are masked and no card numbers, CVVs, PINs or gateway secrets are ever stored or returned.
 
 ### 8. Shipping & Fulfillment Module
 * **SHP-001 Courier Integrations**: Pathao, Steadfast, RedX, Paperfly direct API connections.
