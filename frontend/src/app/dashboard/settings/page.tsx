@@ -2,166 +2,213 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
+import { StoreSettingsHeader } from '@/features/settings/components/StoreSettingsHeader';
+import { SettingsSection } from '@/features/settings/components/SettingsSection';
+import { SettingsCard } from '@/features/settings/components/SettingsCard';
+import { SettingsInfoBox } from '@/features/settings/components/SettingsInfoBox';
 import {
-  Store as StoreIcon,
-  Link2,
-  FileText,
-  Truck,
-  CreditCard,
-  Globe,
-  MessageSquare,
-  Mail,
-  ShieldBan,
-  Sliders,
-  Palette,
-  Wallet,
+  Store, Globe, Globe2, Settings,
+  Palette, LayoutTemplate, Home,
+  ClipboardList, ShoppingCart, SlidersHorizontal, Users,
+  Truck, MapPin, ShieldAlert,
+  CreditCard, BarChart3,
+  Mail, MessageSquare, Code2, Link,
+  FileText, RefreshCw, Trash2
 } from 'lucide-react';
 
 export default function SettingsPage() {
   const router = useRouter();
 
-  const shopCards = [
-    {
-      id: 'general',
-      title: 'Shop Settings',
-      description: "General shop configurations customize your shop's core settings for a seamless experience.",
-      icon: StoreIcon,
-      badge: null,
-      iconColor: 'text-purple-600 bg-purple-50',
-    },
-    {
-      id: 'domain',
-      title: 'Shop Domain',
-      description: "Manage your shop's core configurations, including domain setup and general settings.",
-      icon: Link2,
-      badge: null,
-      iconColor: 'text-blue-600 bg-blue-50',
-    },
-    {
-      id: 'theme',
-      title: 'Theme & Branding',
-      description: 'Customize primary accent colors, font typography, logo, favicon, and hero slider banners.',
-      icon: Palette,
-      badge: 'New',
-      iconColor: 'text-pink-600 bg-pink-50',
-    },
-    {
-      id: 'delivery',
-      title: 'Delivery Support',
-      description: 'Manage your shop delivery settings to ensure smooth and efficient order fulfillment.',
-      icon: Truck,
-      badge: null,
-      iconColor: 'text-indigo-600 bg-indigo-50',
-    },
-    {
-      id: 'payment',
-      title: 'Payment Gateway',
-      description: 'Integrate and manage payment options to provide customers with secure and flexible transaction methods.',
-      icon: CreditCard,
-      badge: null,
-      iconColor: 'text-emerald-600 bg-emerald-50',
-    },
-    {
-      id: 'seo',
-      title: 'SEO & Marketing Integrations',
-      description: 'Enhance your shop visibility by Google Tag Manager, Facebook Pixel, TikTok Pixel, and SEO tools.',
-      icon: Globe,
-      badge: 'New',
-      iconColor: 'text-purple-600 bg-purple-50',
-    },
-    {
-      id: 'sms',
-      title: 'SMS Support',
-      description: 'Enable SMS notifications and support to keep your customers informed with real-time updates.',
-      icon: MessageSquare,
-      badge: null,
-      iconColor: 'text-blue-600 bg-blue-50',
-    },
-    {
-      id: 'email',
-      title: 'Email Gateway',
-      description: 'Provide instant communication and transactional invoice assistance with SMTP & SendGrid.',
-      icon: Mail,
-      badge: null,
-      iconColor: 'text-amber-600 bg-amber-50',
-    },
-    {
-      id: 'policy',
-      title: 'Shop Policy',
-      description: 'Define and customize policies for your shop, including returns, refunds, and customer service guidelines.',
-      icon: FileText,
-      badge: null,
-      iconColor: 'text-slate-700 bg-slate-100',
-    },
-    {
-      id: 'blocklist',
-      title: 'Blocklist',
-      description: 'Block abusive visitors by IP address, IP range, device, country, phone, or email to stop fraud.',
-      icon: ShieldBan,
-      badge: 'New',
-      iconColor: 'text-red-600 bg-red-50',
-    },
-    {
-      id: 'limits',
-      title: 'Order Limits',
-      description: 'Limit repeat and duplicate orders, choose how they are handled, and review protected attempts.',
-      icon: Sliders,
-      badge: 'New',
-      iconColor: 'text-indigo-600 bg-indigo-50',
-    },
-    {
-      id: 'billing',
-      title: 'Billing & Plan',
-      description: 'View your current plan, usage limits, and upgrade for more stores and staff seats.',
-      icon: Wallet,
-      badge: 'New',
-      iconColor: 'text-blue-600 bg-blue-50',
-    },
-  ];
-
   return (
-    <div className="space-y-6 max-w-6xl">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-black text-slate-900 tracking-tight">Manage Shop</h1>
-        <p className="text-xs text-slate-500 font-normal">
-          Set up and customize your shop to ensure a smooth and efficient experience.
-        </p>
-      </div>
+    <div className="flex flex-col h-full bg-white">
+      <div className="w-full space-y-12 pb-12">
+        <StoreSettingsHeader />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {shopCards.map((card) => {
-          const Icon = card.icon;
-
-          return (
-            <div
-              key={card.id}
-              onClick={() => router.push(`/dashboard/settings/${card.id}`)}
-              className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm hover:shadow-md hover:border-purple-400 transition-all cursor-pointer group flex flex-col justify-between space-y-4 relative"
-            >
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className={`p-3 rounded-2xl ${card.iconColor} shadow-sm group-hover:scale-105 transition-transform`}>
-                    <Icon className="w-6 h-6" />
-                  </div>
-
-                  {card.badge && (
-                    <span className="px-3 py-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-extrabold text-[10px] rounded-full shadow-sm">
-                      {card.badge}
-                    </span>
-                  )}
-                </div>
-
-                <h3 className="font-extrabold text-base text-slate-900 group-hover:text-purple-600 transition-colors">
-                  {card.title}
-                </h3>
-
-                <p className="text-xs text-slate-500 leading-relaxed font-normal">
-                  {card.description}
-                </p>
-              </div>
+        {/* TOP SECTIONS */}
+        <div className="space-y-10">
+          
+          {/* General */}
+          <SettingsSection 
+            title="General" 
+            subtitle="Basic information and preferences about your store."
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <SettingsCard
+                icon={Store} iconBgColor="bg-purple-50" iconColor="text-purple-600"
+                title="Store Information" description="Update your store name, email, contact number and address."
+                onClick={() => router.push('/dashboard/settings/general')}
+              />
+              <SettingsCard
+                icon={Globe} iconBgColor="bg-blue-50" iconColor="text-blue-600"
+                title="Store Domain" description="Manage your store domain, subdomain and SSL settings."
+                onClick={() => router.push('/dashboard/settings/domain')}
+              />
+              <SettingsCard
+                icon={Globe2} iconBgColor="bg-emerald-50" iconColor="text-emerald-600"
+                title="Localization" description="Set your store language, currency, timezone and date format."
+              />
+              <SettingsCard
+                icon={Settings} iconBgColor="bg-amber-50" iconColor="text-amber-500"
+                title="Store Preferences" description="Configure general preferences and store-wide settings."
+              />
             </div>
-          );
-        })}
+          </SettingsSection>
+
+          {/* Storefront */}
+          <SettingsSection 
+            title="Storefront" 
+            subtitle="Customize how your store looks and behaves."
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <SettingsCard
+                icon={Palette} iconBgColor="bg-purple-50" iconColor="text-purple-600"
+                title="Theme & Branding" description="Customize theme, colors, typography, logo and store branding."
+                onClick={() => router.push('/dashboard/settings/theme')}
+              />
+              <SettingsCard
+                icon={LayoutTemplate} iconBgColor="bg-blue-50" iconColor="text-blue-600"
+                title="Navigation" description="Manage menu, header, footer and other navigation settings."
+              />
+              <SettingsCard
+                icon={Home} iconBgColor="bg-amber-50" iconColor="text-amber-500"
+                title="Homepage Settings" description="Configure homepage layout, sections and content settings."
+              />
+            </div>
+          </SettingsSection>
+
+          {/* Orders & Checkout */}
+          <SettingsSection 
+            title="Orders & Checkout" 
+            subtitle="Manage order processing and checkout experience."
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <SettingsCard
+                icon={ClipboardList} iconBgColor="bg-emerald-50" iconColor="text-emerald-600"
+                title="Order Settings" description="Configure order status, invoice, packing slip and other settings."
+              />
+              <SettingsCard
+                icon={ShoppingCart} iconBgColor="bg-purple-50" iconColor="text-purple-600"
+                title="Checkout Settings" description="Manage checkout flow, guest checkout, fields and advanced options."
+              />
+              <SettingsCard
+                icon={SlidersHorizontal} iconBgColor="bg-amber-50" iconColor="text-amber-500"
+                title="Order Limits" description="Set limits for minimum order, max order, cancellation and return."
+                onClick={() => router.push('/dashboard/settings/limits')}
+              />
+              <SettingsCard
+                icon={Users} iconBgColor="bg-blue-50" iconColor="text-blue-600"
+                title="Customer Settings" description="Manage customer registration, accounts and login preferences."
+              />
+            </div>
+          </SettingsSection>
+
+        </div>
+
+        {/* BOTTOM MASONRY GRID (4 Columns) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6 pt-4">
+          
+          {/* Column 1: Shipping & Security */}
+          <div className="flex flex-col gap-8">
+            <SettingsSection title="Shipping" subtitle="Manage shipping preferences.">
+              <SettingsCard
+                icon={Truck} iconBgColor="bg-blue-50" iconColor="text-blue-600"
+                title="Shipping Settings" description="Configure shipping methods, rates and default options."
+                onClick={() => router.push('/dashboard/settings/delivery')}
+              />
+              <SettingsCard
+                icon={MapPin} iconBgColor="bg-blue-50" iconColor="text-blue-600"
+                title="Delivery Zones" description="Create and manage delivery zones for your store."
+              />
+            </SettingsSection>
+            
+            <SettingsSection title="Security" subtitle="Keep your store secure.">
+              <SettingsCard
+                icon={ShieldAlert} iconBgColor="bg-red-50" iconColor="text-red-500"
+                title="Blocklist" description="Block abusive visitors and prevent fraud activities."
+                onClick={() => router.push('/dashboard/settings/blocklist')}
+              />
+            </SettingsSection>
+          </div>
+
+          {/* Column 2: Payments & SEO */}
+          <div className="flex flex-col gap-8">
+            <SettingsSection title="Payments" subtitle="Manage payment preferences.">
+              <SettingsCard
+                icon={CreditCard} iconBgColor="bg-emerald-50" iconColor="text-emerald-600"
+                title="Payment Preferences" description="Configure COD, partial payment, tips and other payment preferences."
+                onClick={() => router.push('/dashboard/settings/payment')}
+              />
+              <SettingsInfoBox text={
+                <>Manage payment gateways from the <span className="font-bold text-blue-700">Payments &rarr; Gateways</span> section.</>
+              } />
+            </SettingsSection>
+
+            <SettingsSection title="SEO & Tracking" subtitle="Improve your store visibility.">
+              <SettingsCard
+                icon={BarChart3} iconBgColor="bg-purple-50" iconColor="text-purple-600"
+                title="Tracking Preferences" description="Manage SEO, meta data and tracking preferences."
+                onClick={() => router.push('/dashboard/settings/seo')}
+              />
+              <SettingsInfoBox text={
+                <>Manage pixels & integrations from the <span className="font-bold text-blue-700">Marketing &rarr; Pixels</span> section.</>
+              } />
+            </SettingsSection>
+          </div>
+
+          {/* Column 3: Notifications & Advanced */}
+          <div className="flex flex-col gap-8">
+            <SettingsSection title="Notifications" subtitle="Manage communication settings.">
+              <SettingsCard
+                icon={Mail} iconBgColor="bg-purple-50" iconColor="text-purple-600"
+                title="Email Notifications" description="Manage email templates and notification preferences."
+                onClick={() => router.push('/dashboard/settings/email')}
+              />
+              <SettingsCard
+                icon={MessageSquare} iconBgColor="bg-blue-50" iconColor="text-blue-600"
+                title="SMS Notifications" description="Manage SMS templates and notification preferences."
+                onClick={() => router.push('/dashboard/settings/sms')}
+              />
+            </SettingsSection>
+
+            <SettingsSection title="Advanced" subtitle="For advanced users and developers.">
+              <SettingsCard
+                icon={Code2} iconBgColor="bg-blue-50" iconColor="text-blue-600"
+                title="API / Developer" description="Manage API keys, webhooks and advanced developer settings."
+              />
+              <SettingsCard
+                icon={Link} iconBgColor="bg-purple-50" iconColor="text-purple-600"
+                title="Webhooks" description="Configure and manage webhook events for your store."
+              />
+            </SettingsSection>
+          </div>
+
+          {/* Column 4: Policies & Danger Zone */}
+          <div className="flex flex-col gap-8">
+            <SettingsSection title="Policies" subtitle="Manage your store policies and terms.">
+              <SettingsCard
+                icon={FileText} iconBgColor="bg-blue-50" iconColor="text-blue-600"
+                title="Store Policies" description="Create and manage your store policies."
+                onClick={() => router.push('/dashboard/settings/policy')}
+              />
+              <SettingsCard
+                icon={RefreshCw} iconBgColor="bg-emerald-50" iconColor="text-emerald-600"
+                title="Return & Refund Policy" description="Manage return, refund and cancellation policies."
+              />
+              <SettingsCard
+                icon={FileText} iconBgColor="bg-amber-50" iconColor="text-amber-500"
+                title="Terms & Conditions" description="Set terms and conditions for using your store."
+              />
+            </SettingsSection>
+
+            <SettingsSection title="Danger Zone" subtitle="Irreversible and destructive actions." titleColor="text-red-600">
+              <SettingsCard
+                icon={Trash2} iconBgColor="bg-red-50" iconColor="text-red-500"
+                title="Delete Store" description="Permanently delete your store and all associated data."
+              />
+            </SettingsSection>
+          </div>
+
+        </div>
       </div>
     </div>
   );
