@@ -2,20 +2,29 @@ import React from 'react';
 import { WidgetCard } from '@/features/admin/components/core/WidgetCard';
 import { Target, ShoppingBag, PackageCheck, Truck } from 'lucide-react';
 import { useGetMerchantOrdersQuery } from '@/features/order/api/orderApi';
-import { useGetMerchantConsignmentsQuery } from '@/features/logistics/api/logisticsApi';
+import { useGetShipmentsQuery } from '@/features/logistics/api/logisticsApi';
+
+/** Statuses that mean a parcel is booked but not yet delivered. */
+const IN_TRANSIT_STATUSES = new Set(['BOOKED', 'PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY']);
 
 export function ActionCenterWidget() {
   const { data: response, isLoading: isOrdersLoading } = useGetMerchantOrdersQuery();
   const orders = response?.data || [];
-  const { data: consignments = [], isLoading: isConsignmentsLoading } = useGetMerchantConsignmentsQuery();
-  const isLoading = isOrdersLoading || isConsignmentsLoading;
+  // The widget counts across the merchant's recent shipments, so it asks for a
+  // page large enough to cover them rather than the default 10.
+  const { data: shipmentsData, isLoading: isShipmentsLoading } = useGetShipmentsQuery({
+    page: 1,
+    limit: 100,
+  });
+  const isLoading = isOrdersLoading || isShipmentsLoading;
 
   const pendingOrders = orders.filter((o) => o.orderStatus === 'PENDING').length;
 
-  const bookedOrderIds = new Set(consignments.map((c) => c.orderId));
+  const shipments = shipmentsData?.data ?? [];
+  const bookedOrderIds = new Set(shipments.map((s) => s.orderId));
   const confirmedOrders = orders.filter((o) => o.orderStatus === 'CONFIRMED' || o.orderStatus === 'PROCESSING');
   const readyToShip = confirmedOrders.filter((o) => !bookedOrderIds.has(o.id)).length;
-  const inTransit = consignments.filter((c) => c.status === 'BOOKED' || c.status === 'IN_TRANSIT').length;
+  const inTransit = shipments.filter((s) => IN_TRANSIT_STATUSES.has(s.status)).length;
 
   const actions = [
     { label: 'Pending Orders', count: pendingOrders, icon: ShoppingBag, color: 'text-blue-700', bg: 'bg-blue-50', border: 'border-blue-100' },

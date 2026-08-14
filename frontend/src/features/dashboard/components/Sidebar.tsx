@@ -222,7 +222,7 @@ export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onCl
           </Link> */}
 
           <NavGroupHeader>Operations</NavGroupHeader>
-          <Link 
+          {/* <Link 
             href="/dashboard/payments" 
             className={navItemClass('/dashboard/payments')}
             onMouseEnter={(e) => handleTooltipEnter(e, "Payments")}
@@ -234,7 +234,7 @@ export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onCl
               <CreditCard className={iconClass} strokeWidth={iconStroke} />
               {!isDesktopCollapsed && <span>Payments</span>}
             </div>
-          </Link>
+          </Link> */}
           <Link 
             href="/dashboard/logistics" 
             className={navItemClass('/dashboard/logistics')}
@@ -304,7 +304,7 @@ export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onCl
               {!isDesktopCollapsed && <span>Storefront</span>}
             </div>
           </Link>
-          <Link 
+          {/* <Link 
             href="/dashboard/pages" 
             className={navItemClass('/dashboard/pages')}
             onMouseEnter={(e) => handleTooltipEnter(e, "Pages")}
@@ -316,7 +316,7 @@ export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onCl
               <FileText className={iconClass} strokeWidth={iconStroke} />
               {!isDesktopCollapsed && <span>Pages</span>}
             </div>
-          </Link>
+          </Link> */}
 
           <NavGroupHeader>Settings</NavGroupHeader>
           <Link 

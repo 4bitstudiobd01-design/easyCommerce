@@ -1,126 +1,196 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { ConsignmentEntity, CourierProviderEnum } from '../entities/consignment.entity';
+import { Repository, DataSource } from 'typeorm';
+import {
+  CodStatusEnum,
+  ConsignmentEntity,
+  ConsignmentStatusEnum,
+} from '../entities/consignment.entity';
 import { ConsignmentEventEntity } from '../entities/consignment-event.entity';
 import { OrderEntity, OrderStatusEnum } from '../../order/entities/order.entity';
 import { OrderStatusHistoryEntity } from '../../order/entities/order-status-history.entity';
 import { StoreEntity } from '../../tenant/entities/store.entity';
-import { SteadfastCourierAdapter } from '../adapters/steadfast.adapter';
-import { PathaoCourierAdapter } from '../adapters/pathao.adapter';
+import { CourierProviderRegistry } from '../adapters/courier-provider.registry';
+import { ShipmentDomainService } from './shipment-domain.service';
+import { GetShipmentDetailsService } from './get-shipment-details.service';
+import { ShipmentDetailsResponseDto } from '../dto/shipment-details-response.dto';
+
+/** Order state implied by a shipment reaching a given status. */
+const ORDER_STATUS_BY_SHIPMENT_STATUS: Partial<Record<ConsignmentStatusEnum, OrderStatusEnum>> = {
+  [ConsignmentStatusEnum.PICKED_UP]: OrderStatusEnum.SHIPPED,
+  [ConsignmentStatusEnum.IN_TRANSIT]: OrderStatusEnum.SHIPPED,
+  [ConsignmentStatusEnum.OUT_FOR_DELIVERY]: OrderStatusEnum.SHIPPED,
+  [ConsignmentStatusEnum.DELIVERED]: OrderStatusEnum.DELIVERED,
+  [ConsignmentStatusEnum.RETURNED]: OrderStatusEnum.RETURNED,
+};
 
 @Injectable()
 export class SyncConsignmentService {
+  private readonly logger = new Logger(SyncConsignmentService.name);
+
   constructor(
     @InjectRepository(ConsignmentEntity)
     private readonly consignmentRepository: Repository<ConsignmentEntity>,
     @InjectRepository(ConsignmentEventEntity)
     private readonly consignmentEventRepository: Repository<ConsignmentEventEntity>,
-    @InjectRepository(OrderEntity)
-    private readonly orderRepository: Repository<OrderEntity>,
-    @InjectRepository(OrderStatusHistoryEntity)
-    private readonly orderStatusHistoryRepository: Repository<OrderStatusHistoryEntity>,
     @InjectRepository(StoreEntity)
     private readonly storeRepository: Repository<StoreEntity>,
-    private readonly steadfastAdapter: SteadfastCourierAdapter,
-    private readonly pathaoAdapter: PathaoCourierAdapter,
+    private readonly courierProviderRegistry: CourierProviderRegistry,
+    private readonly shipmentDomainService: ShipmentDomainService,
+    private readonly getShipmentDetailsService: GetShipmentDetailsService,
+    private readonly dataSource: DataSource,
   ) {}
 
-  async execute(orderId: string, tenantId: string, userId: string): Promise<ConsignmentEntity> {
+  /**
+   * Resolves the active shipment attached to an order, for the Orders screen
+   * which knows the order but not the shipment. Cancelled parcels are skipped
+   * so a replacement shipment is the one that gets synced.
+   */
+  async resolveShipmentIdByOrder(orderId: string, tenantId: string): Promise<string> {
+    const consignment = await this.consignmentRepository
+      .createQueryBuilder('consignment')
+      .where('consignment."tenantId" = :tenantId', { tenantId })
+      .andWhere('consignment."orderId" = :orderId', { orderId })
+      .andWhere('consignment.status != :cancelled', {
+        cancelled: ConsignmentStatusEnum.CANCELLED,
+      })
+      .orderBy('consignment."createdAt"', 'DESC')
+      .getOne();
+
+    if (!consignment) {
+      throw new NotFoundException('No shipment exists for this order.');
+    }
+    return consignment.id;
+  }
+
+  /**
+   * Pulls the latest courier state for one shipment and, when the courier
+   * reports a legal forward move, advances the shipment, its COD state and the
+   * order together.
+   */
+  async execute(
+    shipmentId: string,
+    tenantId: string,
+    userId: string,
+  ): Promise<ShipmentDetailsResponseDto> {
     const consignment = await this.consignmentRepository.findOne({
-      where: { orderId, tenantId },
+      where: { id: shipmentId, tenantId },
     });
 
     if (!consignment) {
-      throw new NotFoundException(`Consignment for order "${orderId}" not found.`);
+      throw new NotFoundException('Shipment not found.');
     }
 
-    const order = await this.orderRepository.findOne({
-      where: { id: orderId, tenantId },
-    });
+    if (!consignment.trackingCode) {
+      throw new BadRequestException(
+        'This shipment has no tracking code yet, so there is nothing to sync.',
+      );
+    }
 
-    if (!order) {
-      throw new NotFoundException(`Order not found.`);
+    if (this.shipmentDomainService.isTerminal(consignment.status)) {
+      // Already concluded — nothing a courier reports can move it further.
+      return this.getShipmentDetailsService.execute(consignment.id, tenantId);
     }
 
     const store = await this.storeRepository.findOne({ where: { tenantId } });
+    const adapter = this.courierProviderRegistry.resolve(consignment.courierProvider);
 
-    let trackingResult;
-    if (consignment.courierProvider === CourierProviderEnum.PATHAO) {
-      trackingResult = await this.pathaoAdapter.trackParcel(consignment.trackingCode, {
-        clientId: store?.pathaoClientId,
-        clientSecret: store?.pathaoClientSecret,
-      });
-    } else {
-      trackingResult = await this.steadfastAdapter.trackParcel(consignment.trackingCode, {
-        apiKey: store?.steadfastApiKey,
-        secretKey: store?.steadfastSecretKey,
-      });
-    }
+    const trackingResult = await adapter.trackParcel(consignment.trackingCode, {
+      apiKey: store?.steadfastApiKey,
+      secretKey: store?.steadfastSecretKey,
+      clientId: store?.pathaoClientId,
+      clientSecret: store?.pathaoClientSecret,
+    });
 
-    // Process tracking events safely (avoid duplicates based on status + timestamp)
+    // Deduplicate on status + timestamp so a repeated sync never double-records.
     const existingEvents = await this.consignmentEventRepository.find({
       where: { consignmentId: consignment.id },
     });
-    const existingEventKeys = new Set(
+    const existingKeys = new Set(
       existingEvents.map((e) => `${e.status}|${e.eventTimestamp.getTime()}`),
     );
 
-    const newEvents = trackingResult.events
-      .filter((event) => !existingEventKeys.has(`${event.status}|${event.timestamp.getTime()}`))
-      .map((event) =>
-        this.consignmentEventRepository.create({
-          consignmentId: consignment.id,
-          status: event.status,
-          eventTimestamp: event.timestamp,
-          location: event.location,
-          description: event.description,
-        }),
+    const newEvents = trackingResult.events.filter(
+      (event) => !existingKeys.has(`${event.status}|${event.timestamp.getTime()}`),
+    );
+
+    const previousStatus = consignment.status;
+    const reportedStatus = trackingResult.currentStatus;
+
+    // The courier is not trusted to dictate arbitrary state: an illegal move
+    // (e.g. delivered → pending) is logged and ignored rather than applied.
+    const shouldApplyStatus =
+      reportedStatus !== previousStatus &&
+      this.shipmentDomainService.canTransition(previousStatus, reportedStatus);
+
+    if (reportedStatus !== previousStatus && !shouldApplyStatus) {
+      this.logger.warn(
+        `Ignoring illegal courier transition for ${consignment.shipmentNumber}: ${previousStatus} → ${reportedStatus}.`,
+      );
+    }
+
+    await this.dataSource.transaction(async (manager) => {
+      for (const event of newEvents) {
+        await manager.save(
+          manager.create(ConsignmentEventEntity, {
+            consignmentId: consignment.id,
+            status: event.status,
+            eventTimestamp: event.timestamp,
+            location: event.location,
+            description: event.description,
+          }),
+        );
+      }
+
+      const codStatus = shouldApplyStatus
+        ? this.shipmentDomainService.deriveCodStatus(reportedStatus, consignment.codStatus)
+        : undefined;
+
+      await manager.update(
+        ConsignmentEntity,
+        { id: consignment.id, tenantId },
+        {
+          ...(shouldApplyStatus ? { status: reportedStatus } : {}),
+          ...(codStatus
+            ? {
+                codStatus,
+                ...(codStatus === CodStatusEnum.COLLECTED ? { codCollectedAt: new Date() } : {}),
+              }
+            : {}),
+          lastSyncAt: new Date(),
+        },
       );
 
-    if (newEvents.length > 0) {
-      await this.consignmentEventRepository.save(newEvents);
-    }
+      if (!shouldApplyStatus) return;
 
-    // Detect state changes
-    const previousStatus = consignment.status;
-    consignment.status = trackingResult.currentStatus;
-    consignment.lastSyncAt = new Date();
-    await this.consignmentRepository.save(consignment);
+      // Order fulfilment follows the parcel, but only ever moves forward.
+      const nextOrderStatus = ORDER_STATUS_BY_SHIPMENT_STATUS[reportedStatus];
+      if (!nextOrderStatus) return;
 
-    // Sync domain logic if status changed
-    if (previousStatus !== consignment.status) {
-      let orderStatusChanged = false;
-      let newOrderStatus = order.orderStatus;
+      const order = await manager.findOne(OrderEntity, {
+        where: { id: consignment.orderId, tenantId },
+        select: ['id', 'orderStatus'],
+      });
+      if (!order || order.orderStatus === nextOrderStatus) return;
 
-      if (consignment.status === 'PICKED_UP' && order.orderStatus === OrderStatusEnum.READY_TO_SHIP) {
-        newOrderStatus = OrderStatusEnum.SHIPPED;
-        orderStatusChanged = true;
-      } else if (consignment.status === 'DELIVERED' && order.orderStatus === OrderStatusEnum.SHIPPED) {
-        newOrderStatus = OrderStatusEnum.DELIVERED;
-        orderStatusChanged = true;
-      } else if (consignment.status === 'RETURNED' && order.orderStatus === OrderStatusEnum.SHIPPED) {
-        newOrderStatus = OrderStatusEnum.RETURNED;
-        orderStatusChanged = true;
-      }
+      await manager.update(
+        OrderEntity,
+        { id: order.id, tenantId },
+        { orderStatus: nextOrderStatus },
+      );
 
-      if (orderStatusChanged) {
-        const previousOrderState = order.orderStatus;
-        order.orderStatus = newOrderStatus;
-        await this.orderRepository.save(order);
-
-        const history = this.orderStatusHistoryRepository.create({
+      await manager.save(
+        manager.create(OrderStatusHistoryEntity, {
           orderId: order.id,
-          previousStatus: previousOrderState,
-          newStatus: newOrderStatus,
+          previousStatus: order.orderStatus,
+          newStatus: nextOrderStatus,
           changedBy: userId,
-          reason: `Synchronized automatically based on courier status: ${consignment.status}`,
+          reason: `Synchronised from courier status: ${reportedStatus} (shipment ${consignment.shipmentNumber}).`,
           tenantId,
-        });
-        await this.orderStatusHistoryRepository.save(history);
-      }
-    }
+        }),
+      );
+    });
 
-    return consignment;
+    return this.getShipmentDetailsService.execute(consignment.id, tenantId);
   }
 }

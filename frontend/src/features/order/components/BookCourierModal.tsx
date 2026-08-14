@@ -42,7 +42,7 @@ export function BookCourierModal({
       await bookCourier({
         orderId,
         courierProvider: provider,
-        note
+        deliveryNote: note || undefined,
       }).unwrap();
       
       // Invalidate order cache to refresh timeline and consignment block

@@ -211,7 +211,7 @@ export function CategoryManagementApp() {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+    <div className="space-y-6 pb-12">
       {/* 1. BREADCRUMB & HEADER */}
       <div className="flex flex-col gap-3">
         <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs font-medium text-slate-500">

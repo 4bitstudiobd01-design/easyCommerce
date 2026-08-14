@@ -51,7 +51,7 @@ export default function BookCourierPage() {
       await bookCourier({
         orderId: order.id,
         courierProvider,
-        note: note || undefined,
+        deliveryNote: note || undefined,
       }).unwrap();
 
       toast.success('Parcel dispatched to courier successfully!');

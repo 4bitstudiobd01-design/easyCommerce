@@ -277,7 +277,9 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
                 <p className="text-xs font-bold text-blue-600 mb-2">{order.consignment.status.replace(/_/g, ' ')}</p>
                 <div className="bg-slate-50 border border-slate-100 rounded p-2 mt-1 mb-2">
                   <p className="text-[10px] text-slate-400 font-bold uppercase mb-0.5">Tracking Code</p>
-                  <p className="text-xs font-medium text-slate-700">{order.consignment.trackingCode}</p>
+                  <p className="text-xs font-medium text-slate-700">
+                    {order.consignment.trackingCode || 'Not Assigned'}
+                  </p>
                 </div>
                 {order.consignment.lastSyncAt && (
                   <p className="text-[10px] text-slate-500 mb-2">

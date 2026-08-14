@@ -80,7 +80,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   return (
-    <div className="min-h-screen bg-slate-900/5 text-slate-900 flex font-sans">
+    <div className="min-h-screen bg-white text-slate-900 flex font-sans">
       <Toaster position="top-right" richColors />
       
       {/* 1. Left Sidebar Navigation */}
@@ -99,7 +99,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <ConnectionStatusBanner />
 
         {/* Dashboard Body Container */}
-        <main className="flex-1 p-4 md:p-8 space-y-8 max-w-7xl mx-auto w-full">
+        <main className="flex-1 w-full flex flex-col px-5 md:px-10 md:py-10">
           {children}
         </main>
       </div>

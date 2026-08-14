@@ -42,7 +42,7 @@ export default function DashboardOverviewPage() {
   }, [store, router, refetchStore]);
 
   return (
-    <div className="space-y-6 max-w-[1200px] mx-auto pb-8">
+    <div className="space-y-6 pb-8">
       {/* 1. Header Area */}
       <DashboardHeaderTitle />
 

@@ -9,19 +9,41 @@ import { OrderStatusHistoryEntity } from '../order/entities/order-status-history
 import { StoreEntity } from '../tenant/entities/store.entity';
 import { TenantModule } from '../tenant/tenant.module';
 import { OrderModule } from '../order/order.module';
-import { CreateCourierBookingService } from './services/create-courier-booking.service';
-import { ListMerchantConsignmentsService } from './services/list-merchant-consignments.service';
+import { StaffModule } from '../staff/staff.module';
+
+import { ShipmentDomainService } from './services/shipment-domain.service';
+import { ListShipmentsService } from './services/list-shipments.service';
+import { GetShipmentSummaryService } from './services/get-shipment-summary.service';
+import { GetShipmentDetailsService } from './services/get-shipment-details.service';
+import { CreateShipmentService } from './services/create-shipment.service';
+import { CancelShipmentService } from './services/cancel-shipment.service';
+import { ExportShipmentsService } from './services/export-shipments.service';
 import { SyncConsignmentService } from './services/sync-consignment.service';
+import { SeedShipmentDemoDataService } from './services/seed-shipment-demo-data.service';
+
+import { CourierProviderRegistry } from './adapters/courier-provider.registry';
 import { SteadfastCourierAdapter } from './adapters/steadfast.adapter';
 import { PathaoCourierAdapter } from './adapters/pathao.adapter';
+import { PaperflyCourierAdapter } from './adapters/paperfly.adapter';
+import { RedxCourierAdapter } from './adapters/redx.adapter';
+
 import { LogisticsController } from './logistics.controller';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([ConsignmentEntity, ConsignmentEventEntity, OrderEntity, StoreEntity, OrderStatusHistoryEntity]),
+    TypeOrmModule.forFeature([
+      ConsignmentEntity,
+      ConsignmentEventEntity,
+      OrderEntity,
+      StoreEntity,
+      OrderStatusHistoryEntity,
+    ]),
     TenantModule,
     OrderModule,
+    // Supplies GetMyPermissionsService, which PermissionsGuard resolves per request.
+    StaffModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -33,19 +55,32 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
   ],
   controllers: [LogisticsController],
   providers: [
-    CreateCourierBookingService,
-    ListMerchantConsignmentsService,
+    ShipmentDomainService,
+    ListShipmentsService,
+    GetShipmentSummaryService,
+    GetShipmentDetailsService,
+    CreateShipmentService,
+    CancelShipmentService,
+    ExportShipmentsService,
     SyncConsignmentService,
+    SeedShipmentDemoDataService,
+    CourierProviderRegistry,
     SteadfastCourierAdapter,
     PathaoCourierAdapter,
+    PaperflyCourierAdapter,
+    RedxCourierAdapter,
     JwtAuthGuard,
+    PermissionsGuard,
   ],
   exports: [
-    CreateCourierBookingService,
-    ListMerchantConsignmentsService,
+    ShipmentDomainService,
+    ListShipmentsService,
+    GetShipmentSummaryService,
+    GetShipmentDetailsService,
+    CreateShipmentService,
+    CancelShipmentService,
     SyncConsignmentService,
-    SteadfastCourierAdapter,
-    PathaoCourierAdapter,
+    CourierProviderRegistry,
     TypeOrmModule,
   ],
 })

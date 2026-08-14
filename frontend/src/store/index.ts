@@ -24,6 +24,7 @@ import emailMarketingReducer from '@/features/email-marketing/slices/emailMarket
 import { seoApi } from '@/features/seo/api/seoApi';
 import { billingApi } from '@/features/billing/api/billingApi';
 import { customerApi } from '@/features/customer/api/customerApi';
+import { marketingApi } from '@/features/marketing/api/marketingApi';
 
 export const store = configureStore({
   reducer: {
@@ -52,6 +53,7 @@ export const store = configureStore({
     [seoApi.reducerPath]: seoApi.reducer,
     [billingApi.reducerPath]: billingApi.reducer,
     [customerApi.reducerPath]: customerApi.reducer,
+    [marketingApi.reducerPath]: marketingApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -72,6 +74,7 @@ export const store = configureStore({
       seoApi.middleware,
       billingApi.middleware,
       customerApi.middleware,
+      marketingApi.middleware
     ),
 });
 

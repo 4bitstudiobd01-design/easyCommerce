@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation';
+import { MarketingView } from '@/features/marketing/components/MarketingView';
 
 export default function MarketingPage() {
-  redirect('/dashboard/settings/seo');
+  return <MarketingView />;
 }

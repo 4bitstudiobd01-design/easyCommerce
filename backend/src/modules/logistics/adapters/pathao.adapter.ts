@@ -1,11 +1,21 @@
 import { Injectable, BadGatewayException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ICourierAdapter, CourierBookingPayload, CourierBookingResult, CourierTrackingResult, CourierTrackingEvent } from './courier.adapter';
-import { ConsignmentStatusEnum } from '../entities/consignment.entity';
+import {
+  ICourierAdapter,
+  CourierBookingPayload,
+  CourierBookingResult,
+  CourierCancellationResult,
+  CourierCredentials,
+  CourierTrackingResult,
+} from './courier.adapter';
+import { ConsignmentStatusEnum, CourierProviderEnum } from '../entities/consignment.entity';
 import axios from 'axios';
 
 @Injectable()
 export class PathaoCourierAdapter implements ICourierAdapter {
+  readonly provider = CourierProviderEnum.PATHAO;
+  readonly displayName = 'Pathao';
+
   private readonly logger = new Logger(PathaoCourierAdapter.name);
 
   constructor(private readonly configService: ConfigService) {}
@@ -85,62 +95,41 @@ export class PathaoCourierAdapter implements ICourierAdapter {
     }
   }
 
-  async trackParcel(trackingCode: string, payload: any): Promise<CourierTrackingResult> {
-    const clientId = payload.clientId || this.configService.get<string>('PATHAO_CLIENT_ID');
-    const clientSecret = payload.clientSecret || this.configService.get<string>('PATHAO_CLIENT_SECRET');
+  async trackParcel(
+    trackingCode: string,
+    credentials: CourierCredentials,
+  ): Promise<CourierTrackingResult> {
+    const clientId = credentials.clientId || this.configService.get<string>('PATHAO_CLIENT_ID');
+    const clientSecret =
+      credentials.clientSecret || this.configService.get<string>('PATHAO_CLIENT_SECRET');
 
-    // MOCK MODE if no credentials
+    // Sandbox mode: report the parcel as unchanged. Fabricating a delivery
+    // history here would silently overwrite real shipment state with fiction.
     if (!clientId || !clientSecret) {
-      return this.generateMockTracking(trackingCode);
+      return { trackingCode, currentStatus: ConsignmentStatusEnum.BOOKED, events: [] };
     }
 
-    try {
-      this.logger.warn(`Pathao trackParcel real API not implemented for ${trackingCode}, falling back to mock.`);
-      return this.generateMockTracking(trackingCode);
-    } catch (err) {
-      this.logger.error(`Pathao tracking request failed for ${trackingCode}: ${err?.message}`);
-      throw new BadGatewayException('Unable to reach Pathao courier service. Please try again shortly.');
-    }
+    // Pathao exposes parcel status through merchant webhooks rather than a
+    // public polling endpoint, so there is nothing to query here. Status
+    // advances when a webhook arrives; until then the parcel is left untouched.
+    this.logger.warn(
+      `Pathao has no polling tracking endpoint; ${trackingCode} left unchanged pending webhook.`,
+    );
+    return { trackingCode, currentStatus: ConsignmentStatusEnum.BOOKED, events: [] };
   }
 
-  private generateMockTracking(trackingCode: string): CourierTrackingResult {
-    const now = new Date();
-    
-    // Pathao simulated mock
-    const events: CourierTrackingEvent[] = [
-      {
-        status: ConsignmentStatusEnum.BOOKED,
-        timestamp: new Date(now.getTime() - 48 * 60 * 60 * 1000),
-        description: 'Order created',
-      },
-      {
-        status: ConsignmentStatusEnum.PICKED_UP,
-        timestamp: new Date(now.getTime() - 24 * 60 * 60 * 1000),
-        location: 'Pathao Sorting Center',
-        description: 'Parcel collected from merchant',
-      },
-      {
-        status: ConsignmentStatusEnum.IN_TRANSIT,
-        timestamp: new Date(now.getTime() - 2 * 60 * 60 * 1000),
-        location: 'Local Hub',
-        description: 'Parcel arrived at local distribution hub',
-      },
-      {
-        status: ConsignmentStatusEnum.OUT_FOR_DELIVERY,
-        timestamp: new Date(now.getTime() - 1 * 60 * 60 * 1000),
-        description: 'Assigned to Pathao Rider',
-      },
-      {
-        status: ConsignmentStatusEnum.DELIVERED,
-        timestamp: now,
-        description: 'Successfully delivered to recipient',
-      }
-    ];
-
+  async cancelParcel(
+    trackingCode: string,
+    credentials: CourierCredentials,
+  ): Promise<CourierCancellationResult> {
+    const clientId = credentials.clientId || this.configService.get<string>('PATHAO_CLIENT_ID');
+    if (!clientId) {
+      return { cancelled: true, message: 'Cancelled locally (Pathao sandbox mode).' };
+    }
+    this.logger.warn(`Pathao live cancellation is not implemented (${trackingCode}).`);
     return {
-      trackingCode,
-      currentStatus: ConsignmentStatusEnum.DELIVERED,
-      events
+      cancelled: false,
+      message: 'Pathao cancellation must be arranged directly with the courier.',
     };
   }
 }
