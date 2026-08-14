@@ -4,6 +4,7 @@ import { RootState } from '@/store';
 
 export type ProductType = 'PHYSICAL' | 'DIGITAL' | 'SERVICE';
 export type ProductStatus = 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
+export type CategoryStatus = 'ACTIVE' | 'DRAFT' | 'ARCHIVED';
 export type AttributeType = 'TEXT' | 'NUMBER' | 'BOOLEAN' | 'SELECT' | 'MULTI_SELECT' | 'DATE' | 'URL';
 export type TaxCategory = 'STANDARD_VAT' | 'REDUCED' | 'ZERO_RATED' | 'EXEMPT';
 export type ProductDiscountType = 'NONE' | 'PERCENTAGE' | 'FIXED';
@@ -106,11 +107,109 @@ export interface Category {
   slug: string;
   description?: string;
   parentId?: string;
+  status?: CategoryStatus;
+  sortOrder?: number;
   icon?: string;
   image?: string;
   isFeatured?: boolean;
+  seoTitle?: string;
+  metaDescription?: string;
+  isVisible?: boolean;
+  showInStorefront?: boolean;
+  tenantId?: string;
+  createdAt?: string;
+  updatedAt?: string;
   parentCategory?: Category;
   subcategories?: Category[];
+  productsCount?: number;
+  subcategoriesCount?: number;
+}
+
+export interface CategoryListItem {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  parentId?: string;
+  status: CategoryStatus;
+  sortOrder: number;
+  icon?: string;
+  image?: string;
+  isFeatured: boolean;
+  seoTitle?: string;
+  metaDescription?: string;
+  isVisible: boolean;
+  showInStorefront: boolean;
+  tenantId: string;
+  createdAt: string;
+  updatedAt: string;
+  parentCategory?: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+  productsCount: number;
+  subcategoriesCount: number;
+}
+
+export interface CategoryTreeNode {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  parentId?: string | null;
+  status: CategoryStatus;
+  sortOrder: number;
+  icon?: string;
+  image?: string;
+  isFeatured: boolean;
+  seoTitle?: string;
+  metaDescription?: string;
+  isVisible: boolean;
+  showInStorefront: boolean;
+  tenantId: string;
+  createdAt: string;
+  updatedAt: string;
+  productsCount: number;
+  subcategoriesCount: number;
+  children: CategoryTreeNode[];
+}
+
+export interface ReorderCategoryRequest {
+  categoryId: string;
+  newParentId?: string | null;
+  newSortOrder?: number;
+  targetSiblingIds?: string[];
+}
+
+export interface CategoryListResponse {
+  data: CategoryListItem[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasPrevPage: boolean;
+    hasNextPage: boolean;
+  };
+}
+
+export interface CategoryListParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: CategoryStatus | 'ALL';
+  parentId?: string;
+  sortBy?: 'sortOrder' | 'name' | 'createdAt' | 'updatedAt' | 'status' | 'productsCount';
+  sortOrder?: 'ASC' | 'DESC';
+}
+
+export interface CategoryKpis {
+  totalCategories: number;
+  activeCategories: number;
+  activePercentage: number;
+  parentCategories: number;
+  emptyCategories: number;
 }
 
 export interface Brand {
@@ -471,11 +570,81 @@ export interface BulkUpdateVariantsRequest {
 
 export interface CreateCategoryRequest {
   name: string;
+  slug?: string;
   description?: string;
-  parentId?: string;
+  parentId?: string | null;
+  status?: CategoryStatus;
+  sortOrder?: number;
   icon?: string;
   image?: string;
   isFeatured?: boolean;
+  seoTitle?: string;
+  metaDescription?: string;
+  isVisible?: boolean;
+  showInStorefront?: boolean;
+}
+
+export interface UpdateCategoryRequest {
+  name?: string;
+  slug?: string;
+  description?: string;
+  parentId?: string | null;
+  status?: CategoryStatus;
+  sortOrder?: number;
+  icon?: string;
+  image?: string;
+  isFeatured?: boolean;
+  seoTitle?: string;
+  metaDescription?: string;
+  isVisible?: boolean;
+  showInStorefront?: boolean;
+}
+
+export interface BulkUpdateCategoryStatusRequest {
+  categoryIds: string[];
+  status: CategoryStatus;
+}
+
+export interface BulkMoveCategoriesRequest {
+  categoryIds: string[];
+  newParentId?: string | null;
+}
+
+export interface BulkDeleteCategoriesRequest {
+  categoryIds: string[];
+}
+
+export interface CategoryImportRowPreview {
+  rowIndex: number;
+  name: string;
+  slug: string;
+  description?: string;
+  parentSlug?: string;
+  status: CategoryStatus;
+  sortOrder?: number;
+  isVisible: boolean;
+  showInStorefront: boolean;
+  isFeatured: boolean;
+  seoTitle?: string;
+  metaDescription?: string;
+  isValid: boolean;
+  errors: string[];
+}
+
+export interface CategoryImportPreviewResult {
+  totalRows: number;
+  validRows: number;
+  invalidRows: number;
+  previewData: CategoryImportRowPreview[];
+  errors: { row: number; name?: string; reason: string }[];
+}
+
+export interface CategoryImportExecuteResult {
+  totalRows: number;
+  createdCount: number;
+  updatedCount: number;
+  failedCount: number;
+  failures: { row: number; name?: string; reason: string }[];
 }
 
 export interface CreateBrandRequest {
@@ -705,7 +874,82 @@ export const catalogApi = createApi({
     getCategories: builder.query<Category[], void>({
       query: () => '/categories',
       providesTags: ['Category'],
+      transformResponse: (response: { data: any }) => {
+        if (response.data && Array.isArray(response.data.data)) {
+          return response.data.data;
+        }
+        return Array.isArray(response.data) ? response.data : [];
+      },
+    }),
+    getCategoryList: builder.query<CategoryListResponse, CategoryListParams | void>({
+      query: (params) => ({
+        url: '/categories',
+        params: params
+          ? {
+              page: params.page,
+              limit: params.limit,
+              search: params.search || undefined,
+              status: params.status && params.status !== 'ALL' ? params.status : undefined,
+              parentId: params.parentId && params.parentId !== 'all' ? params.parentId : undefined,
+              sortBy: params.sortBy,
+              sortOrder: params.sortOrder,
+            }
+          : undefined,
+      }),
+      providesTags: ['Category'],
+      transformResponse: (response: { data: CategoryListResponse }) =>
+        response.data || {
+          data: [],
+          meta: { page: 1, limit: 20, total: 0, totalPages: 1, hasPrevPage: false, hasNextPage: false },
+        },
+    }),
+    getCategoryKpis: builder.query<CategoryKpis, void>({
+      query: () => '/categories/kpi',
+      providesTags: ['Category'],
+      transformResponse: (response: { data: CategoryKpis }) =>
+        response.data || {
+          totalCategories: 0,
+          activeCategories: 0,
+          activePercentage: 0,
+          parentCategories: 0,
+          emptyCategories: 0,
+        },
+    }),
+    getParentCategories: builder.query<Category[], void>({
+      query: () => '/categories/parents',
+      providesTags: ['Category'],
       transformResponse: (response: { data: Category[] }) => response.data || [],
+    }),
+    getCategoryTree: builder.query<CategoryTreeNode[], void>({
+      query: () => '/categories/tree',
+      providesTags: ['Category'],
+      transformResponse: (response: { data: CategoryTreeNode[] }) => response.data || [],
+    }),
+    reorderCategory: builder.mutation<CategoryTreeNode[], ReorderCategoryRequest>({
+      query: (body) => ({
+        url: '/categories/reorder',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Category'],
+      transformResponse: (response: { data: CategoryTreeNode[] }) => response.data || [],
+    }),
+    getCategoryById: builder.query<Category, string>({
+      query: (id) => `/categories/${id}`,
+      providesTags: (_result, _error, id) => [{ type: 'Category', id }],
+      transformResponse: (response: { data: Category }) => response.data,
+    }),
+    uploadCategoryMedia: builder.mutation<UploadedMedia[], { files: File[] }>({
+      query: ({ files }) => {
+        const formData = new FormData();
+        files.forEach((file) => formData.append('files', file));
+        return {
+          url: '/categories/media/upload',
+          method: 'POST',
+          body: formData,
+        };
+      },
+      transformResponse: (response: { data: UploadedMedia[] }) => response.data || [],
     }),
     createCategory: builder.mutation<Category, CreateCategoryRequest>({
       query: (categoryData) => ({
@@ -715,6 +959,67 @@ export const catalogApi = createApi({
       }),
       invalidatesTags: ['Category'],
       transformResponse: (response: { data: Category }) => response.data,
+    }),
+    updateCategory: builder.mutation<Category, { id: string; data: UpdateCategoryRequest }>({
+      query: ({ id, data }) => ({
+        url: `/categories/${id}`,
+        method: 'PATCH',
+        body: data,
+      }),
+      invalidatesTags: ['Category'],
+      transformResponse: (response: { data: Category }) => response.data,
+    }),
+    deleteCategory: builder.mutation<{ message: string }, string>({
+      query: (id) => ({
+        url: `/categories/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Category', 'Product'],
+      transformResponse: (response: { data: { message: string } }) => response.data,
+    }),
+    bulkUpdateCategoryStatus: builder.mutation<{ successCount: number; failedCount: number; message: string }, BulkUpdateCategoryStatusRequest>({
+      query: (body) => ({
+        url: '/categories/bulk/status',
+        method: 'PATCH',
+        body,
+      }),
+      invalidatesTags: ['Category'],
+      transformResponse: (response: any) => response?.data ?? response,
+    }),
+    bulkMoveCategories: builder.mutation<{ successCount: number; message: string }, BulkMoveCategoriesRequest>({
+      query: (body) => ({
+        url: '/categories/bulk/move',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Category'],
+      transformResponse: (response: any) => response?.data ?? response,
+    }),
+    bulkDeleteCategories: builder.mutation<{ successCount: number; message: string }, BulkDeleteCategoriesRequest>({
+      query: (body) => ({
+        url: '/categories/bulk/delete',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Category', 'Product'],
+      transformResponse: (response: any) => response?.data ?? response,
+    }),
+    previewCategoryImport: builder.mutation<CategoryImportPreviewResult, { csvContent: string }>({
+      query: (body) => ({
+        url: '/categories/import/preview',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response: any) => response?.data ?? response,
+    }),
+    importCategories: builder.mutation<CategoryImportExecuteResult, { csvContent: string; mode?: 'CREATE_ONLY' | 'UPSERT' }>({
+      query: (body) => ({
+        url: '/categories/import',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Category'],
+      transformResponse: (response: any) => response?.data ?? response,
     }),
 
     // --- BRANDS ---
@@ -966,7 +1271,21 @@ export const {
   useGetShippingProfilesQuery,
   useCreateShippingProfileMutation,
   useGetCategoriesQuery,
+  useGetCategoryListQuery,
+  useGetCategoryTreeQuery,
+  useGetCategoryKpisQuery,
+  useGetParentCategoriesQuery,
+  useGetCategoryByIdQuery,
   useCreateCategoryMutation,
+  useUpdateCategoryMutation,
+  useReorderCategoryMutation,
+  useUploadCategoryMediaMutation,
+  useDeleteCategoryMutation,
+  useBulkUpdateCategoryStatusMutation,
+  useBulkMoveCategoriesMutation,
+  useBulkDeleteCategoriesMutation,
+  usePreviewCategoryImportMutation,
+  useImportCategoriesMutation,
   useGetBrandsQuery,
   useCreateBrandMutation,
   useGetCollectionsQuery,

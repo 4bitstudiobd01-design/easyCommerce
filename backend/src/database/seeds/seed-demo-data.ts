@@ -19,6 +19,7 @@ import { ProductImageEntity } from '../../modules/catalog/entities/product-image
 import { ProductRelationEntity } from '../../modules/catalog/entities/product-relation.entity';
 import { ProductType } from '../../modules/catalog/enums/product-type.enum';
 import { ProductStatus } from '../../modules/catalog/enums/product-status.enum';
+import { CategoryStatus } from '../../modules/catalog/enums/category-status.enum';
 import { TaxCategory } from '../../modules/catalog/enums/tax-category.enum';
 import { ProductDiscountType } from '../../modules/catalog/enums/product-discount-type.enum';
 import { AttributeType } from '../../modules/catalog/enums/attribute-type.enum';
@@ -231,29 +232,398 @@ async function seed() {
     collectionMap.set(cDef.slug, col);
   }
 
-  // 7. Seed Categories
-  console.log('🗂️ Seeding Categories...');
-  const categoryDefs = [
-    { title: "Men's Fashion", slug: 'mens-fashion' },
-    { title: "Women's Fashion", slug: 'womens-fashion' },
-    { title: 'Electronics', slug: 'electronics' },
-    { title: 'Accessories', slug: 'accessories' },
-    { title: 'Home & Lifestyle', slug: 'home-lifestyle' },
-    { title: 'Digital & Services', slug: 'digital-services' },
+  // 7. Seed Rich Categories (Multi-Level Hierarchy with Active, Draft, Archived, and Empty)
+  console.log('🗂️ Seeding Categories with Multi-Level Hierarchy...');
+
+  interface SeedCategoryDef {
+    name: string;
+    slug: string;
+    description: string;
+    parentSlug?: string;
+    status: CategoryStatus;
+    sortOrder: number;
+    isFeatured: boolean;
+    isVisible: boolean;
+    showInStorefront: boolean;
+    seoTitle?: string;
+    metaDescription?: string;
+  }
+
+  const categoryDefs: SeedCategoryDef[] = [
+    // --- 1. Fashion & Apparel (Root) ---
+    {
+      name: 'Fashion & Apparel',
+      slug: 'fashion-apparel',
+      description: 'Trending fashion, clothing, traditional wear, and accessories for all seasons',
+      status: CategoryStatus.ACTIVE,
+      sortOrder: 0,
+      isFeatured: true,
+      isVisible: true,
+      showInStorefront: true,
+      seoTitle: 'Fashion & Apparel | EasyCommerce Bangladesh',
+      metaDescription: 'Discover the latest fashion trends, stylish clothing, traditional panjabis, and premium apparel in Bangladesh.',
+    },
+    // Fashion -> Level 2
+    {
+      name: "Men's Fashion",
+      slug: 'mens-fashion',
+      description: "Men's premium clothing, formal attire, casual shirts, and footwear",
+      parentSlug: 'fashion-apparel',
+      status: CategoryStatus.ACTIVE,
+      sortOrder: 0,
+      isFeatured: true,
+      isVisible: true,
+      showInStorefront: true,
+      seoTitle: "Men's Fashion Collection | EasyCommerce",
+      metaDescription: "Shop men's casual shirts, formal trousers, polo t-shirts, and traditional panjabi online.",
+    },
+    {
+      name: "Women's Fashion",
+      slug: 'womens-fashion',
+      description: "Women's sarees, designer kurtis, three-pieces, western wear, and lifestyle accessories",
+      parentSlug: 'fashion-apparel',
+      status: CategoryStatus.ACTIVE,
+      sortOrder: 1,
+      isFeatured: true,
+      isVisible: true,
+      showInStorefront: true,
+      seoTitle: "Women's Fashion & Ethnic Wear | EasyCommerce",
+      metaDescription: "Explore elegant sarees, designer kurtis, three-piece sets, and western apparel for women.",
+    },
+    {
+      name: 'Kids & Baby Fashion',
+      slug: 'kids-baby-fashion',
+      description: 'Comfortable and stylish clothing for boys, girls, infants, and toddlers',
+      parentSlug: 'fashion-apparel',
+      status: CategoryStatus.ACTIVE,
+      sortOrder: 2,
+      isFeatured: false,
+      isVisible: true,
+      showInStorefront: true,
+      seoTitle: 'Kids & Baby Fashion | EasyCommerce',
+      metaDescription: 'Soft, breathable and playful outfits for kids, infants and newborn babies.',
+    },
+    {
+      name: 'Footwear & Shoes',
+      slug: 'footwear-shoes',
+      description: 'Casual sneakers, formal leather shoes, sandals, and sports shoes',
+      parentSlug: 'fashion-apparel',
+      status: CategoryStatus.ACTIVE,
+      sortOrder: 3,
+      isFeatured: false,
+      isVisible: true,
+      showInStorefront: true,
+      seoTitle: 'Footwear & Shoes Collection | EasyCommerce',
+      metaDescription: 'Find premium sneakers, genuine leather formal shoes, and comfort sandals online.',
+    },
+    {
+      name: 'Accessories',
+      slug: 'accessories',
+      description: 'Leather wallets, belts, caps, sunglasses, and personal lifestyle accessories',
+      parentSlug: 'fashion-apparel',
+      status: CategoryStatus.ACTIVE,
+      sortOrder: 4,
+      isFeatured: false,
+      isVisible: true,
+      showInStorefront: true,
+      seoTitle: 'Fashion Accessories | EasyCommerce',
+      metaDescription: 'Complete your outfit with genuine leather belts, wallets, wristwatches, and accessories.',
+    },
+    // Men's Fashion -> Level 3
+    {
+      name: 'Shirts & Polos',
+      slug: 'mens-shirts-polos',
+      description: '100% cotton polo t-shirts, oxford formal shirts, and casual button-downs',
+      parentSlug: 'mens-fashion',
+      status: CategoryStatus.ACTIVE,
+      sortOrder: 0,
+      isFeatured: false,
+      isVisible: true,
+      showInStorefront: true,
+    },
+    {
+      name: 'Panjabi & Traditional',
+      slug: 'mens-panjabi-traditional',
+      description: 'Designer cotton, silk, and jacquard panjabis for Eid, weddings, and festivals',
+      parentSlug: 'mens-fashion',
+      status: CategoryStatus.ACTIVE,
+      sortOrder: 1,
+      isFeatured: true,
+      isVisible: true,
+      showInStorefront: true,
+    },
+    {
+      name: 'Trousers & Jeans',
+      slug: 'mens-trousers-jeans',
+      description: 'Slim-fit stretch chinos, denim jeans, and formal trousers',
+      parentSlug: 'mens-fashion',
+      status: CategoryStatus.ACTIVE,
+      sortOrder: 2,
+      isFeatured: false,
+      isVisible: true,
+      showInStorefront: true,
+    },
+    // Women's Fashion -> Level 3
+    {
+      name: 'Sarees & Kurtis',
+      slug: 'womens-sarees-kurtis',
+      description: 'Jamdani, georgette, silk sarees and embroidered daily wear kurtis',
+      parentSlug: 'womens-fashion',
+      status: CategoryStatus.ACTIVE,
+      sortOrder: 0,
+      isFeatured: true,
+      isVisible: true,
+      showInStorefront: true,
+    },
+    {
+      name: 'Western Wear',
+      slug: 'womens-western-wear',
+      description: 'Dresses, tops, jeans, and formal blazers for women',
+      parentSlug: 'womens-fashion',
+      status: CategoryStatus.ACTIVE,
+      sortOrder: 1,
+      isFeatured: false,
+      isVisible: true,
+      showInStorefront: true,
+    },
+
+    // --- 2. Electronics & Gadgets (Root) ---
+    {
+      name: 'Electronics & Gadgets',
+      slug: 'electronics',
+      description: 'Smartphones, laptops, audio gadgets, chargers, and computing accessories',
+      status: CategoryStatus.ACTIVE,
+      sortOrder: 1,
+      isFeatured: true,
+      isVisible: true,
+      showInStorefront: true,
+      seoTitle: 'Electronics & Smart Gadgets | EasyCommerce',
+      metaDescription: 'Shop verified electronics, smart devices, laptops, and authentic gadgets with official warranty.',
+    },
+    // Electronics -> Level 2
+    {
+      name: 'Smartphones & Tablets',
+      slug: 'smartphones-tablets',
+      description: 'Official flagship smartphones, Android devices, iPads, and tablets',
+      parentSlug: 'electronics',
+      status: CategoryStatus.ACTIVE,
+      sortOrder: 0,
+      isFeatured: true,
+      isVisible: true,
+      showInStorefront: true,
+    },
+    {
+      name: 'Computers & Laptops',
+      slug: 'computers-laptops',
+      description: 'Ultrabooks, gaming laptops, desktop PCs, keyboards, and mice',
+      parentSlug: 'electronics',
+      status: CategoryStatus.ACTIVE,
+      sortOrder: 1,
+      isFeatured: false,
+      isVisible: true,
+      showInStorefront: true,
+    },
+    {
+      name: 'Audio & Sound',
+      slug: 'audio-sound',
+      description: 'Wireless earbuds, noise-canceling headphones, and portable bluetooth speakers',
+      parentSlug: 'electronics',
+      status: CategoryStatus.ACTIVE,
+      sortOrder: 2,
+      isFeatured: true,
+      isVisible: true,
+      showInStorefront: true,
+    },
+    // Smartphones -> Level 3
+    {
+      name: 'Mobile Accessories',
+      slug: 'mobile-accessories',
+      description: 'Fast chargers, USB-C cables, power banks, and phone cases',
+      parentSlug: 'smartphones-tablets',
+      status: CategoryStatus.ACTIVE,
+      sortOrder: 0,
+      isFeatured: false,
+      isVisible: true,
+      showInStorefront: true,
+    },
+
+    // --- 3. Home & Lifestyle (Root) ---
+    {
+      name: 'Home & Lifestyle',
+      slug: 'home-lifestyle',
+      description: 'Modern home decor, kitchenware, bedding, and ambient lighting',
+      status: CategoryStatus.ACTIVE,
+      sortOrder: 2,
+      isFeatured: false,
+      isVisible: true,
+      showInStorefront: true,
+      seoTitle: 'Home & Living Essentials | EasyCommerce',
+      metaDescription: 'Elevate your living space with minimalist home decor, kitchen appliances, and cozy bedding.',
+    },
+    // Home -> Level 2
+    {
+      name: 'Kitchen & Dining',
+      slug: 'kitchen-dining',
+      description: 'Cookware, dinner sets, blender machines, and food prep tools',
+      parentSlug: 'home-lifestyle',
+      status: CategoryStatus.ACTIVE,
+      sortOrder: 0,
+      isFeatured: false,
+      isVisible: true,
+      showInStorefront: true,
+    },
+    {
+      name: 'Home Decor & Lighting',
+      slug: 'home-decor-lighting',
+      description: 'Wall art, scented candles, desk lamps, and indoor plant pots',
+      parentSlug: 'home-lifestyle',
+      status: CategoryStatus.ACTIVE,
+      sortOrder: 1,
+      isFeatured: false,
+      isVisible: true,
+      showInStorefront: true,
+    },
+
+    // --- 4. Beauty & Personal Care (Root) ---
+    {
+      name: 'Beauty & Personal Care',
+      slug: 'beauty-personal-care',
+      description: 'Organic skincare, haircare treatments, perfumes, and grooming kits',
+      status: CategoryStatus.ACTIVE,
+      sortOrder: 3,
+      isFeatured: false,
+      isVisible: true,
+      showInStorefront: true,
+    },
+    {
+      name: 'Skincare & Sunscreen',
+      slug: 'skincare-sunscreen',
+      description: 'Face wash, moisturizing creams, serums, and broad-spectrum sunscreens',
+      parentSlug: 'beauty-personal-care',
+      status: CategoryStatus.ACTIVE,
+      sortOrder: 0,
+      isFeatured: false,
+      isVisible: true,
+      showInStorefront: true,
+    },
+
+    // --- 5. Digital & Services (Root) ---
+    {
+      name: 'Digital & Services',
+      slug: 'digital-services',
+      description: 'Downloadable e-books, software licenses, and 1-on-1 expert consulting',
+      status: CategoryStatus.ACTIVE,
+      sortOrder: 4,
+      isFeatured: false,
+      isVisible: true,
+      showInStorefront: true,
+    },
+    {
+      name: 'E-Books & PDFs',
+      slug: 'ebooks-pdfs',
+      description: 'Business guides, technical books, and digital educational PDFs',
+      parentSlug: 'digital-services',
+      status: CategoryStatus.ACTIVE,
+      sortOrder: 0,
+      isFeatured: false,
+      isVisible: true,
+      showInStorefront: true,
+    },
+    {
+      name: 'Online Consulting',
+      slug: 'online-consulting',
+      description: '1-on-1 ecommerce growth consulting and technical mentorship sessions',
+      parentSlug: 'digital-services',
+      status: CategoryStatus.ACTIVE,
+      sortOrder: 1,
+      isFeatured: false,
+      isVisible: true,
+      showInStorefront: true,
+    },
+
+    // --- 6. Special Status Categories (Draft, Archived, Empty) ---
+    {
+      name: 'Seasonal Flash Deals',
+      slug: 'seasonal-flash-deals',
+      description: 'Upcoming seasonal flash sales and discounted holiday packages',
+      status: CategoryStatus.DRAFT,
+      sortOrder: 5,
+      isFeatured: false,
+      isVisible: false,
+      showInStorefront: false,
+      seoTitle: 'Upcoming Seasonal Flash Deals',
+      metaDescription: 'Preview upcoming seasonal discount campaign packages.',
+    },
+    {
+      name: 'Archived Summer 2025 Deals',
+      slug: 'archived-summer-2025',
+      description: 'Past promotional campaign archive for historical analytics',
+      status: CategoryStatus.ARCHIVED,
+      sortOrder: 6,
+      isFeatured: false,
+      isVisible: false,
+      showInStorefront: false,
+    },
+    {
+      name: 'New Product Launches',
+      slug: 'new-product-launches',
+      description: 'Newly added category awaiting initial product assignments',
+      status: CategoryStatus.ACTIVE,
+      sortOrder: 7,
+      isFeatured: false,
+      isVisible: true,
+      showInStorefront: true,
+      seoTitle: 'New Product Launches | EasyCommerce',
+      metaDescription: 'Be the first to explore our upcoming new product catalog additions.',
+    },
   ];
 
   const categoryMap = new Map<string, CategoryEntity>();
+
+  // Pass 1: Upsert all category entities without parent references
   for (const catDef of categoryDefs) {
     let cat = await categoryRepo.findOne({ where: { tenantId, slug: catDef.slug } });
     if (!cat) {
       cat = categoryRepo.create({
-        name: catDef.title,
+        name: catDef.name,
         slug: catDef.slug,
+        description: catDef.description,
+        status: catDef.status,
+        sortOrder: catDef.sortOrder,
+        isFeatured: catDef.isFeatured,
+        isVisible: catDef.isVisible,
+        showInStorefront: catDef.showInStorefront,
+        seoTitle: catDef.seoTitle,
+        metaDescription: catDef.metaDescription,
         tenantId,
       });
+    } else {
+      cat.name = catDef.name;
+      cat.description = catDef.description;
+      cat.status = catDef.status;
+      cat.sortOrder = catDef.sortOrder;
+      cat.isFeatured = catDef.isFeatured;
+      cat.isVisible = catDef.isVisible;
+      cat.showInStorefront = catDef.showInStorefront;
+      cat.seoTitle = catDef.seoTitle;
+      cat.metaDescription = catDef.metaDescription;
+    }
+    cat = await categoryRepo.save(cat);
+    categoryMap.set(catDef.slug, cat);
+  }
+
+  // Pass 2: Connect parent categories
+  for (const catDef of categoryDefs) {
+    const cat = categoryMap.get(catDef.slug);
+    if (cat) {
+      if (catDef.parentSlug) {
+        const parent = categoryMap.get(catDef.parentSlug);
+        cat.parentId = parent ? parent.id : undefined;
+      } else {
+        cat.parentId = undefined;
+      }
       await categoryRepo.save(cat);
     }
-    categoryMap.set(catDef.slug, cat);
   }
 
   // 8. Seed Attribute Definitions and Options

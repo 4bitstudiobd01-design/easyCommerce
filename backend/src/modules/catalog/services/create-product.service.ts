@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { ProductEntity } from '../entities/product.entity';
+import { CategoryEntity } from '../entities/category.entity';
 import { ProductVariantEntity } from '../entities/product-variant.entity';
 import { ProductImageEntity } from '../entities/product-image.entity';
 import { CollectionEntity } from '../entities/collection.entity';
@@ -21,6 +22,8 @@ export class CreateProductService {
   constructor(
     @InjectRepository(ProductEntity)
     private readonly productRepository: Repository<ProductEntity>,
+    @InjectRepository(CategoryEntity)
+    private readonly categoryRepository: Repository<CategoryEntity>,
     @InjectRepository(ProductVariantEntity)
     private readonly variantRepository: Repository<ProductVariantEntity>,
     @InjectRepository(ProductImageEntity)
@@ -110,6 +113,18 @@ export class CreateProductService {
       });
     }
 
+    // Validate category ownership within tenant scope
+    let categoryId: string | undefined = undefined;
+    if (dto.categoryId && dto.categoryId.trim() !== '' && dto.categoryId !== 'none') {
+      const category = await this.categoryRepository.findOne({
+        where: { id: dto.categoryId, tenantId },
+      });
+      if (!category) {
+        throw new BadRequestException('Category not found in this store');
+      }
+      categoryId = dto.categoryId;
+    }
+
     // Mass assignment protection: explicitly construct allowed entity fields
     const product = this.productRepository.create({
       name: productName.trim(),
@@ -151,7 +166,7 @@ export class CreateProductService {
       serviceDeliveryType: dto.serviceDeliveryType,
       serviceDuration: dto.serviceDuration,
       serviceDurationUnit: dto.serviceDurationUnit,
-      categoryId: dto.categoryId,
+      categoryId,
       brandId: dto.brandId,
       collections,
       tenantId,

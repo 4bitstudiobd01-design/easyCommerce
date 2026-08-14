@@ -3,6 +3,7 @@
 import React from 'react';
 import { Search, X } from 'lucide-react';
 import { ProductStatus, ProductType, useGetCategoriesQuery, useGetBrandsQuery } from '../api/catalogApi';
+import { formatHierarchicalCategoryOptions } from '../utils/categoryTreeHelper';
 
 interface ProductFilterBarProps {
   searchQuery: string;
@@ -103,12 +104,12 @@ export function ProductFilterBar({
               value={categoryFilter}
               onChange={(e) => onCategoryChange(e.target.value)}
               aria-label="Filter products by category"
-              className="bg-transparent focus:outline-none font-semibold text-slate-800 cursor-pointer text-xs"
+              className="bg-transparent focus:outline-none font-semibold text-slate-800 cursor-pointer text-xs max-w-[180px]"
             >
               <option value="">All Categories</option>
-              {categories.map((c) => (
+              {formatHierarchicalCategoryOptions(categories).map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.name}
+                  {c.displayName}
                 </option>
               ))}
             </select>

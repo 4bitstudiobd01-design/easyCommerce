@@ -367,7 +367,20 @@ export default function ProductDetailsPage() {
               </div>
 
               <div className="space-y-2 pt-3 border-t border-slate-100">
-                {infoRow('Category', product.category?.name || 'Uncategorized')}
+                {infoRow(
+                  'Category',
+                  product.category ? (
+                    <Link
+                      href={`/dashboard/categories/${product.category.id}`}
+                      className="text-blue-600 hover:text-blue-700 hover:underline inline-flex items-center gap-1 font-semibold"
+                    >
+                      <span>{product.category.name}</span>
+                      <ExternalLink className="w-3 h-3 text-blue-500" />
+                    </Link>
+                  ) : (
+                    <span className="text-slate-400 font-normal">Uncategorized</span>
+                  ),
+                )}
                 {infoRow('Brand', product.brand?.name || 'No brand')}
               </div>
 

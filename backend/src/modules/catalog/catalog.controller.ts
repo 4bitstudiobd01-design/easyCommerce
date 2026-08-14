@@ -22,9 +22,19 @@ import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CreateCategoryService } from './services/create-category.service';
-import { ListCategoriesService } from './services/list-categories.service';
-import { UpdateCategoryService, UpdateCategoryDto } from './services/update-category.service';
+import { FindCategoryByIdService } from './services/find-category-by-id.service';
+import { ListCategoriesService, CategoryListResult } from './services/list-categories.service';
+import { GetCategoryKpisService } from './services/get-category-kpis.service';
+import { ListParentCategoriesService } from './services/list-parent-categories.service';
+import { GetCategoryTreeService, CategoryTreeNode } from './services/get-category-tree.service';
+import { ReorderCategoryService } from './services/reorder-category.service';
+import { UpdateCategoryService } from './services/update-category.service';
 import { DeleteCategoryService } from './services/delete-category.service';
+import { BulkUpdateCategoryStatusService, BulkCategoryStatusResult } from './services/bulk-update-category-status.service';
+import { BulkMoveCategoriesService, BulkMoveCategoriesResult } from './services/bulk-move-categories.service';
+import { BulkDeleteCategoriesService, BulkDeleteCategoriesResult } from './services/bulk-delete-categories.service';
+import { ExportCategoriesService } from './services/export-categories.service';
+import { ImportCategoriesService, CategoryImportPreviewResult, CategoryImportExecuteResult } from './services/import-categories.service';
 import { CreateBrandService } from './services/create-brand.service';
 import { ListBrandsService } from './services/list-brands.service';
 import { DeleteBrandService } from './services/delete-brand.service';
@@ -89,6 +99,14 @@ import { DeleteProductMediaService } from './services/delete-product-media.servi
 import { ListProductMediaService } from './services/list-product-media.service';
 
 import { CreateCategoryDto } from './dto/create-category.dto';
+import { UpdateCategoryDto } from './dto/update-category.dto';
+import { CategoryListDto } from './dto/category-list.dto';
+import { CategoryKpisDto } from './dto/category-kpis.dto';
+import { ReorderCategoryDto } from './dto/reorder-category.dto';
+import { BulkUpdateCategoryStatusDto } from './dto/bulk-update-category-status.dto';
+import { BulkMoveCategoriesDto } from './dto/bulk-move-categories.dto';
+import { BulkDeleteCategoriesDto } from './dto/bulk-delete-categories.dto';
+import { ImportCategoriesDto } from './dto/import-categories.dto';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { CreateCollectionDto } from './dto/create-collection.dto';
 import { CreateAttributeDto } from './dto/create-attribute.dto';
@@ -121,9 +139,19 @@ import { ProductImageEntity } from './entities/product-image.entity';
 export class CatalogController {
   constructor(
     private readonly createCategoryService: CreateCategoryService,
+    private readonly findCategoryByIdService: FindCategoryByIdService,
     private readonly listCategoriesService: ListCategoriesService,
+    private readonly getCategoryKpisService: GetCategoryKpisService,
+    private readonly listParentCategoriesService: ListParentCategoriesService,
+    private readonly getCategoryTreeService: GetCategoryTreeService,
+    private readonly reorderCategoryService: ReorderCategoryService,
     private readonly updateCategoryService: UpdateCategoryService,
     private readonly deleteCategoryService: DeleteCategoryService,
+    private readonly bulkUpdateCategoryStatusService: BulkUpdateCategoryStatusService,
+    private readonly bulkMoveCategoriesService: BulkMoveCategoriesService,
+    private readonly bulkDeleteCategoriesService: BulkDeleteCategoriesService,
+    private readonly exportCategoriesService: ExportCategoriesService,
+    private readonly importCategoriesService: ImportCategoriesService,
     private readonly createBrandService: CreateBrandService,
     private readonly listBrandsService: ListBrandsService,
     private readonly deleteBrandService: DeleteBrandService,
@@ -566,17 +594,215 @@ export class CatalogController {
     return this.createCategoryService.execute(tenantId, dto);
   }
 
-  @Get('categories')
+  @Get('categories/tree')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'List all categories for logged-in merchant store' })
+  @ApiOperation({ summary: 'Get full hierarchical category tree with product counts' })
+  @ApiResponse({ status: 200, description: 'Recursive category hierarchy tree' })
   @RequirePermissions('products:read')
-  async listCategories(
+  async getCategoryTree(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') storeId?: string,
+  ): Promise<CategoryTreeNode[]> {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
+    return this.getCategoryTreeService.execute(tenantId);
+  }
+
+  @Post('categories/reorder')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Move or reorder category in hierarchy tree (atomic transaction)' })
+  @ApiResponse({ status: 200, description: 'Updated category hierarchy tree' })
+  @RequirePermissions('products:write')
+  async reorderCategory(
+    @CurrentUser('sub') userId: string,
+    @Body() dto: ReorderCategoryDto,
+    @Headers('x-store-id') storeId?: string,
+  ): Promise<CategoryTreeNode[]> {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
+    return this.reorderCategoryService.execute(tenantId, dto);
+  }
+
+  @Post('categories/media/upload')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('products:write')
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Upload category image files (max 5MB each)' })
+  @ApiResponse({ status: 201, description: 'Files stored; returns their public URLs' })
+  @ApiResponse({ status: 400, description: 'Unsupported file type or file too large' })
+  @UseInterceptors(
+    FilesInterceptor('files', 5, {
+      limits: { fileSize: MAX_UPLOAD_BYTES, files: 5 },
+    }),
+  )
+  async uploadCategoryMedia(
+    @CurrentUser('sub') userId: string,
+    @UploadedFiles() files: Express.Multer.File[],
+    @Headers('x-store-id') storeId?: string,
+  ): Promise<UploadedMediaResult[]> {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
+    return this.uploadProductMediaService.execute(tenantId, files);
+  }
+
+  @Get('categories/kpi')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get Category KPI cards for logged-in merchant store' })
+  @ApiResponse({ status: 200, type: CategoryKpisDto })
+  @RequirePermissions('products:read')
+  async getCategoryKpis(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') storeId?: string,
+  ): Promise<CategoryKpisDto> {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
+    return this.getCategoryKpisService.execute(tenantId);
+  }
+
+  @Get('categories/parents')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all root parent categories for category filter dropdown' })
+  @ApiResponse({ status: 200, description: 'List of root parent categories' })
+  @RequirePermissions('products:read')
+  async listParentCategories(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') storeId?: string,
   ): Promise<CategoryEntity[]> {
     const tenantId = await this.getMerchantTenantId(userId, storeId);
-    return this.listCategoriesService.execute(tenantId);
+    return this.listParentCategoriesService.execute(tenantId);
+  }
+
+  @Get('categories')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List all categories with pagination, search, status, parent filters, and product count' })
+  @RequirePermissions('products:read')
+  async listCategories(
+    @CurrentUser('sub') userId: string,
+    @Query() query: CategoryListDto,
+    @Headers('x-store-id') storeId?: string,
+  ): Promise<CategoryListResult> {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
+    return this.listCategoriesService.execute(tenantId, query);
+  }
+
+  // --- CATEGORIES BULK & IMPORT/EXPORT ENDPOINTS (CHUNK 8) ---
+  @Patch('categories/bulk/status')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Bulk update category status (DRAFT, ACTIVE, ARCHIVED)' })
+  @RequirePermissions('products:write')
+  async bulkUpdateCategoryStatus(
+    @CurrentUser('sub') userId: string,
+    @Body() dto: BulkUpdateCategoryStatusDto,
+    @Headers('x-store-id') storeId?: string,
+  ): Promise<BulkCategoryStatusResult> {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
+    return this.bulkUpdateCategoryStatusService.execute(tenantId, dto);
+  }
+
+  @Post('categories/bulk/move')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Bulk move categories to a new parent or root level' })
+  @RequirePermissions('products:write')
+  async bulkMoveCategories(
+    @CurrentUser('sub') userId: string,
+    @Body() dto: BulkMoveCategoriesDto,
+    @Headers('x-store-id') storeId?: string,
+  ): Promise<BulkMoveCategoriesResult> {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
+    return this.bulkMoveCategoriesService.execute(tenantId, dto);
+  }
+
+  @Post('categories/bulk/delete')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Bulk delete categories safely (unlinks subcategories and products)' })
+  @RequirePermissions('products:write')
+  async bulkDeleteCategories(
+    @CurrentUser('sub') userId: string,
+    @Body() dto: BulkDeleteCategoriesDto,
+    @Headers('x-store-id') storeId?: string,
+  ): Promise<BulkDeleteCategoriesResult> {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
+    return this.bulkDeleteCategoriesService.execute(tenantId, dto);
+  }
+
+  @Get('categories/export')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Export categories to CSV format' })
+  @RequirePermissions('products:read')
+  async exportCategories(
+    @CurrentUser('sub') userId: string,
+    @Query() query: CategoryListDto,
+    @Query('categoryIds') categoryIdsStr?: string,
+    @Headers('x-store-id') storeId?: string,
+    @Res() res?: Response,
+  ) {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
+    const categoryIds = categoryIdsStr ? categoryIdsStr.split(',').filter(Boolean) : undefined;
+    const csvData = await this.exportCategoriesService.execute(tenantId, query, categoryIds);
+
+    if (res) {
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', 'attachment; filename="categories_export.csv"');
+      return res.send(csvData);
+    }
+    return csvData;
+  }
+
+  @Get('categories/import/template')
+  @ApiOperation({ summary: 'Download Category Import CSV Template' })
+  async getCategoryImportTemplate(@Res() res: Response) {
+    const csvContent = this.importCategoriesService.getImportTemplateCsv();
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="category_import_template.csv"');
+    return res.send(csvContent);
+  }
+
+  @Post('categories/import/preview')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Validate and preview categories CSV import without mutating database' })
+  @RequirePermissions('products:write')
+  async previewCategoryImport(
+    @CurrentUser('sub') userId: string,
+    @Body() dto: ImportCategoriesDto,
+    @Headers('x-store-id') storeId?: string,
+  ): Promise<CategoryImportPreviewResult> {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
+    return this.importCategoriesService.preview(tenantId, dto.csvContent);
+  }
+
+  @Post('categories/import')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Import categories from CSV with topological transaction safety' })
+  @RequirePermissions('products:write')
+  async importCategories(
+    @CurrentUser('sub') userId: string,
+    @Body() dto: ImportCategoriesDto,
+    @Headers('x-store-id') storeId?: string,
+  ): Promise<CategoryImportExecuteResult> {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
+    return this.importCategoriesService.execute(tenantId, dto);
+  }
+
+  @Get('categories/:id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get a single category by ID with parent and subcategory relations' })
+  @RequirePermissions('products:read')
+  async getCategoryById(
+    @CurrentUser('sub') userId: string,
+    @Param('id') id: string,
+    @Headers('x-store-id') storeId?: string,
+  ): Promise<CategoryEntity> {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
+    return this.findCategoryByIdService.execute(id, tenantId);
   }
 
   @Patch('categories/:id')

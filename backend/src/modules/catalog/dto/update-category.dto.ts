@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
-  IsNotEmpty,
   IsString,
   IsOptional,
   IsBoolean,
@@ -9,38 +8,40 @@ import {
   IsInt,
   Min,
   MaxLength,
+  ValidateIf,
 } from 'class-validator';
 import { CategoryStatus } from '../enums/category-status.enum';
 
-export class CreateCategoryDto {
-  @ApiProperty({ example: 'Fashion & Apparel', description: 'Category name' })
+export class UpdateCategoryDto {
+  @ApiProperty({ example: 'Men Fashion & Apparel', description: 'Updated category name', required: false })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(255)
-  name: string;
+  name?: string;
 
-  @ApiProperty({ example: 'fashion-apparel', description: 'Custom URL slug (optional, auto-generated if omitted)', required: false })
+  @ApiProperty({ example: 'men-fashion-apparel', description: 'Updated URL slug', required: false })
   @IsOptional()
   @IsString()
   @MaxLength(255)
   slug?: string;
 
-  @ApiProperty({ example: 'Men and women clothing items', description: 'Category description', required: false })
+  @ApiProperty({ example: 'Updated category description', description: 'Category description', required: false })
   @IsOptional()
   @IsString()
   description?: string;
 
-  @ApiProperty({ example: 'uuid-parent-id', description: 'Parent Category ID for subcategory hierarchy', required: false })
+  @ApiProperty({ example: 'uuid-parent-id', description: 'Parent Category ID (null or empty string to unset)', required: false })
   @IsOptional()
+  @ValidateIf((_, value) => value !== null && value !== undefined && value !== '')
   @IsUUID()
-  parentId?: string;
+  parentId?: string | null;
 
   @ApiProperty({ enum: CategoryStatus, example: CategoryStatus.ACTIVE, description: 'Category publication status', required: false })
   @IsOptional()
   @IsEnum(CategoryStatus)
   status?: CategoryStatus;
 
-  @ApiProperty({ example: 0, description: 'Display sort order priority', required: false })
+  @ApiProperty({ example: 1, description: 'Display sort order priority', required: false })
   @IsOptional()
   @IsInt()
   @Min(0)
@@ -62,13 +63,13 @@ export class CreateCategoryDto {
   @IsBoolean()
   isFeatured?: boolean;
 
-  @ApiProperty({ example: 'Fashion & Apparel Collection | EasyCommerce', description: 'Meta SEO Title', required: false })
+  @ApiProperty({ example: 'Men Fashion & Apparel Collection | EasyCommerce', description: 'Meta SEO Title', required: false })
   @IsOptional()
   @IsString()
   @MaxLength(255)
   seoTitle?: string;
 
-  @ApiProperty({ example: 'Shop top fashion apparel including men, women and kids clothing.', description: 'Meta SEO Description', required: false })
+  @ApiProperty({ example: 'Updated meta SEO Description', description: 'Meta SEO Description', required: false })
   @IsOptional()
   @IsString()
   @MaxLength(1000)

@@ -25,8 +25,14 @@
 * **CMS-003 Store Settings**: Logo, Favicon, Currency, Language, Social Links, Business Info.
 
 ### 4. Catalog & Inventory Module
-* **CAT-001 Products & Variants**: Single products, product variants (SKU, Size, Color, Material), variant images.
-* **CAT-002 Categorization**: Multi-level Categories, Brands, Tags, Collections.
+* **CAT-001 Products & Variants**: Single products, product variants (SKU, Size, Color, Material), variant images, pricing and tax management.
+* **CAT-002 Categorization & Hierarchy (Complete)**:
+  * Multi-level recursive category hierarchy with visual drag-and-drop tree reordering and circular cycle prevention.
+  * Category domain management: Active, Draft, and Archived status workflows with storefront visibility toggles.
+  * Media upload integration and structured SEO metadata (Title, Meta Description).
+  * Product ↔ Category assignment with correlated product counting, category product tab view, and product list filtering.
+  * Merchant bulk management toolbar: batch status switcher, hierarchical bulk move, and safe cascade deletion (product unlinking).
+  * Two-stage RFC 4180 CSV import with live validation preview, duplicate detection, and topological transaction execution; formula-sanitized UTF-8 CSV exporter.
 * **INV-001 Inventory Management (Decoupled)**: Multi-warehouse stock tracking, low stock alerts, stock adjustment logs.
 
 ### 5. Sales & Order Module

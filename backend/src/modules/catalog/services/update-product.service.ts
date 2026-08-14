@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, Not } from 'typeorm';
 import { ProductEntity } from '../entities/product.entity';
+import { CategoryEntity } from '../entities/category.entity';
 import { CollectionEntity } from '../entities/collection.entity';
 import { UpdateProductDto } from '../dto/update-product.dto';
 import { ProductSlugService } from './product-slug.service';
@@ -12,6 +13,8 @@ export class UpdateProductService {
   constructor(
     @InjectRepository(ProductEntity)
     private readonly productRepository: Repository<ProductEntity>,
+    @InjectRepository(CategoryEntity)
+    private readonly categoryRepository: Repository<CategoryEntity>,
     @InjectRepository(CollectionEntity)
     private readonly collectionRepository: Repository<CollectionEntity>,
     private readonly productSlugService: ProductSlugService,
@@ -212,7 +215,17 @@ export class UpdateProductService {
     }
 
     if (dto.categoryId !== undefined) {
-      product.categoryId = dto.categoryId;
+      if (dto.categoryId && dto.categoryId.trim() !== '' && dto.categoryId !== 'none') {
+        const category = await this.categoryRepository.findOne({
+          where: { id: dto.categoryId, tenantId },
+        });
+        if (!category) {
+          throw new NotFoundException('Category not found in this store');
+        }
+        product.categoryId = dto.categoryId;
+      } else {
+        product.categoryId = undefined;
+      }
     }
 
     if (dto.brandId !== undefined) {

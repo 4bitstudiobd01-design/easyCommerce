@@ -28,6 +28,7 @@ import { ProductMediaGallery } from '@/features/catalog/components/ProductMediaG
 import { DynamicAttributeField } from '@/features/catalog/components/DynamicAttributeField';
 import { ProductVariantMatrix } from '@/features/catalog/components/ProductVariantMatrix';
 import { ProductFulfillmentConfig } from '@/features/catalog/components/ProductFulfillmentConfig';
+import { formatHierarchicalCategoryOptions } from '@/features/catalog/utils/categoryTreeHelper';
 import { useGetMyStoreQuery } from '@/features/tenant/api/tenantApi';
 import { Package, Save, Globe, Layers, AlertCircle, Loader2, FolderTree, Plus, Sliders, DollarSign, Percent, TrendingUp, Boxes, Barcode, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -69,7 +70,7 @@ export default function CreateProductPage() {
   const [productType, setProductType] = useState<ProductType>('PHYSICAL');
   const [status, setStatus] = useState<ProductStatus>('DRAFT');
   const [customSlug, setCustomSlug] = useState('');
-  const [categoryId, setCategoryId] = useState('');
+  const [categoryId, setCategoryId] = useState(searchParams.get('categoryId') || '');
   const [brandId, setBrandId] = useState('');
   const [selectedCollectionIds, setSelectedCollectionIds] = useState<string[]>([]);
   const [localImages, setLocalImages] = useState<{ url: string; altText?: string; isPrimary?: boolean }[]>([]);
@@ -1066,9 +1067,9 @@ export default function CreateProductPage() {
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               >
                 <option value="">Uncategorized</option>
-                {categories.map((cat) => (
+                {formatHierarchicalCategoryOptions(categories).map((cat) => (
                   <option key={cat.id} value={cat.id}>
-                    {cat.parentId ? `└─ ${cat.name}` : cat.name}
+                    {cat.displayName}
                   </option>
                 ))}
               </select>

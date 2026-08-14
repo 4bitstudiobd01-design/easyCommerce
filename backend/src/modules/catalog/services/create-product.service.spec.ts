@@ -3,6 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { BadRequestException } from '@nestjs/common';
 import { CreateProductService } from './create-product.service';
 import { ProductEntity } from '../entities/product.entity';
+import { CategoryEntity } from '../entities/category.entity';
 import { ProductVariantEntity } from '../entities/product-variant.entity';
 import { ProductImageEntity } from '../entities/product-image.entity';
 import { CollectionEntity } from '../entities/collection.entity';
@@ -75,6 +76,15 @@ describe('CreateProductService', () => {
         {
           provide: getRepositoryToken(ProductEntity),
           useValue: productRepo,
+        },
+        {
+          provide: getRepositoryToken(CategoryEntity),
+          useValue: {
+            findOne: jest.fn().mockImplementation(({ where }) => {
+              if (where?.id === 'cat-invalid') return Promise.resolve(null);
+              return Promise.resolve({ id: where?.id || 'cat-1', tenantId: where?.tenantId || mockTenantId, name: 'Mock Cat' });
+            }),
+          },
         },
         {
           provide: getRepositoryToken(ProductVariantEntity),

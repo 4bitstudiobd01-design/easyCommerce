@@ -7,6 +7,7 @@ import { CollectionEntity } from '../entities/collection.entity';
 import { ProductSlugService } from './product-slug.service';
 import { ProductType } from '../enums/product-type.enum';
 import { ProductStatus } from '../enums/product-status.enum';
+import { CategoryEntity } from '../entities/category.entity';
 
 describe('UpdateProductService', () => {
   let service: UpdateProductService;
@@ -32,6 +33,15 @@ describe('UpdateProductService', () => {
         {
           provide: getRepositoryToken(ProductEntity),
           useValue: productRepo,
+        },
+        {
+          provide: getRepositoryToken(CategoryEntity),
+          useValue: {
+            findOne: jest.fn().mockImplementation(({ where }) => {
+              if (where?.id === 'cat-invalid') return Promise.resolve(null);
+              return Promise.resolve({ id: where?.id || 'cat-1', tenantId: where?.tenantId || mockTenantId, name: 'Mock Cat' });
+            }),
+          },
         },
         {
           provide: getRepositoryToken(CollectionEntity),

@@ -24,9 +24,19 @@ import { TenantModule } from '../tenant/tenant.module';
 import { StaffModule } from '../staff/staff.module';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { CreateCategoryService } from './services/create-category.service';
+import { FindCategoryByIdService } from './services/find-category-by-id.service';
 import { ListCategoriesService } from './services/list-categories.service';
+import { GetCategoryKpisService } from './services/get-category-kpis.service';
+import { ListParentCategoriesService } from './services/list-parent-categories.service';
+import { GetCategoryTreeService } from './services/get-category-tree.service';
+import { ReorderCategoryService } from './services/reorder-category.service';
 import { UpdateCategoryService } from './services/update-category.service';
 import { DeleteCategoryService } from './services/delete-category.service';
+import { BulkUpdateCategoryStatusService } from './services/bulk-update-category-status.service';
+import { BulkMoveCategoriesService } from './services/bulk-move-categories.service';
+import { BulkDeleteCategoriesService } from './services/bulk-delete-categories.service';
+import { ExportCategoriesService } from './services/export-categories.service';
+import { ImportCategoriesService } from './services/import-categories.service';
 import { CreateBrandService } from './services/create-brand.service';
 import { ListBrandsService } from './services/list-brands.service';
 import { DeleteBrandService } from './services/delete-brand.service';
@@ -122,9 +132,19 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
   controllers: [CatalogController, ProductFeedController],
   providers: [
     CreateCategoryService,
+    FindCategoryByIdService,
     ListCategoriesService,
+    GetCategoryKpisService,
+    ListParentCategoriesService,
+    GetCategoryTreeService,
+    ReorderCategoryService,
     UpdateCategoryService,
     DeleteCategoryService,
+    BulkUpdateCategoryStatusService,
+    BulkMoveCategoriesService,
+    BulkDeleteCategoriesService,
+    ExportCategoriesService,
+    ImportCategoriesService,
     CreateBrandService,
     ListBrandsService,
     DeleteBrandService,
@@ -174,9 +194,19 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
   ],
   exports: [
     CreateCategoryService,
+    FindCategoryByIdService,
     ListCategoriesService,
+    GetCategoryKpisService,
+    ListParentCategoriesService,
+    GetCategoryTreeService,
+    ReorderCategoryService,
     UpdateCategoryService,
     DeleteCategoryService,
+    BulkUpdateCategoryStatusService,
+    BulkMoveCategoriesService,
+    BulkDeleteCategoriesService,
+    ExportCategoriesService,
+    ImportCategoriesService,
     CreateBrandService,
     ListBrandsService,
     DeleteBrandService,

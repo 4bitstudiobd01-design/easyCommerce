@@ -11,6 +11,7 @@ describe('Product Inventory, SKU & Stock Management Services', () => {
         create: jest.fn().mockImplementation((val) => val),
         save: jest.fn().mockImplementation((val) => ({ id: 'p1', ...val })),
       };
+      const categoryRepo = { findOne: jest.fn().mockResolvedValue(null) };
       const variantRepo = { create: jest.fn(), save: jest.fn() };
       const imageRepo = { create: jest.fn(), save: jest.fn() };
       const collectionRepo = { find: jest.fn() };
@@ -21,6 +22,7 @@ describe('Product Inventory, SKU & Stock Management Services', () => {
 
       const service = new CreateProductService(
         productRepo as any,
+        categoryRepo as any,
         variantRepo as any,
         imageRepo as any,
         collectionRepo as any,
@@ -49,6 +51,7 @@ describe('Product Inventory, SKU & Stock Management Services', () => {
         create: jest.fn().mockImplementation((val) => val),
         save: jest.fn().mockImplementation((val) => ({ id: 'p1', ...val })),
       };
+      const categoryRepo = { findOne: jest.fn().mockResolvedValue(null) };
       const variantRepo = { create: jest.fn(), save: jest.fn() };
       const imageRepo = { create: jest.fn(), save: jest.fn() };
       const collectionRepo = { find: jest.fn() };
@@ -59,6 +62,7 @@ describe('Product Inventory, SKU & Stock Management Services', () => {
 
       const service = new CreateProductService(
         productRepo as any,
+        categoryRepo as any,
         variantRepo as any,
         imageRepo as any,
         collectionRepo as any,

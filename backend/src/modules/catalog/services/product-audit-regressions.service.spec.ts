@@ -254,6 +254,10 @@ describe('Product module audit regressions', () => {
             },
           },
           {
+            provide: getRepositoryToken(CategoryEntity),
+            useValue: { findOne: jest.fn().mockResolvedValue({ id: 'cat-1', name: 'Mock Cat' }) },
+          },
+          {
             provide: getRepositoryToken(ProductVariantEntity),
             useValue: { create: jest.fn().mockImplementation((d) => d), save: jest.fn() },
           },

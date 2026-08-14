@@ -7,6 +7,7 @@ import {
   useGetCategoriesQuery,
   useCreateCategoryMutation,
 } from '../api/catalogApi';
+import { formatHierarchicalCategoryOptions } from '../utils/categoryTreeHelper';
 import {
   Package,
   Sparkles,
@@ -187,9 +188,9 @@ export function CreateProductModal({ isOpen, onClose }: CreateProductModalProps)
                   className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all"
                 >
                   <option value="">Select Category (Optional)</option>
-                  {categories.map((cat) => (
+                  {formatHierarchicalCategoryOptions(categories).map((cat) => (
                     <option key={cat.id} value={cat.id}>
-                      {cat.name}
+                      {cat.displayName}
                     </option>
                   ))}
                 </select>
