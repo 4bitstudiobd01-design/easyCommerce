@@ -178,7 +178,10 @@ export const ShipmentKpiCards = ({
 }: ShipmentKpiCardsProps) => {
   // The approved design puts all seven KPIs on one row, so the full set stays
   // visible without scrolling; narrower screens fall back to fewer columns.
-  const gridClass = 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-2.5';
+  // Seven-across needs real room per card (the analytics rail already claims
+  // ~300px), so the jump to 7 columns waits for 2xl rather than fighting for
+  // space at 1440px, where 4 columns keeps every label fully legible.
+  const gridClass = 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-7 gap-2.5';
 
   if (isLoading || !summary) {
     return (

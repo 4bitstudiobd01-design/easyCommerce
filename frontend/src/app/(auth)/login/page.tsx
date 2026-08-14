@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { LoginForm } from '@/features/auth/components/LoginForm';
-import { Store, ArrowLeft, BarChart3, Lock, Zap, ShieldCheck, CheckCircle2, TrendingUp } from 'lucide-react';
+import { Store, BarChart3, CreditCard, Truck, Globe, ChevronDown, ShoppingBag } from 'lucide-react';
 
 export const metadata = {
   title: 'Merchant Sign In | EasyCommerce',
@@ -9,96 +9,136 @@ export const metadata = {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 selection:bg-blue-600 selection:text-white">
-      {/* Top Header Navigation Bar with Logo & Back Button */}
-      <header className="w-full bg-white border-b border-slate-200 py-4 px-6 md:px-12 flex items-center justify-between sticky top-0 z-40">
-        <Link href="/" className="flex items-center gap-3 group">
-          <div className="p-2.5 bg-blue-600 rounded-xl text-white shadow-md shadow-blue-600/20 group-hover:bg-blue-700 transition-colors">
-            <Store className="w-5 h-5" />
+    <div className="min-h-screen bg-white flex text-slate-900 font-sans">
+      
+      {/* LEFT COLUMN: Branding & Features */}
+      <div className="hidden lg:flex lg:w-1/2 p-3">
+        <div className="relative flex flex-col w-full rounded-3xl bg-[#EEF2FD] overflow-hidden">
+          {/* Soft decorative blob in the lower right of the panel */}
+          <div className="absolute -right-24 top-1/3 w-[420px] h-[420px] rounded-full bg-[#E2E9FA]" />
+
+          {/* Dotted grid accent, top right */}
+          <div
+            className="absolute top-14 right-16 w-24 h-16 opacity-60"
+            style={{
+              backgroundImage: 'radial-gradient(#94A3B8 1px, transparent 1px)',
+              backgroundSize: '9px 9px',
+            }}
+          />
+
+        <div className="relative z-10 flex flex-col h-full p-10 xl:p-12">
+          {/* Logo */}
+          <div className="mb-12">
+            <Link href="/" className="flex items-center gap-3">
+              <div className="p-2.5 bg-blue-600 rounded-xl text-white shadow-md">
+                <ShoppingBag className="w-5 h-5 fill-current" strokeWidth={1.5} />
+              </div>
+              <div className="flex flex-col">
+                <span className="font-extrabold text-[22px] text-slate-900 tracking-tight leading-none">EasyCommerce</span>
+                <span className="text-slate-500 text-[12px] font-medium mt-1">Build. Manage. Grow.</span>
+              </div>
+            </Link>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="font-extrabold text-xl text-slate-900 tracking-tight">EasyCommerce</span>
-            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded uppercase">SaaS</span>
-          </div>
-        </Link>
 
-        <Link
-          href="/"
-          className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-2 transition-colors border border-slate-200"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to Home</span>
-        </Link>
-      </header>
-
-      {/* Main 2-Column Split Section */}
-      <main className="flex-1 max-w-7xl mx-auto w-full p-6 md:p-12 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-        {/* Left Column: Login Form */}
-        <div className="lg:col-span-6 flex justify-center lg:justify-start">
-          <LoginForm />
-        </div>
-
-        {/* Right Column: Admin Panel Feature Banner */}
-        <div className="lg:col-span-6 space-y-8">
-          <div className="space-y-4">
-            <span className="text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
-              Merchant Control Center
-            </span>
-            <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
-              Manage orders, payouts & stock from one dashboard
+          {/* Typography */}
+          <div className="max-w-lg mb-10">
+            <h1 className="text-[34px] xl:text-[38px] font-extrabold text-slate-900 tracking-tight leading-[1.2] mb-4">
+              Your complete eCommerce <span className="block text-blue-600">business platform</span>
             </h1>
-            <p className="text-slate-600 text-base leading-relaxed">
-              Log in to access your isolated merchant control panel with real-time revenue analytics, automated invoice generation, and courier tracking.
+            <p className="text-slate-600 text-[14px] font-medium leading-relaxed max-w-[400px]">
+              Manage products, orders, customers, payments, delivery and analytics — all from one powerful dashboard.
             </p>
           </div>
 
-          {/* Key Feature Bullets */}
-          <div className="space-y-4 pt-2">
-            <div className="flex items-start gap-3">
-              <div className="p-2 bg-blue-50 text-blue-600 rounded-lg border border-blue-100 mt-0.5">
-                <BarChart3 className="w-4 h-4" />
+          {/* Feature Grid */}
+          <div className="grid grid-cols-2 gap-x-8 gap-y-10 max-w-lg mb-12">
+            <div className="flex gap-4">
+              <div className="p-2.5 bg-[#DCE5F9] text-blue-600 rounded-xl shrink-0 h-fit">
+                <Store className="w-5 h-5" strokeWidth={1.5} />
               </div>
               <div>
-                <h4 className="font-bold text-slate-900 text-sm">Real-time Order Funnels & Revenue Analytics</h4>
-                <p className="text-xs text-slate-500 font-medium">Track conversion rates and export financial CSV reports.</p>
+                <h3 className="font-bold text-slate-900 text-[13px] mb-1">Launch Your Store</h3>
+                <p className="text-[11px] text-slate-500 font-medium leading-relaxed">Create and customize your online store in minutes.</p>
+              </div>
+            </div>
+            
+            <div className="flex gap-4">
+              <div className="p-2.5 bg-[#DCE5F9] text-blue-600 rounded-xl shrink-0 h-fit">
+                <BarChart3 className="w-5 h-5" strokeWidth={1.5} />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-900 text-[13px] mb-1">Manage Everything</h3>
+                <p className="text-[11px] text-slate-500 font-medium leading-relaxed">Products, orders, inventory, customers and more.</p>
               </div>
             </div>
 
-            <div className="flex items-start gap-3">
-              <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-100 mt-0.5">
-                <TrendingUp className="w-4 h-4" />
+            <div className="flex gap-4">
+              <div className="p-2.5 bg-[#DCE5F9] text-blue-600 rounded-xl shrink-0 h-fit">
+                <CreditCard className="w-5 h-5" strokeWidth={1.5} />
               </div>
               <div>
-                <h4 className="font-bold text-slate-900 text-sm">Instant bKash & Nagad Settlement</h4>
-                <p className="text-xs text-slate-500 font-medium">Direct merchant payouts with zero transaction holding delay.</p>
+                <h3 className="font-bold text-slate-900 text-[13px] mb-1">Accept Payments</h3>
+                <p className="text-[11px] text-slate-500 font-medium leading-relaxed">Multiple payment gateways and secure transactions.</p>
               </div>
             </div>
 
-            <div className="flex items-start gap-3">
-              <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg border border-indigo-100 mt-0.5">
-                <Lock className="w-4 h-4" />
+            <div className="flex gap-4">
+              <div className="p-2.5 bg-[#DCE5F9] text-blue-600 rounded-xl shrink-0 h-fit">
+                <Truck className="w-5 h-5" strokeWidth={1.5} />
               </div>
               <div>
-                <h4 className="font-bold text-slate-900 text-sm">Secure Single Sign-On Access</h4>
-                <p className="text-xs text-slate-500 font-medium">Encrypted JWT authorization with active session controls.</p>
+                <h3 className="font-bold text-slate-900 text-[13px] mb-1">Deliver Happiness</h3>
+                <p className="text-[11px] text-slate-500 font-medium leading-relaxed">Courier integration, tracking and COD management.</p>
               </div>
             </div>
           </div>
 
-          {/* Live Mock Stats Box */}
-          <div className="solid-card p-6 rounded-2xl bg-white border border-slate-200 space-y-2">
-            <div className="flex items-center justify-between text-xs text-slate-500 font-bold">
-              <span>Platform Processing Volume</span>
-              <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[10px]">
-                ● High Concurrency Active
-              </span>
-            </div>
-            <div className="text-2xl font-black text-slate-900 tracking-tight">
-              ৳ 3,787.8M <span className="text-xs font-semibold text-slate-500">Processed</span>
-            </div>
+          {/* Dashboard mockup — anchored bottom-left and bleeding off the panel edge */}
+          <div className="flex-1 relative w-full mt-auto flex items-end overflow-hidden">
+             <img
+               src="/dashboard-mockup.png"
+               alt="EasyCommerce merchant dashboard and storefront app"
+               className="w-[115%] max-w-none h-auto object-contain object-left-bottom -mb-6 -ml-2 drop-shadow-2xl"
+             />
           </div>
+
         </div>
-      </main>
+        </div>
+      </div>
+
+      {/* RIGHT COLUMN: Form */}
+      <div className="w-full lg:w-1/2 flex flex-col relative bg-white">
+        
+        {/* Top Nav */}
+        <div className="absolute top-0 left-0 right-0 p-8 flex items-center justify-end gap-6 z-10">
+          <p className="text-[13px] font-medium text-slate-500">
+            Don't have an account? <Link href="/register" className="text-blue-600 font-bold hover:underline">Sign up</Link>
+          </p>
+          <button className="flex items-center gap-2 h-9 px-3 rounded-full border border-slate-200 text-[12px] font-bold text-slate-700 hover:bg-slate-50 transition-colors">
+            <Globe className="w-3.5 h-3.5" />
+            English
+            <ChevronDown className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* Center Form */}
+        <div className="flex-1 flex items-center justify-center p-8 mt-16 lg:mt-0">
+          <LoginForm />
+        </div>
+
+        {/* Footer */}
+        <div className="absolute bottom-0 left-0 right-0 p-8 flex flex-col items-center justify-center gap-2 z-10">
+          <div className="flex items-center gap-3 text-[11px] font-bold text-slate-500">
+            <Link href="#" className="hover:text-slate-900 transition-colors">Privacy Policy</Link>
+            <span>•</span>
+            <Link href="#" className="hover:text-slate-900 transition-colors">Terms of Service</Link>
+            <span>•</span>
+            <Link href="#" className="hover:text-slate-900 transition-colors">Help Center</Link>
+          </div>
+          <p className="text-[11px] font-medium text-slate-400">© 2026 EasyCommerce. All rights reserved.</p>
+        </div>
+
+      </div>
     </div>
   );
 }

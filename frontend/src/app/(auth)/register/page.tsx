@@ -1,105 +1,127 @@
 import Link from 'next/link';
 import { RegisterForm } from '@/features/auth/components/RegisterForm';
-import { Store, ArrowLeft, ShieldCheck, CheckCircle2, Truck, Smartphone, Star } from 'lucide-react';
+import { Rocket, CreditCard, ShieldCheck, Headphones, Heart, ShoppingBag } from 'lucide-react';
 
 export const metadata = {
   title: 'Merchant Registration | EasyCommerce',
   description: 'Create your merchant store account on EasyCommerce SaaS platform.',
 };
 
+const HIGHLIGHTS = [
+  {
+    icon: Rocket,
+    title: 'Get Started Quickly',
+    description: 'Create your store and start selling in minutes.',
+    className: 'bg-blue-50 text-blue-600',
+  },
+  {
+    icon: CreditCard,
+    title: 'All-in-One Platform',
+    description: 'Products, orders, payments, delivery and more.',
+    className: 'bg-emerald-50 text-emerald-600',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'Secure & Reliable',
+    description: 'Enterprise-grade security for your business.',
+    className: 'bg-indigo-50 text-indigo-600',
+  },
+  {
+    icon: Headphones,
+    title: '24/7 Support',
+    description: "We're here to help you grow your business.",
+    className: 'bg-orange-50 text-orange-500',
+  },
+];
+
 export default function RegisterPage() {
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 selection:bg-blue-600 selection:text-white">
-      {/* Top Header Navigation Bar with Logo & Back Button */}
-      <header className="w-full bg-white border-b border-slate-200 py-4 px-6 md:px-12 flex items-center justify-between sticky top-0 z-40">
-        <Link href="/" className="flex items-center gap-3 group">
-          <div className="p-2.5 bg-blue-600 rounded-xl text-white shadow-md shadow-blue-600/20 group-hover:bg-blue-700 transition-colors">
-            <Store className="w-5 h-5" />
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="font-extrabold text-xl text-slate-900 tracking-tight">EasyCommerce</span>
-            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded uppercase">SaaS</span>
-          </div>
-        </Link>
+    <div className="min-h-screen bg-slate-100 text-slate-900 font-sans p-0 sm:p-6 lg:p-8">
+      <div className="w-full min-h-[calc(100vh-4rem)] bg-white rounded-none sm:rounded-3xl shadow-xl shadow-slate-300/40 overflow-hidden grid grid-cols-1 lg:grid-cols-[minmax(0,48fr)_minmax(0,52fr)]">
 
-        <Link
-          href="/"
-          className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-2 transition-colors border border-slate-200"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to Home</span>
-        </Link>
-      </header>
+        {/* LEFT COLUMN: Branding & Highlights */}
+        <div className="hidden lg:flex flex-col bg-[#F6F8FF] relative overflow-hidden pl-12 xl:pl-16 pr-10 pt-12 pb-0">
+          {/* Decorative dotted grid */}
+          <div
+            className="absolute top-10 right-12 w-24 h-16 opacity-[0.18]"
+            style={{
+              backgroundImage: 'radial-gradient(circle, #1d4ed8 1.1px, transparent 1.1px)',
+              backgroundSize: '9px 9px',
+            }}
+          />
+          {/* Decorative soft blob */}
+          <div className="absolute top-1/3 -right-24 w-[420px] h-[420px] rounded-full bg-white/70 blur-[2px]" />
 
-      {/* Main 2-Column Split Section */}
-      <main className="flex-1 max-w-7xl mx-auto w-full p-6 md:p-12 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-        {/* Left Column: Brand Value Banner & Platform Highlights */}
-        <div className="lg:col-span-6 space-y-8">
-          <div className="space-y-4">
-            <span className="text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
-              Merchant Onboarding
-            </span>
-            <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
-              Launch your digital storefront in Bangladesh in 5 minutes
+          <div className="relative z-10 flex flex-col h-full">
+            {/* Logo */}
+            <Link href="/" className="flex items-center gap-3 mb-10">
+              <div className="p-2.5 bg-blue-600 rounded-xl text-white shadow-md">
+                <ShoppingBag className="w-5 h-5 fill-current" strokeWidth={1.5} />
+              </div>
+              <div className="flex flex-col">
+                <span className="font-extrabold text-[22px] text-slate-900 tracking-tight leading-none">EasyCommerce</span>
+                <span className="text-slate-500 text-[12px] font-medium mt-1">Build. Manage. Grow.</span>
+              </div>
+            </Link>
+
+            {/* Trust pill */}
+            <div className="inline-flex items-center gap-2 self-start h-8 px-3.5 rounded-full bg-blue-50 border border-blue-100 mb-6">
+              <Heart className="w-3.5 h-3.5 text-blue-600 fill-blue-600" />
+              <span className="text-[12px] font-bold text-blue-700">Trusted by 1,000+ merchants</span>
+            </div>
+
+            {/* Headline */}
+            <h1 className="text-[34px] font-extrabold tracking-tight leading-[1.2] mb-4">
+              Start your eCommerce <br />
+              <span className="text-blue-600">journey today</span>
             </h1>
-            <p className="text-slate-600 text-base leading-relaxed">
-              Zero coding required. Everything you need to sell physical goods, digital products, or dropship — with native bKash checkout and 1-click Steadfast courier booking.
+            <p className="text-slate-600 text-[13px] font-medium leading-relaxed max-w-[340px] mb-9">
+              Create your EasyCommerce merchant account and launch your online store in minutes.
             </p>
-          </div>
 
-          {/* Key Feature Bullets */}
-          <div className="space-y-4 pt-2">
-            <div className="flex items-start gap-3">
-              <div className="p-2 bg-blue-50 text-blue-600 rounded-lg border border-blue-100 mt-0.5">
-                <Smartphone className="w-4 h-4" />
-              </div>
-              <div>
-                <h4 className="font-bold text-slate-900 text-sm">Native bKash & Nagad Checkout</h4>
-                <p className="text-xs text-slate-500 font-medium">Instant mobile payment verification with zero setup fee.</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-100 mt-0.5">
-                <Truck className="w-4 h-4" />
-              </div>
-              <div>
-                <h4 className="font-bold text-slate-900 text-sm">Steadfast & Pathao Courier APIs</h4>
-                <p className="text-xs text-slate-500 font-medium">Automated order booking and real-time SMS delivery tracking.</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg border border-indigo-100 mt-0.5">
-                <ShieldCheck className="w-4 h-4" />
-              </div>
-              <div>
-                <h4 className="font-bold text-slate-900 text-sm">100% Tenant Isolation Security</h4>
-                <p className="text-xs text-slate-500 font-medium">Row-level PostgreSQL database security protecting your store data.</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Social Proof Card */}
-          <div className="solid-card p-6 rounded-2xl bg-white space-y-3">
-            <div className="flex items-center gap-1 text-amber-400">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-4 h-4 fill-amber-400" />
+            {/* Highlights */}
+            <div className="space-y-5 mb-10">
+              {HIGHLIGHTS.map(({ icon: Icon, title, description, className }) => (
+                <div key={title} className="flex gap-3.5">
+                  <div className={`p-2.5 rounded-xl shrink-0 h-fit ${className}`}>
+                    <Icon className="w-4 h-4" strokeWidth={2} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-[13px] mb-0.5">{title}</h3>
+                    <p className="text-[11.5px] text-slate-500 font-medium leading-relaxed">{description}</p>
+                  </div>
+                </div>
               ))}
-              <span className="text-slate-900 font-bold text-xs ml-2">4.9/5 Merchant Rating</span>
             </div>
-            <p className="text-xs text-slate-700 italic font-medium">
-              "EasyCommerce gave me a full website to build my brand. Customers can browse and pay via bKash easily."
-            </p>
-            <span className="text-[11px] text-slate-500 font-bold block">— Farzana Haque, Owner at Mrittika</span>
+
+            {/* Dashboard Mockup — anchored to the bottom of the panel. Height is
+                capped so a tall/square source image cannot stretch the layout. */}
+            <div className="mt-auto pt-8">
+              <img
+                src="/dashboard-mockup.jpg"
+                alt="EasyCommerce merchant dashboard preview"
+                className="w-auto max-w-full max-h-[340px] xl:max-h-[380px] h-auto object-contain object-left-bottom mix-blend-multiply"
+              />
+            </div>
           </div>
         </div>
 
-        {/* Right Column: Registration Form */}
-        <div className="lg:col-span-6 flex justify-center lg:justify-end">
-          <RegisterForm />
+        {/* RIGHT COLUMN: Form */}
+        <div className="flex flex-col px-6 sm:px-10 lg:px-14 xl:px-20 py-10">
+          {/* Top Nav */}
+          <div className="flex items-center justify-end mb-6 shrink-0">
+            <p className="text-[13px] font-medium text-slate-500">
+              Already have an account?{' '}
+              <Link href="/login" className="text-blue-600 font-bold hover:underline">Log in</Link>
+            </p>
+          </div>
+
+          <div className="flex-1 flex items-center">
+            <RegisterForm />
+          </div>
         </div>
-      </main>
+
+      </div>
     </div>
   );
 }

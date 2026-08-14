@@ -6,8 +6,11 @@ export function middleware(req: NextRequest) {
   const hostname = req.headers.get('host') || '';
 
   // 1. Server-Side Route Guard for Protected Routes (/dashboard and /admin)
+  // Match on full path segments so public assets like /dashboard-mockup.jpg are not guarded.
   const protectedRoutes = ['/dashboard', '/admin'];
-  const isProtectedRoute = protectedRoutes.some((route) => url.pathname.startsWith(route));
+  const isProtectedRoute = protectedRoutes.some(
+    (route) => url.pathname === route || url.pathname.startsWith(`${route}/`),
+  );
 
   if (isProtectedRoute) {
     const token = req.cookies.get('easycommerce_token')?.value || req.headers.get('authorization');

@@ -7,29 +7,116 @@ import { useRegisterMerchantMutation } from '../api/authApi';
 import { useDispatch } from 'react-redux';
 import { setCredentials } from '../slices/authSlice';
 import { useRouter } from 'next/navigation';
-import { Store, ArrowRight, ShieldCheck, CheckCircle2, User, Mail, Phone, Lock, Sparkles, LogIn } from 'lucide-react';
+import {
+  User,
+  Mail,
+  Phone,
+  Lock,
+  Eye,
+  EyeOff,
+  Store,
+  Briefcase,
+  ChevronDown,
+  UserPlus,
+  Gift,
+  ChevronRight,
+  ShieldCheck,
+} from 'lucide-react';
+
+/** Public storefront domain shown as the subdomain suffix. */
+const STORE_DOMAIN = '.easyco.app';
+
+/**
+ * Mirrors the `phone` rule on the backend RegisterMerchantDto. The server
+ * remains the authority; this only avoids a round-trip for a malformed number.
+ */
+const PHONE_PATTERN = /^01[3-9]\d{8}$/;
+
+const BUSINESS_TYPES = [
+  'Fashion & Apparel',
+  'Electronics',
+  'Health & Beauty',
+  'Home & Living',
+  'Food & Grocery',
+  'Books & Stationery',
+  'Other',
+];
+
+const COUNTRIES = ['Bangladesh', 'India', 'Pakistan', 'Nepal', 'Sri Lanka'];
+
+/** Derives a URL-safe slug, matching the backend CreateStoreDto slug rule. */
+function toSlug(value: string): string {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .slice(0, 50);
+}
 
 export function RegisterForm() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [storeName, setStoreName] = useState('');
+  const [subdomain, setSubdomain] = useState('');
+  const [subdomainEdited, setSubdomainEdited] = useState(false);
+  const [businessType, setBusinessType] = useState('');
+  const [country, setCountry] = useState('Bangladesh');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   const [registerMerchant, { isLoading }] = useRegisterMerchantMutation();
   const dispatch = useDispatch();
   const router = useRouter();
 
+  // The subdomain tracks the store name until the merchant customizes it.
+  const handleStoreNameChange = (value: string) => {
+    setStoreName(value);
+    if (!subdomainEdited) {
+      setSubdomain(toSlug(value));
+    }
+  };
+
+  const validate = (): string | null => {
+    if (fullName.trim().length < 2) {
+      return 'Please enter your full name.';
+    }
+    const localPhone = phone.trim().replace(/[\s-]/g, '');
+    if (localPhone && !PHONE_PATTERN.test(localPhone)) {
+      return 'Enter a valid phone number, e.g. 01700000000.';
+    }
+    if (password.length < 8 || !/[a-zA-Z]/.test(password) || !/\d/.test(password)) {
+      return 'Password must be at least 8 characters and include letters and numbers.';
+    }
+    if (!acceptedTerms) {
+      return 'Please accept the Terms of Service to continue.';
+    }
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
 
+    const validationError = validate();
+    if (validationError) {
+      setErrorMsg(validationError);
+      toast.error(validationError);
+      return;
+    }
+
     try {
+      const localPhone = phone.trim().replace(/[\s-]/g, '');
+
       const response = await registerMerchant({
-        email,
+        email: email.trim(),
         password,
-        fullName,
-        phone,
+        fullName: fullName.trim(),
+        ...(localPhone ? { phone: localPhone } : {}),
       }).unwrap();
 
       dispatch(
@@ -43,141 +130,292 @@ export function RegisterForm() {
       toast.success('Store account created successfully.');
       router.push('/dashboard');
     } catch (err: any) {
-      const message = err?.data?.message || 'Registration failed. Please check your details.';
+      const raw = err?.data?.message;
+      const message = Array.isArray(raw)
+        ? raw[0]
+        : raw || 'Registration failed. Please check your details.';
       setErrorMsg(message);
       toast.error(message);
     }
   };
 
+  const fieldClass =
+    'w-full pl-10 pr-4 h-11 bg-white border border-slate-200 rounded-xl text-slate-900 text-[13px] font-medium placeholder-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors';
+  const labelClass = 'block text-[12.5px] font-bold text-slate-700 mb-1.5';
+  const hintClass = 'text-[11px] font-medium text-slate-400 mt-1.5';
+
   return (
-    <div className="w-full max-w-md p-8 solid-card rounded-2xl relative bg-white border border-slate-200 shadow-xl">
-      {/* Solid Accent Top Bar */}
-      <div className="absolute top-0 left-0 right-0 h-1.5 bg-blue-600 rounded-t-2xl" />
+    <div className="w-full max-w-[680px] mx-auto">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
 
-      <div className="flex items-center gap-3.5 mb-6 pt-2">
-        <div className="p-3 bg-blue-50 rounded-xl border border-blue-100 text-blue-600">
-          <Store className="w-6 h-6" />
+        {/* Header */}
+        <div className="text-center mb-7">
+          <h2 className="text-[24px] font-extrabold text-slate-900 tracking-tight mb-1.5">Create your account</h2>
+          <p className="text-[13px] font-medium text-slate-500">Join thousands of merchants using EasyCommerce</p>
         </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold text-slate-900 tracking-tight">Create Store Account</h2>
-            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded uppercase">Free</span>
+
+        {errorMsg && (
+          <div className="mb-5 p-3.5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-bold text-center">
+            {errorMsg}
           </div>
-          <p className="text-slate-500 text-xs mt-0.5">Start selling in Bangladesh in 5 minutes</p>
+        )}
+
+        <form onSubmit={handleSubmit} noValidate>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
+
+            {/* Full Name */}
+            <div>
+              <label htmlFor="fullName" className={labelClass}>Full Name</label>
+              <div className="relative">
+                <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  id="fullName"
+                  type="text"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Enter your full name"
+                  className={fieldClass}
+                />
+              </div>
+            </div>
+
+            {/* Email */}
+            <div>
+              <label htmlFor="email" className={labelClass}>Email Address</label>
+              <div className="relative">
+                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  id="email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  className={fieldClass}
+                />
+              </div>
+            </div>
+
+            {/* Phone with country code */}
+            <div>
+              <label htmlFor="phone" className={labelClass}>Phone Number</label>
+              <div className="flex gap-2">
+                <div className="relative shrink-0">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px] leading-none">🇧🇩</span>
+                  <select
+                    aria-label="Country calling code"
+                    className="h-11 pl-8 pr-7 bg-white border border-slate-200 rounded-xl text-slate-700 text-[13px] font-medium appearance-none focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors cursor-pointer"
+                  >
+                    <option>+880</option>
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+                <div className="relative flex-1">
+                  <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="Enter your phone number"
+                    className={fieldClass}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Password */}
+            <div>
+              <label htmlFor="password" className={labelClass}>Password</label>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Create a password"
+                  className="w-full pl-10 pr-10 h-11 bg-white border border-slate-200 rounded-xl text-slate-900 text-[13px] font-medium placeholder-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              <p className={hintClass}>Minimum 8 characters with letters and numbers</p>
+            </div>
+
+            {/* Store Name */}
+            <div>
+              <label htmlFor="storeName" className={labelClass}>Store Name</label>
+              <div className="relative">
+                <Store className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  id="storeName"
+                  type="text"
+                  value={storeName}
+                  onChange={(e) => handleStoreNameChange(e.target.value)}
+                  placeholder="Enter your store name"
+                  className={fieldClass}
+                />
+              </div>
+              <p className={hintClass}>This will be your store display name</p>
+            </div>
+
+            {/* Store Subdomain */}
+            <div>
+              <label htmlFor="subdomain" className={labelClass}>Store Subdomain</label>
+              <div className="flex items-stretch h-11 bg-white border border-slate-200 rounded-xl overflow-hidden focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 transition-colors">
+                <input
+                  id="subdomain"
+                  type="text"
+                  value={subdomain}
+                  onChange={(e) => {
+                    setSubdomainEdited(true);
+                    setSubdomain(toSlug(e.target.value));
+                  }}
+                  placeholder="yourstore"
+                  className="flex-1 min-w-0 px-3.5 text-slate-900 text-[13px] font-medium placeholder-slate-400 focus:outline-none"
+                />
+                <span className="flex items-center px-3 bg-slate-50 border-l border-slate-200 text-slate-500 text-[12.5px] font-medium shrink-0">
+                  {STORE_DOMAIN}
+                </span>
+              </div>
+              <p className={hintClass}>
+                Your store will be available at {subdomain || 'yourstore'}{STORE_DOMAIN}
+              </p>
+            </div>
+
+            {/* Business Type */}
+            <div>
+              <label htmlFor="businessType" className={labelClass}>Business Type</label>
+              <div className="relative">
+                <Briefcase className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 z-10" />
+                <select
+                  id="businessType"
+                  value={businessType}
+                  onChange={(e) => setBusinessType(e.target.value)}
+                  className={`${fieldClass} appearance-none cursor-pointer ${businessType ? 'text-slate-900' : 'text-slate-400'}`}
+                >
+                  <option value="">Select your business type</option>
+                  {BUSINESS_TYPES.map((type) => (
+                    <option key={type} value={type} className="text-slate-900">{type}</option>
+                  ))}
+                </select>
+                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Country */}
+            <div>
+              <label htmlFor="country" className={labelClass}>Country</label>
+              <div className="relative">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[13px] leading-none z-10">🇧🇩</span>
+                <select
+                  id="country"
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  className="w-full pl-10 pr-9 h-11 bg-white border border-slate-200 rounded-xl text-slate-900 text-[13px] font-medium appearance-none focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors cursor-pointer"
+                >
+                  {COUNTRIES.map((name) => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            </div>
+          </div>
+
+          {/* Terms */}
+          <div className="flex items-start gap-2.5 mt-5">
+            <input
+              id="accept-terms"
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={(e) => setAcceptedTerms(e.target.checked)}
+              className="w-4 h-4 mt-0.5 rounded border-slate-300 text-blue-600 focus:ring-blue-600 cursor-pointer shrink-0"
+            />
+            <label htmlFor="accept-terms" className="text-[12.5px] font-medium text-slate-600 cursor-pointer leading-relaxed">
+              I agree to the <Link href="#" className="text-blue-600 font-bold hover:underline">Terms of Service</Link> and{' '}
+              <Link href="#" className="text-blue-600 font-bold hover:underline">Privacy Policy</Link>
+            </label>
+          </div>
+
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full h-12 mt-5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-colors text-[14px] shadow-md shadow-blue-600/20 disabled:opacity-50 active:scale-[0.99]"
+          >
+            {isLoading ? (
+              <span>Creating account...</span>
+            ) : (
+              <>
+                <UserPlus className="w-4 h-4" />
+                <span>Create Account</span>
+              </>
+            )}
+          </button>
+        </form>
+
+        {/* Divider */}
+        <div className="flex items-center gap-4 my-6">
+          <div className="flex-1 h-px bg-slate-200" />
+          <span className="text-[12px] font-medium text-slate-400">or sign up with</span>
+          <div className="flex-1 h-px bg-slate-200" />
+        </div>
+
+        {/* Social Buttons */}
+        <div className="grid grid-cols-3 gap-3">
+          <button type="button" className="h-11 flex items-center justify-center gap-2 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
+            <svg className="w-4 h-4" viewBox="0 0 24 24">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            <span className="text-[13px] font-bold text-slate-700">Google</span>
+          </button>
+          <button type="button" className="h-11 flex items-center justify-center gap-2 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
+            <svg className="w-4 h-4 text-[#1877F2]" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            </svg>
+            <span className="text-[13px] font-bold text-slate-700">Facebook</span>
+          </button>
+          <button type="button" className="h-11 flex items-center justify-center gap-2 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.641-.026 2.669-1.48 3.655-2.922 1.156-1.682 1.631-3.313 1.657-3.398-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.68.827-1.333 2.275-1.144 3.644 1.346.104 2.597-.61 3.431-1.632z"/>
+            </svg>
+            <span className="text-[13px] font-bold text-slate-700">Apple</span>
+          </button>
+        </div>
+
+        {/* Free trial banner */}
+        <div className="mt-5 flex items-center gap-3 p-4 bg-[#F6F8FF] border border-blue-100 rounded-xl">
+          <div className="p-2 bg-blue-100 text-blue-600 rounded-lg shrink-0">
+            <Gift className="w-4 h-4" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="text-[13px] font-bold text-slate-900">Start your 14-day free trial</h4>
+            <p className="text-[11.5px] font-medium text-slate-500">No credit card required. Cancel anytime.</p>
+          </div>
+          <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
         </div>
       </div>
 
-      {errorMsg && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-medium">
-          {errorMsg}
+      {/* Footer */}
+      <div className="mt-6 flex flex-col items-center gap-2">
+        <div className="flex items-center gap-2 text-[12px] font-medium text-slate-500">
+          <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
+          <span>Your data is protected with industry-standard security.</span>
         </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-            Full Name
-          </label>
-          <div className="relative">
-            <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-            <input
-              type="text"
-              required
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="e.g. Rahim Ahmed"
-              className="w-full pl-10 pr-4 py-3 solid-input rounded-xl text-slate-900 text-sm placeholder-slate-400"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-            Email Address
-          </label>
-          <div className="relative">
-            <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="merchant@easycommerce.com"
-              className="w-full pl-10 pr-4 py-3 solid-input rounded-xl text-slate-900 text-sm placeholder-slate-400"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-            Phone Number
-          </label>
-          <div className="relative">
-            <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+8801700000000"
-              className="w-full pl-10 pr-4 py-3 solid-input rounded-xl text-slate-900 text-sm placeholder-slate-400"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-            Password
-          </label>
-          <div className="relative">
-            <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full pl-10 pr-4 py-3 solid-input rounded-xl text-slate-900 text-sm placeholder-slate-400"
-            />
-          </div>
-        </div>
-
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full mt-3 py-3.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-colors text-sm shadow-md shadow-blue-600/20 disabled:opacity-50 active:scale-95"
-        >
-          {isLoading ? (
-            <span>Creating Store Account...</span>
-          ) : (
-            <>
-              <Sparkles className="w-4 h-4" />
-              <span>Create Free Store Account</span>
-              <ArrowRight className="w-4 h-4 ml-1" />
-            </>
-          )}
-        </button>
-      </form>
-
-      {/* Link to Login */}
-      <div className="mt-6 pt-5 border-t border-slate-100 text-center">
-        <p className="text-xs text-slate-600 font-medium">
-          Already have a merchant account?{' '}
-          <Link href="/login" className="text-blue-600 font-bold hover:underline inline-flex items-center gap-1">
-            <LogIn className="w-3.5 h-3.5" />
-            <span>Sign In</span>
-          </Link>
-        </p>
-      </div>
-
-      <div className="mt-4 flex items-center justify-between text-[11px] text-slate-500 font-medium pt-2">
-        <div className="flex items-center gap-1">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Tenant Isolated</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
-          <span>Zero Code Setup</span>
-        </div>
+        <p className="text-[11.5px] font-medium text-slate-400">© 2026 EasyCommerce. All rights reserved.</p>
       </div>
     </div>
   );

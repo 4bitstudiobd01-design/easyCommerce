@@ -6,6 +6,7 @@ import { CreateUserService } from '../../user/services/create-user.service';
 import { UserRoleEnum } from '../../user/entities/user.entity';
 import { RegisterMerchantDto } from '../dto/register-merchant.dto';
 import { AuthResponseDto } from '../dto/auth-response.dto';
+import { normalizePhone } from '../../../common/utils/normalize-phone.util';
 
 @Injectable()
 export class RegisterMerchantService {
@@ -28,7 +29,7 @@ export class RegisterMerchantService {
       email: dto.email.toLowerCase(),
       passwordHash,
       fullName: dto.fullName,
-      phone: dto.phone,
+      phone: dto.phone ? normalizePhone(dto.phone) : undefined,
       role: UserRoleEnum.STORE_OWNER,
       isActive: true,
     });

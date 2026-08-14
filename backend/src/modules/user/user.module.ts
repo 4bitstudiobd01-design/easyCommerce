@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UserEntity } from './entities/user.entity';
 import { SessionEntity } from './entities/session.entity';
 import { FindUserByEmailService } from './services/find-user-by-email.service';
+import { FindUserByIdentifierService } from './services/find-user-by-identifier.service';
 import { FindUserByIdService } from './services/find-user-by-id.service';
 import { CreateUserService } from './services/create-user.service';
 import { SuperAdminSeederService } from './services/super-admin-seeder.service';
@@ -26,6 +27,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
   controllers: [UserController],
   providers: [
     FindUserByEmailService,
+    FindUserByIdentifierService,
     FindUserByIdService,
     CreateUserService,
     SuperAdminSeederService,
@@ -33,6 +35,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
   ],
   exports: [
     FindUserByEmailService,
+    FindUserByIdentifierService,
     FindUserByIdService,
     CreateUserService,
     SuperAdminSeederService,

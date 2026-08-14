@@ -1,28 +1,32 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { FindUserByEmailService } from '../../user/services/find-user-by-email.service';
+import { FindUserByIdentifierService } from '../../user/services/find-user-by-identifier.service';
 import { LoginDto } from '../dto/login.dto';
 import { AuthResponseDto } from '../dto/auth-response.dto';
+
+/** Refresh token lifetime for a normal session vs. an explicit "Remember me". */
+const SESSION_REFRESH_EXPIRY = '7d';
+const REMEMBERED_REFRESH_EXPIRY = '30d';
 
 @Injectable()
 export class LoginService {
   constructor(
-    private readonly findUserByEmailService: FindUserByEmailService,
+    private readonly findUserByIdentifierService: FindUserByIdentifierService,
     private readonly jwtService: JwtService,
   ) {}
 
   async execute(dto: LoginDto): Promise<AuthResponseDto> {
-    const user = await this.findUserByEmailService.execute(dto.email);
+    const user = await this.findUserByIdentifierService.execute(dto.identifier);
 
     if (!user) {
-      throw new UnauthorizedException('Invalid email or password credentials');
+      throw new UnauthorizedException('Invalid credentials. Please try again.');
     }
 
     const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid email or password credentials');
+      throw new UnauthorizedException('Invalid credentials. Please try again.');
     }
 
     if (!user.isActive) {
@@ -36,7 +40,9 @@ export class LoginService {
     };
 
     const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
-    const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
+    const refreshToken = this.jwtService.sign(payload, {
+      expiresIn: dto.rememberMe ? REMEMBERED_REFRESH_EXPIRY : SESSION_REFRESH_EXPIRY,
+    });
 
     return {
       accessToken,

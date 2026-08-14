@@ -4,13 +4,17 @@ import { User } from '../slices/authSlice';
 export interface RegisterRequest {
   email: string;
   password: string;
-  fullName?: string;
+  /** Required by the backend DTO (min. 2 characters). */
+  fullName: string;
+  /** Optional; normalized to the canonical +880 form on the server. */
   phone?: string;
 }
 
 export interface LoginRequest {
-  email: string;
+  /** Email address or phone number — the login form accepts either. */
+  identifier: string;
   password: string;
+  rememberMe?: boolean;
 }
 
 export interface AuthResponse {
