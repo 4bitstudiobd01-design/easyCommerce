@@ -29,7 +29,15 @@ import { CancelShipmentService } from './services/cancel-shipment.service';
 import { ExportShipmentsService } from './services/export-shipments.service';
 import { SyncConsignmentService } from './services/sync-consignment.service';
 import { SeedShipmentDemoDataService } from './services/seed-shipment-demo-data.service';
+import { ListCourierIntegrationsService } from './services/list-courier-integrations.service';
+import { GetCourierIntegrationService } from './services/get-courier-integration.service';
+import { UpsertCourierIntegrationService } from './services/upsert-courier-integration.service';
+import { ToggleCourierIntegrationService } from './services/toggle-courier-integration.service';
+import { SetDefaultCourierService } from './services/set-default-courier.service';
+import { TestCourierConnectionService } from './services/test-courier-connection.service';
+import { SeedCourierDemoDataService } from './services/seed-courier-demo-data.service';
 import { CourierProviderRegistry } from './adapters/courier-provider.registry';
+import { CourierProviderEnum } from './entities/consignment.entity';
 
 import { CreateShipmentDto } from './dto/create-shipment.dto';
 import { CancelShipmentDto } from './dto/cancel-shipment.dto';
@@ -38,6 +46,16 @@ import { ShipmentListResponseDto } from './dto/shipment-list-response.dto';
 import { ShipmentSummaryResponseDto } from './dto/shipment-summary-response.dto';
 import { ShipmentDetailsResponseDto } from './dto/shipment-details-response.dto';
 import { SeedShipmentDemoDataResponseDto } from './dto/seed-shipment-demo-data-response.dto';
+import {
+  UpsertCourierIntegrationDto,
+  ToggleCourierIntegrationDto,
+} from './dto/upsert-courier-integration.dto';
+import {
+  CouriersDashboardResponseDto,
+  CourierIntegrationDto,
+  CourierConnectionTestResponseDto,
+  SeedCourierDemoDataResponseDto,
+} from './dto/courier-integration-response.dto';
 
 /**
  * Courier & shipment endpoints for the merchant admin.
@@ -59,9 +77,29 @@ export class LogisticsController {
     private readonly exportShipmentsService: ExportShipmentsService,
     private readonly syncConsignmentService: SyncConsignmentService,
     private readonly seedShipmentDemoDataService: SeedShipmentDemoDataService,
+    private readonly listCourierIntegrationsService: ListCourierIntegrationsService,
+    private readonly getCourierIntegrationService: GetCourierIntegrationService,
+    private readonly upsertCourierIntegrationService: UpsertCourierIntegrationService,
+    private readonly toggleCourierIntegrationService: ToggleCourierIntegrationService,
+    private readonly setDefaultCourierService: SetDefaultCourierService,
+    private readonly testCourierConnectionService: TestCourierConnectionService,
+    private readonly seedCourierDemoDataService: SeedCourierDemoDataService,
     private readonly courierProviderRegistry: CourierProviderRegistry,
     private readonly findStoreByUserService: FindStoreByUserService,
   ) {}
+
+  /**
+   * Rejects an unknown provider before it reaches a service. Nest's built-in
+   * ParseEnumPipe would 400 with a message that leaks the enum shape, so the
+   * check is done here with a merchant-readable error instead.
+   */
+  private parseProvider(value: string): CourierProviderEnum {
+    const provider = value?.toUpperCase() as CourierProviderEnum;
+    if (!Object.values(CourierProviderEnum).includes(provider)) {
+      throw new BadRequestException(`Courier provider "${value}" is not supported.`);
+    }
+    return provider;
+  }
 
   private async getMerchantStore(userId: string, storeId?: string): Promise<StoreEntity> {
     const store = await this.findStoreByUserService.execute(userId, storeId);
@@ -220,6 +258,134 @@ export class LogisticsController {
   ): Promise<ShipmentDetailsResponseDto> {
     const store = await this.getMerchantStore(userId, storeId);
     return this.syncConsignmentService.execute(shipmentId, store.tenantId, userId);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Courier integrations — the Couriers tab.
+  //
+  // Reads need only `orders:read` (the merchant's shipping team looks at courier
+  // health), but anything that writes a credential requires `settings:write`,
+  // because those keys can book and cancel parcels on the merchant's account.
+  // No response on these routes ever contains an unmasked secret.
+  // ---------------------------------------------------------------------------
+
+  @Get('courier-integrations')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('orders:read')
+  @ApiOperation({ summary: 'Every courier provider with this merchant’s connection state and volume' })
+  @ApiResponse({ status: 200, description: 'Couriers dashboard', type: CouriersDashboardResponseDto })
+  async listCourierIntegrations(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') storeId?: string,
+  ): Promise<CouriersDashboardResponseDto> {
+    const store = await this.getMerchantStore(userId, storeId);
+    return this.listCourierIntegrationsService.execute(store.tenantId);
+  }
+
+  @Post('courier-integrations/seed-demo-data')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('settings:write')
+  @ApiOperation({ summary: 'Seed sandbox courier integrations so the Couriers tab has data' })
+  @ApiResponse({ status: 201, description: 'Demo integrations seeded', type: SeedCourierDemoDataResponseDto })
+  @ApiResponse({ status: 403, description: 'Demo seeder disabled in production environment' })
+  async seedCourierDemoData(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') storeId?: string,
+  ): Promise<SeedCourierDemoDataResponseDto> {
+    const store = await this.getMerchantStore(userId, storeId);
+    return this.seedCourierDemoDataService.execute(store.tenantId);
+  }
+
+  @Get('courier-integrations/:provider')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('orders:read')
+  @ApiOperation({ summary: 'One courier’s integration detail (credentials masked)' })
+  @ApiResponse({ status: 200, description: 'Courier integration', type: CourierIntegrationDto })
+  @ApiResponse({ status: 400, description: 'Unsupported courier provider' })
+  async getCourierIntegration(
+    @CurrentUser('sub') userId: string,
+    @Param('provider') provider: string,
+    @Headers('x-store-id') storeId?: string,
+  ): Promise<CourierIntegrationDto> {
+    const store = await this.getMerchantStore(userId, storeId);
+    return this.getCourierIntegrationService.execute(this.parseProvider(provider), store.tenantId);
+  }
+
+  @Patch('courier-integrations/:provider')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('settings:write')
+  @ApiOperation({ summary: 'Connect a courier or update its credentials and automation settings' })
+  @ApiResponse({ status: 200, description: 'Integration saved', type: CourierIntegrationDto })
+  @ApiResponse({ status: 400, description: 'Required credentials are missing for this provider' })
+  async upsertCourierIntegration(
+    @CurrentUser('sub') userId: string,
+    @Param('provider') provider: string,
+    @Body() dto: UpsertCourierIntegrationDto,
+    @Headers('x-store-id') storeId?: string,
+  ): Promise<CourierIntegrationDto> {
+    const store = await this.getMerchantStore(userId, storeId);
+    return this.upsertCourierIntegrationService.execute(
+      this.parseProvider(provider),
+      store.tenantId,
+      dto,
+    );
+  }
+
+  @Patch('courier-integrations/:provider/toggle')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('settings:write')
+  @ApiOperation({ summary: 'Enable or disable a connected courier (credentials are retained)' })
+  @ApiResponse({ status: 200, description: 'Integration toggled', type: CourierIntegrationDto })
+  @ApiResponse({ status: 404, description: 'Courier has not been connected yet' })
+  async toggleCourierIntegration(
+    @CurrentUser('sub') userId: string,
+    @Param('provider') provider: string,
+    @Body() dto: ToggleCourierIntegrationDto,
+    @Headers('x-store-id') storeId?: string,
+  ): Promise<CourierIntegrationDto> {
+    const store = await this.getMerchantStore(userId, storeId);
+    return this.toggleCourierIntegrationService.execute(
+      this.parseProvider(provider),
+      store.tenantId,
+      dto.isEnabled,
+    );
+  }
+
+  @Patch('courier-integrations/:provider/default')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('settings:write')
+  @ApiOperation({ summary: 'Make this the courier pre-selected when booking a parcel' })
+  @ApiResponse({ status: 200, description: 'Default courier set', type: CourierIntegrationDto })
+  @ApiResponse({ status: 400, description: 'Courier must be connected before it can be the default' })
+  async setDefaultCourier(
+    @CurrentUser('sub') userId: string,
+    @Param('provider') provider: string,
+    @Headers('x-store-id') storeId?: string,
+  ): Promise<CourierIntegrationDto> {
+    const store = await this.getMerchantStore(userId, storeId);
+    return this.setDefaultCourierService.execute(this.parseProvider(provider), store.tenantId);
+  }
+
+  @Post('courier-integrations/:provider/test')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('settings:write')
+  @ApiOperation({ summary: 'Verify the stored credentials against the courier’s API' })
+  @ApiResponse({ status: 201, description: 'Test result', type: CourierConnectionTestResponseDto })
+  @ApiResponse({ status: 404, description: 'Courier has not been connected yet' })
+  async testCourierConnection(
+    @CurrentUser('sub') userId: string,
+    @Param('provider') provider: string,
+    @Headers('x-store-id') storeId?: string,
+  ): Promise<CourierConnectionTestResponseDto> {
+    const store = await this.getMerchantStore(userId, storeId);
+    return this.testCourierConnectionService.execute(this.parseProvider(provider), store.tenantId);
   }
 
   // ---------------------------------------------------------------------------

@@ -24,6 +24,8 @@ import { CreateShipmentDto } from '../dto/create-shipment.dto';
 import { CourierProviderRegistry } from '../adapters/courier-provider.registry';
 import { ShipmentDetailsResponseDto } from '../dto/shipment-details-response.dto';
 import { GetShipmentDetailsService } from './get-shipment-details.service';
+import { ResolveCourierCredentialsService } from './resolve-courier-credentials.service';
+import { RecordCourierApiCallService } from './record-courier-api-call.service';
 
 /** Orders that are cancelled or already concluded can never be shipped. */
 const NON_SHIPPABLE_ORDER_STATUSES: readonly OrderStatusEnum[] = [
@@ -46,6 +48,8 @@ export class CreateShipmentService {
     private readonly storeRepository: Repository<StoreEntity>,
     private readonly courierProviderRegistry: CourierProviderRegistry,
     private readonly getShipmentDetailsService: GetShipmentDetailsService,
+    private readonly resolveCourierCredentialsService: ResolveCourierCredentialsService,
+    private readonly recordCourierApiCallService: RecordCourierApiCallService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -130,6 +134,15 @@ export class CreateShipmentService {
     let bookingStatus = ConsignmentStatusEnum.PENDING;
     let bookingNote = 'Shipment created. Awaiting courier booking confirmation.';
 
+    // Credentials come from the merchant's courier integration, falling back to
+    // the legacy store columns — never read directly from the store here, so
+    // booking, cancelling and syncing can never disagree about which keys apply.
+    const credentials = await this.resolveCourierCredentialsService.execute(
+      tenantId,
+      dto.courierProvider,
+      store,
+    );
+
     try {
       const result = await adapter.bookParcel({
         invoice: order.orderNumber,
@@ -140,16 +153,15 @@ export class CreateShipmentService {
         codAmount,
         note: dto.deliveryNote,
         weight: dto.parcelWeight ?? 0.5,
-        apiKey: store?.steadfastApiKey,
-        secretKey: store?.steadfastSecretKey,
-        clientId: store?.pathaoClientId,
-        clientSecret: store?.pathaoClientSecret,
+        ...credentials,
       });
 
       trackingCode = result.trackingCode;
       bookingStatus = ConsignmentStatusEnum.BOOKED;
       bookingNote = `Booked with ${adapter.displayName}. Tracking code ${result.trackingCode}.`;
+      await this.recordCourierApiCallService.execute(tenantId, dto.courierProvider, true);
     } catch (err) {
+      await this.recordCourierApiCallService.execute(tenantId, dto.courierProvider, false);
       // The parcel is kept as PENDING with no tracking code so the merchant can
       // retry, rather than losing the shipment or showing a fabricated booking.
       this.logger.error(

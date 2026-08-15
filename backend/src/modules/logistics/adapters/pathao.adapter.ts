@@ -5,20 +5,107 @@ import {
   CourierBookingPayload,
   CourierBookingResult,
   CourierCancellationResult,
+  CourierConnectionTestResult,
   CourierCredentials,
+  CourierProviderProfile,
   CourierTrackingResult,
 } from './courier.adapter';
 import { ConsignmentStatusEnum, CourierProviderEnum } from '../entities/consignment.entity';
 import axios from 'axios';
+
+const PATHAO_TOKEN_URL = 'https://api-hermes.pathao.com/aladdin/api/v1/issue-token';
 
 @Injectable()
 export class PathaoCourierAdapter implements ICourierAdapter {
   readonly provider = CourierProviderEnum.PATHAO;
   readonly displayName = 'Pathao';
 
+  readonly profile: CourierProviderProfile = {
+    serviceType: 'Courier Service',
+    codSupport: true,
+    coverage: 'All Over Bangladesh',
+    website: 'pathao.com',
+    supportsCancellation: false,
+    // Pathao pushes status by webhook; there is no polling endpoint to call.
+    supportsTracking: false,
+    credentialFields: [
+      {
+        key: 'clientId',
+        label: 'Client ID',
+        secret: false,
+        required: true,
+        placeholder: 'Pathao merchant client id',
+      },
+      {
+        key: 'clientSecret',
+        label: 'Client Secret',
+        secret: true,
+        required: true,
+        placeholder: 'Pathao merchant client secret',
+      },
+      {
+        key: 'username',
+        label: 'Merchant Username',
+        secret: false,
+        required: true,
+        placeholder: 'Pathao portal email',
+        helpText: 'Pathao issues its access token with a password grant, so both are required.',
+      },
+      {
+        key: 'password',
+        label: 'Merchant Password',
+        secret: true,
+        required: true,
+      },
+    ],
+  };
+
   private readonly logger = new Logger(PathaoCourierAdapter.name);
 
   constructor(private readonly configService: ConfigService) {}
+
+  async testConnection(credentials: CourierCredentials): Promise<CourierConnectionTestResult> {
+    const clientId = credentials.clientId || this.configService.get<string>('PATHAO_CLIENT_ID');
+    const clientSecret =
+      credentials.clientSecret || this.configService.get<string>('PATHAO_CLIENT_SECRET');
+    const username = credentials.username || this.configService.get<string>('PATHAO_USERNAME');
+    const password = credentials.password || this.configService.get<string>('PATHAO_PASSWORD');
+
+    if (!clientId || !clientSecret || !username || !password) {
+      return {
+        success: false,
+        message:
+          'Pathao needs a client id, client secret, merchant username and password before testing.',
+      };
+    }
+
+    try {
+      // Issuing a token is the authentication check itself — nothing is booked.
+      const response = await axios.post(
+        PATHAO_TOKEN_URL,
+        {
+          client_id: clientId,
+          client_secret: clientSecret,
+          username,
+          password,
+          grant_type: 'password',
+        },
+        { timeout: 10000 },
+      );
+
+      if (response.data?.access_token) {
+        return { success: true, message: 'Connected to Pathao successfully.' };
+      }
+      return { success: false, message: 'Pathao did not issue a token for these credentials.' };
+    } catch (err) {
+      const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+      if (status === 401 || status === 403 || status === 422) {
+        return { success: false, message: 'Pathao rejected these credentials.' };
+      }
+      this.logger.error(`Pathao connection test failed: ${err?.message}`);
+      return { success: false, message: 'Could not reach Pathao. Please try again shortly.' };
+    }
+  }
 
   async bookParcel(payload: CourierBookingPayload): Promise<CourierBookingResult> {
     const clientId = payload.clientId || this.configService.get<string>('PATHAO_CLIENT_ID');
@@ -38,12 +125,14 @@ export class PathaoCourierAdapter implements ICourierAdapter {
     // never as a fabricated "BOOKED" result.
     try {
       const tokenRes = await axios.post(
-        'https://api-hermes.pathao.com/aladdin/api/v1/issue-token',
+        PATHAO_TOKEN_URL,
         {
           client_id: clientId,
           client_secret: clientSecret,
-          username: this.configService.get<string>('PATHAO_USERNAME'),
-          password: this.configService.get<string>('PATHAO_PASSWORD'),
+          // Per-merchant credentials take precedence; the env values remain a
+          // fallback for single-tenant/dev setups.
+          username: payload.username || this.configService.get<string>('PATHAO_USERNAME'),
+          password: payload.password || this.configService.get<string>('PATHAO_PASSWORD'),
           grant_type: 'password',
         },
         { timeout: 10000 },

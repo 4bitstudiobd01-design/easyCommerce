@@ -12,6 +12,8 @@ import { CreateShipmentService } from './create-shipment.service';
 import { CancelShipmentService } from './cancel-shipment.service';
 import { ShipmentDomainService } from './shipment-domain.service';
 import { CourierProviderRegistry } from '../adapters/courier-provider.registry';
+import { ResolveCourierCredentialsService } from './resolve-courier-credentials.service';
+import { RecordCourierApiCallService } from './record-courier-api-call.service';
 import {
   CodStatusEnum,
   ConsignmentEntity,
@@ -60,12 +62,24 @@ const buildRegistry = (): CourierProviderRegistry => {
     ({
       provider,
       displayName,
+      profile: {
+        serviceType: 'Courier Service',
+        codSupport: true,
+        coverage: 'All Over Bangladesh',
+        website: `${displayName.toLowerCase()}.test`,
+        supportsCancellation: true,
+        supportsTracking: true,
+        credentialFields: [
+          { key: 'apiKey', label: 'API Key', secret: true, required: true },
+        ],
+      },
       bookParcel: jest.fn().mockResolvedValue({
         trackingCode: `${displayName.toUpperCase()}-123`,
         status: 'BOOKED',
       }),
       trackParcel: jest.fn(),
       cancelParcel: jest.fn().mockResolvedValue({ cancelled: true }),
+      testConnection: jest.fn().mockResolvedValue({ success: true, message: 'ok' }),
     }) as any;
 
   return new CourierProviderRegistry(
@@ -75,6 +89,21 @@ const buildRegistry = (): CourierProviderRegistry => {
     makeAdapter(CourierProviderEnum.REDX, 'RedX'),
   );
 };
+
+/**
+ * Credential resolution and API-health recording are exercised by their own
+ * specs; here they are stubbed so these tests stay focused on tenant isolation.
+ */
+const courierCredentialProviders = () => [
+  {
+    provide: ResolveCourierCredentialsService,
+    useValue: { execute: jest.fn().mockResolvedValue({}) },
+  },
+  {
+    provide: RecordCourierApiCallService,
+    useValue: { execute: jest.fn().mockResolvedValue(undefined) },
+  },
+];
 
 describe('Shipment tenant isolation and security', () => {
   describe('ListShipmentsService', () => {
@@ -242,6 +271,7 @@ describe('Shipment tenant isolation and security', () => {
             provide: getRepositoryToken(StoreEntity),
             useValue: { findOne: jest.fn().mockResolvedValue({ address: 'Warehouse 3' }) },
           },
+          ...courierCredentialProviders(),
           { provide: DataSource, useValue: dataSource },
         ],
       }).compile();
@@ -398,6 +428,7 @@ describe('Shipment tenant isolation and security', () => {
             provide: getRepositoryToken(StoreEntity),
             useValue: { findOne: jest.fn().mockResolvedValue({}) },
           },
+          ...courierCredentialProviders(),
           {
             provide: DataSource,
             useValue: { transaction: jest.fn(async (cb: any) => cb(manager)) },

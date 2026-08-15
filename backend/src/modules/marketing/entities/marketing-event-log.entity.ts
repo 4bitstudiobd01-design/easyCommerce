@@ -44,6 +44,9 @@ export class MarketingEventLog {
   @Column({ type: 'text', nullable: true })
   errorDetails: string;
 
+  @Column({ type: 'jsonb', nullable: true })
+  payloadJson: Record<string, any>;
+
   @CreateDateColumn()
   createdAt: Date;
 }

@@ -6,7 +6,9 @@ import {
   CourierBookingPayload,
   CourierBookingResult,
   CourierCancellationResult,
+  CourierConnectionTestResult,
   CourierCredentials,
+  CourierProviderProfile,
   CourierTrackingEvent,
   CourierTrackingResult,
 } from './courier.adapter';
@@ -38,10 +40,54 @@ export class RedxCourierAdapter implements ICourierAdapter {
   readonly provider = CourierProviderEnum.REDX;
   readonly displayName = 'RedX';
 
+  readonly profile: CourierProviderProfile = {
+    serviceType: 'Courier Service',
+    codSupport: true,
+    coverage: 'All Over Bangladesh',
+    website: 'redx.com.bd',
+    supportsCancellation: false,
+    supportsTracking: true,
+    credentialFields: [
+      {
+        key: 'apiKey',
+        label: 'API Access Token',
+        secret: true,
+        required: true,
+        placeholder: 'Your RedX API access token',
+        helpText: 'Issued by RedX for your merchant account; sent as API-ACCESS-TOKEN.',
+      },
+    ],
+  };
+
   private readonly logger = new Logger(RedxCourierAdapter.name);
   private readonly baseUrl = 'https://openapi.redx.com.bd/v1.0.0-beta';
 
   constructor(private readonly configService: ConfigService) {}
+
+  async testConnection(credentials: CourierCredentials): Promise<CourierConnectionTestResult> {
+    const token = credentials.apiKey || this.configService.get<string>('REDX_ACCESS_TOKEN');
+
+    if (!token) {
+      return { success: false, message: 'Add an API access token before testing the connection.' };
+    }
+
+    try {
+      // Listing delivery areas is a read-only authenticated call, so a test
+      // never books anything.
+      await axios.get(`${this.baseUrl}/areas`, {
+        headers: { 'API-ACCESS-TOKEN': `Bearer ${token}` },
+        timeout: 10000,
+      });
+      return { success: true, message: 'Connected to RedX successfully.' };
+    } catch (err) {
+      const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+      if (status === 401 || status === 403) {
+        return { success: false, message: 'RedX rejected this access token.' };
+      }
+      this.logger.error(`RedX connection test failed: ${err?.message}`);
+      return { success: false, message: 'Could not reach RedX. Please try again shortly.' };
+    }
+  }
 
   async bookParcel(payload: CourierBookingPayload): Promise<CourierBookingResult> {
     const token = payload.apiKey || this.configService.get<string>('REDX_ACCESS_TOKEN');

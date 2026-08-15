@@ -1,14 +1,21 @@
 import React from 'react';
 import { ConnectedIntegration } from '../api/marketingApi';
-import { Settings, Play, MoreHorizontal, Link } from 'lucide-react';
+import { Settings, Play, MoreHorizontal } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 
 interface ConnectedIntegrationsProps {
   integrations?: ConnectedIntegration[];
   isLoading?: boolean;
+  onConnect?: (integration: ConnectedIntegration) => void;
+  onTest?: (integration: ConnectedIntegration) => void;
 }
 
-export function ConnectedIntegrations({ integrations, isLoading }: ConnectedIntegrationsProps) {
+export function ConnectedIntegrations({
+  integrations,
+  isLoading,
+  onConnect,
+  onTest,
+}: ConnectedIntegrationsProps) {
   if (isLoading || !integrations) {
     return (
       <div className="mb-8">
@@ -28,8 +35,7 @@ export function ConnectedIntegrations({ integrations, isLoading }: ConnectedInte
     );
   }
 
-  // Icons for providers (since we don't have SVG assets, we can use simple colored circles or text placeholders, 
-  // but to match the design let's just make nicely styled icon circles)
+  // Icons for providers matching the design
   const renderProviderIcon = (provider: string) => {
     switch (provider) {
       case 'META':
@@ -52,7 +58,16 @@ export function ConnectedIntegrations({ integrations, isLoading }: ConnectedInte
           <h2 className="text-[15px] font-bold text-slate-900">Connected Integrations</h2>
           <p className="text-[13px] text-slate-500 mt-0.5">Manage and monitor your marketing pixels</p>
         </div>
-        <button className="h-9 px-4 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl flex items-center shadow-2xs transition-colors">
+        <button
+          type="button"
+          onClick={() => {
+            const firstUnconnected = integrations.find((i) => i.status !== 'CONNECTED');
+            if (firstUnconnected && onConnect) {
+              onConnect(firstUnconnected);
+            }
+          }}
+          className="h-9 px-4 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl flex items-center shadow-2xs transition-colors"
+        >
           View All Integrations
         </button>
       </div>
@@ -109,20 +124,36 @@ export function ConnectedIntegrations({ integrations, isLoading }: ConnectedInte
             <div className="flex items-center gap-2 mt-auto">
               {integration.status === 'CONNECTED' ? (
                 <>
-                  <button className="flex-1 h-8 px-3 rounded-lg border border-slate-200 text-slate-700 font-bold text-[11px] hover:bg-slate-50 transition-colors bg-white flex items-center justify-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => onConnect && onConnect(integration)}
+                    className="flex-1 h-8 px-3 rounded-lg border border-slate-200 text-slate-700 font-bold text-[11px] hover:bg-slate-50 transition-colors bg-white flex items-center justify-center gap-1.5"
+                  >
                     <Settings className="w-3.5 h-3.5" />
                     Configure
                   </button>
-                  <button className="flex-1 h-8 px-3 rounded-lg border border-slate-200 text-slate-700 font-bold text-[11px] hover:bg-slate-50 transition-colors bg-white flex items-center justify-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => onTest && onTest(integration)}
+                    className="flex-1 h-8 px-3 rounded-lg border border-slate-200 text-slate-700 font-bold text-[11px] hover:bg-slate-50 transition-colors bg-white flex items-center justify-center gap-1.5"
+                  >
                     <Play className="w-3.5 h-3.5" />
                     Test Events
                   </button>
-                  <button className="w-8 h-8 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors bg-white flex items-center justify-center shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => onConnect && onConnect(integration)}
+                    className="w-8 h-8 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors bg-white flex items-center justify-center shrink-0"
+                  >
                     <MoreHorizontal className="w-4 h-4" />
                   </button>
                 </>
               ) : (
-                <button className="w-full h-8 px-3 rounded-lg border border-blue-200 text-blue-600 font-bold text-[11px] hover:bg-blue-50 transition-colors bg-white flex items-center justify-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => onConnect && onConnect(integration)}
+                  className="w-full h-8 px-3 rounded-lg border border-blue-200 text-blue-600 font-bold text-[11px] hover:bg-blue-50 transition-colors bg-white flex items-center justify-center gap-1.5"
+                >
                   Connect
                 </button>
               )}

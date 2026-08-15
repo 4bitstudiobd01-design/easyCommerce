@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CourierProviderEnum } from '../entities/consignment.entity';
-import { ICourierAdapter } from './courier.adapter';
+import { ICourierAdapter, CourierProviderProfile } from './courier.adapter';
 import { SteadfastCourierAdapter } from './steadfast.adapter';
 import { PathaoCourierAdapter } from './pathao.adapter';
 import { PaperflyCourierAdapter } from './paperfly.adapter';
@@ -46,7 +46,19 @@ export class CourierProviderRegistry {
     }));
   }
 
+  /**
+   * Every adapter, so the Couriers tab can list providers a merchant has not
+   * connected yet alongside the ones they have.
+   */
+  listAdapters(): ICourierAdapter[] {
+    return Array.from(this.adapters.values());
+  }
+
   getDisplayName(provider: CourierProviderEnum): string {
     return this.adapters.get(provider)?.displayName ?? provider;
+  }
+
+  getProfile(provider: CourierProviderEnum): CourierProviderProfile {
+    return this.resolve(provider).profile;
   }
 }

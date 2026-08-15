@@ -189,49 +189,99 @@ export interface SeedShipmentDemoDataResponse {
   eventsCreated: number;
 }
 
+export type CourierConnectionStatus = 'Connected' | 'Disconnected' | 'Error';
+
+export type CourierApiHealth = 'Healthy' | 'Fair' | 'Poor' | 'N/A';
+
 /**
- * Placeholder shape for the future Couriers tab's provider health panel.
- * Sourced from a local mock (see getCouriersDashboard below) — no backend
- * endpoint exists for integration configs yet, so this is kept separate from
- * the real Shipment types above rather than blended into them.
+ * One credential input the connect form renders. Declared by the backend
+ * adapter rather than hardcoded here, so adding a courier with a different auth
+ * shape needs no frontend change.
  */
-export interface CourierIntegrationConfig {
-  apiKey?: string;
-  apiSecret?: string;
-  storeId?: string;
-  sandbox?: boolean;
+export interface CourierCredentialField {
+  key: string;
+  label: string;
+  secret: boolean;
+  required: boolean;
+  placeholder?: string;
+  helpText?: string;
 }
 
+/**
+ * A merchant's connection to one courier. `maskedCredentials` is exactly what
+ * the server sends — it never contains a usable secret, and submitting a mask
+ * back unchanged is understood by the server as "leave this field alone".
+ */
 export interface CourierDashboardItem {
   id: string;
   code: CourierProvider;
   name: string;
   type: string;
-  status: 'Connected' | 'Disconnected' | 'Error';
-  apiHealth: 'Healthy' | 'Fair' | 'Poor' | 'N/A';
-  apiSuccessRate30d: number;
+  status: CourierConnectionStatus;
+  apiHealth: CourierApiHealth;
+  apiSuccessRate: number;
   shipments: number;
   delivered: number;
   successRate: number;
   codSupport: boolean;
   coverage: string;
   website: string;
-  lastApiSync: string | null;
-  lastWebhook: string | null;
+  isEnabled: boolean;
+  isDefault: boolean;
+  sandbox: boolean;
   autoCreateShipment: boolean;
   autoUpdateTracking: boolean;
-  config?: CourierIntegrationConfig;
+  supportsCancellation: boolean;
+  supportsTracking: boolean;
+  lastApiSync: string | null;
+  lastWebhook: string | null;
+  lastTestedAt: string | null;
+  lastTestSucceeded: boolean | null;
+  lastTestMessage: string | null;
+  hasCredentials: boolean;
+  credentialFields: CourierCredentialField[];
+  maskedCredentials: Record<string, string>;
+}
+
+/** `change` is null when there is no comparable baseline — never render NaN. */
+export interface CourierMetric {
+  count: number;
+  change: number | null;
 }
 
 export interface CouriersDashboardResponse {
   summary: {
-    totalCouriers: { count: number; change: number };
-    connected: { count: number; change: number };
-    disconnected: { count: number; change: number };
-    active: { count: number; change: number };
-    apiHealth: { rate: number; change: number };
+    totalCouriers: CourierMetric;
+    connected: CourierMetric;
+    disconnected: CourierMetric;
+    active: CourierMetric;
+    apiHealth: { rate: number; change: number | null };
   };
   couriers: CourierDashboardItem[];
+}
+
+export interface UpsertCourierIntegrationRequest {
+  provider: CourierProvider;
+  credentials?: Record<string, string>;
+  isEnabled?: boolean;
+  sandbox?: boolean;
+  autoCreateShipment?: boolean;
+  autoUpdateTracking?: boolean;
+  isDefault?: boolean;
+}
+
+export interface CourierConnectionTestResponse {
+  success: boolean;
+  message: string;
+  integration: CourierDashboardItem;
+}
+
+export interface SeedCourierDemoDataResponse {
+  success: boolean;
+  message: string;
+  integrationsCreated: number;
+  /** Providers left untouched because they were already configured. */
+  integrationsSkipped: number;
 }
 
 /** Unwraps the platform's `{ success, data }` envelope when present. */
@@ -261,7 +311,7 @@ const API_ROOT =
 export const logisticsApi = createApi({
   reducerPath: 'logisticsApi',
   baseQuery: createBaseQueryWithReauth(API_ROOT),
-  tagTypes: ['Shipment', 'ShipmentSummary', 'CourierProvider'],
+  tagTypes: ['Shipment', 'ShipmentSummary', 'CourierProvider', 'CourierIntegration'],
   endpoints: (builder) => ({
     getShipments: builder.query<ShipmentListResponse, ShipmentFilters | void>({
       query: (params) => ({
@@ -371,102 +421,135 @@ export const logisticsApi = createApi({
       transformResponse: (response: unknown) => unwrap<ShipmentDetails>(response),
     }),
 
-    // --- Couriers tab placeholder (out of the Shipments release's scope) ---
+    // --- Couriers tab: per-merchant courier integrations ---
 
     getCouriersDashboard: builder.query<CouriersDashboardResponse, void>({
-      // MOCK endpoint — no backend exists yet for courier integration configs.
-      // Kept isolated behind its own types so it never contaminates the real
-      // Shipment contract above.
-      queryFn: async () => ({
-        data: {
-          summary: {
-            totalCouriers: { count: 4, change: 1 },
-            connected: { count: 3, change: 50 },
-            disconnected: { count: 1, change: -50 },
-            active: { count: 3, change: 25 },
-            apiHealth: { rate: 98.6, change: 2.4 },
+      query: () => '/logistics/courier-integrations',
+      providesTags: ['CourierIntegration'],
+      transformResponse: (response: unknown): CouriersDashboardResponse => {
+        const payload = unwrap<CouriersDashboardResponse>(response);
+        return {
+          summary: payload?.summary ?? {
+            totalCouriers: { count: 0, change: null },
+            connected: { count: 0, change: null },
+            disconnected: { count: 0, change: null },
+            active: { count: 0, change: null },
+            apiHealth: { rate: 0, change: null },
           },
-          couriers: [
-            {
-              id: '1',
-              code: 'STEADFAST',
-              name: 'Steadfast',
-              type: 'Courier Service',
-              status: 'Connected',
-              apiHealth: 'Healthy',
-              apiSuccessRate30d: 92.4,
-              shipments: 624,
-              delivered: 456,
-              successRate: 92.4,
-              codSupport: true,
-              coverage: 'All Over Bangladesh',
-              website: 'www.steadfast.com.bd',
-              lastApiSync: '2025-08-14T10:45:00Z',
-              lastWebhook: '2025-08-14T10:42:00Z',
-              autoCreateShipment: true,
-              autoUpdateTracking: true,
-            },
-            {
-              id: '2',
-              code: 'PATHAO',
-              name: 'Pathao Courier',
-              type: 'Courier Service',
-              status: 'Connected',
-              apiHealth: 'Healthy',
-              apiSuccessRate30d: 88.7,
-              shipments: 456,
-              delivered: 389,
-              successRate: 88.7,
-              codSupport: true,
-              coverage: 'All Over Bangladesh',
-              website: 'pathao.com',
-              lastApiSync: '2025-08-14T10:30:00Z',
-              lastWebhook: null,
-              autoCreateShipment: false,
-              autoUpdateTracking: true,
-            },
-            {
-              id: '3',
-              code: 'REDX',
-              name: 'RedX',
-              type: 'Courier Service',
-              status: 'Connected',
-              apiHealth: 'Fair',
-              apiSuccessRate30d: 78.5,
-              shipments: 102,
-              delivered: 80,
-              successRate: 78.5,
-              codSupport: true,
-              coverage: 'All Over Bangladesh',
-              website: 'redx.com.bd',
-              lastApiSync: '2025-08-14T09:20:00Z',
-              lastWebhook: null,
-              autoCreateShipment: false,
-              autoUpdateTracking: false,
-            },
-            {
-              id: '4',
-              code: 'PAPERFLY',
-              name: 'Paperfly',
-              type: 'Logistics Service',
-              status: 'Disconnected',
-              apiHealth: 'N/A',
-              apiSuccessRate30d: 0,
-              shipments: 0,
-              delivered: 0,
-              successRate: 0,
-              codSupport: true,
-              coverage: 'All Over Bangladesh',
-              website: 'paperfly.com.bd',
-              lastApiSync: null,
-              lastWebhook: null,
-              autoCreateShipment: false,
-              autoUpdateTracking: false,
-            },
-          ],
-        },
+          couriers: Array.isArray(payload?.couriers) ? payload.couriers : [],
+        };
+      },
+    }),
+
+    getCourierIntegration: builder.query<CourierDashboardItem, CourierProvider>({
+      query: (provider) => `/logistics/courier-integrations/${provider}`,
+      providesTags: (result, error, provider) => [{ type: 'CourierIntegration', id: provider }],
+      transformResponse: (response: unknown) => unwrap<CourierDashboardItem>(response),
+    }),
+
+    upsertCourierIntegration: builder.mutation<
+      CourierDashboardItem,
+      UpsertCourierIntegrationRequest
+    >({
+      query: ({ provider, ...body }) => ({
+        url: `/logistics/courier-integrations/${provider}`,
+        method: 'PATCH',
+        body,
       }),
-      providesTags: ['CourierProvider'],
+      // Connecting a courier changes the KPI row, the table and the shipment
+      // form's provider list — never a page reload.
+      invalidatesTags: (result, error, { provider }) => [
+        'CourierIntegration',
+        'CourierProvider',
+        { type: 'CourierIntegration', id: provider },
+      ],
+      transformResponse: (response: unknown) => unwrap<CourierDashboardItem>(response),
+    }),
+
+    toggleCourierIntegration: builder.mutation<
+      CourierDashboardItem,
+      { provider: CourierProvider; isEnabled?: boolean }
+    >({
+      query: ({ provider, isEnabled }) => ({
+        url: `/logistics/courier-integrations/${provider}/toggle`,
+        method: 'PATCH',
+        body: { isEnabled },
+      }),
+      invalidatesTags: (result, error, { provider }) => [
+        'CourierIntegration',
+        'CourierProvider',
+        { type: 'CourierIntegration', id: provider },
+      ],
+      transformResponse: (response: unknown) => unwrap<CourierDashboardItem>(response),
+    }),
+
+    setDefaultCourier: builder.mutation<CourierDashboardItem, CourierProvider>({
+      query: (provider) => ({
+        url: `/logistics/courier-integrations/${provider}/default`,
+        method: 'PATCH',
+      }),
+      // Every row's Default badge can change, so the whole list is invalidated.
+      invalidatesTags: ['CourierIntegration'],
+      transformResponse: (response: unknown) => unwrap<CourierDashboardItem>(response),
+    }),
+
+    testCourierConnection: builder.mutation<CourierConnectionTestResponse, CourierProvider>({
+      query: (provider) => ({
+        url: `/logistics/courier-integrations/${provider}/test`,
+        method: 'POST',
+      }),
+      invalidatesTags: (result, error, provider) => [
+        'CourierIntegration',
+        { type: 'CourierIntegration', id: provider },
+      ],
+      // The response interceptor hoists this payload's `message` into the
+      // envelope and replaces `success` with its own always-true transport
+      // flag, so the real outcome is read back from the integration the server
+      // returned — never from the envelope, which would report every failed
+      // handshake as a success.
+      transformResponse: (response: unknown): CourierConnectionTestResponse => {
+        const envelope = (response ?? {}) as {
+          message?: string;
+          data?: Partial<CourierConnectionTestResponse> | null;
+        };
+        const body = envelope.data ?? {};
+        const integration = body.integration as CourierDashboardItem | undefined;
+
+        return {
+          success: integration?.lastTestSucceeded ?? body.success ?? false,
+          message:
+            integration?.lastTestMessage ??
+            body.message ??
+            envelope.message ??
+            'Connection test finished.',
+          integration: integration as CourierDashboardItem,
+        };
+      },
+    }),
+
+    seedCourierDemoData: builder.mutation<SeedCourierDemoDataResponse, void>({
+      query: () => ({
+        url: '/logistics/courier-integrations/seed-demo-data',
+        method: 'POST',
+      }),
+      invalidatesTags: ['CourierIntegration', 'CourierProvider'],
+      // The platform's response interceptor lifts any payload carrying a
+      // top-level `message` into the envelope and keeps only its `data`, which
+      // is empty here — so the summary is read off the envelope itself rather
+      // than from an unwrapped body that would be null.
+      transformResponse: (response: unknown): SeedCourierDemoDataResponse => {
+        const envelope = (response ?? {}) as {
+          message?: string;
+          data?: Partial<SeedCourierDemoDataResponse> | null;
+        };
+        const body = envelope.data ?? {};
+        return {
+          success: body.success ?? true,
+          message: body.message ?? envelope.message ?? 'Courier demo data seeded.',
+          integrationsCreated: body.integrationsCreated ?? 0,
+          integrationsSkipped: body.integrationsSkipped ?? 0,
+        };
+      },
     }),
   }),
 });
@@ -483,4 +566,10 @@ export const {
   useBookCourierMutation,
   useSyncConsignmentMutation,
   useGetCouriersDashboardQuery,
+  useGetCourierIntegrationQuery,
+  useUpsertCourierIntegrationMutation,
+  useToggleCourierIntegrationMutation,
+  useSetDefaultCourierMutation,
+  useTestCourierConnectionMutation,
+  useSeedCourierDemoDataMutation,
 } = logisticsApi;

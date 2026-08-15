@@ -13,6 +13,8 @@ import { StoreEntity } from '../../tenant/entities/store.entity';
 import { CourierProviderRegistry } from '../adapters/courier-provider.registry';
 import { ShipmentDomainService } from './shipment-domain.service';
 import { GetShipmentDetailsService } from './get-shipment-details.service';
+import { ResolveCourierCredentialsService } from './resolve-courier-credentials.service';
+import { RecordCourierApiCallService } from './record-courier-api-call.service';
 import { ShipmentDetailsResponseDto } from '../dto/shipment-details-response.dto';
 
 /** Order state implied by a shipment reaching a given status. */
@@ -38,6 +40,8 @@ export class SyncConsignmentService {
     private readonly courierProviderRegistry: CourierProviderRegistry,
     private readonly shipmentDomainService: ShipmentDomainService,
     private readonly getShipmentDetailsService: GetShipmentDetailsService,
+    private readonly resolveCourierCredentialsService: ResolveCourierCredentialsService,
+    private readonly recordCourierApiCallService: RecordCourierApiCallService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -94,13 +98,26 @@ export class SyncConsignmentService {
 
     const store = await this.storeRepository.findOne({ where: { tenantId } });
     const adapter = this.courierProviderRegistry.resolve(consignment.courierProvider);
+    const credentials = await this.resolveCourierCredentialsService.execute(
+      tenantId,
+      consignment.courierProvider,
+      store,
+    );
 
-    const trackingResult = await adapter.trackParcel(consignment.trackingCode, {
-      apiKey: store?.steadfastApiKey,
-      secretKey: store?.steadfastSecretKey,
-      clientId: store?.pathaoClientId,
-      clientSecret: store?.pathaoClientSecret,
-    });
+    let trackingResult;
+    try {
+      trackingResult = await adapter.trackParcel(consignment.trackingCode, credentials);
+      await this.recordCourierApiCallService.execute(tenantId, consignment.courierProvider, true);
+    } catch (err) {
+      // Health is recorded before rethrowing, so a courier that starts failing
+      // shows up in the Couriers tab rather than only in the logs.
+      await this.recordCourierApiCallService.execute(
+        tenantId,
+        consignment.courierProvider,
+        false,
+      );
+      throw err;
+    }
 
     // Deduplicate on status + timestamp so a repeated sync never double-records.
     const existingEvents = await this.consignmentEventRepository.find({

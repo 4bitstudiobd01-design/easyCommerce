@@ -13,6 +13,9 @@ export interface CourierBookingPayload {
   secretKey?: string;
   clientId?: string;
   clientSecret?: string;
+  username?: string;
+  password?: string;
+  merchantStoreId?: string;
 }
 
 export interface CourierBookingResult {
@@ -39,6 +42,46 @@ export interface CourierCancellationResult {
   message?: string;
 }
 
+export interface CourierConnectionTestResult {
+  success: boolean;
+  message: string;
+}
+
+/**
+ * One credential input the Couriers tab renders for this provider.
+ *
+ * Declared by the adapter rather than hardcoded in the UI, so adding a provider
+ * with a different auth shape needs no frontend change — the connect form is
+ * generated from whatever the adapter reports.
+ */
+export interface CourierCredentialField {
+  /** Key inside CourierCredentialBag, e.g. "apiKey". */
+  key: string;
+  label: string;
+  /** Rendered as a password input and masked on read. */
+  secret: boolean;
+  required: boolean;
+  placeholder?: string;
+  helpText?: string;
+}
+
+/**
+ * Static, merchant-facing facts about a provider. These describe the courier
+ * itself (not one merchant's connection), so they live with the adapter and are
+ * the same for every tenant.
+ */
+export interface CourierProviderProfile {
+  /** "Courier Service" vs "Logistics Service" — shown in the Type column. */
+  serviceType: string;
+  codSupport: boolean;
+  coverage: string;
+  website: string;
+  /** False when the provider exposes no cancellation API (e.g. Steadfast). */
+  supportsCancellation: boolean;
+  supportsTracking: boolean;
+  credentialFields: CourierCredentialField[];
+}
+
 /**
  * The contract every courier integration implements.
  *
@@ -51,6 +94,8 @@ export interface ICourierAdapter {
   readonly provider: CourierProviderEnum;
   /** Merchant-facing provider name, e.g. "Steadfast". */
   readonly displayName: string;
+  /** Capabilities and credential shape the Couriers tab renders from. */
+  readonly profile: CourierProviderProfile;
 
   bookParcel(payload: CourierBookingPayload): Promise<CourierBookingResult>;
   trackParcel(
@@ -61,6 +106,13 @@ export interface ICourierAdapter {
     trackingCode: string,
     credentials: CourierCredentials,
   ): Promise<CourierCancellationResult>;
+
+  /**
+   * Verifies credentials against the provider. Resolves with `success: false`
+   * and a merchant-readable reason rather than throwing, because a failed test
+   * is an expected outcome of the "Test Connection" button, not an error.
+   */
+  testConnection(credentials: CourierCredentials): Promise<CourierConnectionTestResult>;
 }
 
 /**
@@ -72,4 +124,7 @@ export interface CourierCredentials {
   secretKey?: string;
   clientId?: string;
   clientSecret?: string;
+  username?: string;
+  password?: string;
+  merchantStoreId?: string;
 }

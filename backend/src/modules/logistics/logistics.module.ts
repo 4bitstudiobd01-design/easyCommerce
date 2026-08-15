@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ConsignmentEntity } from './entities/consignment.entity';
 import { ConsignmentEventEntity } from './entities/consignment-event.entity';
+import { CourierIntegrationEntity } from './entities/courier-integration.entity';
 import { OrderEntity } from '../order/entities/order.entity';
 import { OrderStatusHistoryEntity } from '../order/entities/order-status-history.entity';
 import { StoreEntity } from '../tenant/entities/store.entity';
@@ -20,6 +21,17 @@ import { CancelShipmentService } from './services/cancel-shipment.service';
 import { ExportShipmentsService } from './services/export-shipments.service';
 import { SyncConsignmentService } from './services/sync-consignment.service';
 import { SeedShipmentDemoDataService } from './services/seed-shipment-demo-data.service';
+import { CredentialsCryptoService } from './services/credentials-crypto.service';
+import { CourierIntegrationMapperService } from './services/courier-integration-mapper.service';
+import { ListCourierIntegrationsService } from './services/list-courier-integrations.service';
+import { GetCourierIntegrationService } from './services/get-courier-integration.service';
+import { UpsertCourierIntegrationService } from './services/upsert-courier-integration.service';
+import { ToggleCourierIntegrationService } from './services/toggle-courier-integration.service';
+import { SetDefaultCourierService } from './services/set-default-courier.service';
+import { TestCourierConnectionService } from './services/test-courier-connection.service';
+import { RecordCourierApiCallService } from './services/record-courier-api-call.service';
+import { ResolveCourierCredentialsService } from './services/resolve-courier-credentials.service';
+import { SeedCourierDemoDataService } from './services/seed-courier-demo-data.service';
 
 import { CourierProviderRegistry } from './adapters/courier-provider.registry';
 import { SteadfastCourierAdapter } from './adapters/steadfast.adapter';
@@ -36,6 +48,7 @@ import { PermissionsGuard } from '../../common/guards/permissions.guard';
     TypeOrmModule.forFeature([
       ConsignmentEntity,
       ConsignmentEventEntity,
+      CourierIntegrationEntity,
       OrderEntity,
       StoreEntity,
       OrderStatusHistoryEntity,
@@ -64,6 +77,17 @@ import { PermissionsGuard } from '../../common/guards/permissions.guard';
     ExportShipmentsService,
     SyncConsignmentService,
     SeedShipmentDemoDataService,
+    CredentialsCryptoService,
+    CourierIntegrationMapperService,
+    ListCourierIntegrationsService,
+    GetCourierIntegrationService,
+    UpsertCourierIntegrationService,
+    ToggleCourierIntegrationService,
+    SetDefaultCourierService,
+    TestCourierConnectionService,
+    RecordCourierApiCallService,
+    ResolveCourierCredentialsService,
+    SeedCourierDemoDataService,
     CourierProviderRegistry,
     SteadfastCourierAdapter,
     PathaoCourierAdapter,
@@ -80,6 +104,7 @@ import { PermissionsGuard } from '../../common/guards/permissions.guard';
     CreateShipmentService,
     CancelShipmentService,
     SyncConsignmentService,
+    ResolveCourierCredentialsService,
     CourierProviderRegistry,
     TypeOrmModule,
   ],

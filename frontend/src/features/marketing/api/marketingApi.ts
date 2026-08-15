@@ -57,6 +57,7 @@ export interface EventLogItem {
   source: string;
   orderRef: string;
   status: 'SENT' | 'FAILED';
+  payloadJson?: Record<string, any>;
   createdAt: string;
 }
 
@@ -75,6 +76,7 @@ export const marketingApi = createApi({
       providesTags: ['MarketingDashboard'],
       transformResponse: (response: unknown) => unwrap<MarketingDashboardResponse>(response),
     }),
+
     getMarketingLogs: builder.query<EventLogsResponse, { limit?: number; offset?: number }>({
       query: (params) => ({
         url: '/marketing/logs',
@@ -83,6 +85,27 @@ export const marketingApi = createApi({
       providesTags: ['MarketingLogs'],
       transformResponse: (response: unknown) => unwrap<EventLogsResponse>(response),
     }),
+
+    connectPixel: builder.mutation<
+      { message: string; data?: any },
+      { provider: string; pixelId: string; accessToken?: string; testEventCode?: string }
+    >({
+      query: (body) => ({
+        url: '/marketing/pixels/connect',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['MarketingDashboard', 'MarketingLogs'],
+    }),
+
+    disconnectPixel: builder.mutation<{ message: string }, string>({
+      query: (provider) => ({
+        url: `/marketing/pixels/${provider}/disconnect`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['MarketingDashboard', 'MarketingLogs'],
+    }),
+
     toggleEvent: builder.mutation<void, { eventName: string; isActive: boolean }>({
       query: ({ eventName, isActive }) => ({
         url: `/marketing/events/${eventName}`,
@@ -91,13 +114,25 @@ export const marketingApi = createApi({
       }),
       invalidatesTags: ['MarketingDashboard'],
     }),
-    connectPixel: builder.mutation<void, { provider: string; pixelId: string }>({
+
+    testEvent: builder.mutation<
+      { message: string; logs?: EventLogItem[] },
+      { eventName: string; provider?: string; orderRef?: string; customPayload?: any }
+    >({
       query: (body) => ({
-        url: `/marketing/pixels/${body.provider}/connect`,
+        url: '/marketing/events/test',
         method: 'POST',
         body,
       }),
-      invalidatesTags: ['MarketingDashboard'],
+      invalidatesTags: ['MarketingDashboard', 'MarketingLogs'],
+    }),
+
+    testAllPixels: builder.mutation<{ message: string; logs?: EventLogItem[] }, void>({
+      query: () => ({
+        url: '/marketing/events/test-all',
+        method: 'POST',
+      }),
+      invalidatesTags: ['MarketingDashboard', 'MarketingLogs'],
     }),
   }),
 });
@@ -105,6 +140,9 @@ export const marketingApi = createApi({
 export const {
   useGetMarketingDashboardQuery,
   useGetMarketingLogsQuery,
-  useToggleEventMutation,
   useConnectPixelMutation,
+  useDisconnectPixelMutation,
+  useToggleEventMutation,
+  useTestEventMutation,
+  useTestAllPixelsMutation,
 } = marketingApi;

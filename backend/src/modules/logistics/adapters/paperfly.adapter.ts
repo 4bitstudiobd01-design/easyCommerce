@@ -5,7 +5,9 @@ import {
   CourierBookingPayload,
   CourierBookingResult,
   CourierCancellationResult,
+  CourierConnectionTestResult,
   CourierCredentials,
+  CourierProviderProfile,
   CourierTrackingResult,
 } from './courier.adapter';
 import { ConsignmentStatusEnum, CourierProviderEnum } from '../entities/consignment.entity';
@@ -23,9 +25,57 @@ export class PaperflyCourierAdapter implements ICourierAdapter {
   readonly provider = CourierProviderEnum.PAPERFLY;
   readonly displayName = 'Paperfly';
 
+  readonly profile: CourierProviderProfile = {
+    serviceType: 'Logistics Service',
+    codSupport: true,
+    coverage: 'All Over Bangladesh',
+    website: 'paperfly.com.bd',
+    supportsCancellation: false,
+    supportsTracking: false,
+    credentialFields: [
+      {
+        key: 'apiKey',
+        label: 'API Key',
+        secret: true,
+        required: true,
+        placeholder: 'Paperfly merchant API key',
+        helpText: 'Paperfly issues API access per merchant contract — ask your account manager.',
+      },
+      {
+        key: 'username',
+        label: 'Merchant Username',
+        secret: false,
+        required: false,
+      },
+      {
+        key: 'password',
+        label: 'Merchant Password',
+        secret: true,
+        required: false,
+      },
+    ],
+  };
+
   private readonly logger = new Logger(PaperflyCourierAdapter.name);
 
   constructor(private readonly configService: ConfigService) {}
+
+  async testConnection(credentials: CourierCredentials): Promise<CourierConnectionTestResult> {
+    const apiKey = credentials.apiKey || this.configService.get<string>('PAPERFLY_API_KEY');
+
+    if (!apiKey) {
+      return { success: false, message: 'Add an API key before testing the connection.' };
+    }
+
+    // No live Paperfly endpoint is wired (see the class comment), so claiming a
+    // successful handshake here would be a lie. The credentials are stored and
+    // the merchant is told plainly what does and does not work.
+    return {
+      success: false,
+      message:
+        'Paperfly credentials saved, but live verification is not available yet — bookings run in sandbox mode.',
+    };
+  }
 
   async bookParcel(payload: CourierBookingPayload): Promise<CourierBookingResult> {
     const apiKey = payload.apiKey || this.configService.get<string>('PAPERFLY_API_KEY');

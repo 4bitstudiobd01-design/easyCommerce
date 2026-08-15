@@ -4,13 +4,19 @@ import React from 'react';
 import { TrackingEvent, useToggleEventMutation } from '../api/marketingApi';
 import { Settings, MoreHorizontal } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { toast } from 'sonner';
 
 interface TrackingEventsTableProps {
   events?: TrackingEvent[];
   isLoading?: boolean;
+  onTestEvent?: (eventName: string) => void;
 }
 
-export function TrackingEventsTable({ events, isLoading }: TrackingEventsTableProps) {
+export function TrackingEventsTable({
+  events,
+  isLoading,
+  onTestEvent,
+}: TrackingEventsTableProps) {
   const [toggleEvent] = useToggleEventMutation();
 
   if (isLoading || !events) {
@@ -32,8 +38,14 @@ export function TrackingEventsTable({ events, isLoading }: TrackingEventsTablePr
     );
   }
 
-  const handleToggle = (eventName: string, currentStatus: boolean) => {
-    toggleEvent({ eventName, isActive: !currentStatus });
+  const handleToggle = async (eventName: string, currentStatus: boolean) => {
+    const nextStatus = !currentStatus;
+    try {
+      await toggleEvent({ eventName, isActive: nextStatus }).unwrap();
+      toast.success(`Event '${eventName}' ${nextStatus ? 'enabled' : 'paused'} successfully.`);
+    } catch {
+      toast.error(`Failed to update ${eventName} status.`);
+    }
   };
 
   return (
@@ -69,6 +81,7 @@ export function TrackingEventsTable({ events, isLoading }: TrackingEventsTablePr
                 </td>
                 <td className="py-2.5 px-4">
                   <button 
+                    type="button"
                     onClick={() => handleToggle(event.eventName, event.isActive)}
                     className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${
                       event.isActive ? 'bg-emerald-500' : 'bg-slate-200'
@@ -83,7 +96,6 @@ export function TrackingEventsTable({ events, isLoading }: TrackingEventsTablePr
                 </td>
                 <td className="py-2.5 px-4 font-bold text-slate-900">{event.eventsToday.toLocaleString()}</td>
                 <td className="py-2.5 px-4 text-slate-600 font-medium">
-                  {/* Mock formatting for demo */}
                   {event.eventName === 'PageView' ? '2 min ago' : 
                    event.eventName === 'ViewContent' ? '5 min ago' :
                    event.eventName === 'AddToCart' ? '6 min ago' :
@@ -97,10 +109,18 @@ export function TrackingEventsTable({ events, isLoading }: TrackingEventsTablePr
                 </td>
                 <td className="py-2.5 px-4 text-center">
                   <div className="flex items-center justify-center gap-1.5">
-                    <button className="h-7 px-2.5 rounded border border-slate-200 text-slate-600 font-bold text-[10px] hover:bg-slate-50 transition-colors bg-white">
+                    <button
+                      type="button"
+                      onClick={() => onTestEvent && onTestEvent(event.eventName)}
+                      className="h-7 px-2.5 rounded border border-slate-200 text-slate-600 font-bold text-[10px] hover:bg-slate-50 transition-colors bg-white"
+                    >
                       Test
                     </button>
-                    <button className="h-7 px-1.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors bg-white flex items-center justify-center">
+                    <button
+                      type="button"
+                      onClick={() => onTestEvent && onTestEvent(event.eventName)}
+                      className="h-7 px-1.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors bg-white flex items-center justify-center"
+                    >
                       <MoreHorizontal className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -112,7 +132,11 @@ export function TrackingEventsTable({ events, isLoading }: TrackingEventsTablePr
       </div>
 
       <div className="p-4 border-t border-slate-100">
-        <button className="h-9 px-4 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-2 shadow-2xs transition-colors">
+        <button
+          type="button"
+          onClick={() => onTestEvent && onTestEvent('PageView')}
+          className="h-9 px-4 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-2 shadow-2xs transition-colors"
+        >
           <Settings className="w-3.5 h-3.5" />
           Configure Events
         </button>

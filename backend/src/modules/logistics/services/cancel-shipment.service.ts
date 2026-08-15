@@ -18,6 +18,8 @@ import { StoreEntity } from '../../tenant/entities/store.entity';
 import { CourierProviderRegistry } from '../adapters/courier-provider.registry';
 import { ShipmentDomainService, CONSIGNMENT_STATUS_LABELS } from './shipment-domain.service';
 import { GetShipmentDetailsService } from './get-shipment-details.service';
+import { ResolveCourierCredentialsService } from './resolve-courier-credentials.service';
+import { RecordCourierApiCallService } from './record-courier-api-call.service';
 import { ShipmentDetailsResponseDto } from '../dto/shipment-details-response.dto';
 
 @Injectable()
@@ -32,6 +34,8 @@ export class CancelShipmentService {
     private readonly courierProviderRegistry: CourierProviderRegistry,
     private readonly shipmentDomainService: ShipmentDomainService,
     private readonly getShipmentDetailsService: GetShipmentDetailsService,
+    private readonly resolveCourierCredentialsService: ResolveCourierCredentialsService,
+    private readonly recordCourierApiCallService: RecordCourierApiCallService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -63,20 +67,30 @@ export class CancelShipmentService {
     if (consignment.trackingCode) {
       const store = await this.storeRepository.findOne({ where: { tenantId } });
       const adapter = this.courierProviderRegistry.resolve(consignment.courierProvider);
+      const credentials = await this.resolveCourierCredentialsService.execute(
+        tenantId,
+        consignment.courierProvider,
+        store,
+      );
       try {
-        const result = await adapter.cancelParcel(consignment.trackingCode, {
-          apiKey: store?.steadfastApiKey,
-          secretKey: store?.steadfastSecretKey,
-          clientId: store?.pathaoClientId,
-          clientSecret: store?.pathaoClientSecret,
-        });
+        const result = await adapter.cancelParcel(consignment.trackingCode, credentials);
         courierMessage = result.message;
+        await this.recordCourierApiCallService.execute(
+          tenantId,
+          consignment.courierProvider,
+          true,
+        );
       } catch (err) {
         this.logger.error(
           `Courier cancellation failed for ${consignment.shipmentNumber}: ${err?.message}`,
         );
         courierMessage =
           'The courier could not be reached — confirm the cancellation with them directly.';
+        await this.recordCourierApiCallService.execute(
+          tenantId,
+          consignment.courierProvider,
+          false,
+        );
       }
     }
 

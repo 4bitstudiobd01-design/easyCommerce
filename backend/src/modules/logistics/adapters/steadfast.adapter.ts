@@ -5,7 +5,9 @@ import {
   CourierBookingPayload,
   CourierBookingResult,
   CourierCancellationResult,
+  CourierConnectionTestResult,
   CourierCredentials,
+  CourierProviderProfile,
   CourierTrackingEvent,
   CourierTrackingResult,
 } from './courier.adapter';
@@ -31,9 +33,76 @@ export class SteadfastCourierAdapter implements ICourierAdapter {
   readonly provider = CourierProviderEnum.STEADFAST;
   readonly displayName = 'Steadfast';
 
+  readonly profile: CourierProviderProfile = {
+    serviceType: 'Courier Service',
+    codSupport: true,
+    coverage: 'All Over Bangladesh',
+    website: 'steadfast.com.bd',
+    // Steadfast exposes no cancellation endpoint — see cancelParcel below.
+    supportsCancellation: false,
+    supportsTracking: true,
+    credentialFields: [
+      {
+        key: 'apiKey',
+        label: 'API Key',
+        secret: true,
+        required: true,
+        placeholder: 'Your Steadfast Api-Key',
+        helpText: 'Found in the Steadfast merchant portal under API settings.',
+      },
+      {
+        key: 'secretKey',
+        label: 'Secret Key',
+        secret: true,
+        required: true,
+        placeholder: 'Your Steadfast Secret-Key',
+      },
+    ],
+  };
+
   private readonly logger = new Logger(SteadfastCourierAdapter.name);
 
   constructor(private readonly configService: ConfigService) {}
+
+  async testConnection(credentials: CourierCredentials): Promise<CourierConnectionTestResult> {
+    const apiKey = credentials.apiKey || this.configService.get<string>('STEADFAST_API_KEY');
+    const secretKey =
+      credentials.secretKey || this.configService.get<string>('STEADFAST_SECRET_KEY');
+
+    if (!apiKey || !secretKey) {
+      return {
+        success: false,
+        message: 'Add both an API key and a secret key before testing the connection.',
+      };
+    }
+
+    try {
+      // The balance endpoint is the cheapest authenticated call Steadfast
+      // offers, so testing credentials never creates or mutates a parcel.
+      const response = await axios.get(
+        'https://portal.steadfast.com.bd/api/v1/get_balance',
+        {
+          headers: { 'Api-Key': apiKey, 'Secret-Key': secretKey },
+          timeout: 10000,
+        },
+      );
+
+      if (response.data?.status === 200) {
+        return { success: true, message: 'Connected to Steadfast successfully.' };
+      }
+      return {
+        success: false,
+        message: 'Steadfast rejected these credentials. Check the API and secret key.',
+      };
+    } catch (err) {
+      const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+      if (status === 401 || status === 403) {
+        return { success: false, message: 'Steadfast rejected these credentials.' };
+      }
+      this.logger.error(`Steadfast connection test failed: ${err?.message}`);
+      return { success: false, message: 'Could not reach Steadfast. Please try again shortly.' };
+    }
+  }
 
   async bookParcel(payload: CourierBookingPayload): Promise<CourierBookingResult> {
     const apiKey = payload.apiKey || this.configService.get<string>('STEADFAST_API_KEY');
