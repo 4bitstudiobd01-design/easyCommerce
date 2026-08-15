@@ -20,7 +20,8 @@ import {
   Megaphone,
   BarChart2,
   MonitorSmartphone,
-  FileText
+  FileText,
+  ShoppingBag
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -276,8 +277,21 @@ export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onCl
               {!isDesktopCollapsed && <span>Marketing</span>}
             </div>
           </Link>
-          <Link 
-            href="/dashboard/analytics" 
+          <Link
+            href="/dashboard/abandoned-carts"
+            className={navItemClass('/dashboard/abandoned-carts')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Abandoned Carts")}
+            onFocus={(e) => handleTooltipEnter(e, "Abandoned Carts")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <ShoppingBag className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Abandoned Carts</span>}
+            </div>
+          </Link>
+          <Link
+            href="/dashboard/analytics"
             className={navItemClass('/dashboard/analytics')}
             onMouseEnter={(e) => handleTooltipEnter(e, "Analytics")}
             onFocus={(e) => handleTooltipEnter(e, "Analytics")}
