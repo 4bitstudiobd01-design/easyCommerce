@@ -69,7 +69,7 @@ export function CustomerOverviewChart() {
                 ))}
               </Pie>
               <Tooltip 
-                formatter={(value: number) => value.toLocaleString()}
+                formatter={(value) => Number(value).toLocaleString()}
                 contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px', fontWeight: 'bold' }}
               />
             </PieChart>
