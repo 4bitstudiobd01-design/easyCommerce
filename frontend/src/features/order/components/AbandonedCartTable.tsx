@@ -9,9 +9,11 @@ import {
   ShoppingCart,
   Phone,
   X,
+  Package,
 } from 'lucide-react';
 import { TableRowSkeleton } from '@/components/ui/Skeleton';
 import type { AbandonedCart } from '../api/orderApi';
+import type { MockAbandonedCart } from '../data/abandonedCartMockData';
 import {
   formatCurrency,
   formatDate,
@@ -26,7 +28,7 @@ import {
 } from '../utils/abandonedCartFormatters';
 
 interface AbandonedCartTableProps {
-  carts: AbandonedCart[];
+  carts: (AbandonedCart | MockAbandonedCart)[];
   isLoading: boolean;
   hasActiveFilters: boolean;
   sendingCartId: string | null;
@@ -36,8 +38,8 @@ interface AbandonedCartTableProps {
 }
 
 /**
- * Compact item preview: the first two line items as tinted chips, then a "+N"
- * overflow badge, so a wide cart still fits the column at a glance.
+ * Compact item preview: the first two line items with miniature image or tinted icon,
+ * then a "+N" overflow badge.
  */
 const ItemChips = ({ items }: { items: unknown[] }) => {
   const list = Array.isArray(items) ? items : [];
@@ -50,15 +52,28 @@ const ItemChips = ({ items }: { items: unknown[] }) => {
 
   return (
     <div className="flex items-center gap-1.5">
-      {visible.map((item, index) => (
-        <span
-          key={index}
-          title={getItemTitle(item)}
-          className="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0"
-        >
-          <ShoppingCart className="w-3.5 h-3.5 text-slate-500" aria-hidden="true" />
-        </span>
-      ))}
+      {visible.map((item, index) => {
+        const record = item as Record<string, unknown>;
+        const image = typeof record?.image === 'string' ? record.image : null;
+
+        return image ? (
+          <img
+            key={index}
+            src={image}
+            alt={getItemTitle(item)}
+            title={getItemTitle(item)}
+            className="w-8 h-8 rounded-lg object-cover border border-slate-200 shrink-0"
+          />
+        ) : (
+          <span
+            key={index}
+            title={getItemTitle(item)}
+            className="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0"
+          >
+            <Package className="w-3.5 h-3.5 text-slate-500" aria-hidden="true" />
+          </span>
+        );
+      })}
       {overflow > 0 && (
         <span className="text-[11px] font-bold text-slate-500 shrink-0">+{overflow}</span>
       )}
@@ -127,7 +142,7 @@ export const AbandonedCartTable = ({
             <th scope="col" className="px-4 py-3 text-right">Cart Value</th>
             <th scope="col" className="px-4 py-3">Abandoned At</th>
             <th scope="col" className="px-4 py-3">Status</th>
-            <th scope="col" className="px-4 py-3">Recovery</th>
+            <th scope="col" className="px-4 py-3">Recovery Status</th>
             <th scope="col" className="px-4 py-3 text-right">Actions</th>
           </tr>
         </thead>
@@ -142,10 +157,10 @@ export const AbandonedCartTable = ({
             return (
               <tr key={cart.id} className="hover:bg-slate-50/70 transition-colors align-middle">
                 {/* CUSTOMER */}
-                <td className="px-4 py-3">
+                <td className="px-4 py-3.5">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <span
-                      className={`w-8 h-8 rounded-full ${getAvatarTint(cart.id)} flex items-center justify-center text-[11px] font-extrabold shrink-0`}
+                      className={`w-9 h-9 rounded-full ${getAvatarTint(cart.id)} flex items-center justify-center text-[11px] font-extrabold shrink-0 shadow-2xs`}
                       aria-hidden="true"
                     >
                       {getInitials(cart.customerName)}
@@ -168,7 +183,7 @@ export const AbandonedCartTable = ({
                 </td>
 
                 {/* ITEMS */}
-                <td className="px-4 py-3">
+                <td className="px-4 py-3.5">
                   <div className="flex flex-col gap-1">
                     <ItemChips items={cart.itemsJson} />
                     <span className="text-[10px] font-medium text-slate-400">
@@ -178,14 +193,14 @@ export const AbandonedCartTable = ({
                 </td>
 
                 {/* CART VALUE */}
-                <td className="px-4 py-3 text-right">
+                <td className="px-4 py-3.5 text-right">
                   <span className="text-xs font-extrabold text-slate-900">
                     {formatCurrency(cart.totalAmount)}
                   </span>
                 </td>
 
                 {/* ABANDONED AT */}
-                <td className="px-4 py-3">
+                <td className="px-4 py-3.5">
                   <p className="text-[11px] font-semibold text-slate-700">
                     {formatDate(cart.createdAt)}
                   </p>
@@ -195,7 +210,7 @@ export const AbandonedCartTable = ({
                 </td>
 
                 {/* STATUS */}
-                <td className="px-4 py-3">
+                <td className="px-4 py-3.5">
                   <span
                     className={`inline-flex px-2 py-0.5 rounded-full border text-[10px] font-bold ${statusStyle.className}`}
                   >
@@ -204,28 +219,32 @@ export const AbandonedCartTable = ({
                 </td>
 
                 {/* RECOVERY */}
-                <td className="px-4 py-3">
+                <td className="px-4 py-3.5">
                   {cart.isRecovered ? (
                     <>
                       <p className="text-[11px] font-extrabold text-emerald-700">
                         {formatCurrency(cart.totalAmount)}
                       </p>
-                      <p className="text-[10px] font-medium text-slate-400">Recovered</p>
+                      <p className="text-[10px] font-semibold text-emerald-600">
+                        Recovered & Converted 🎉
+                      </p>
                     </>
                   ) : (
                     <>
-                      <p className="text-[11px] font-semibold text-slate-400">—</p>
-                      <p className="text-[10px] font-medium text-slate-400">
+                      <p className="text-[11px] font-semibold text-slate-500">
                         {cart.lastRemindedAt
                           ? `Reminded ${formatRelativeTime(cart.lastRemindedAt)}`
-                          : 'Not reminded'}
+                          : 'Not reminded yet'}
+                      </p>
+                      <p className="text-[10px] font-medium text-slate-400">
+                        {cart.lastRemindedAt ? 'SMS Dispatched' : 'Ready for SMS'}
                       </p>
                     </>
                   )}
                 </td>
 
                 {/* ACTIONS */}
-                <td className="px-4 py-3">
+                <td className="px-4 py-3.5">
                   <div className="flex items-center justify-end gap-1.5">
                     <button
                       type="button"
@@ -237,23 +256,26 @@ export const AbandonedCartTable = ({
                           : 'Send recovery SMS'
                       }
                       aria-label={`Send recovery SMS to ${cart.customerName || cart.customerPhone}`}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-slate-600 disabled:hover:border-slate-200 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                      className={`h-8 px-2.5 flex items-center justify-center rounded-lg border text-xs font-bold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                        cart.isRecovered
+                          ? 'border-slate-200 bg-slate-50 text-slate-400 opacity-50 cursor-not-allowed'
+                          : isSending
+                            ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                            : 'border-emerald-200 bg-emerald-50/70 text-emerald-700 hover:bg-emerald-600 hover:text-white hover:border-emerald-600'
+                      }`}
                     >
                       {isSending ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
                       ) : (
-                        <MessageSquare className="w-3.5 h-3.5" aria-hidden="true" />
+                        <MessageSquare className="w-3.5 h-3.5 mr-1" aria-hidden="true" />
                       )}
-                    </button>
-
-                    <button
-                      type="button"
-                      disabled
-                      title="Email recovery is not available yet"
-                      aria-label="Send recovery email"
-                      className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-400 opacity-40 cursor-not-allowed"
-                    >
-                      <Mail className="w-3.5 h-3.5" aria-hidden="true" />
+                      {cart.isRecovered
+                        ? 'Recovered'
+                        : isSending
+                          ? 'Sending...'
+                          : cart.lastRemindedAt
+                            ? 'Resend'
+                            : 'Send SMS'}
                     </button>
 
                     <button
@@ -261,7 +283,7 @@ export const AbandonedCartTable = ({
                       onClick={() => onViewCart(cart.id)}
                       title="View cart details"
                       aria-label={`View cart details for ${cart.customerName || cart.customerPhone}`}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                      className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                     >
                       <Eye className="w-3.5 h-3.5" aria-hidden="true" />
                     </button>
