@@ -39,6 +39,19 @@ export interface TopCustomerItem {
   lastOrderAt: string | null;
 }
 
+export interface NewVsReturningTrendPoint {
+  date: string;
+  newCustomers: number;
+  returningCustomers: number;
+}
+
+export interface NewVsReturningSummary {
+  newCustomers: number;
+  returningCustomers: number;
+  newPercentage: number;
+  returningPercentage: number;
+}
+
 @Injectable()
 export class GetCustomerAnalyticsService {
   constructor(
@@ -92,18 +105,18 @@ export class GetCustomerAnalyticsService {
     // 4. Order Revenue Aggregations from Orders table
     const orderAggRaw = await this.customerRepository.manager.query(
       `
-      SELECT 
-        COUNT(DISTINCT CASE WHEN "customerPhone" IS NOT NULL OR "customerId" IS NOT NULL THEN COALESCE("customerId", "customerPhone") END)::int AS "uniqueCustomersWithOrders",
+      SELECT
+        COUNT(DISTINCT CASE WHEN "customerPhone" IS NOT NULL OR "customerId" IS NOT NULL THEN COALESCE("customerId"::text, "customerPhone") END)::int AS "uniqueCustomersWithOrders",
         COUNT(id)::int AS "totalOrdersCount",
         COALESCE(SUM("grandTotal"), 0)::numeric AS "totalRevenue",
         COUNT(CASE WHEN "repeatCount" > 1 THEN 1 END)::int AS "repeatCountRaw"
       FROM (
-        SELECT 
+        SELECT
           id,
           "customerId",
           "customerPhone",
           "grandTotal",
-          COUNT(*) OVER(PARTITION BY COALESCE("customerId", "customerPhone")) AS "repeatCount"
+          COUNT(*) OVER(PARTITION BY COALESCE("customerId"::text, "customerPhone")) AS "repeatCount"
         FROM orders
         WHERE "tenantId" = $1
           AND "orderStatus" NOT IN ('CANCELLED', 'RETURNED')
@@ -117,12 +130,12 @@ export class GetCustomerAnalyticsService {
       `
       SELECT COUNT(cnt)::int AS "repeatCustomers"
       FROM (
-        SELECT COALESCE("customerId", "customerPhone"), COUNT(id) AS cnt
+        SELECT COALESCE("customerId"::text, "customerPhone"), COUNT(id) AS cnt
         FROM orders
         WHERE "tenantId" = $1
           AND "orderStatus" NOT IN ('CANCELLED', 'RETURNED')
           AND "createdAt" >= $2 AND "createdAt" <= $3
-        GROUP BY COALESCE("customerId", "customerPhone")
+        GROUP BY COALESCE("customerId"::text, "customerPhone")
         HAVING COUNT(id) > 1
       ) sub
       `,
@@ -225,6 +238,106 @@ export class GetCustomerAnalyticsService {
     }
 
     return trendPoints;
+  }
+
+  /**
+   * Classifies each order as "new" (the customer's first-ever order) or
+   * "returning" (any later order), then buckets counts per day within the
+   * window. The rank must be computed over the customer's ENTIRE order
+   * history — not just the window — otherwise a returning customer whose
+   * first order predates the window gets misclassified as new on their
+   * first in-window order. The window filter is applied only in the outer
+   * query, after ranking.
+   */
+  async getNewVsReturningTrend(tenantId: string, days = 7): Promise<NewVsReturningTrendPoint[]> {
+    const dateTo = new Date();
+    const dateFrom = new Date(dateTo.getTime() - (days - 1) * 24 * 60 * 60 * 1000);
+    dateFrom.setHours(0, 0, 0, 0);
+
+    const raw = await this.customerRepository.manager.query(
+      `
+      SELECT
+        TO_CHAR("createdAt", 'YYYY-MM-DD') AS "dateStr",
+        COUNT(CASE WHEN "orderRank" = 1 THEN 1 END)::int AS "newCount",
+        COUNT(CASE WHEN "orderRank" > 1 THEN 1 END)::int AS "returningCount"
+      FROM (
+        SELECT
+          id,
+          "createdAt",
+          RANK() OVER (PARTITION BY COALESCE("customerId"::text, "customerPhone") ORDER BY "createdAt") AS "orderRank"
+        FROM orders
+        WHERE "tenantId" = $1
+          AND "orderStatus" NOT IN ('CANCELLED', 'RETURNED')
+      ) ranked
+      WHERE "createdAt" >= $2 AND "createdAt" <= $3
+      GROUP BY TO_CHAR("createdAt", 'YYYY-MM-DD')
+      ORDER BY "dateStr" ASC
+      `,
+      [tenantId, dateFrom.toISOString(), dateTo.toISOString()],
+    );
+
+    const byDate = new Map<string, { newCustomers: number; returningCustomers: number }>(
+      raw.map((r: any) => [
+        r.dateStr,
+        { newCustomers: Number(r.newCount || 0), returningCustomers: Number(r.returningCount || 0) },
+      ]),
+    );
+
+    const points: NewVsReturningTrendPoint[] = [];
+    const cursor = new Date(dateFrom);
+    while (cursor <= dateTo) {
+      const dateStr = cursor.toISOString().split('T')[0];
+      const bucket = byDate.get(dateStr);
+      points.push({
+        date: dateStr,
+        newCustomers: bucket?.newCustomers || 0,
+        returningCustomers: bucket?.returningCustomers || 0,
+      });
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return points;
+  }
+
+  /**
+   * Customer-headcount split (distinct customers, not order counts) for the
+   * donut chart. "New" is defined the same way as the trend above — a
+   * customer's first-ever order landing inside the window — so the two
+   * widgets stay consistent with each other rather than using a different
+   * "created in range" definition.
+   */
+  async getNewVsReturningSummary(tenantId: string, dto: CustomerAnalyticsQueryDto): Promise<NewVsReturningSummary> {
+    const { dateFrom, dateTo } = this.parseDateBoundary(dto);
+
+    const raw = await this.customerRepository.manager.query(
+      `
+      SELECT
+        COUNT(DISTINCT CASE WHEN "orderRank" = 1 THEN "customerKey" END)::int AS "newCount",
+        COUNT(DISTINCT CASE WHEN "orderRank" > 1 THEN "customerKey" END)::int AS "returningCount"
+      FROM (
+        SELECT
+          COALESCE("customerId"::text, "customerPhone") AS "customerKey",
+          "createdAt",
+          RANK() OVER (PARTITION BY COALESCE("customerId"::text, "customerPhone") ORDER BY "createdAt") AS "orderRank"
+        FROM orders
+        WHERE "tenantId" = $1
+          AND "orderStatus" NOT IN ('CANCELLED', 'RETURNED')
+      ) ranked
+      WHERE "createdAt" >= $2 AND "createdAt" <= $3
+      `,
+      [tenantId, dateFrom.toISOString(), dateTo.toISOString()],
+    );
+
+    const newCustomers = Number(raw[0]?.newCount || 0);
+    const returningCustomers = Number(raw[0]?.returningCount || 0);
+    const total = newCustomers + returningCustomers;
+
+    return {
+      newCustomers,
+      returningCustomers,
+      newPercentage: total > 0 ? Math.round((newCustomers / total) * 1000) / 10 : 0,
+      returningPercentage: total > 0 ? Math.round((returningCustomers / total) * 1000) / 10 : 0,
+    };
   }
 
   async getTopCustomers(tenantId: string, limit = 10): Promise<TopCustomerItem[]> {

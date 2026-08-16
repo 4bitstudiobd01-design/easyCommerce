@@ -26,10 +26,9 @@ export function RevenueChart() {
   const {
     dailyRevenueTrend = [],
     totalSales = 0,
-    totalRevenue = 0, // Fallback if totalSales is missing
   } = data || {};
 
-  const displayTotal = totalSales || totalRevenue || 0;
+  const displayTotal = totalSales || 0;
   
   // Format dates for X-Axis (e.g., "Jul 16")
   const chartData = dailyRevenueTrend.map(d => {

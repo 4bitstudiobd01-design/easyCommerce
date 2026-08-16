@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import { TableRowSkeleton } from '@/components/ui/Skeleton';
 import type { AbandonedCart } from '../api/orderApi';
-import type { MockAbandonedCart } from '../data/abandonedCartMockData';
 import {
   formatCurrency,
   formatDate,
@@ -28,7 +27,7 @@ import {
 } from '../utils/abandonedCartFormatters';
 
 interface AbandonedCartTableProps {
-  carts: (AbandonedCart | MockAbandonedCart)[];
+  carts: AbandonedCart[];
   isLoading: boolean;
   hasActiveFilters: boolean;
   sendingCartId: string | null;

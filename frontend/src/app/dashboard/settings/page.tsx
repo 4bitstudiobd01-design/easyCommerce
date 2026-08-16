@@ -46,10 +46,12 @@ export default function SettingsPage() {
               <SettingsCard
                 icon={Globe2} iconBgColor="bg-emerald-50" iconColor="text-emerald-600"
                 title="Localization" description="Set your store language, currency, timezone and date format."
+                onClick={() => router.push('/dashboard/settings/localization')}
               />
               <SettingsCard
                 icon={Settings} iconBgColor="bg-amber-50" iconColor="text-amber-500"
                 title="Store Preferences" description="Configure general preferences and store-wide settings."
+                onClick={() => router.push('/dashboard/settings/preferences')}
               />
             </div>
           </SettingsSection>
@@ -68,10 +70,12 @@ export default function SettingsPage() {
               <SettingsCard
                 icon={LayoutTemplate} iconBgColor="bg-blue-50" iconColor="text-blue-600"
                 title="Navigation" description="Manage menu, header, footer and other navigation settings."
+                onClick={() => router.push('/dashboard/settings/navigation')}
               />
               <SettingsCard
                 icon={Home} iconBgColor="bg-amber-50" iconColor="text-amber-500"
                 title="Homepage Settings" description="Configure homepage layout, sections and content settings."
+                onClick={() => router.push('/dashboard/settings/homepage')}
               />
             </div>
           </SettingsSection>
@@ -85,10 +89,12 @@ export default function SettingsPage() {
               <SettingsCard
                 icon={ClipboardList} iconBgColor="bg-emerald-50" iconColor="text-emerald-600"
                 title="Order Settings" description="Configure order status, invoice, packing slip and other settings."
+                onClick={() => router.push('/dashboard/settings/orders')}
               />
               <SettingsCard
                 icon={ShoppingCart} iconBgColor="bg-purple-50" iconColor="text-purple-600"
                 title="Checkout Settings" description="Manage checkout flow, guest checkout, fields and advanced options."
+                onClick={() => router.push('/dashboard/settings/checkout')}
               />
               <SettingsCard
                 icon={SlidersHorizontal} iconBgColor="bg-amber-50" iconColor="text-amber-500"
@@ -98,6 +104,7 @@ export default function SettingsPage() {
               <SettingsCard
                 icon={Users} iconBgColor="bg-blue-50" iconColor="text-blue-600"
                 title="Customer Settings" description="Manage customer registration, accounts and login preferences."
+                onClick={() => router.push('/dashboard/settings/customers')}
               />
             </div>
           </SettingsSection>
@@ -118,6 +125,7 @@ export default function SettingsPage() {
               <SettingsCard
                 icon={MapPin} iconBgColor="bg-blue-50" iconColor="text-blue-600"
                 title="Delivery Zones" description="Create and manage delivery zones for your store."
+                onClick={() => router.push('/dashboard/settings/delivery-zones')}
               />
             </SettingsSection>
             
@@ -174,10 +182,12 @@ export default function SettingsPage() {
               <SettingsCard
                 icon={Code2} iconBgColor="bg-blue-50" iconColor="text-blue-600"
                 title="API / Developer" description="Manage API keys, webhooks and advanced developer settings."
+                onClick={() => router.push('/dashboard/settings/developer')}
               />
               <SettingsCard
                 icon={Link} iconBgColor="bg-purple-50" iconColor="text-purple-600"
                 title="Webhooks" description="Configure and manage webhook events for your store."
+                onClick={() => router.push('/dashboard/settings/webhooks')}
               />
             </SettingsSection>
           </div>
@@ -193,17 +203,21 @@ export default function SettingsPage() {
               <SettingsCard
                 icon={RefreshCw} iconBgColor="bg-emerald-50" iconColor="text-emerald-600"
                 title="Return & Refund Policy" description="Manage return, refund and cancellation policies."
+                onClick={() => router.push('/dashboard/settings/policy')}
               />
               <SettingsCard
                 icon={FileText} iconBgColor="bg-amber-50" iconColor="text-amber-500"
                 title="Terms & Conditions" description="Set terms and conditions for using your store."
+                onClick={() => router.push('/dashboard/settings/policy')}
               />
             </SettingsSection>
 
             <SettingsSection title="Danger Zone" subtitle="Irreversible and destructive actions." titleColor="text-red-600">
               <SettingsCard
+                danger
                 icon={Trash2} iconBgColor="bg-red-50" iconColor="text-red-500"
                 title="Delete Store" description="Permanently delete your store and all associated data."
+                onClick={() => router.push('/dashboard/settings/delete-store')}
               />
             </SettingsSection>
           </div>

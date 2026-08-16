@@ -1,78 +1,52 @@
 import { Navbar } from '@/components/landing/Navbar';
 import { Hero } from '@/components/landing/Hero';
-import { BrandTicker } from '@/components/landing/BrandTicker';
-import { GlobalImpact } from '@/components/landing/GlobalImpact';
-import { EcommerceToolkit } from '@/components/landing/EcommerceToolkit';
-import { DemoBanner } from '@/components/landing/DemoBanner';
-import { FeatureGrid } from '@/components/landing/FeatureGrid';
-import { HowItWorks } from '@/components/landing/HowItWorks';
-import { Partnerships } from '@/components/landing/Partnerships';
+import { MetricsStrip } from '@/components/landing/MetricsStrip';
+import { ProblemSolutionSection } from '@/components/landing/ProblemSolutionSection';
+import { FeaturesShowcase } from '@/components/landing/FeaturesShowcase';
+import { DashboardShowcaseSection } from '@/components/landing/DashboardShowcaseSection';
+import { IntegrationsSection } from '@/components/landing/IntegrationsSection';
+import { HowItWorksSection } from '@/components/landing/HowItWorksSection';
 import { Pricing } from '@/components/landing/Pricing';
-import { Testimonials } from '@/components/landing/Testimonials';
-import { FaqSection } from '@/components/landing/FaqSection';
 import { Footer } from '@/components/landing/Footer';
+import { MobileAppBottomNav } from '@/components/landing/MobileAppBottomNav';
 
 export const revalidate = 60; // Revalidate cache every 60 seconds
 
-async function getPlatformConfig() {
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1'}/admin/platform-config`, {
-      next: { revalidate: 60 }
-    });
-    if (!res.ok) return null;
-    return res.json();
-  } catch (e) {
-    return null;
-  }
-}
-
-export default async function Home() {
-  const cmsConfig = await getPlatformConfig();
-  const heroContent = cmsConfig?.heroContent || {};
-
+export default function Home() {
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans antialiased text-slate-900 selection:bg-blue-600 selection:text-white">
-      {/* 1. Navbar */}
+    <div className="min-h-screen bg-white flex flex-col font-sans antialiased text-slate-900 selection:bg-blue-600 selection:text-white pb-20 md:pb-0">
+      {/* 1. Exact Navbar */}
       <Navbar />
 
-      {/* 2. Hero Section */}
-      <Hero 
-        title={heroContent.title} 
-        subtitle={heroContent.subtitle} 
-      />
+      {/* 2. Exact Hero Section with 3D Mockup */}
+      <Hero />
 
-      {/* 3. Infinite Auto-Scrolling Brand Ticker */}
-      <BrandTicker />
+      {/* 3. Exact Metrics / Social Proof Strip */}
+      <MetricsStrip />
 
-      {/* 4. Global Scale & Stats Matrix */}
-      <GlobalImpact />
+      {/* 4. Exact Problem vs Solution (Spreadsheets to EasyCommerce) */}
+      <ProblemSolutionSection />
 
-      {/* 5. Complete Ecommerce Toolkit (Bento Showcase Grid) */}
-      <EcommerceToolkit />
+      {/* 5. Exact 8-Feature Showcase Grid */}
+      <FeaturesShowcase />
 
-      {/* 6. Interactive Demo Banner */}
-      <DemoBanner />
+      {/* 6. Exact Powerful Dashboard Showcase (Charts + Copy) */}
+      <DashboardShowcaseSection />
 
-      {/* 7. Feature & Architecture Infrastructure Grid */}
-      <FeatureGrid />
+      {/* 7. Exact Payments & Delivery Partners Strip */}
+      <IntegrationsSection />
 
-      {/* 8. How It Works (Simple 3-Step Store Launch) */}
-      <HowItWorks />
+      {/* 8. Exact 4-Step How EasyCommerce Works */}
+      <HowItWorksSection />
 
-      {/* 9. Courier Logistics & MFS Payment Partners */}
-      <Partnerships />
-
-      {/* 10. Pricing Summary Cards */}
+      {/* 9. Exact Pricing Table Section */}
       <Pricing />
 
-      {/* 11. Merchant Testimonials & Success Stories */}
-      <Testimonials />
-
-      {/* 12. Frequently Asked Questions */}
-      <FaqSection />
-
-      {/* 13. Footer */}
+      {/* 10. Exact Royal Blue CTA Banner & Dark Navy Footer */}
       <Footer />
+
+      {/* 11. Ultra-Sleek Floating Native Mobile App Dock */}
+      <MobileAppBottomNav />
     </div>
   );
 }

@@ -26,7 +26,6 @@ export class CustomerSegmentEntity {
   id: string;
 
   @Column({ type: 'varchar', length: 255 })
-  @Index()
   tenantId: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })

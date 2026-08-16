@@ -11,6 +11,7 @@ import { StockAdjustmentAction } from '../../inventory/dto/adjust-stock.dto';
 import { TriggerOrderStatusSmsService } from '../../sms/services/trigger-order-status-sms.service';
 import { ApplyCouponService } from '../../coupon/services/apply-coupon.service';
 import { FindOrCreateCustomerService } from '../../customer/services/find-or-create-customer.service';
+import { normalizeChannel } from '../../../common/utils/normalize-channel.util';
 
 @Injectable()
 export class CreateOrderService {
@@ -136,6 +137,17 @@ export class CreateOrderService {
       paymentStatus: dto.paymentMethod === PaymentMethodEnum.COD ? PaymentStatusEnum.COD_PENDING : PaymentStatusEnum.UNPAID,
       orderStatus: OrderStatusEnum.PENDING,
       storeSlug: dto.storeSlug,
+      channel: normalizeChannel({
+        requestedChannel: dto.channel,
+        utmSource: dto.utmSource,
+        utmMedium: dto.utmMedium,
+        referrerHost: dto.referrerHost,
+      }),
+      utmSource: dto.utmSource,
+      utmMedium: dto.utmMedium,
+      utmCampaign: dto.utmCampaign,
+      referrerHost: dto.referrerHost,
+      sessionId: dto.sessionId,
       tenantId,
       items: orderItems,
     });

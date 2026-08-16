@@ -1,7 +1,7 @@
 import React from 'react';
 
 export function AnalyticsTabs() {
-  const tabs = ['Overview', 'Sales', 'Customers', 'Products', 'Traffic', 'Marketing', 'Reports'];
+  const tabs = ['Overview'];
   
   return (
     <div className="bg-white px-8 border-b border-slate-200">

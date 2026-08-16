@@ -45,6 +45,101 @@ export interface Store {
   
   ownerId: string;
   tenantId: string;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+
+  // Localization
+  language?: string;
+  timezone?: string;
+  dateFormat?: string;
+  weightUnit?: string;
+
+  // Store preferences
+  maintenanceMode?: boolean;
+  maintenanceMessage?: string;
+  catalogModeEnabled?: boolean;
+  showOutOfStockProducts?: boolean;
+
+  // Order settings
+  orderNumberPrefix?: string;
+  autoConfirmOrders?: boolean;
+  invoiceFooterNote?: string;
+
+  // Checkout settings
+  guestCheckoutEnabled?: boolean;
+  requireCustomerEmail?: boolean;
+  showCouponFieldAtCheckout?: boolean;
+  showOrderNoteFieldAtCheckout?: boolean;
+  minimumOrderAmount?: number;
+
+  // Customer settings
+  allowCustomerRegistration?: boolean;
+  requireEmailVerification?: boolean;
+  allowCustomerReviews?: boolean;
+  autoApproveReviews?: boolean;
+
+  // Navigation & homepage
+  navigationLinks?: NavigationLink[];
+  showHeroSection?: boolean;
+  showFeaturedProducts?: boolean;
+  showCategoriesSection?: boolean;
+  featuredProductsCount?: number;
+}
+
+export interface NavigationLink {
+  id: string;
+  label: string;
+  url: string;
+  location: 'HEADER' | 'FOOTER';
+  sortOrder: number;
+}
+
+export interface DeliveryZone {
+  id: string;
+  tenantId: string;
+  storeId: string;
+  name: string;
+  areas: string[];
+  deliveryCharge: number;
+  estimatedDeliveryTime?: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export type WebhookEvent =
+  | 'ORDER_CREATED'
+  | 'ORDER_STATUS_UPDATED'
+  | 'ORDER_CANCELLED'
+  | 'PAYMENT_COMPLETED'
+  | 'PRODUCT_CREATED'
+  | 'PRODUCT_UPDATED'
+  | 'CUSTOMER_CREATED';
+
+export interface StoreWebhook {
+  id: string;
+  targetUrl: string;
+  events: WebhookEvent[];
+  secret: string;
+  isActive: boolean;
+  lastTriggeredAt?: string;
+  failureCount: number;
+  lastError?: string;
+  createdAt: string;
+}
+
+export interface StoreApiKey {
+  id: string;
+  name: string;
+  keyPrefix: string;
+  isActive: boolean;
+  lastUsedAt?: string;
+  createdAt: string;
+}
+
+export interface CreatedApiKey extends StoreApiKey {
+  /** Plaintext key, shown exactly once at creation. */
+  key: string;
 }
 
 export interface StoreThemeItem {
@@ -111,12 +206,49 @@ export interface UpdateStoreRequest {
   // Limits
   maxCodOrdersPerIp?: number;
   maxOrdersPerDay?: number;
+
+  // Localization
+  language?: string;
+  timezone?: string;
+  dateFormat?: string;
+  weightUnit?: string;
+
+  // Store preferences
+  maintenanceMode?: boolean;
+  maintenanceMessage?: string;
+  catalogModeEnabled?: boolean;
+  showOutOfStockProducts?: boolean;
+
+  // Order settings
+  orderNumberPrefix?: string;
+  autoConfirmOrders?: boolean;
+  invoiceFooterNote?: string;
+
+  // Checkout settings
+  guestCheckoutEnabled?: boolean;
+  requireCustomerEmail?: boolean;
+  showCouponFieldAtCheckout?: boolean;
+  showOrderNoteFieldAtCheckout?: boolean;
+  minimumOrderAmount?: number;
+
+  // Customer settings
+  allowCustomerRegistration?: boolean;
+  requireEmailVerification?: boolean;
+  allowCustomerReviews?: boolean;
+  autoApproveReviews?: boolean;
+
+  // Navigation & homepage
+  navigationLinks?: NavigationLink[];
+  showHeroSection?: boolean;
+  showFeaturedProducts?: boolean;
+  showCategoriesSection?: boolean;
+  featuredProductsCount?: number;
 }
 
 export const tenantApi = createApi({
   reducerPath: 'tenantApi',
   baseQuery: createBaseQueryWithReauth(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1/stores'),
-  tagTypes: ['Store', 'Themes'],
+  tagTypes: ['Store', 'Themes', 'DeliveryZone', 'ApiKey', 'Webhook'],
   endpoints: (builder) => ({
     getMyStores: builder.query<Store[], void>({
       query: () => '/my-stores',
@@ -152,6 +284,114 @@ export const tenantApi = createApi({
       invalidatesTags: ['Store'],
       transformResponse: (response: { data: Store }) => response.data,
     }),
+    deleteMyStore: builder.mutation<
+      { success: boolean; message: string },
+      { password: string; confirmStoreName: string }
+    >({
+      query: (body) => ({
+        url: '/me',
+        method: 'DELETE',
+        body,
+      }),
+      invalidatesTags: ['Store'],
+      // See testWebhook: the envelope hoists `message` and nulls `data`.
+      transformResponse: (response: any) => ({
+        success: response?.data?.success ?? response?.success ?? false,
+        message: response?.message || 'Store closed.',
+      }),
+    }),
+
+    // --- Delivery Zones ---
+    getDeliveryZones: builder.query<DeliveryZone[], void>({
+      query: () => '/me/delivery-zones',
+      providesTags: ['DeliveryZone'],
+      transformResponse: (response: { data: DeliveryZone[] } | DeliveryZone[]) =>
+        Array.isArray(response) ? response : (response as any).data || [],
+    }),
+    createDeliveryZone: builder.mutation<
+      DeliveryZone,
+      { name: string; areas: string[]; deliveryCharge: number; estimatedDeliveryTime?: string; isActive?: boolean }
+    >({
+      query: (body) => ({ url: '/me/delivery-zones', method: 'POST', body }),
+      invalidatesTags: ['DeliveryZone'],
+      transformResponse: (response: { data: DeliveryZone } | DeliveryZone) =>
+        (response as any).data || response,
+    }),
+    updateDeliveryZone: builder.mutation<
+      DeliveryZone,
+      { id: string; data: Partial<Omit<DeliveryZone, 'id' | 'tenantId' | 'storeId' | 'createdAt'>> }
+    >({
+      query: ({ id, data }) => ({ url: `/me/delivery-zones/${id}`, method: 'PATCH', body: data }),
+      invalidatesTags: ['DeliveryZone'],
+      transformResponse: (response: { data: DeliveryZone } | DeliveryZone) =>
+        (response as any).data || response,
+    }),
+    deleteDeliveryZone: builder.mutation<{ success: boolean }, string>({
+      query: (id) => ({ url: `/me/delivery-zones/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['DeliveryZone'],
+      transformResponse: (response: { data: any } | any) => (response as any).data || response,
+    }),
+
+    // --- API Keys ---
+    getApiKeys: builder.query<StoreApiKey[], void>({
+      query: () => '/me/api-keys',
+      providesTags: ['ApiKey'],
+      transformResponse: (response: { data: StoreApiKey[] } | StoreApiKey[]) =>
+        Array.isArray(response) ? response : (response as any).data || [],
+    }),
+    createApiKey: builder.mutation<CreatedApiKey, { name: string }>({
+      query: (body) => ({ url: '/me/api-keys', method: 'POST', body }),
+      invalidatesTags: ['ApiKey'],
+      transformResponse: (response: { data: CreatedApiKey } | CreatedApiKey) =>
+        (response as any).data || response,
+    }),
+    revokeApiKey: builder.mutation<{ success: boolean }, string>({
+      query: (id) => ({ url: `/me/api-keys/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['ApiKey'],
+      transformResponse: (response: { data: any } | any) => (response as any).data || response,
+    }),
+
+    // --- Webhooks ---
+    getWebhooks: builder.query<StoreWebhook[], void>({
+      query: () => '/me/webhooks',
+      providesTags: ['Webhook'],
+      transformResponse: (response: { data: StoreWebhook[] } | StoreWebhook[]) =>
+        Array.isArray(response) ? response : (response as any).data || [],
+    }),
+    createWebhook: builder.mutation<
+      StoreWebhook,
+      { targetUrl: string; events: WebhookEvent[]; isActive?: boolean }
+    >({
+      query: (body) => ({ url: '/me/webhooks', method: 'POST', body }),
+      invalidatesTags: ['Webhook'],
+      transformResponse: (response: { data: StoreWebhook } | StoreWebhook) =>
+        (response as any).data || response,
+    }),
+    updateWebhook: builder.mutation<
+      StoreWebhook,
+      { id: string; data: { targetUrl?: string; events?: WebhookEvent[]; isActive?: boolean } }
+    >({
+      query: ({ id, data }) => ({ url: `/me/webhooks/${id}`, method: 'PATCH', body: data }),
+      invalidatesTags: ['Webhook'],
+      transformResponse: (response: { data: StoreWebhook } | StoreWebhook) =>
+        (response as any).data || response,
+    }),
+    deleteWebhook: builder.mutation<{ success: boolean }, string>({
+      query: (id) => ({ url: `/me/webhooks/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['Webhook'],
+      transformResponse: (response: { data: any } | any) => (response as any).data || response,
+    }),
+    testWebhook: builder.mutation<{ success: boolean; message: string }, string>({
+      query: (id) => ({ url: `/me/webhooks/${id}/test`, method: 'POST' }),
+      invalidatesTags: ['Webhook'],
+      // The API envelope hoists a service's `message` to the top level and nulls
+      // `data`, so read the result from the envelope rather than from `data`.
+      transformResponse: (response: any) => ({
+        success: response?.data?.success ?? response?.success ?? false,
+        message: response?.message || 'Test event dispatched.',
+      }),
+    }),
+
     getAvailableThemes: builder.query<ThemeCatalogResponse, void>({
       query: () => {
         const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/stores', '') || 'http://localhost:5001/api/v1';
@@ -171,20 +411,6 @@ export const tenantApi = createApi({
         const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/stores', '') || 'http://localhost:5001/api/v1';
         return {
           url: `${baseUrl}/tenant/themes/${themeId}/initiate-payment`,
-          method: 'POST',
-        };
-      },
-      invalidatesTags: ['Store', 'Themes'],
-      transformResponse: (response: { data: any } | any) => (response as any).data || response,
-    }),
-    purchaseTheme: builder.mutation<
-      { success: boolean; message: string; activeThemeId: string; unlockedThemeIds: string[] },
-      string
-    >({
-      query: (themeId) => {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/stores', '') || 'http://localhost:5001/api/v1';
-        return {
-          url: `${baseUrl}/tenant/themes/${themeId}/purchase`,
           method: 'POST',
         };
       },
@@ -211,8 +437,20 @@ export const {
   useGetStoreBySlugQuery,
   useCreateStoreMutation,
   useUpdateStoreMutation,
+  useDeleteMyStoreMutation,
+  useGetDeliveryZonesQuery,
+  useCreateDeliveryZoneMutation,
+  useUpdateDeliveryZoneMutation,
+  useDeleteDeliveryZoneMutation,
+  useGetApiKeysQuery,
+  useCreateApiKeyMutation,
+  useRevokeApiKeyMutation,
+  useGetWebhooksQuery,
+  useCreateWebhookMutation,
+  useUpdateWebhookMutation,
+  useDeleteWebhookMutation,
+  useTestWebhookMutation,
   useGetAvailableThemesQuery,
   useInitiateThemePaymentMutation,
-  usePurchaseThemeMutation,
   useActivateThemeMutation,
 } = tenantApi;

@@ -49,7 +49,7 @@ export function Pricing() {
   ];
 
   return (
-    <section id="pricing" className="py-20 px-6 bg-slate-50">
+    <section id="pricing" className="py-20 px-6 bg-slate-50/60 scroll-mt-16">
       <div className="max-w-7xl mx-auto space-y-12">
         <div className="text-center max-w-3xl mx-auto space-y-4">
           <span className="text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">

@@ -9,6 +9,7 @@ import { ShopEaseFeaturedProducts } from '../components/ShopEaseFeaturedProducts
 import { ShopEasePromoBanner } from '../components/ShopEasePromoBanner';
 import { ShopEaseWhyChooseUs } from '../components/ShopEaseWhyChooseUs';
 import { ShopEaseFooter } from '../components/ShopEaseFooter';
+import { StorefrontMobileBottomNav } from '../components/StorefrontMobileBottomNav';
 import {
   SHOPEASE_CATEGORIES,
   SHOPEASE_FEATURED_PRODUCTS,
@@ -135,6 +136,9 @@ export const DefaultStorefrontTheme = ({
 
       {/* 7. DARK FOOTER */}
       <ShopEaseFooter storeName={storeName} slug={slug} />
+
+      {/* 8. ULTRA-MODERN NATIVE MOBILE SHOPPING APP DOCK */}
+      <StorefrontMobileBottomNav slug={slug} />
     </div>
   );
 };

@@ -65,12 +65,18 @@ export class AdjustStockService {
       if (dto.inventoryId) {
         stock = await queryRunner.manager.findOne(InventoryStockEntity, {
           where: { id: dto.inventoryId, tenantId },
-          relations: ['product'],
           lock: { mode: 'pessimistic_write' },
         });
 
         if (!stock) {
           throw new NotFoundException(`Inventory stock record "${dto.inventoryId}" not found or access denied.`);
+        }
+
+        if (stock.productId) {
+          stock.product =
+            (await queryRunner.manager.findOne(ProductEntity, {
+              where: { id: stock.productId, tenantId },
+            })) || undefined;
         }
       } else if (dto.productId) {
         let warehouseId = dto.warehouseId;
@@ -88,11 +94,15 @@ export class AdjustStockService {
             warehouseId,
             tenantId,
           },
-          relations: ['product'],
           lock: { mode: 'pessimistic_write' },
         });
 
-        if (!stock) {
+        if (stock) {
+          stock.product =
+            (await queryRunner.manager.findOne(ProductEntity, {
+              where: { id: dto.productId, tenantId },
+            })) || undefined;
+        } else {
           const product = await this.productRepository.findOne({
             where: { id: dto.productId, tenantId },
           });

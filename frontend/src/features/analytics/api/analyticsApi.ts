@@ -1,18 +1,49 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { createApi } from '@reduxjs/toolkit/query/react';
 import { createBaseQueryWithReauth } from '@/store/baseQueryWithReauth';
-import { RootState } from '@/store';
+
+export interface DailyRevenuePoint {
+  date: string;
+  dayName: string;
+  revenue: number;
+  ordersCount: number;
+}
+
+export interface PaymentMethodStats {
+  codCount: number;
+  sslCommerzCount: number;
+  codPercent: number;
+  sslCommerzPercent: number;
+}
+
+export interface TopProductStat {
+  productId: string;
+  title: string;
+  totalQuantity: number;
+  totalRevenue: number;
+}
+
+export interface ChannelBreakdownStat {
+  channel: string;
+  orderCount: number;
+  revenue: number;
+}
+
+export interface PeriodTotals {
+  totalSales: number;
+  totalOrders: number;
+  averageOrderValue: number;
+}
 
 export interface AnalyticsOverview {
-  totalSales?: number;
-  totalRevenue?: number;
-  totalOrders?: number;
-  averageOrderValue?: number;
-  dailyRevenueTrend?: { date: string; revenue: number; orders: number; ordersCount?: number; dayName?: string }[];
-  revenueByDay?: { date: string; revenue: number }[];
-  paymentMethodStats?: { codCount: number; sslCommerzCount: number; codPercent: number; sslCommerzPercent: number };
-  paymentMethodBreakdown?: { method: string; count: number; total: number }[];
-  topProducts?: { productId: string; productTitle: string; title?: string; totalSold: number; totalQuantity?: number; count?: number; totalRevenue: number }[];
-  topSellingProducts?: { productId: string; productTitle: string; title?: string; totalSold: number; totalQuantity?: number; count?: number; totalRevenue: number }[];
+  totalSales: number;
+  totalOrders: number;
+  averageOrderValue: number;
+  dailyRevenueTrend: DailyRevenuePoint[];
+  previousDailyRevenueTrend: DailyRevenuePoint[];
+  previousTotals: PeriodTotals;
+  paymentMethodStats: PaymentMethodStats;
+  topSellingProducts: TopProductStat[];
+  channelBreakdown: ChannelBreakdownStat[];
 }
 
 export interface NetProfitMetrics {
@@ -24,24 +55,108 @@ export interface NetProfitMetrics {
   totalCompletedOrdersCount: number;
 }
 
+export interface NewVsReturningTrendPoint {
+  date: string;
+  newCustomers: number;
+  returningCustomers: number;
+}
+
+export interface NewVsReturningSummary {
+  newCustomers: number;
+  returningCustomers: number;
+  newPercentage: number;
+  returningPercentage: number;
+}
+
+export interface TrafficSourceRow {
+  channel: string;
+  sessions: number;
+  users: number;
+  orders: number;
+  revenue: number;
+  conversionRate: number;
+}
+
+export interface AnalyticsKpiSummary {
+  totalRevenue: number;
+  totalOrders: number;
+  averageOrderValue: number;
+  totalCustomers: number;
+  conversionRate: number | null;
+  totalRefunded: number;
+  previousTotals: {
+    totalRevenue: number;
+    totalOrders: number;
+    averageOrderValue: number;
+  };
+}
+
+export type InsightSeverity = 'positive' | 'negative' | 'neutral';
+
+export interface AnalyticsInsight {
+  type: string;
+  title: string;
+  subtitle: string;
+  severity: InsightSeverity;
+}
+
+export interface DateRangeParams {
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+const unwrap = <T>(response: { data: T } | T): T =>
+  response && typeof response === 'object' && 'data' in (response as any) ? (response as any).data : (response as T);
+
 export const analyticsApi = createApi({
   reducerPath: 'analyticsApi',
   baseQuery: createBaseQueryWithReauth(process.env.NEXT_PUBLIC_API_URL?.replace('/orders', '') || 'http://localhost:5001/api/v1'),
   tagTypes: ['Analytics'],
   endpoints: (builder) => ({
-    getAnalyticsOverview: builder.query<AnalyticsOverview, void>({
-      query: () => '/analytics/overview',
+    getAnalyticsOverview: builder.query<AnalyticsOverview, DateRangeParams | void>({
+      query: (params) => ({ url: '/analytics/overview', params: params || {} }),
       providesTags: ['Analytics'],
-      transformResponse: (response: { data: AnalyticsOverview } | AnalyticsOverview) =>
-        ('data' in (response as any)) ? (response as any).data : response,
+      transformResponse: unwrap<AnalyticsOverview>,
     }),
     getNetProfit: builder.query<NetProfitMetrics, void>({
       query: () => '/analytics/net-profit',
       providesTags: ['Analytics'],
-      transformResponse: (response: { data: NetProfitMetrics } | NetProfitMetrics) =>
-        ('data' in (response as any)) ? (response as any).data : response,
+      transformResponse: unwrap<NetProfitMetrics>,
+    }),
+    getNewVsReturningTrend: builder.query<NewVsReturningTrendPoint[], { days?: number } | void>({
+      query: (params) => ({ url: '/analytics/customers/new-vs-returning-trend', params: params || {} }),
+      providesTags: ['Analytics'],
+      transformResponse: unwrap<NewVsReturningTrendPoint[]>,
+    }),
+    getNewVsReturningSummary: builder.query<NewVsReturningSummary, DateRangeParams | void>({
+      query: (params) => ({ url: '/analytics/customers/new-vs-returning-summary', params: params || {} }),
+      providesTags: ['Analytics'],
+      transformResponse: unwrap<NewVsReturningSummary>,
+    }),
+    getTrafficSources: builder.query<TrafficSourceRow[], DateRangeParams | void>({
+      query: (params) => ({ url: '/analytics/traffic-sources', params: params || {} }),
+      providesTags: ['Analytics'],
+      transformResponse: unwrap<TrafficSourceRow[]>,
+    }),
+    getAnalyticsKpiSummary: builder.query<AnalyticsKpiSummary, DateRangeParams | void>({
+      query: (params) => ({ url: '/analytics/kpi-summary', params: params || {} }),
+      providesTags: ['Analytics'],
+      transformResponse: unwrap<AnalyticsKpiSummary>,
+    }),
+    getAnalyticsInsights: builder.query<AnalyticsInsight[], void>({
+      query: () => '/analytics/insights',
+      providesTags: ['Analytics'],
+      transformResponse: unwrap<AnalyticsInsight[]>,
     }),
   }),
 });
 
-export const { useGetAnalyticsOverviewQuery, useGetNetProfitQuery } = analyticsApi;
+export const {
+  useGetAnalyticsOverviewQuery,
+  useGetNetProfitQuery,
+  useGetNewVsReturningTrendQuery,
+  useGetNewVsReturningSummaryQuery,
+  useGetTrafficSourcesQuery,
+  useGetAnalyticsKpiSummaryQuery,
+  useGetAnalyticsInsightsQuery,
+} = analyticsApi;

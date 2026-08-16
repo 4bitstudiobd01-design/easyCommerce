@@ -31,6 +31,21 @@ export interface HeroBannerItem {
   ctaLink?: string;
 }
 
+export interface NavigationLinkItem {
+  id: string;
+  label: string;
+  url: string;
+  /** Where the link renders: main header menu or footer column. */
+  location: 'HEADER' | 'FOOTER';
+  sortOrder: number;
+}
+
+export enum WeightUnitEnum {
+  KG = 'KG',
+  G = 'G',
+  LB = 'LB',
+}
+
 @Entity('stores')
 export class StoreEntity {
   @PrimaryGeneratedColumn('uuid')
@@ -189,6 +204,90 @@ export class StoreEntity {
 
   @Column({ type: 'int', nullable: true, default: 0 })
   maxOrdersPerDay?: number;
+
+  // --- Localization ---
+  @Column({ type: 'varchar', length: 10, default: 'en' })
+  language: string;
+
+  @Column({ type: 'varchar', length: 64, default: 'Asia/Dhaka' })
+  timezone: string;
+
+  @Column({ type: 'varchar', length: 32, default: 'DD/MM/YYYY' })
+  dateFormat: string;
+
+  @Column({ type: 'varchar', length: 10, default: 'KG' })
+  weightUnit: string;
+
+  // --- Store Preferences ---
+  /** When true the storefront returns a maintenance notice instead of the shop. */
+  @Column({ type: 'boolean', default: false })
+  maintenanceMode: boolean;
+
+  @Column({ type: 'text', nullable: true })
+  maintenanceMessage?: string;
+
+  /** Hide add-to-cart/checkout and show prices only. */
+  @Column({ type: 'boolean', default: false })
+  catalogModeEnabled: boolean;
+
+  @Column({ type: 'boolean', default: true })
+  showOutOfStockProducts: boolean;
+
+  // --- Order Settings ---
+  @Column({ type: 'varchar', length: 20, default: 'ORD-' })
+  orderNumberPrefix: string;
+
+  @Column({ type: 'boolean', default: true })
+  autoConfirmOrders: boolean;
+
+  @Column({ type: 'text', nullable: true })
+  invoiceFooterNote?: string;
+
+  // --- Checkout Settings ---
+  @Column({ type: 'boolean', default: true })
+  guestCheckoutEnabled: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  requireCustomerEmail: boolean;
+
+  @Column({ type: 'boolean', default: true })
+  showCouponFieldAtCheckout: boolean;
+
+  @Column({ type: 'boolean', default: true })
+  showOrderNoteFieldAtCheckout: boolean;
+
+  @Column({ type: 'int', nullable: true, default: 0 })
+  minimumOrderAmount?: number;
+
+  // --- Customer Settings ---
+  @Column({ type: 'boolean', default: true })
+  allowCustomerRegistration: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  requireEmailVerification: boolean;
+
+  @Column({ type: 'boolean', default: true })
+  allowCustomerReviews: boolean;
+
+  @Column({ type: 'boolean', default: true })
+  autoApproveReviews: boolean;
+
+  // --- Navigation (header/footer menu links) ---
+  @Column({ type: 'jsonb', nullable: true, default: [] })
+  navigationLinks?: NavigationLinkItem[];
+
+  // --- Homepage Settings ---
+  @Column({ type: 'boolean', default: true })
+  showHeroSection: boolean;
+
+  @Column({ type: 'boolean', default: true })
+  showFeaturedProducts: boolean;
+
+  @Column({ type: 'boolean', default: true })
+  showCategoriesSection: boolean;
+
+  @Column({ type: 'int', default: 8 })
+  featuredProductsCount: number;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;

@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { StoreSwitcherDropdown } from '@/features/tenant/components/StoreSwitcherDropdown';
+import { useGetMerchantOrderKpisQuery } from '@/features/order/api/orderApi';
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -32,6 +33,9 @@ interface SidebarProps {
 
 export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onClose }: SidebarProps) => {
   const pathname = usePathname();
+
+  const { data: orderKpis } = useGetMerchantOrderKpisQuery();
+  const pendingOrdersCount = orderKpis?.pendingConfirmation ?? (orderKpis?.statusCounts?.PENDING ?? 0);
 
   const isActive = (path: string) => {
     if (path === '/dashboard' && pathname === '/dashboard') return true;
@@ -152,8 +156,8 @@ export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onCl
           <Link 
             href="/dashboard/orders" 
             className={navItemClass('/dashboard/orders')}
-            onMouseEnter={(e) => handleTooltipEnter(e, "Orders", "24")}
-            onFocus={(e) => handleTooltipEnter(e, "Orders", "24")}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Orders", pendingOrdersCount > 0 ? String(pendingOrdersCount) : undefined)}
+            onFocus={(e) => handleTooltipEnter(e, "Orders", pendingOrdersCount > 0 ? String(pendingOrdersCount) : undefined)}
             onMouseLeave={handleTooltipLeave}
             onBlur={handleTooltipLeave}
           >
@@ -161,9 +165,13 @@ export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onCl
               <ShoppingCart className={iconClass} strokeWidth={iconStroke} />
               {!isDesktopCollapsed && <span>Orders</span>}
             </div>
-            {!isDesktopCollapsed && (
-              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-600 text-white leading-none">
-                24
+            {!isDesktopCollapsed && pendingOrdersCount > 0 && (
+              <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold leading-none ${
+                isActive('/dashboard/orders')
+                  ? 'bg-white text-blue-600 font-extrabold'
+                  : 'bg-blue-600 text-white'
+              }`}>
+                {pendingOrdersCount}
               </span>
             )}
           </Link>

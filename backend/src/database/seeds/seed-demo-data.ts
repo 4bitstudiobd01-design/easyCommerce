@@ -44,6 +44,7 @@ import { ReturnEntity, ReturnStatusEnum } from '../../modules/order/entities/ret
 import { ReturnItemEntity } from '../../modules/order/entities/return-item.entity';
 import { RefundEntity, RefundStatusEnum } from '../../modules/payment/entities/refund.entity';
 import { CustomerEntity, CustomerStatusEnum, CustomerSourceEnum } from '../../modules/customer/entities/customer.entity';
+import { AbandonedCartEntity } from '../../modules/order/entities/abandoned-cart.entity';
 
 import * as bcrypt from 'bcrypt';
 
@@ -84,6 +85,7 @@ async function seed() {
   const returnItemRepo = AppDataSource.getRepository(ReturnItemEntity);
   const refundRepo = AppDataSource.getRepository(RefundEntity);
   const customerRepo = AppDataSource.getRepository(CustomerEntity);
+  const abandonedCartRepo = AppDataSource.getRepository(AbandonedCartEntity);
 
   // 1. Seed Merchant User
   const merchantEmail = 'belal@easycommerce.app';
@@ -2069,6 +2071,7 @@ async function seed() {
     if (status === OrderStatusEnum.SHIPPED || status === OrderStatusEnum.DELIVERED) {
       const courierProvider = i % 2 === 0 ? CourierProviderEnum.STEADFAST : CourierProviderEnum.PATHAO;
       const consignment = consignmentRepo.create({
+        shipmentNumber: `SHP-${100000 + i}`,
         trackingCode: `${courierProvider === CourierProviderEnum.STEADFAST ? 'SF' : 'PT'}${100000 + i}`,
         orderId: order.id,
         orderNumber,
@@ -2151,6 +2154,152 @@ async function seed() {
   }
 
   console.log('✨ Seeded 110 Orders with Items, Payments, Consignments, Notes, Status History, and Returns.');
+
+  // 15. Seed Abandoned Carts for Merchant Store
+  console.log('🛒 Seeding Abandoned Carts for Merchant Store...');
+  const abandonedCartsData = [
+    {
+      customerName: 'Rafiqul Islam',
+      customerPhone: '+8801711998877',
+      customerEmail: 'rafiqul@gmail.com',
+      shippingAddress: 'House 14, Road 5, Dhanmondi, Dhaka',
+      itemsJson: [
+        {
+          productId: 'shopease-prod-1',
+          name: 'Baseus Encok Wireless Earbuds',
+          price: 1599,
+          quantity: 1,
+          imageUrl: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600',
+        },
+        {
+          productId: 'shopease-prod-3',
+          name: 'Arctic Hunter Laptop Backpack',
+          price: 2549,
+          quantity: 1,
+          imageUrl: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600',
+        },
+      ],
+      totalAmount: 4148,
+      recoveryToken: 'rec_tok_101',
+      isRecovered: false,
+      lastRemindedAt: new Date(Date.now() - 3600000 * 4),
+      createdAt: new Date(Date.now() - 3600000 * 6),
+    },
+    {
+      customerName: 'Tanzila Akter',
+      customerPhone: '+8801812345678',
+      customerEmail: 'tanzila.akter@yahoo.com',
+      shippingAddress: 'Flat 4B, Green Road, Farmgate, Dhaka',
+      itemsJson: [
+        {
+          productId: 'shopease-prod-2',
+          name: 'Haylou Solar Smart Watch LS05',
+          price: 2999,
+          quantity: 1,
+          imageUrl: 'https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=600',
+        },
+      ],
+      totalAmount: 2999,
+      recoveryToken: 'rec_tok_102',
+      isRecovered: true,
+      lastRemindedAt: new Date(Date.now() - 3600000 * 12),
+      createdAt: new Date(Date.now() - 3600000 * 18),
+    },
+    {
+      customerName: 'Anwar Hossain',
+      customerPhone: '+8801911223344',
+      customerEmail: 'anwar.h@outlook.com',
+      shippingAddress: 'Sector 4, Road 7, Uttara, Dhaka',
+      itemsJson: [
+        {
+          productId: 'shopease-prod-5',
+          name: "Men's Casual Sneakers",
+          price: 2249,
+          quantity: 1,
+          imageUrl: 'https://images.unsplash.com/photo-1560769629-975ec94e6a86?w=600',
+        },
+        {
+          productId: 'shopease-prod-4',
+          name: 'Modern Table Lamp',
+          price: 1299,
+          quantity: 1,
+          imageUrl: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=600',
+        },
+      ],
+      totalAmount: 3548,
+      recoveryToken: 'rec_tok_103',
+      isRecovered: false,
+      createdAt: new Date(Date.now() - 3600000 * 2),
+    },
+    {
+      customerName: 'Nusrat Jahan',
+      customerPhone: '+8801619887766',
+      customerEmail: 'nusrat.j@gmail.com',
+      shippingAddress: 'CDA Avenue, GEC Circle, Chattogram',
+      itemsJson: [
+        {
+          productId: 'shopease-prod-7',
+          name: 'Skincare Combo Pack',
+          price: 1499,
+          quantity: 2,
+          imageUrl: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600',
+        },
+      ],
+      totalAmount: 2998,
+      recoveryToken: 'rec_tok_104',
+      isRecovered: false,
+      lastRemindedAt: new Date(Date.now() - 3600000 * 8),
+      createdAt: new Date(Date.now() - 3600000 * 24),
+    },
+    {
+      customerName: 'Mahmudul Hasan',
+      customerPhone: '+8801722334455',
+      customerEmail: 'mahmud.hasan@gmail.com',
+      shippingAddress: 'Zindabazar, Sylhet',
+      itemsJson: [
+        {
+          productId: 'shopease-prod-6',
+          name: 'Portable USB Blender',
+          price: 1799,
+          quantity: 1,
+          imageUrl: 'https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=600',
+        },
+      ],
+      totalAmount: 1799,
+      recoveryToken: 'rec_tok_105',
+      isRecovered: true,
+      lastRemindedAt: new Date(Date.now() - 3600000 * 30),
+      createdAt: new Date(Date.now() - 3600000 * 36),
+    },
+    {
+      customerName: 'Kazi Farhan',
+      customerPhone: '+8801533445566',
+      customerEmail: 'kazi.farhan@gmail.com',
+      shippingAddress: 'KDA Avenue, Khulna',
+      itemsJson: [
+        {
+          productId: 'shopease-prod-8',
+          name: 'Football Size 5 Official',
+          price: 1199,
+          quantity: 1,
+          imageUrl: 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=600',
+        },
+      ],
+      totalAmount: 1199,
+      recoveryToken: 'rec_tok_106',
+      isRecovered: false,
+      createdAt: new Date(Date.now() - 3600000 * 5),
+    },
+  ];
+
+  for (const c of abandonedCartsData) {
+    const cart = abandonedCartRepo.create({
+      ...c,
+      tenantId,
+    });
+    await abandonedCartRepo.save(cart);
+  }
+  console.log(`✨ Seeded ${abandonedCartsData.length} realistic Abandoned Carts.`);
   console.log('🎉 Full EasyCommerce Product Module Demo Data Seeding Completed Successfully!');
   await AppDataSource.destroy();
 }

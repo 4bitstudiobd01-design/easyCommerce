@@ -42,7 +42,7 @@ export const ShopEaseCategories = ({
                 key={cat.id}
                 href={`/store/${storeSlug}/shop?category=${encodeURIComponent(cat.name)}`}
                 onClick={() => onSelectCategory?.(cat.name)}
-                className={`bg-white rounded-2xl p-4 flex flex-col items-center justify-center text-center border transition-all duration-300 cursor-pointer group hover:-translate-y-1 ${
+                className={`bg-white rounded-2xl p-3 sm:p-4 flex flex-col items-center justify-center text-center border transition-all duration-200 cursor-pointer group active:scale-90 select-none ${
                   isSelected
                     ? 'border-blue-600 ring-2 ring-blue-500/20 shadow-md bg-blue-50/20'
                     : 'border-slate-200/80 shadow-2xs hover:border-blue-300 hover:shadow-md'

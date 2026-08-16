@@ -4,18 +4,18 @@ import {
   Post,
   Param,
   Headers,
-  Body,
+  Req,
   Res,
   Query,
   UseGuards,
   BadRequestException,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { FindStoreByUserService } from './services/find-store-by-user.service';
 import { ListAvailableThemesService } from './services/list-available-themes.service';
-import { PurchaseThemeService } from './services/purchase-theme.service';
 import { ActivateThemeService } from './services/activate-theme.service';
 import { InitiateThemeSslCommerzPaymentService } from './services/initiate-theme-sslcommerz-payment.service';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -30,7 +30,6 @@ import axios from 'axios';
 export class ThemeController {
   constructor(
     private readonly listAvailableThemesService: ListAvailableThemesService,
-    private readonly purchaseThemeService: PurchaseThemeService,
     private readonly activateThemeService: ActivateThemeService,
     private readonly initiateThemeSslCommerzPaymentService: InitiateThemeSslCommerzPaymentService,
     private readonly findStoreByUserService: FindStoreByUserService,
@@ -116,13 +115,42 @@ export class ThemeController {
   ) {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
 
+    const result = await this.finalizeThemePurchase(purchaseId, valId);
+    if (result.status === 'completed') {
+      return res.redirect(`${frontendUrl}/dashboard?theme_payment=success&themeId=${result.themeId}`);
+    }
+    if (result.status === 'failed') {
+      return res.redirect(`${frontendUrl}/dashboard?theme_payment=failed`);
+    }
+    return res.redirect(`${frontendUrl}/dashboard?theme_payment=error`);
+  }
+
+  // Server-to-server webhook — SSLCommerz calls this directly rather than via the
+  // merchant's browser, so a purchase can still complete if the customer closes the
+  // tab before the success redirect fires. Shares finalizeThemePurchase with the
+  // success route so a purchase is never unlocked or validated by two different code
+  // paths; the PENDING-status guard inside it makes a duplicate call from either
+  // route a safe no-op.
+  @Post('payment/sslcommerz/ipn')
+  @ApiOperation({ summary: 'SSLCommerz theme payment IPN webhook' })
+  @ApiResponse({ status: 200, description: 'Payment validated and theme unlocked via server-to-server IPN' })
+  async paymentIpn(@Req() req: Request) {
+    const payload = { ...req.query, ...req.body } as { purchaseId?: string; val_id?: string };
+    const result = await this.finalizeThemePurchase(payload.purchaseId || '', payload.val_id);
+    return { success: result.status === 'completed' };
+  }
+
+  private async finalizeThemePurchase(
+    purchaseId: string,
+    valId?: string,
+  ): Promise<{ status: 'completed' | 'failed' | 'error'; themeId?: string }> {
     try {
       const purchase = purchaseId
         ? await this.purchaseRepository.findOne({ where: { id: purchaseId } })
         : null;
 
       if (!purchase || !purchase.tranId || purchase.status !== 'PENDING') {
-        return res.redirect(`${frontendUrl}/dashboard?theme_payment=error`);
+        return { status: 'error' };
       }
 
       const isValidated = await this.verifySslCommerzPayment(valId);
@@ -130,7 +158,7 @@ export class ThemeController {
       if (!isValidated) {
         purchase.status = 'FAILED';
         await this.purchaseRepository.save(purchase);
-        return res.redirect(`${frontendUrl}/dashboard?theme_payment=failed`);
+        return { status: 'failed' };
       }
 
       purchase.status = 'COMPLETED';
@@ -146,11 +174,9 @@ export class ThemeController {
         await this.storeRepository.save(store);
       }
 
-      return res.redirect(
-        `${frontendUrl}/dashboard?theme_payment=success&themeId=${purchase.themeId}`,
-      );
+      return { status: 'completed', themeId: purchase.themeId };
     } catch (err) {
-      return res.redirect(`${frontendUrl}/dashboard?theme_payment=error`);
+      return { status: 'error' };
     }
   }
 

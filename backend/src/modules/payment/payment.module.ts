@@ -28,6 +28,7 @@ import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { CreateRefundService } from './services/create-refund.service';
 import { ProcessRefundService } from './services/process-refund.service';
 import { FindRefundsByOrderService } from './services/find-refunds-by-order.service';
+import { GetRefundsSummaryService } from './services/get-refunds-summary.service';
 import { RefundController } from './controllers/refund.controller';
 import { OrderStatusHistoryEntity } from '../order/entities/order-status-history.entity';
 
@@ -72,6 +73,7 @@ import { OrderStatusHistoryEntity } from '../order/entities/order-status-history
     CreateRefundService,
     ProcessRefundService,
     FindRefundsByOrderService,
+    GetRefundsSummaryService,
   ],
   exports: [
     InitiateSslCommerzPaymentService,
@@ -87,6 +89,7 @@ import { OrderStatusHistoryEntity } from '../order/entities/order-status-history
     CreateRefundService,
     ProcessRefundService,
     FindRefundsByOrderService,
+    GetRefundsSummaryService,
     TypeOrmModule,
   ],
 })

@@ -108,6 +108,24 @@ export class OrderEntity {
   @Column({ type: 'varchar', length: 100 })
   storeSlug: string;
 
+  @Column({ type: 'varchar', length: 50, default: 'direct' })
+  channel: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  utmSource?: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  utmMedium?: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  utmCampaign?: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  referrerHost?: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  sessionId?: string;
+
   @Column({ type: 'uuid' })
   tenantId: string;
 

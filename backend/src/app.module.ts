@@ -21,6 +21,7 @@ import { SeoModule } from './modules/seo/seo.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { CustomerModule } from './modules/customer/customer.module';
 import { MarketingModule } from './modules/marketing/marketing.module';
+import { TrackingModule } from './modules/tracking/tracking.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { APP_FILTER } from '@nestjs/core';
 
@@ -53,6 +54,7 @@ import { APP_FILTER } from '@nestjs/core';
     BillingModule,
     CustomerModule,
     MarketingModule,
+    TrackingModule,
   ],
   controllers: [],
   providers: [

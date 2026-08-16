@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useGetPublicStoreProductsQuery } from '@/features/storefront/api/storefrontApi';
 import { ProductDetailModal } from '@/features/storefront/components/ProductDetailModal';
@@ -14,6 +14,7 @@ import { Product } from '@/features/catalog/api/catalogApi';
 import { useDispatch } from 'react-redux';
 import { Store } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { recordStorefrontVisit } from '@/features/storefront/utils/attribution';
 
 export default function ShopPage() {
   const params = useParams();
@@ -29,6 +30,13 @@ export default function ShopPage() {
   });
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
+  useEffect(() => {
+    if (!slug) return;
+    recordStorefrontVisit(slug);
+    // Fires once per mount only — not on every internal route change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]);
 
   if (isLoading) {
     return (

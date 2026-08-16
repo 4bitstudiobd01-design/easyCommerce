@@ -14,7 +14,6 @@ import {
   MessageSquare,
   X,
   Sparkles,
-  RotateCcw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -22,7 +21,6 @@ import {
   useSendRecoverySmsMutation,
   type AbandonedCart,
 } from '../api/orderApi';
-import { MOCK_ABANDONED_CARTS, type MockAbandonedCart } from '../data/abandonedCartMockData';
 import { AbandonedCartKpiCards } from './AbandonedCartKpiCards';
 import { AbandonedCartTable } from './AbandonedCartTable';
 import { AbandonmentTrendCard } from './AbandonmentTrendCard';
@@ -86,24 +84,15 @@ export const AbandonedCartsView = () => {
   const [sendingCartId, setSendingCartId] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
 
-  // Dedicated local state initialized with comprehensive mock dataset
-  const [localCarts, setLocalCarts] = useState<MockAbandonedCart[]>(MOCK_ABANDONED_CARTS);
-
   const {
-    data: apiCarts = [],
+    data: carts = [],
     isLoading: isApiLoading,
     isFetching: isApiFetching,
+    isError: isApiError,
     refetch,
   } = useGetMerchantAbandonedCartsQuery();
 
   const [sendRecoverySms] = useSendRecoverySmsMutation();
-
-  // If the API returns real records, merge/use them; otherwise keep our rich demo dataset
-  useEffect(() => {
-    if (apiCarts && apiCarts.length > 0) {
-      setLocalCarts(apiCarts as MockAbandonedCart[]);
-    }
-  }, [apiCarts]);
 
   const updateUrlParams = useCallback(
     (next: Record<string, string | null>) => {
@@ -134,18 +123,13 @@ export const AbandonedCartsView = () => {
     setSearchInput(searchParam);
   }, [searchParam]);
 
-  const resetSampleData = () => {
-    setLocalCarts(MOCK_ABANDONED_CARTS);
-    toast.success('Sample abandoned carts data restored to original state!');
-  };
-
   /** Filter by search, status, and date range */
   const filteredCarts = useMemo(() => {
     const needle = searchParam.trim().toLowerCase();
     const days = DATE_RANGE_DAYS[dateRangeParam] ?? null;
     const cutoff = days === null ? null : Date.now() - days * 24 * 60 * 60 * 1000;
 
-    return localCarts.filter((cart) => {
+    return carts.filter((cart) => {
       if (statusParam !== 'ALL' && getCartStatus(cart) !== statusParam) return false;
 
       if (cutoff !== null) {
@@ -163,7 +147,7 @@ export const AbandonedCartsView = () => {
 
       return true;
     });
-  }, [localCarts, searchParam, statusParam, dateRangeParam]);
+  }, [carts, searchParam, statusParam, dateRangeParam]);
 
   // Sort newest first
   const sortedCarts = useMemo(
@@ -174,8 +158,8 @@ export const AbandonedCartsView = () => {
     [filteredCarts],
   );
 
-  const summary = useMemo(() => buildSummary(localCarts), [localCarts]);
-  const trend = useMemo(() => buildTrend(localCarts), [localCarts]);
+  const summary = useMemo(() => buildSummary(carts), [carts]);
+  const trend = useMemo(() => buildTrend(carts), [carts]);
 
   const total = sortedCarts.length;
   const totalPages = Math.max(1, Math.ceil(total / limitParam));
@@ -187,8 +171,8 @@ export const AbandonedCartsView = () => {
   );
 
   const selectedCart = useMemo(
-    () => localCarts.find((cart) => cart.id === selectedCartId) ?? null,
-    [localCarts, selectedCartId],
+    () => carts.find((cart) => cart.id === selectedCartId) ?? null,
+    [carts, selectedCartId],
   );
 
   const hasActiveFilters =
@@ -205,39 +189,13 @@ export const AbandonedCartsView = () => {
   }, [dateRangeParam]);
 
   /** Interactive Send SMS Action */
-  const handleSendSms = async (cart: AbandonedCart | MockAbandonedCart) => {
+  const handleSendSms = async (cart: AbandonedCart) => {
     setSendingCartId(cart.id);
 
     try {
-      // Attempt backend API if available, fallback gracefully
-      try {
-        await sendRecoverySms(cart.id).unwrap();
-      } catch {
-        // Fallback to local state simulation
-      }
+      await sendRecoverySms(cart.id).unwrap();
 
-      // Update in-memory state so UI updates dynamically
-      setLocalCarts((prev) =>
-        prev.map((c) =>
-          c.id === cart.id
-            ? {
-                ...c,
-                lastRemindedAt: new Date().toISOString(),
-                timeline: [
-                  ...(c.timeline || []),
-                  {
-                    time: new Date().toISOString(),
-                    title: 'Recovery SMS Sent (Manual)',
-                    description: `Dispatched SMS reminder to ${cart.customerPhone} with checkout link`,
-                    type: 'sms_sent',
-                  },
-                ],
-              }
-            : c,
-        ),
-      );
-
-      toast.success(`Recovery SMS dispatched to ${cart.customerPhone} via Greenweb Gateway!`);
+      toast.success(`Recovery SMS dispatched to ${cart.customerPhone}!`);
     } catch {
       toast.error('Could not send the recovery SMS.');
     } finally {
@@ -331,31 +289,15 @@ export const AbandonedCartsView = () => {
       {/* 1. PAGE HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-              Abandoned Carts
-            </h1>
-            <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-[11px] font-extrabold inline-flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-emerald-600" />
-              Demo Data Mode
-            </span>
-          </div>
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+            Abandoned Carts
+          </h1>
           <p className="text-xs font-medium text-slate-500 mt-1">
             Recover lost sales by reaching out to shoppers who left items in checkout
           </p>
         </div>
 
         <div className="flex items-center gap-2.5 self-start sm:self-auto flex-wrap">
-          <button
-            type="button"
-            onClick={resetSampleData}
-            title="Reset demo data to initial state"
-            className="px-3.5 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-2xs transition-colors active:scale-95 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          >
-            <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
-            Reset Data
-          </button>
-
           <button
             type="button"
             onClick={() => refetch()}
@@ -410,6 +352,25 @@ export const AbandonedCartsView = () => {
         </ul>
       </nav>
 
+      {/* ERROR BANNER */}
+      {isApiError && (
+        <div className="flex items-center justify-between gap-3 px-4 py-3 bg-rose-50 border border-rose-200 rounded-xl">
+          <div className="flex items-center gap-2 text-rose-700">
+            <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
+            <p className="text-xs font-semibold">
+              Could not load abandoned carts. Please try again.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="px-3 py-1.5 bg-white border border-rose-200 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       {/* 3. TAB CONTENT */}
       {activeTab === 'overview' && (
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px] gap-5 items-start">
@@ -418,7 +379,7 @@ export const AbandonedCartsView = () => {
           {/* KPI STAT CARDS */}
           <AbandonedCartKpiCards
             summary={summary}
-            isLoading={false}
+            isLoading={isApiLoading}
             periodLabel={periodLabel}
           />
 
@@ -494,7 +455,7 @@ export const AbandonedCartsView = () => {
             {/* TABLE */}
             <AbandonedCartTable
               carts={pagedCarts}
-              isLoading={false}
+              isLoading={isApiLoading}
               hasActiveFilters={hasActiveFilters}
               sendingCartId={sendingCartId}
               onClearFilters={handleClearFilters}
@@ -577,11 +538,11 @@ export const AbandonedCartsView = () => {
 
         {/* RIGHT ANALYTICS RAIL */}
         <aside className="space-y-5 min-w-0">
-          <AbandonmentTrendCard trend={trend} isLoading={false} />
+          <AbandonmentTrendCard trend={trend} isLoading={isApiLoading} />
           <RecoveryBreakdownCard
             summary={summary}
-            totalCarts={localCarts.length}
-            isLoading={false}
+            totalCarts={carts.length}
+            isLoading={isApiLoading}
           />
 
           {/* QUICK ACTIONS CARD */}

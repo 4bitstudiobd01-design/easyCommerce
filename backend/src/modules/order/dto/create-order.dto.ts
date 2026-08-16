@@ -71,4 +71,34 @@ export class CreateOrderDto {
   @ValidateNested({ each: true })
   @Type(() => CreateOrderItemDto)
   items: CreateOrderItemDto[];
+
+  @ApiProperty({ required: false, description: 'Client-resolved marketing channel bucket; re-validated server-side' })
+  @IsOptional()
+  @IsString()
+  channel?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  utmSource?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  utmMedium?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  utmCampaign?: string;
+
+  @ApiProperty({ required: false, description: 'Referring hostname captured at storefront landing' })
+  @IsOptional()
+  @IsString()
+  referrerHost?: string;
+
+  @ApiProperty({ required: false, description: 'Client-generated storefront visit session id' })
+  @IsOptional()
+  @IsUUID()
+  sessionId?: string;
 }

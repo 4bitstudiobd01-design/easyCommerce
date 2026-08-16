@@ -6,22 +6,16 @@ import {
   Phone,
   Mail,
   MapPin,
-  Clock,
   MessageSquare,
   Loader2,
   Package,
   CheckCircle2,
-  AlertTriangle,
-  Tag,
   Share2,
 } from 'lucide-react';
 import type { AbandonedCart } from '../api/orderApi';
-import type { MockAbandonedCart } from '../data/abandonedCartMockData';
 import {
   formatCurrency,
-  formatDate,
   formatRelativeTime,
-  formatTime,
   getAvatarTint,
   getCartStatus,
   getInitials,
@@ -30,7 +24,7 @@ import {
 } from '../utils/abandonedCartFormatters';
 
 interface AbandonedCartDetailsDrawerProps {
-  cart: AbandonedCart | MockAbandonedCart | null;
+  cart: AbandonedCart | null;
   isSending: boolean;
   onClose: () => void;
   onSendSms: (cart: AbandonedCart) => void;
@@ -54,10 +48,34 @@ export const AbandonedCartDetailsDrawer = ({
 
   if (!cart) return null;
 
-  const mockCart = cart as MockAbandonedCart;
   const status = getCartStatus(cart);
   const statusStyle = STATUS_STYLES[status];
   const items = Array.isArray(cart.itemsJson) ? cart.itemsJson : [];
+
+  const timeline: { time: string; title: string; description: string; type: 'cart_created' | 'sms_sent' | 'recovered' }[] = [
+    {
+      time: cart.createdAt,
+      title: 'Cart Abandoned',
+      description: `Checkout left incomplete with ${items.length} item${items.length === 1 ? '' : 's'} in cart`,
+      type: 'cart_created',
+    },
+  ];
+  if (cart.lastRemindedAt) {
+    timeline.push({
+      time: cart.lastRemindedAt,
+      title: 'Recovery SMS Sent',
+      description: `Reminder dispatched to ${cart.customerPhone}`,
+      type: 'sms_sent',
+    });
+  }
+  if (cart.isRecovered) {
+    timeline.push({
+      time: cart.lastRemindedAt || cart.createdAt,
+      title: 'Cart Recovered',
+      description: 'Customer completed the order',
+      type: 'recovered',
+    });
+  }
 
   return (
     <>
@@ -201,16 +219,9 @@ export const AbandonedCartDetailsDrawer = ({
 
             {/* CART VALUE SUMMARY BOX */}
             <div className="bg-emerald-50/70 border border-emerald-100 rounded-2xl p-4 flex items-center justify-between">
-              <div>
-                <span className="text-[11px] font-bold text-emerald-900 block">
-                  Potential Revenue At Stake
-                </span>
-                {mockCart.discountCode && (
-                  <span className="text-[10px] text-emerald-700 font-semibold flex items-center gap-1 mt-0.5">
-                    <Tag className="w-3 h-3" /> Coupon Attached: {mockCart.discountCode}
-                  </span>
-                )}
-              </div>
+              <span className="text-[11px] font-bold text-emerald-900">
+                Potential Revenue At Stake
+              </span>
               <span className="text-lg font-black text-emerald-800">
                 {formatCurrency(cart.totalAmount)}
               </span>
@@ -223,49 +234,30 @@ export const AbandonedCartDetailsDrawer = ({
               Activity Timeline & Journey
             </h3>
 
-            {mockCart.timeline && mockCart.timeline.length > 0 ? (
-              <div className="relative pl-5 border-l-2 border-slate-200 space-y-4 py-1">
-                {mockCart.timeline.map((step, idx) => (
-                  <div key={idx} className="relative">
-                    <div
-                      className={`absolute -left-[27px] top-0.5 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center ${
-                        step.type === 'recovered'
-                          ? 'bg-emerald-500 ring-2 ring-emerald-200'
-                          : step.type === 'sms_sent'
-                            ? 'bg-teal-500'
-                            : 'bg-slate-400'
-                      }`}
-                    />
-                    <div className="space-y-0.5">
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs font-bold text-slate-900">{step.title}</p>
-                        <span className="text-[10px] text-slate-400 font-semibold">
-                          {formatRelativeTime(step.time)}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-slate-500">{step.description}</p>
+            <div className="relative pl-5 border-l-2 border-slate-200 space-y-4 py-1">
+              {timeline.map((step, idx) => (
+                <div key={idx} className="relative">
+                  <div
+                    className={`absolute -left-[27px] top-0.5 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center ${
+                      step.type === 'recovered'
+                        ? 'bg-emerald-500 ring-2 ring-emerald-200'
+                        : step.type === 'sms_sent'
+                          ? 'bg-teal-500'
+                          : 'bg-slate-400'
+                    }`}
+                  />
+                  <div className="space-y-0.5">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-bold text-slate-900">{step.title}</p>
+                      <span className="text-[10px] text-slate-400 font-semibold">
+                        {formatRelativeTime(step.time)}
+                      </span>
                     </div>
+                    <p className="text-[11px] text-slate-500">{step.description}</p>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-2 text-xs text-slate-600">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-3.5 h-3.5 text-slate-400" />
-                  <span>
-                    Abandoned on {formatDate(cart.createdAt)} at {formatTime(cart.createdAt)}
-                  </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
-                  <span>
-                    {cart.lastRemindedAt
-                      ? `Last reminded ${formatRelativeTime(cart.lastRemindedAt)}`
-                      : 'No recovery reminder dispatched yet'}
-                  </span>
-                </div>
-              </div>
-            )}
+              ))}
+            </div>
           </section>
 
           {/* RECOVERY LINK TOKEN */}

@@ -1,7 +1,9 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { DataSource } from 'typeorm';
+import { DataSource, In } from 'typeorm';
 import { InventoryStockEntity } from '../entities/inventory-stock.entity';
 import { InventoryMovementEntity } from '../entities/inventory-movement.entity';
+import { ProductEntity } from '../../catalog/entities/product.entity';
+import { ProductVariantEntity } from '../../catalog/entities/product-variant.entity';
 import { InventoryDomainService } from './inventory-domain.service';
 import { BulkAdjustStockDto } from '../dto/bulk-adjust-stock.dto';
 import {
@@ -47,8 +49,6 @@ export class BulkAdjustStockService {
       const stocks = await transactionalEntityManager
         .createQueryBuilder(InventoryStockEntity, 'stock')
         .setLock('pessimistic_write')
-        .leftJoinAndSelect('stock.product', 'product')
-        .leftJoinAndSelect('stock.variant', 'variant')
         .where('stock.id IN (:...ids)', { ids: uniqueIds })
         .andWhere('stock.tenantId = :tenantId', { tenantId })
         .getMany();
@@ -60,6 +60,29 @@ export class BulkAdjustStockService {
         throw new NotFoundException(
           `One or more selected inventory items were not found or access was denied: ${missingIds.slice(0, 3).join(', ')}${missingIds.length > 3 ? '...' : ''}`,
         );
+      }
+
+      // Populate product and variant relations safely
+      const productIds = Array.from(new Set(stocks.map((s) => s.productId).filter(Boolean)));
+      const variantIds = Array.from(new Set(stocks.map((s) => s.variantId).filter(Boolean)));
+
+      const products = productIds.length > 0
+        ? await transactionalEntityManager.find(ProductEntity, {
+            where: { id: In(productIds), tenantId },
+          })
+        : [];
+      const productMap = new Map(products.map((p) => [p.id, p]));
+
+      const variants = variantIds.length > 0
+        ? await transactionalEntityManager.find(ProductVariantEntity, {
+            where: { id: In(variantIds), tenantId },
+          })
+        : [];
+      const variantMap = new Map(variants.map((v) => [v.id, v]));
+
+      for (const stock of stocks) {
+        if (stock.productId) stock.product = productMap.get(stock.productId);
+        if (stock.variantId) stock.variant = variantMap.get(stock.variantId);
       }
 
       const itemResults: BulkAdjustStockItemResultDto[] = [];

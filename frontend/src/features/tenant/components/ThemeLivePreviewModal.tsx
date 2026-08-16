@@ -2,12 +2,13 @@
 
 import React, { useState } from 'react';
 import { StoreThemeItem, Store } from '../api/tenantApi';
-import { X, Sparkles, Smartphone, Monitor, CheckCircle2, Zap, Lock, ExternalLink } from 'lucide-react';
+import { X, Sparkles, Smartphone, Monitor, CheckCircle2, Zap, Lock, ExternalLink, PackageOpen } from 'lucide-react';
 import { LuxuryFashionTheme } from '@/features/storefront/themes/LuxuryFashionTheme';
 import { TechHubTheme } from '@/features/storefront/themes/TechHubTheme';
 import { OrganicGroceryTheme } from '@/features/storefront/themes/OrganicGroceryTheme';
 import { MinimalDarkTheme } from '@/features/storefront/themes/MinimalDarkTheme';
-import { Product } from '@/features/catalog/api/catalogApi';
+import { DefaultStorefrontTheme } from '@/features/storefront/themes/DefaultStorefrontTheme';
+import { useGetProductsQuery } from '@/features/catalog/api/catalogApi';
 
 interface ThemeLivePreviewModalProps {
   isOpen: boolean;
@@ -17,57 +18,6 @@ interface ThemeLivePreviewModalProps {
   onActivate: (theme: StoreThemeItem) => void;
   onUnlock: (theme: StoreThemeItem) => void;
 }
-
-const DEMO_PRODUCTS: Product[] = [
-  {
-    id: 'demo-p1',
-    title: 'Premium Wireless Noise-Cancelling Headphones',
-    slug: 'demo-headphones',
-    description: 'High-fidelity audio with spatial sound, 40-hour battery life, and active noise cancellation.',
-    basePrice: 12500,
-    images: [{ id: 'img-1', url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800', isPrimary: true }],
-    isPublished: true,
-    variants: [],
-    tenantId: 'demo',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'demo-p2',
-    title: 'Minimalist Minimal Chronograph Watch',
-    slug: 'demo-watch',
-    description: 'Genuine leather strap, Japanese quartz movement, and 50m water resistance.',
-    basePrice: 8900,
-    images: [{ id: 'img-2', url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800', isPrimary: true }],
-    isPublished: true,
-    variants: [],
-    tenantId: 'demo',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'demo-p3',
-    title: 'Organic Natural Honey & Organic Staples Set',
-    slug: 'demo-honey',
-    description: '100% pure raw organic honey harvested from Sundarbans mangrove forest.',
-    basePrice: 1450,
-    images: [{ id: 'img-3', url: 'https://images.unsplash.com/photo-1587049352847-4a222e784d38?w=800', isPrimary: true }],
-    isPublished: true,
-    variants: [],
-    tenantId: 'demo',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'demo-p4',
-    title: 'Designer Silk Blend Evening Dress',
-    slug: 'demo-dress',
-    description: 'Tailored luxury couture silhouette with gold embroidery accents.',
-    basePrice: 16800,
-    images: [{ id: 'img-4', url: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800', isPrimary: true }],
-    isPublished: true,
-    variants: [],
-    tenantId: 'demo',
-    createdAt: new Date().toISOString(),
-  },
-];
 
 export const ThemeLivePreviewModal: React.FC<ThemeLivePreviewModalProps> = ({
   isOpen,
@@ -79,17 +29,43 @@ export const ThemeLivePreviewModal: React.FC<ThemeLivePreviewModalProps> = ({
 }) => {
   const [deviceMode, setDeviceMode] = useState<'desktop' | 'mobile'>('desktop');
 
+  const { data: productList, isLoading: isLoadingProducts } = useGetProductsQuery(
+    { status: 'ACTIVE', limit: 8 },
+    { skip: !isOpen },
+  );
+
   if (!isOpen || !theme) return null;
 
-  const storeName = store?.name || 'My Demo Storefront';
+  const storeName = store?.name || 'My Storefront';
   const slug = store?.slug || 'demo';
+  const products = productList?.data || [];
 
   const renderThemeLayout = () => {
+    if (isLoadingProducts) {
+      return (
+        <div className="p-16 text-center bg-slate-900 text-white min-h-screen flex items-center justify-center">
+          <p className="text-sm text-slate-400">Loading your products for preview...</p>
+        </div>
+      );
+    }
+
+    if (products.length === 0) {
+      return (
+        <div className="p-16 text-center bg-slate-900 text-white min-h-screen flex flex-col items-center justify-center gap-3">
+          <PackageOpen className="w-10 h-10 text-slate-600" />
+          <h2 className="text-lg font-bold">No published products yet</h2>
+          <p className="text-sm text-slate-400 max-w-sm">
+            Publish at least one product to see how this theme renders your real storefront.
+          </p>
+        </div>
+      );
+    }
+
     const props = {
       storeName,
       slug,
-      products: DEMO_PRODUCTS,
-      categories: ['All', 'Electronics', 'Fashion', 'Grocery'],
+      products,
+      categories: ['All'],
       onSelectProduct: () => {},
       onAddToCart: () => {},
     };
@@ -104,12 +80,7 @@ export const ThemeLivePreviewModal: React.FC<ThemeLivePreviewModalProps> = ({
       case 'MINIMAL_DARK':
         return <MinimalDarkTheme {...props} />;
       default:
-        return (
-          <div className="p-8 text-center bg-slate-900 text-white min-h-screen">
-            <h2 className="text-2xl font-bold">{storeName}</h2>
-            <p className="text-sm text-slate-400 mt-2">Classic Modern Storefront Layout Preview</p>
-          </div>
-        );
+        return <DefaultStorefrontTheme {...props} primaryColor={store?.primaryColor} logo={store?.logo} />;
     }
   };
 

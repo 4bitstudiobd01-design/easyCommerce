@@ -1,6 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString, IsEnum, IsNumber, IsArray } from 'class-validator';
-import { SmsDriverEnum, EmailDriverEnum, HeroBannerItem } from '../entities/store.entity';
+import { IsOptional, IsString, IsEnum, IsNumber, IsArray, IsBoolean, Min } from 'class-validator';
+import {
+  SmsDriverEnum,
+  EmailDriverEnum,
+  HeroBannerItem,
+  NavigationLinkItem,
+} from '../entities/store.entity';
 
 export class UpdateStoreDto {
   @ApiProperty({ example: 'My Online Fashion Store', required: false })
@@ -209,4 +214,138 @@ export class UpdateStoreDto {
   @IsOptional()
   @IsNumber()
   maxOrdersPerDay?: number;
+
+  // --- Localization ---
+  @ApiProperty({ example: 'en', required: false })
+  @IsOptional()
+  @IsString()
+  language?: string;
+
+  @ApiProperty({ example: 'Asia/Dhaka', required: false })
+  @IsOptional()
+  @IsString()
+  timezone?: string;
+
+  @ApiProperty({ example: 'DD/MM/YYYY', required: false })
+  @IsOptional()
+  @IsString()
+  dateFormat?: string;
+
+  @ApiProperty({ example: 'KG', required: false })
+  @IsOptional()
+  @IsString()
+  weightUnit?: string;
+
+  // --- Store Preferences ---
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  maintenanceMode?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  maintenanceMessage?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  catalogModeEnabled?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  showOutOfStockProducts?: boolean;
+
+  // --- Order Settings ---
+  @ApiProperty({ example: 'ORD-', required: false })
+  @IsOptional()
+  @IsString()
+  orderNumberPrefix?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  autoConfirmOrders?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  invoiceFooterNote?: string;
+
+  // --- Checkout Settings ---
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  guestCheckoutEnabled?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  requireCustomerEmail?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  showCouponFieldAtCheckout?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  showOrderNoteFieldAtCheckout?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  minimumOrderAmount?: number;
+
+  // --- Customer Settings ---
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  allowCustomerRegistration?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  requireEmailVerification?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  allowCustomerReviews?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  autoApproveReviews?: boolean;
+
+  // --- Navigation ---
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsArray()
+  navigationLinks?: NavigationLinkItem[];
+
+  // --- Homepage Settings ---
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  showHeroSection?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  showFeaturedProducts?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  showCategoriesSection?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  featuredProductsCount?: number;
 }

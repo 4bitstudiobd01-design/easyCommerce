@@ -37,9 +37,9 @@ export const ShopProductGrid = ({
   const endItem = Math.min(currentPage * 8, totalProductsCount || products.length);
 
   return (
-    <div className="space-y-6">
-      {/* 1. TOP CONTROLS BAR */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:px-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
+    <div className="space-y-4 sm:space-y-6">
+      {/* 1. TOP CONTROLS BAR (DESKTOP ONLY) */}
+      <div className="hidden lg:flex bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:px-5 flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
         {/* Count Label */}
         <span className="text-xs text-slate-500 font-medium">
           Showing <strong className="text-slate-800 font-bold">{startItem}-{endItem}</strong> of{' '}
@@ -98,7 +98,7 @@ export const ShopProductGrid = ({
         </div>
       </div>
 
-      {/* 2. PRODUCT CARDS GRID (4 COLUMNS ON DESKTOP) */}
+      {/* 2. PRODUCT CARDS GRID (2 COLUMNS ON MOBILE, 3-4 ON DESKTOP) */}
       {products.length === 0 ? (
         <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center max-w-md mx-auto my-8 space-y-3">
           <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto border border-blue-100">
@@ -110,7 +110,7 @@ export const ShopProductGrid = ({
           </p>
         </div>
       ) : viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4">
           {products.map((product) => (
             <ShopEaseProductCard
               key={product.id}

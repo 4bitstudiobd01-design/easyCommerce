@@ -105,7 +105,7 @@ export class InitiateThemeSslCommerzPaymentService {
       success_url: `${backendUrl}/api/v1/tenant/themes/payment/sslcommerz/success?purchaseId=${purchase.id}`,
       fail_url: `${backendUrl}/api/v1/tenant/themes/payment/sslcommerz/fail?purchaseId=${purchase.id}`,
       cancel_url: `${backendUrl}/api/v1/tenant/themes/payment/sslcommerz/cancel?purchaseId=${purchase.id}`,
-      ipn_url: `${backendUrl}/api/v1/tenant/themes/payment/sslcommerz/ipn`,
+      ipn_url: `${backendUrl}/api/v1/tenant/themes/payment/sslcommerz/ipn?purchaseId=${purchase.id}`,
       cus_name: userName || store.name || 'Merchant Owner',
       cus_email: userEmail || 'merchant@easycommerce.app',
       cus_add1: store.address || 'Dhaka, Bangladesh',

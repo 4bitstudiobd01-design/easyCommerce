@@ -127,6 +127,12 @@ export interface CreateOrderRequest {
   paymentMethod: 'COD' | 'BKASH' | 'NAGAD' | 'SSLCOMMERZ';
   couponCode?: string;
   items: CreateOrderItemRequest[];
+  channel?: string;
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+  referrerHost?: string;
+  sessionId?: string;
 }
 
 export interface EditOrderRequest {
@@ -270,7 +276,7 @@ export const orderApi = createApi({
     // --- ABANDONED CART RECOVERY ENDPOINTS ---
     getMerchantAbandonedCarts: builder.query<AbandonedCart[], void>({
       query: () => ({
-        url: 'http://localhost:5001/api/v1/orders/abandoned-carts/merchant',
+        url: '/abandoned-carts/merchant',
         method: 'GET',
       }),
       providesTags: ['AbandonedCart'],
@@ -279,7 +285,7 @@ export const orderApi = createApi({
     }),
     sendRecoverySms: builder.mutation<{ message: string }, string>({
       query: (cartId) => ({
-        url: `http://localhost:5001/api/v1/orders/abandoned-carts/${cartId}/send-recovery-sms`,
+        url: `/abandoned-carts/${cartId}/send-recovery-sms`,
         method: 'POST',
       }),
       invalidatesTags: ['AbandonedCart'],
@@ -294,7 +300,7 @@ export const orderApi = createApi({
       totalAmount: number;
     }>({
       query: (body) => ({
-        url: 'http://localhost:5001/api/v1/orders/abandoned-carts/track',
+        url: '/abandoned-carts/track',
         method: 'POST',
         body,
       }),

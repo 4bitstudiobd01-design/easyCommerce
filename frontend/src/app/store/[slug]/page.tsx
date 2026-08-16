@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useGetPublicStoreProductsQuery } from '@/features/storefront/api/storefrontApi';
 import { StorefrontNavbar } from '@/features/storefront/components/StorefrontNavbar';
@@ -8,6 +8,7 @@ import { ProductCard } from '@/features/storefront/components/ProductCard';
 import { ProductDetailModal } from '@/features/storefront/components/ProductDetailModal';
 import { CartDrawer } from '@/features/storefront/components/CartDrawer';
 import { StorefrontPixelTracker } from '@/features/storefront/components/StorefrontPixelTracker';
+import { recordStorefrontVisit } from '@/features/storefront/utils/attribution';
 import { NewsletterSignupWidget } from '@/features/email-marketing/components/NewsletterSignupWidget';
 import { JsonLdScript } from '@/features/seo/components/JsonLdScript';
 import { useGetStoreSeoQuery } from '@/features/seo/api/seoApi';
@@ -41,6 +42,13 @@ export default function StorefrontPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  useEffect(() => {
+    if (!slug) return;
+    recordStorefrontVisit(slug);
+    // Fires once per mount only — not on every internal route change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]);
 
   if (isLoading) {
     return (

@@ -19,6 +19,8 @@
     "migration:run": "npm run typeorm -- migration:run -d src/database/data-source.ts",
     "migration:revert": "npm run typeorm -- migration:revert -d src/database/data-source.ts",
     "migration:show": "npm run typeorm -- migration:show -d src/database/data-source.ts",
+    "db:flush": "ts-node -r tsconfig-paths/register scripts/flush-db.ts",
+    "db:reset": "npm run db:flush && npm run seed",
     "seed": "ts-node -r tsconfig-paths/register src/database/seeds/seed-demo-data.ts"
   },
   "dependencies": {

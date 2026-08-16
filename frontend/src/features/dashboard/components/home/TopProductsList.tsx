@@ -57,21 +57,16 @@ export function TopProductsList() {
         <div className="flex-1 flex flex-col px-6 pb-6">
           <ul className="space-y-4">
             {topSellingProducts.slice(0, 5).map((prod) => {
-              const imageUrl = (prod as any).imageUrl || (prod as any).productImageUrl;
-              const soldCount = prod.totalSold || prod.count || prod.totalQuantity || 0;
+              const soldCount = prod.totalQuantity || 0;
 
               return (
                 <li key={prod.productId} className="flex items-center justify-between group">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 overflow-hidden border border-slate-200/50 group-hover:border-slate-300 transition-colors">
-                      {imageUrl ? (
-                        <img src={imageUrl} alt={prod.title || prod.productTitle} className="w-full h-full object-cover" />
-                      ) : (
-                        <Package className="w-5 h-5 text-slate-400" strokeWidth={1.5} />
-                      )}
+                      <Package className="w-5 h-5 text-slate-400" strokeWidth={1.5} />
                     </div>
-                    <p className="text-[13px] font-semibold text-slate-700 group-hover:text-slate-900 transition-colors line-clamp-1" title={prod.title || prod.productTitle}>
-                      {prod.title || prod.productTitle}
+                    <p className="text-[13px] font-semibold text-slate-700 group-hover:text-slate-900 transition-colors line-clamp-1" title={prod.title}>
+                      {prod.title}
                     </p>
                   </div>
                   <div className="shrink-0 flex flex-col text-right pl-3">
