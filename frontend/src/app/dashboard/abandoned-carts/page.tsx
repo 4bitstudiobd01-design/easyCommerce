@@ -17,7 +17,7 @@ const AbandonedCartsPageFallback = () => (
         <Skeleton className="h-9 w-24 rounded-xl" />
       </div>
     </div>
-    <Skeleton className="h-10 w-full max-w-lg rounded" />
+    <Skeleton className="h-10 w-44 rounded" />
     <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px] gap-5">
       <div className="space-y-5">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">

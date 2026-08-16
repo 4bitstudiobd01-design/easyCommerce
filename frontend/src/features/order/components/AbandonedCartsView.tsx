@@ -28,9 +28,6 @@ import { AbandonedCartTable } from './AbandonedCartTable';
 import { AbandonmentTrendCard } from './AbandonmentTrendCard';
 import { RecoveryBreakdownCard } from './RecoveryBreakdownCard';
 import { AbandonedCartDetailsDrawer } from './AbandonedCartDetailsDrawer';
-import { RecoveredCartsTab } from './RecoveredCartsTab';
-import { SmsTemplatesTab } from './SmsTemplatesTab';
-import { AbandonedCartSettingsTab } from './AbandonedCartSettingsTab';
 import { buildSummary, buildTrend } from '../utils/abandonedCartMetrics';
 import {
   formatCurrency,
@@ -43,9 +40,6 @@ import {
 
 const TABS = [
   { key: 'overview', label: 'Overview' },
-  { key: 'recovered', label: 'Recovered Carts' },
-  { key: 'sms-templates', label: 'SMS Templates' },
-  { key: 'settings', label: 'Settings' },
 ] as const;
 
 const STATUS_OPTIONS = [
@@ -416,223 +410,215 @@ export const AbandonedCartsView = () => {
         </ul>
       </nav>
 
-      {/* 3. TAB ROUTING */}
-      {activeTab === 'recovered' && (
-        <RecoveredCartsTab carts={localCarts} onViewCart={setSelectedCartId} />
-      )}
-
-      {activeTab === 'sms-templates' && <SmsTemplatesTab />}
-
-      {activeTab === 'settings' && <AbandonedCartSettingsTab />}
-
+      {/* 3. TAB CONTENT */}
       {activeTab === 'overview' && (
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px] gap-5 items-start">
-          {/* MAIN LEFT WORKSPACE */}
-          <div className="space-y-5 min-w-0">
-            {/* KPI STAT CARDS */}
-            <AbandonedCartKpiCards
-              summary={summary}
-              isLoading={false}
-              periodLabel={periodLabel}
-            />
+        {/* MAIN LEFT WORKSPACE */}
+        <div className="space-y-5 min-w-0">
+          {/* KPI STAT CARDS */}
+          <AbandonedCartKpiCards
+            summary={summary}
+            isLoading={false}
+            periodLabel={periodLabel}
+          />
 
-            {/* ABANDONED CARTS WORKSPACE */}
-            <section className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs">
-              {/* FILTER BAR */}
-              <div className="p-4 border-b border-slate-100">
-                <div className="flex flex-col xl:flex-row xl:items-center gap-3">
-                  <div className="relative flex-1 min-w-[220px]">
-                    <Search
-                      className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"
+          {/* ABANDONED CARTS WORKSPACE */}
+          <section className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs">
+            {/* FILTER BAR */}
+            <div className="p-4 border-b border-slate-100">
+              <div className="flex flex-col xl:flex-row xl:items-center gap-3">
+                <div className="relative flex-1 min-w-[220px]">
+                  <Search
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"
+                    aria-hidden="true"
+                  />
+                  <input
+                    type="search"
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    placeholder="Search by customer, email or phone (e.g. Nusrat, 017...)"
+                    aria-label="Search abandoned carts"
+                    className="w-full h-9 pl-9 pr-3 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap shrink-0">
+                  <select
+                    value={statusParam}
+                    onChange={(e) => updateUrlParams({ status: e.target.value, page: '1' })}
+                    aria-label="Filter by recovery status"
+                    className={selectClass}
+                  >
+                    {STATUS_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+
+                  <div className="relative flex items-center">
+                    <Calendar
+                      className="absolute left-2.5 w-3.5 h-3.5 text-slate-400 pointer-events-none z-10"
                       aria-hidden="true"
                     />
-                    <input
-                      type="search"
-                      value={searchInput}
-                      onChange={(e) => setSearchInput(e.target.value)}
-                      placeholder="Search by customer, email or phone (e.g. Nusrat, 017...)"
-                      aria-label="Search abandoned carts"
-                      className="w-full h-9 pl-9 pr-3 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-2 flex-wrap shrink-0">
                     <select
-                      value={statusParam}
-                      onChange={(e) => updateUrlParams({ status: e.target.value, page: '1' })}
-                      aria-label="Filter by recovery status"
-                      className={selectClass}
+                      value={dateRangeParam}
+                      onChange={(e) =>
+                        updateUrlParams({ dateRange: e.target.value, page: '1' })
+                      }
+                      aria-label="Filter by date range"
+                      className={`${selectClass} !pl-8`}
                     >
-                      {STATUS_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
+                      {DATE_RANGES.map((range) => (
+                        <option key={range.value} value={range.value}>
+                          Date: {range.label}
                         </option>
                       ))}
                     </select>
-
-                    <div className="relative flex items-center">
-                      <Calendar
-                        className="absolute left-2.5 w-3.5 h-3.5 text-slate-400 pointer-events-none z-10"
-                        aria-hidden="true"
-                      />
-                      <select
-                        value={dateRangeParam}
-                        onChange={(e) =>
-                          updateUrlParams({ dateRange: e.target.value, page: '1' })
-                        }
-                        aria-label="Filter by date range"
-                        className={`${selectClass} !pl-8`}
-                      >
-                        {DATE_RANGES.map((range) => (
-                          <option key={range.value} value={range.value}>
-                            Date: {range.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {hasActiveFilters && (
-                      <button
-                        type="button"
-                        onClick={handleClearFilters}
-                        className="h-9 px-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-                      >
-                        <X className="w-3.5 h-3.5" aria-hidden="true" />
-                        Clear
-                      </button>
-                    )}
                   </div>
+
+                  {hasActiveFilters && (
+                    <button
+                      type="button"
+                      onClick={handleClearFilters}
+                      className="h-9 px-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                    >
+                      <X className="w-3.5 h-3.5" aria-hidden="true" />
+                      Clear
+                    </button>
+                  )}
                 </div>
               </div>
+            </div>
 
-              {/* TABLE */}
-              <AbandonedCartTable
-                carts={pagedCarts}
-                isLoading={false}
-                hasActiveFilters={hasActiveFilters}
-                sendingCartId={sendingCartId}
-                onClearFilters={handleClearFilters}
-                onSendSms={handleSendSms}
-                onViewCart={setSelectedCartId}
-              />
-
-              {/* PAGINATION */}
-              {total > 0 && (
-                <div className="p-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-                  <p className="text-xs font-medium text-slate-500">
-                    Showing {rangeStart} to {rangeEnd} of {total.toLocaleString('en-US')} carts
-                  </p>
-
-                  <nav aria-label="Abandoned cart pagination" className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => updateUrlParams({ page: String(currentPage - 1) })}
-                      disabled={currentPage <= 1}
-                      aria-label="Previous page"
-                      className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-
-                    {pageNumbers.map((page, index) =>
-                      page === 'gap' ? (
-                        <span
-                          key={`gap-${index}`}
-                          className="px-1 text-xs font-bold text-slate-400"
-                          aria-hidden="true"
-                        >
-                          ...
-                        </span>
-                      ) : (
-                        <button
-                          key={page}
-                          type="button"
-                          onClick={() => updateUrlParams({ page: String(page) })}
-                          aria-current={page === currentPage ? 'page' : undefined}
-                          aria-label={`Page ${page}`}
-                          className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
-                            page === currentPage
-                              ? 'bg-emerald-600 text-white shadow-2xs'
-                              : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      ),
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => updateUrlParams({ page: String(currentPage + 1) })}
-                      disabled={currentPage >= totalPages}
-                      aria-label="Next page"
-                      className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-
-                    <select
-                      value={limitParam}
-                      onChange={(e) => updateUrlParams({ limit: e.target.value, page: '1' })}
-                      aria-label="Results per page"
-                      className={`${selectClass} ml-1.5 !h-8`}
-                    >
-                      {PAGE_SIZES.map((size) => (
-                        <option key={size} value={size}>
-                          {size} / page
-                        </option>
-                      ))}
-                    </select>
-                  </nav>
-                </div>
-              )}
-            </section>
-          </div>
-
-          {/* RIGHT ANALYTICS RAIL */}
-          <aside className="space-y-5 min-w-0">
-            <AbandonmentTrendCard trend={trend} isLoading={false} />
-            <RecoveryBreakdownCard
-              summary={summary}
-              totalCarts={localCarts.length}
+            {/* TABLE */}
+            <AbandonedCartTable
+              carts={pagedCarts}
               isLoading={false}
+              hasActiveFilters={hasActiveFilters}
+              sendingCartId={sendingCartId}
+              onClearFilters={handleClearFilters}
+              onSendSms={handleSendSms}
+              onViewCart={setSelectedCartId}
             />
 
-            {/* QUICK ACTIONS CARD */}
-            <section className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-4">
-              <h2 className="text-xs font-extrabold text-slate-900 mb-3">Quick Actions</h2>
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  onClick={() => updateUrlParams({ status: 'ABANDONED', page: '1' })}
-                  className="w-full px-3 py-2.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 text-emerald-800 text-[11px] font-bold rounded-xl flex items-center gap-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-                >
-                  <MessageSquare className="w-3.5 h-3.5 shrink-0 text-emerald-600" aria-hidden="true" />
-                  Show Not-Yet-Reminded Carts
-                </button>
+            {/* PAGINATION */}
+            {total > 0 && (
+              <div className="p-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <p className="text-xs font-medium text-slate-500">
+                  Showing {rangeStart} to {rangeEnd} of {total.toLocaleString('en-US')} carts
+                </p>
 
-                <button
-                  type="button"
-                  onClick={() => updateUrlParams({ tab: 'sms-templates' })}
-                  className="w-full px-3 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-[11px] font-bold rounded-xl flex items-center gap-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-                >
-                  <Sparkles className="w-3.5 h-3.5 shrink-0 text-emerald-600" aria-hidden="true" />
-                  Configure SMS Recovery Sequences
-                </button>
+                <nav aria-label="Abandoned cart pagination" className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => updateUrlParams({ page: String(currentPage - 1) })}
+                    disabled={currentPage <= 1}
+                    aria-label="Previous page"
+                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={handleExport}
-                  disabled={isExporting}
-                  className="w-full px-3 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-[11px] font-bold rounded-xl flex items-center gap-2 transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-                >
-                  <Download className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                  Export Full CSV Report
-                </button>
+                  {pageNumbers.map((page, index) =>
+                    page === 'gap' ? (
+                      <span
+                        key={`gap-${index}`}
+                        className="px-1 text-xs font-bold text-slate-400"
+                        aria-hidden="true"
+                      >
+                        ...
+                      </span>
+                    ) : (
+                      <button
+                        key={page}
+                        type="button"
+                        onClick={() => updateUrlParams({ page: String(page) })}
+                        aria-current={page === currentPage ? 'page' : undefined}
+                        aria-label={`Page ${page}`}
+                        className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                          page === currentPage
+                            ? 'bg-emerald-600 text-white shadow-2xs'
+                            : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ),
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => updateUrlParams({ page: String(currentPage + 1) })}
+                    disabled={currentPage >= totalPages}
+                    aria-label="Next page"
+                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+
+                  <select
+                    value={limitParam}
+                    onChange={(e) => updateUrlParams({ limit: e.target.value, page: '1' })}
+                    aria-label="Results per page"
+                    className={`${selectClass} ml-1.5 !h-8`}
+                  >
+                    {PAGE_SIZES.map((size) => (
+                      <option key={size} value={size}>
+                        {size} / page
+                      </option>
+                    ))}
+                  </select>
+                </nav>
               </div>
-            </section>
-          </aside>
+            )}
+          </section>
         </div>
+
+        {/* RIGHT ANALYTICS RAIL */}
+        <aside className="space-y-5 min-w-0">
+          <AbandonmentTrendCard trend={trend} isLoading={false} />
+          <RecoveryBreakdownCard
+            summary={summary}
+            totalCarts={localCarts.length}
+            isLoading={false}
+          />
+
+          {/* QUICK ACTIONS CARD */}
+          <section className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-4">
+            <h2 className="text-xs font-extrabold text-slate-900 mb-3">Quick Actions</h2>
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => updateUrlParams({ status: 'ABANDONED', page: '1' })}
+                className="w-full px-3 py-2.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 text-emerald-800 text-[11px] font-bold rounded-xl flex items-center gap-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+              >
+                <MessageSquare className="w-3.5 h-3.5 shrink-0 text-emerald-600" aria-hidden="true" />
+                Show Not-Yet-Reminded Carts
+              </button>
+
+              <button
+                type="button"
+                onClick={() => updateUrlParams({ status: 'RECOVERED', page: '1' })}
+                className="w-full px-3 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-[11px] font-bold rounded-xl flex items-center gap-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+              >
+                <Sparkles className="w-3.5 h-3.5 shrink-0 text-emerald-600" aria-hidden="true" />
+                Show Recovered Carts
+              </button>
+
+              <button
+                type="button"
+                onClick={handleExport}
+                disabled={isExporting}
+                className="w-full px-3 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-[11px] font-bold rounded-xl flex items-center gap-2 transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+              >
+                <Download className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                Export Full CSV Report
+              </button>
+            </div>
+          </section>
+        </aside>
+      </div>
       )}
 
       {/* DETAILS DRAWER */}
@@ -645,3 +631,4 @@ export const AbandonedCartsView = () => {
     </div>
   );
 };
+
