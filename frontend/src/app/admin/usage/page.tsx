@@ -3,12 +3,12 @@
 import React from 'react';
 import { PlaceholderPage } from '@/components/dashboard/common/PlaceholderPage';
 
-export default function StoresPage() {
+export default function UsagePage() {
   return (
     <PlaceholderPage
-      title="Stores"
+      title="Usage & Limits"
       section="Platform"
-      description="View and manage multi-tenant storefronts, custom domains, and activation states."
+      description="Monitor storage consumption, API call volumes, SMS quotas, and bandwidth limits."
     />
   );
 }

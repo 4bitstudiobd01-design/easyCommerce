@@ -3,12 +3,12 @@
 import React from 'react';
 import { PlaceholderPage } from '@/components/dashboard/common/PlaceholderPage';
 
-export default function StoresPage() {
+export default function SubscriptionsPage() {
   return (
     <PlaceholderPage
-      title="Stores"
+      title="Subscriptions"
       section="Platform"
-      description="View and manage multi-tenant storefronts, custom domains, and activation states."
+      description="Track merchant subscription lifecycles, billing cycles, renewals, and tier upgrades."
     />
   );
 }
