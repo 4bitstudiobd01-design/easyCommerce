@@ -25,6 +25,7 @@ import {
   HelpCircle,
   FileText,
   MessageSquare,
+  Headphones,
   Store,
   Rocket,
   Building2,
@@ -557,12 +558,12 @@ export function Navbar() {
             )}
           </div>
 
-          {/* --- 5. CHANGELOG LINK --- */}
+          {/* --- 5. CONTACT LINK --- */}
           <Link
-            href="/changelog"
+            href="/contact"
             className="hover:text-blue-600 transition-colors py-1 cursor-pointer"
           >
-            Changelog
+            Contact Us
           </Link>
         </nav>
 
@@ -692,7 +693,7 @@ export function Navbar() {
             )}
           </div>
 
-          {/* Quick Direct Links (Pricing & Changelog) */}
+          {/* Quick Direct Links (Pricing & Contact) */}
           <div className="grid grid-cols-2 gap-2">
             <Link
               href="/#pricing"
@@ -704,12 +705,12 @@ export function Navbar() {
             </Link>
 
             <Link
-              href="/changelog"
+              href="/contact"
               onClick={() => setIsMobileMenuOpen(false)}
               className="p-3 bg-slate-50/80 rounded-2xl border border-slate-100 flex items-center justify-between text-xs font-bold text-slate-900 active:scale-[0.98] transition-all"
             >
-              <span>Changelog</span>
-              <Sparkles className="w-4 h-4 text-slate-400" />
+              <span>Contact Us</span>
+              <Headphones className="w-4 h-4 text-slate-400" />
             </Link>
           </div>
 
