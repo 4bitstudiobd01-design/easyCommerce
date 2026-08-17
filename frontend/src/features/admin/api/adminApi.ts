@@ -11,6 +11,14 @@ export interface PlatformStatsOverview {
   totalSystemOrdersCount: number;
 }
 
+/** Coarse aggregates also exposed publicly on the landing page. */
+export interface PublicPlatformStats {
+  activeStoresCount: number;
+  totalOrdersCount: number;
+  totalOrderValue: number;
+  modulesShipped: number;
+}
+
 export interface AdminStoreDetail {
   id: string;
   name: string;
@@ -176,6 +184,11 @@ export const adminApi = createApi({
       providesTags: ['AdminStats'],
       transformResponse: (response: { data: PlatformStatsOverview }) => response.data,
     }),
+    getPublicPlatformStats: builder.query<PublicPlatformStats, void>({
+      query: () => '/public-stats',
+      providesTags: ['AdminStats'],
+      transformResponse: (response: { data: PublicPlatformStats }) => response.data,
+    }),
     getAllStores: builder.query<AdminStoreDetail[], void>({
       query: () => '/stores',
       providesTags: ['AdminStores'],
@@ -251,6 +264,7 @@ export const adminApi = createApi({
 
 export const {
   useGetPlatformStatsQuery,
+  useGetPublicPlatformStatsQuery,
   useGetAllStoresQuery,
   useGetAllSystemOrdersQuery,
   useToggleStoreStatusMutation,

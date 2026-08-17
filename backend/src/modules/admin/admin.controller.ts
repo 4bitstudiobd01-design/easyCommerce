@@ -12,6 +12,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRoleEnum } from '../user/entities/user.entity';
 import { GetPlatformStatsService } from './services/get-platform-stats.service';
+import { GetPublicPlatformStatsService } from './services/get-public-platform-stats.service';
 import { ListAllStoresService } from './services/list-all-stores.service';
 import { ToggleStoreStatusService } from './services/toggle-store-status.service';
 import { ListAllSystemOrdersService } from './services/list-all-system-orders.service';
@@ -27,6 +28,7 @@ import { Body, Put } from '@nestjs/common';
 export class AdminController {
   constructor(
     private readonly getPlatformStatsService: GetPlatformStatsService,
+    private readonly getPublicPlatformStatsService: GetPublicPlatformStatsService,
     private readonly listAllStoresService: ListAllStoresService,
     private readonly toggleStoreStatusService: ToggleStoreStatusService,
     private readonly listAllSystemOrdersService: ListAllSystemOrdersService,
@@ -43,6 +45,17 @@ export class AdminController {
   @ApiResponse({ status: 200, description: 'Platform statistics overview' })
   async getStats() {
     return this.getPlatformStatsService.execute();
+  }
+
+  /**
+   * Public on purpose — the marketing site renders these totals for anonymous
+   * visitors. Only coarse aggregates are returned; no per-merchant detail.
+   */
+  @Get('public-stats')
+  @ApiOperation({ summary: 'Get aggregated public platform figures for the landing page' })
+  @ApiResponse({ status: 200, description: 'Public platform statistics' })
+  async getPublicStats() {
+    return this.getPublicPlatformStatsService.execute();
   }
 
   @Get('stores')

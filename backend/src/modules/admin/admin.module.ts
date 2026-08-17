@@ -6,6 +6,7 @@ import { StoreEntity } from '../tenant/entities/store.entity';
 import { OrderEntity } from '../order/entities/order.entity';
 import { UserEntity } from '../user/entities/user.entity';
 import { GetPlatformStatsService } from './services/get-platform-stats.service';
+import { GetPublicPlatformStatsService } from './services/get-public-platform-stats.service';
 import { ListAllStoresService } from './services/list-all-stores.service';
 import { ToggleStoreStatusService } from './services/toggle-store-status.service';
 import { ListAllSystemOrdersService } from './services/list-all-system-orders.service';
@@ -36,6 +37,7 @@ import { SmsModule } from '../sms/sms.module';
   controllers: [AdminController, AdminDashboardController],
   providers: [
     GetPlatformStatsService,
+    GetPublicPlatformStatsService,
     ListAllStoresService,
     ToggleStoreStatusService,
     ListAllSystemOrdersService,
@@ -47,6 +49,7 @@ import { SmsModule } from '../sms/sms.module';
   ],
   exports: [
     GetPlatformStatsService,
+    GetPublicPlatformStatsService,
     ListAllStoresService,
     ToggleStoreStatusService,
     ListAllSystemOrdersService,

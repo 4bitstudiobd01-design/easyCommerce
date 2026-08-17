@@ -40,6 +40,17 @@ export class SubscriptionEntity {
   @Column({ type: 'timestamptz', nullable: true })
   gracePeriodEndsAt: Date | null;
 
+  /**
+   * A downgrade the merchant scheduled for the end of the paid period. They
+   * keep the current plan's features until then, so nothing they already paid
+   * for is taken away early. Cleared if they cancel the scheduled change.
+   */
+  @Column({ type: 'uuid', nullable: true })
+  pendingPlanId: string | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  pendingPlanEffectiveAt: Date | null;
+
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 

@@ -13,7 +13,7 @@ export class ListPlansService {
   async execute(): Promise<PlanEntity[]> {
     return this.planRepository.find({
       where: { isActive: true },
-      order: { monthlyPriceBdt: 'ASC' },
+      order: { displayOrder: 'ASC', monthlyPriceBdt: 'ASC' },
     });
   }
 }

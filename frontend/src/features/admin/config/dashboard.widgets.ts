@@ -369,4 +369,25 @@ export const WIDGET_REGISTRY: Record<string, RegisteredWidget> = {
     refreshIntervalMs: 60000,
     defaultLayout: { colSpan: { sm: 12, md: 12, lg: 6, xl: 6 }, order: 15 },
   },
+  'public-stats': {
+    id: 'public-stats',
+    name: 'Public Landing Page Figures',
+    description: 'Aggregated totals published to anonymous visitors',
+    category: 'infrastructure',
+    component: React.lazy(() =>
+      import('../components/widgets/PublicStatsWidget').then((module) => ({
+        default: module.PublicStatsWidget,
+      }))
+    ),
+    requiredPermissions: ['admin.infrastructure.read'],
+    visibility: 'visible',
+    isEnabled: true,
+    isPinned: false,
+    isCollapsible: true,
+    isResizable: false,
+    isMovable: true,
+    isLazy: true,
+    refreshStrategy: 'manual',
+    defaultLayout: { colSpan: { sm: 12, md: 12, lg: 6, xl: 6 }, order: 16 },
+  },
 };

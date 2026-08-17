@@ -16,6 +16,10 @@ export function Pricing() {
         'Automated Steadfast & Pathao Courier Booking',
       ],
       cta: 'Start For Free',
+      // Every plan starts with signup: this section is seen by logged-out
+      // visitors, so linking straight to billing settings would bounce them
+      // through the auth redirect instead of into the product.
+      ctaHref: '/register',
       popular: false,
     },
     {
@@ -29,7 +33,8 @@ export function Pricing() {
         'Everything in Free',
         'Priority Support',
       ],
-      cta: 'Upgrade to Growth',
+      cta: 'Start with Growth',
+      ctaHref: '/register',
       popular: true,
     },
     {
@@ -43,7 +48,8 @@ export function Pricing() {
         'Everything in Growth',
         'Custom SLA & Dedicated Support',
       ],
-      cta: 'Upgrade to Enterprise',
+      cta: 'Start with Enterprise',
+      ctaHref: '/register',
       popular: false,
     },
   ];
@@ -102,7 +108,7 @@ export function Pricing() {
 
               <div className="pt-8">
                 <Link
-                  href={plan.name === 'Free Plan' ? '/register' : '/dashboard/settings/billing'}
+                  href={plan.ctaHref}
                   className={`w-full py-3.5 px-4 font-bold text-sm rounded-xl flex items-center justify-center gap-2 transition-colors shadow-md ${
                     plan.popular
                       ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-600/20'

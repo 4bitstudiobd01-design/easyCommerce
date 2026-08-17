@@ -725,7 +725,7 @@ export function Navbar() {
             </Link>
 
             <Link
-              href="/about"
+              href="/changelog"
               onClick={() => setIsMobileMenuOpen(false)}
               className="p-3 bg-slate-50/80 rounded-2xl border border-slate-100 flex items-center justify-between text-xs font-bold text-slate-900 active:scale-[0.98] transition-all"
             >
