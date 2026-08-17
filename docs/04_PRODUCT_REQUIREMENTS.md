@@ -1,6 +1,6 @@
 # 04_PRODUCT_REQUIREMENTS.md - Product Requirements Document (PRD)
 
-# EasyCommerce Product Requirements Document
+# BitCommerce Product Requirements Document
 
 **Version:** 0.1.0  
 **Status:** Draft  
@@ -11,7 +11,7 @@
 
 ### 1.1 Merchant Onboarding & Store Creation
 * **FR-1.1**: The system must allow a merchant to register using Email or Phone (OTP).
-* **FR-1.2**: Upon registration, a tenant workspace and default store URL (`store.easycommerce.app`) must be automatically provisioned within 10 seconds.
+* **FR-1.2**: Upon registration, a tenant workspace and default store URL (`store.bitcommerce.app`) must be automatically provisioned within 10 seconds.
 * **FR-1.3**: Merchants must be able to bind custom domains with automated Let's Encrypt SSL provisioning.
 
 ### 1.2 Multi-Tenant Catalog Management

@@ -1,6 +1,6 @@
 # 03_FEATURE_INVENTORY.md - Detailed Feature Inventory
 
-# EasyCommerce Feature Inventory & Module Mapping
+# BitCommerce Feature Inventory & Module Mapping
 
 **Version:** 0.1.0  
 **Status:** Draft  
@@ -16,7 +16,7 @@
 
 ### 2. Tenant & Organization Module
 * **TNT-001 Store Management**: Multi-store creation under a single merchant account.
-* **TNT-002 Domain Management**: Subdomains (`merchant.easycommerce.app`) & Custom domain mapping (`merchant.com` with SSL).
+* **TNT-002 Domain Management**: Subdomains (`merchant.bitcommerce.app`) & Custom domain mapping (`merchant.com` with SSL).
 * **TNT-003 Subscriptions**: Tiered plans (Free, Starter, Growth, Enterprise), usage limits, automated subscription renewals.
 
 ### 3. Storefront & CMS Module

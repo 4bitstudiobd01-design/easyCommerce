@@ -26,8 +26,8 @@ describe('Category Image + SEO + Display Settings (Chunk 6)', () => {
         parentId: null,
         status: CategoryStatus.ACTIVE,
         sortOrder: 0,
-        image: 'https://cdn.easycommerce.app/uploads/fashion.jpg',
-        seoTitle: 'Fashion & Apparel BD | EasyCommerce',
+        image: 'https://cdn.bitcommerce.app/uploads/fashion.jpg',
+        seoTitle: 'Fashion & Apparel BD | BitCommerce',
         metaDescription: 'Shop trendy men and women clothing with home delivery across Bangladesh.',
         isVisible: true,
         showInStorefront: true,
@@ -44,7 +44,7 @@ describe('Category Image + SEO + Display Settings (Chunk 6)', () => {
         parentId: null,
         status: CategoryStatus.ACTIVE,
         sortOrder: 0,
-        image: 'https://cdn.easycommerce.app/uploads/storeb.jpg',
+        image: 'https://cdn.bitcommerce.app/uploads/storeb.jpg',
         seoTitle: 'Store B Exclusive Collection',
         metaDescription: 'Store B exclusive products',
         isVisible: true,
@@ -102,8 +102,8 @@ describe('Category Image + SEO + Display Settings (Chunk 6)', () => {
         name: 'Footwear & Shoes',
         slug: 'footwear-shoes',
         description: 'Men and women shoes',
-        image: 'https://cdn.easycommerce.app/uploads/shoes.webp',
-        seoTitle: 'Footwear & Shoes Collection | EasyCommerce',
+        image: 'https://cdn.bitcommerce.app/uploads/shoes.webp',
+        seoTitle: 'Footwear & Shoes Collection | BitCommerce',
         metaDescription: 'Shop sneakers, formal shoes, and loafers online with fast courier delivery.',
         isVisible: true,
         showInStorefront: true,
@@ -113,8 +113,8 @@ describe('Category Image + SEO + Display Settings (Chunk 6)', () => {
       expect(result).toBeDefined();
       expect(result.name).toBe('Footwear & Shoes');
       expect(result.slug).toBe('footwear-shoes');
-      expect(result.image).toBe('https://cdn.easycommerce.app/uploads/shoes.webp');
-      expect(result.seoTitle).toBe('Footwear & Shoes Collection | EasyCommerce');
+      expect(result.image).toBe('https://cdn.bitcommerce.app/uploads/shoes.webp');
+      expect(result.seoTitle).toBe('Footwear & Shoes Collection | BitCommerce');
       expect(result.metaDescription).toBe(
         'Shop sneakers, formal shoes, and loafers online with fast courier delivery.',
       );
@@ -151,11 +151,11 @@ describe('Category Image + SEO + Display Settings (Chunk 6)', () => {
 
     it('should replace category image URL', async () => {
       const updated = await updateService.execute('cat-fashion', tenantA, {
-        image: 'https://cdn.easycommerce.app/uploads/fashion-new-banner.webp',
+        image: 'https://cdn.bitcommerce.app/uploads/fashion-new-banner.webp',
       });
 
       expect(updated.image).toBe(
-        'https://cdn.easycommerce.app/uploads/fashion-new-banner.webp',
+        'https://cdn.bitcommerce.app/uploads/fashion-new-banner.webp',
       );
     });
 

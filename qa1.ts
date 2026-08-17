@@ -1,6 +1,6 @@
 import { AppDataSource } from './src/database/data-source';
 import * as jwtLib from 'jsonwebtoken';
-const SEC=process.env.JWT_SECRET||'easycommerce_jwt_secret_key_change_in_prod';
+const SEC=process.env.JWT_SECRET||'bitcommerce_jwt_secret_key_change_in_prod';
 const API='http://localhost:5001/api/v1/catalog';
 let H:any={}; const created:string[]=[];
 let pass=0, fail=0;

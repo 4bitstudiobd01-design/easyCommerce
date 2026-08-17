@@ -72,7 +72,7 @@ export function DashboardShowcaseSection() {
                       <ShoppingBag className="w-4 h-4" />
                     </div>
                     <div>
-                      <p className="font-extrabold text-xs text-white tracking-tight leading-none">EasyCommerce</p>
+                      <p className="font-extrabold text-xs text-white tracking-tight leading-none">BitCommerce</p>
                       <p className="text-[9px] text-slate-500 font-medium mt-0.5">Dashboard Admin</p>
                     </div>
                   </div>

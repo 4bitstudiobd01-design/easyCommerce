@@ -3,8 +3,8 @@ import { RegisterForm } from '@/features/auth/components/RegisterForm';
 import { Rocket, CreditCard, ShieldCheck, Headphones, Heart, ShoppingBag } from 'lucide-react';
 
 export const metadata = {
-  title: 'Merchant Registration | EasyCommerce',
-  description: 'Create your merchant store account on EasyCommerce SaaS platform.',
+  title: 'Merchant Registration | BitCommerce',
+  description: 'Create your merchant store account on BitCommerce SaaS platform.',
 };
 
 const HIGHLIGHTS = [
@@ -59,7 +59,7 @@ export default function RegisterPage() {
                 <ShoppingBag className="w-5 h-5 fill-current" strokeWidth={1.5} />
               </div>
               <div className="flex flex-col">
-                <span className="font-extrabold text-[22px] text-slate-900 tracking-tight leading-none">EasyCommerce</span>
+                <span className="font-extrabold text-[22px] text-slate-900 tracking-tight leading-none">BitCommerce</span>
                 <span className="text-slate-500 text-[12px] font-medium mt-1">Build. Manage. Grow.</span>
               </div>
             </Link>
@@ -76,7 +76,7 @@ export default function RegisterPage() {
               <span className="text-blue-600">journey today</span>
             </h1>
             <p className="text-slate-600 text-[13px] font-medium leading-relaxed max-w-[340px] mb-9">
-              Create your EasyCommerce merchant account and launch your online store in minutes.
+              Create your BitCommerce merchant account and launch your online store in minutes.
             </p>
 
             {/* Highlights */}
@@ -99,7 +99,7 @@ export default function RegisterPage() {
             <div className="mt-auto pt-8">
               <img
                 src="/dashboard-mockup.jpg"
-                alt="EasyCommerce merchant dashboard preview"
+                alt="BitCommerce merchant dashboard preview"
                 className="w-auto max-w-full max-h-[340px] xl:max-h-[380px] h-auto object-contain object-left-bottom mix-blend-multiply"
               />
             </div>

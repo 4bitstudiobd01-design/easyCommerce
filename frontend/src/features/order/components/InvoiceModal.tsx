@@ -62,7 +62,7 @@ export function InvoiceModal({ isOpen, onClose, order }: InvoiceModalProps) {
           <div className="flex items-start justify-between border-b border-slate-200 pb-4">
             <div>
               <span className="font-extrabold text-lg text-slate-900 tracking-tight block">
-                EasyCommerce Store
+                BitCommerce Store
               </span>
               <p className="text-[11px] text-slate-500 mt-0.5">SaaS Multi-Tenant E-Commerce Platform</p>
             </div>

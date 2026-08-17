@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import { EditOrderPage } from '@/features/order/components/EditOrderPage';
 
 export const metadata: Metadata = {
-  title: 'Edit Order | EasyCommerce',
+  title: 'Edit Order | BitCommerce',
   description: 'Modify an existing order',
 };
 

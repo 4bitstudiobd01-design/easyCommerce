@@ -1,6 +1,6 @@
-# 📅 EasyCommerce Work Summary — August 5, 2026
+# 📅 BitCommerce Work Summary — August 5, 2026
 
-**Project:** EasyCommerce (SaaS Multi-Tenant E-Commerce Platform)  
+**Project:** BitCommerce (SaaS Multi-Tenant E-Commerce Platform)  
 **Date:** August 5, 2026  
 **Status:** All Tasks Complete & Build Verification Passed (`0` errors on both NestJS Backend & Next.js Frontend).
 
@@ -34,7 +34,7 @@
 ---
 
 ## 🔑 Admin Credentials
-- **Email**: `admin@easycommerce.com`
+- **Email**: `admin@bitcommerce.com`
 - **Password**: `AdminPassword123!`
 - **Route**: `http://localhost:3000/login`
 

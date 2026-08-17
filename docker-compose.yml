@@ -3,7 +3,7 @@ version: '3.8'
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: easycommerce_postgres
+    container_name: bitcommerce_postgres
     restart: always
     environment:
       POSTGRES_USER: postgres
@@ -21,7 +21,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: easycommerce_redis
+    container_name: bitcommerce_redis
     restart: always
     ports:
       - "6379:6379"

@@ -1,6 +1,6 @@
 # 01_DEVELOPMENT.md - Development Workflow & Coding Standards
 
-# EasyCommerce Development Standards & Definition of Done
+# BitCommerce Development Standards & Definition of Done
 
 ---
 

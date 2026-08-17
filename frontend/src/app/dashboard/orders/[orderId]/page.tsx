@@ -3,7 +3,7 @@ import { OrderDetails } from '@/features/order/components/OrderDetails';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Order Details | EasyCommerce',
+  title: 'Order Details | BitCommerce',
   description: 'View order details, status, and fulfillment information.',
 };
 

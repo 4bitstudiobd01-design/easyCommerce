@@ -30,7 +30,7 @@ export default function DomainSettingsPage() {
     }
   };
 
-  const cnameRecord = 'cname.easycommerce.com';
+  const cnameRecord = 'cname.bitcommerce.com';
 
   const copyCname = () => {
     navigator.clipboard.writeText(cnameRecord);
@@ -76,10 +76,10 @@ export default function DomainSettingsPage() {
               </label>
               <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-500">
                 <span className="text-slate-900 font-bold">{store?.slug}</span>
-                <span>.easycommerce.com</span>
+                <span>.bitcommerce.com</span>
               </div>
               <p className="text-[10px] text-slate-400 mt-1 font-normal">
-                Your default free subdomain provided by EasyCommerce.
+                Your default free subdomain provided by BitCommerce.
               </p>
             </div>
 

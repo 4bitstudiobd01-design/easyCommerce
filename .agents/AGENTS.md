@@ -1,6 +1,6 @@
-# EasyCommerce Workspace Agent Rules & Guidelines
+# BitCommerce Workspace Agent Rules & Guidelines
 
-This directory contains the core operating instructions and architectural constraints for AI software engineering tasks in EasyCommerce.
+This directory contains the core operating instructions and architectural constraints for AI software engineering tasks in BitCommerce.
 
 ---
 

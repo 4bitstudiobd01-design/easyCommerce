@@ -1,6 +1,6 @@
-# 🌙 EasyCommerce Handover & Roadmap Summary
+# 🌙 BitCommerce Handover & Roadmap Summary
 
-**Project:** EasyCommerce (SaaS Multi-Tenant E-Commerce Platform)  
+**Project:** BitCommerce (SaaS Multi-Tenant E-Commerce Platform)  
 **Status:** All Features Built, Migrated & Verified with 0 Build Errors (`npm run build` PASSED for Backend & Frontend).
 
 ---
@@ -50,4 +50,4 @@
 ## 🎯 Recommended Next Step
 
 1. **Production VPS Deployment Setup (Docker / Nginx / SSL)**
-   - Prepare Docker Compose, Nginx Reverse Proxy, and SSL Certificate (Certbot) configurations to host EasyCommerce live on VPS.
+   - Prepare Docker Compose, Nginx Reverse Proxy, and SSL Certificate (Certbot) configurations to host BitCommerce live on VPS.

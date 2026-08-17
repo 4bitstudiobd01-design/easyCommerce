@@ -1,6 +1,6 @@
 # 05_SYSTEM_ARCHITECTURE.md - System Architecture
 
-# EasyCommerce System Architecture Overview
+# BitCommerce System Architecture Overview
 
 **Version:** 0.1.0  
 **Status:** Draft  
@@ -9,7 +9,7 @@
 
 ## 1. Architectural Pattern: Modular Monolith
 
-EasyCommerce uses a **Modular Monolith** pattern. All modules live within a unified codebase but maintain strict boundary enforcement.
+BitCommerce uses a **Modular Monolith** pattern. All modules live within a unified codebase but maintain strict boundary enforcement.
 
 ```
 +-------------------------------------------------------------------+
@@ -51,7 +51,7 @@ EasyCommerce uses a **Modular Monolith** pattern. All modules live within a unif
 
 ## 3. Multi-Tenancy Strategy
 
-EasyCommerce implements **Discriminator / Row-Level Multi-Tenancy** backed by PostgreSQL security policies:
+BitCommerce implements **Discriminator / Row-Level Multi-Tenancy** backed by PostgreSQL security policies:
 
 * Every tenant table includes a `tenant_id` foreign key.
 * Database queries in NestJS repositories automatically inject `tenant_id` context via scoped execution contexts or TypeORM middleware.

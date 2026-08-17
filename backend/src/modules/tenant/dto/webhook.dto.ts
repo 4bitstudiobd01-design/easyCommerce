@@ -11,7 +11,7 @@ import {
 import { WebhookEventEnum } from '../entities/webhook.entity';
 
 export class CreateWebhookDto {
-  @ApiProperty({ example: 'https://example.com/hooks/easycommerce' })
+  @ApiProperty({ example: 'https://example.com/hooks/bitcommerce' })
   @IsUrl({ require_tld: false })
   @IsNotEmpty()
   targetUrl: string;

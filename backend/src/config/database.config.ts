@@ -15,7 +15,7 @@ export const typeOrmConfig = (
     configService.get<string>('DB_USER') ??
     configService.get<string>('DB_USERNAME', 'postgres'),
   password: configService.get<string>('DB_PASSWORD', 'postgres'),
-  database: configService.get<string>('DB_NAME', 'easycommerce'),
+  database: configService.get<string>('DB_NAME', 'bitcommerce'),
   autoLoadEntities: true,
   synchronize: configService.get<string>('DB_SYNCHRONIZE') === 'true',
   migrations: [join(__dirname, '..', 'database', 'migrations', '*{.ts,.js}')],

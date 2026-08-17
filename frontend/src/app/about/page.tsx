@@ -4,8 +4,8 @@ import { Footer } from '@/components/landing/Footer';
 import { Store, ShieldCheck, Globe, Zap, Heart, ArrowRight } from 'lucide-react';
 
 export const metadata = {
-  title: 'About Us | EasyCommerce',
-  description: 'Learn about EasyCommerce — Bangladesh #1 Enterprise Multi-Tenant eCommerce SaaS Engine.',
+  title: 'About Us | BitCommerce',
+  description: 'Learn about BitCommerce — Bangladesh #1 Enterprise Multi-Tenant eCommerce SaaS Engine.',
 };
 
 export default function AboutPage() {
@@ -23,7 +23,7 @@ export default function AboutPage() {
             Empowering Every Bangladeshi Merchant To Scale Online
           </h1>
           <p className="text-slate-600 text-base md:text-lg leading-relaxed">
-            EasyCommerce was built with a single goal: to democratize eCommerce technology in Bangladesh. We give D2C brands, retail merchants, and creators enterprise-grade tools with zero coding required.
+            BitCommerce was built with a single goal: to democratize eCommerce technology in Bangladesh. We give D2C brands, retail merchants, and creators enterprise-grade tools with zero coding required.
           </p>
         </div>
 

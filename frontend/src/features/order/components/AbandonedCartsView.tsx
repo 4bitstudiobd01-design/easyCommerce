@@ -251,7 +251,7 @@ export const AbandonedCartsView = () => {
       const url = window.URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = url;
-      anchor.download = `easycommerce-abandoned-carts-${new Date().toISOString().slice(0, 10)}.csv`;
+      anchor.download = `bitcommerce-abandoned-carts-${new Date().toISOString().slice(0, 10)}.csv`;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();

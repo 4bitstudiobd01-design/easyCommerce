@@ -1,6 +1,6 @@
 # 08_DEVELOPMENT_GUIDE.md - Development & Contribution Guide
 
-# EasyCommerce Developer Setup & Coding Standards
+# BitCommerce Developer Setup & Coding Standards
 
 **Version:** 0.1.0  
 **Status:** Draft  

@@ -151,7 +151,7 @@ export function RegisterForm() {
         {/* Header */}
         <div className="text-center mb-7">
           <h2 className="text-[24px] font-extrabold text-slate-900 tracking-tight mb-1.5">Create your account</h2>
-          <p className="text-[13px] font-medium text-slate-500">Join thousands of merchants using EasyCommerce</p>
+          <p className="text-[13px] font-medium text-slate-500">Join thousands of merchants using BitCommerce</p>
         </div>
 
         {errorMsg && (
@@ -415,7 +415,7 @@ export function RegisterForm() {
           <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
           <span>Your data is protected with industry-standard security.</span>
         </div>
-        <p className="text-[11.5px] font-medium text-slate-400">© 2026 EasyCommerce. All rights reserved.</p>
+        <p className="text-[11.5px] font-medium text-slate-400">© 2026 BitCommerce. All rights reserved.</p>
       </div>
     </div>
   );

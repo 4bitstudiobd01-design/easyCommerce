@@ -20,7 +20,7 @@ export class SuperAdminSeederService implements OnModuleInit {
   }
 
   async seedSuperAdmin() {
-    const adminEmail = this.configService.get<string>('SUPER_ADMIN_EMAIL', 'admin@easycommerce.com');
+    const adminEmail = this.configService.get<string>('SUPER_ADMIN_EMAIL', 'admin@bitcommerce.com');
     const rawPassword = this.configService.get<string>('SUPER_ADMIN_PASSWORD', 'AdminPassword123!');
 
     const existingAdmin = await this.userRepository.findOne({
@@ -33,7 +33,7 @@ export class SuperAdminSeederService implements OnModuleInit {
       const superAdmin = this.userRepository.create({
         email: adminEmail,
         passwordHash,
-        fullName: 'EasyCommerce Super Admin',
+        fullName: 'BitCommerce Super Admin',
         role: UserRoleEnum.SUPER_ADMIN,
         isActive: true,
       });

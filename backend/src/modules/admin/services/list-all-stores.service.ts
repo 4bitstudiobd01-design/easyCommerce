@@ -65,7 +65,7 @@ export class ListAllStoresService {
         tenantId: store.tenantId,
         ownerId: store.ownerId,
         ownerName: owner?.fullName || 'Merchant Owner',
-        ownerEmail: owner?.email || 'merchant@easycommerce.com',
+        ownerEmail: owner?.email || 'merchant@bitcommerce.com',
         ordersCount: storeOrders.length,
         totalRevenue,
         createdAt: store.createdAt,

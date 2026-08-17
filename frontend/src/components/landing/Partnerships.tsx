@@ -98,7 +98,7 @@ export function Partnerships() {
         <div className="max-w-4xl mx-auto px-6">
           <div className="p-8 bg-blue-50 border border-blue-200 rounded-3xl space-y-4 text-center shadow-sm">
             <h3 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
-              Take Your Business Online, Effortlessly with EasyCommerce
+              Take Your Business Online, Effortlessly with BitCommerce
             </h3>
             <p className="text-slate-600 text-xs md:text-sm max-w-xl mx-auto">
               Zero-code store setup, bKash/Nagad checkout, and automated Steadfast/Pathao courier booking — ready the moment you launch.

@@ -1,6 +1,6 @@
 # 09_ROADMAP.md - Project Roadmap
 
-# EasyCommerce Development Roadmap & Milestones
+# BitCommerce Development Roadmap & Milestones
 
 **Version:** 0.1.0  
 **Status:** Active  

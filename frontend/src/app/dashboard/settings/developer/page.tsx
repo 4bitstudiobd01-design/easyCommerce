@@ -135,7 +135,7 @@ export default function DeveloperSettingsPage() {
               <KeyRound className="w-7 h-7 text-slate-300 mx-auto mb-2" />
               <p className="text-[13px] font-bold text-slate-900">No API keys yet</p>
               <p className="text-[11.5px] font-medium text-slate-500 mt-1">
-                Generate a key above to start using the EasyCommerce API.
+                Generate a key above to start using the BitCommerce API.
               </p>
             </div>
           ) : (

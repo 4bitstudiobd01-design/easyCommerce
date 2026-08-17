@@ -1,8 +1,8 @@
 {
-  "name": "easycommerce-backend",
+  "name": "bitcommerce-backend",
   "version": "0.1.0",
-  "description": "EasyCommerce NestJS Backend API",
-  "author": "EasyCommerce Engineering",
+  "description": "BitCommerce NestJS Backend API",
+  "author": "BitCommerce Engineering",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {

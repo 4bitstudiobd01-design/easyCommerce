@@ -291,7 +291,7 @@ export default function ProductDetailsPage() {
                   {store?.slug && (
                     <a
                       role="menuitem"
-                      href={`https://${store.slug}.easycommerce.io/products/${product.slug}`}
+                      href={`https://${store.slug}.bitcommerce.io/products/${product.slug}`}
                       target="_blank"
                       rel="noreferrer"
                       className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 rounded-lg flex items-center gap-2"

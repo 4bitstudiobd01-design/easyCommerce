@@ -105,8 +105,8 @@ export function ProductListTable({
       if (productTypeFilter && productTypeFilter !== 'ALL') params.set('productType', productTypeFilter);
     }
 
-    const token = localStorage.getItem('easycommerce_token');
-    const storeId = localStorage.getItem('easycommerce_active_store_id');
+    const token = localStorage.getItem('bitcommerce_token');
+    const storeId = localStorage.getItem('bitcommerce_active_store_id');
 
     fetch(`${apiUrl}/products/export?${params.toString()}`, {
       headers: {

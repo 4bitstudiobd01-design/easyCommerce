@@ -1,6 +1,6 @@
 # 02_ARCHITECTURE.md - Architecture Constraints & Boundaries
 
-# EasyCommerce Architecture Constraints & Monorepo Standards
+# BitCommerce Architecture Constraints & Monorepo Standards
 
 ---
 

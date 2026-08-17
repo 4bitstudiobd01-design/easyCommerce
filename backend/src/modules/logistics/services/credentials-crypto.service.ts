@@ -43,7 +43,7 @@ export class CredentialsCryptoService {
 
     const material =
       configured ??
-      this.configService.get<string>('JWT_SECRET', 'easycommerce_jwt_secret_key_change_in_prod');
+      this.configService.get<string>('JWT_SECRET', 'bitcommerce_jwt_secret_key_change_in_prod');
 
     // Hashing accepts a passphrase of any length while always yielding the
     // 32 bytes AES-256 requires.

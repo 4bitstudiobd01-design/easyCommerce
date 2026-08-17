@@ -124,7 +124,7 @@ export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onCl
             {!isDesktopCollapsed && (
               <div>
                 <span className="font-extrabold text-sm text-white tracking-tight block leading-none">
-                  EasyCommerce
+                  BitCommerce
                 </span>
                 <span className="text-[10px] text-blue-400 font-semibold mt-1 block leading-none">
                   Merchant Admin

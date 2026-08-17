@@ -57,7 +57,7 @@ export function TopMerchantsWidget({
               </div>
               <div className="truncate">
                 <span className="font-extrabold text-slate-900 dark:text-white block truncate">{merchant.name}</span>
-                <span className="text-[10px] text-blue-600 dark:text-blue-400 font-mono block truncate">{merchant.slug}.easycommerce.app</span>
+                <span className="text-[10px] text-blue-600 dark:text-blue-400 font-mono block truncate">{merchant.slug}.bitcommerce.app</span>
               </div>
             </div>
 

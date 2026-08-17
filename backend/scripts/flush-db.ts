@@ -4,7 +4,7 @@ dotenv.config();
 import { AppDataSource } from '../src/database/data-source';
 
 async function flushDatabase() {
-  console.log('⚡ EasyCommerce Database Flush Utility');
+  console.log('⚡ BitCommerce Database Flush Utility');
   console.log('----------------------------------------');
 
   if (process.env.NODE_ENV === 'production') {

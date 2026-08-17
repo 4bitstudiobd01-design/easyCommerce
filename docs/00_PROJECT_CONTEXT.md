@@ -1,6 +1,6 @@
 # PROJECT_CONTEXT.md
 
-# EasyCommerce
+# BitCommerce
 
 **Version:** 0.1.0
 
@@ -8,7 +8,7 @@
 
 # Project Overview
 
-EasyCommerce is a modern, enterprise-grade, multi-tenant eCommerce SaaS platform inspired by platforms like Shopify and Zatiq Easy.
+BitCommerce is a modern, enterprise-grade, multi-tenant eCommerce SaaS platform inspired by platforms like Shopify and Zatiq Easy.
 
 This project is **NOT** intended to be a direct clone of any existing platform. The goal is to build a cleaner, more scalable, and more maintainable solution using modern architecture and engineering best practices.
 

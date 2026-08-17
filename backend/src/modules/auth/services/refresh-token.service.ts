@@ -29,7 +29,7 @@ export class RefreshTokenService {
     let payload: { sub: string; email: string; role: string };
     try {
       payload = this.jwtService.verify(refreshToken, {
-        secret: process.env.JWT_SECRET || 'easycommerce_jwt_secret_key_change_in_prod',
+        secret: process.env.JWT_SECRET || 'bitcommerce_jwt_secret_key_change_in_prod',
       });
     } catch {
       throw new UnauthorizedException('Refresh token is invalid or has expired');

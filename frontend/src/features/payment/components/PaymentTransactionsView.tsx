@@ -240,10 +240,10 @@ export const PaymentTransactionsView = () => {
         'http://localhost:5001/api/v1';
 
       const token =
-        typeof window !== 'undefined' ? localStorage.getItem('easycommerce_token') : null;
+        typeof window !== 'undefined' ? localStorage.getItem('bitcommerce_token') : null;
       const activeStoreId =
         typeof window !== 'undefined'
-          ? localStorage.getItem('easycommerce_active_store_id')
+          ? localStorage.getItem('bitcommerce_active_store_id')
           : null;
 
       const headers: Record<string, string> = {};

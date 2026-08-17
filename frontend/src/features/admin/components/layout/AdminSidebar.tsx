@@ -57,7 +57,7 @@ export function AdminSidebar() {
         </div>
         <div>
           <span className="font-extrabold text-base text-slate-900 tracking-tight block leading-tight">
-            EasyCommerce
+            BitCommerce
           </span>
           <span className="text-[10px] font-extrabold text-blue-600 uppercase tracking-wider block">
             Super Admin Panel
@@ -124,7 +124,7 @@ export function AdminSidebar() {
             </div>
             <div className="truncate">
               <p className="text-xs font-bold text-slate-900 truncate">{user?.fullName || 'Super Admin'}</p>
-              <p className="text-[10px] text-slate-500 truncate">{user?.email || 'admin@easycommerce.com'}</p>
+              <p className="text-[10px] text-slate-500 truncate">{user?.email || 'admin@bitcommerce.com'}</p>
             </div>
           </div>
           <button

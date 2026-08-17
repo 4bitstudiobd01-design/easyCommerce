@@ -8,8 +8,8 @@ export function FaqSection() {
 
   const faqs = [
     {
-      q: 'How fast can I launch my online store with EasyCommerce?',
-      a: 'In minutes. Register with your email, choose your store name, and your storefront is live immediately at your own store.easycommerce.app address — no developer needed.',
+      q: 'How fast can I launch my online store with BitCommerce?',
+      a: 'In minutes. Register with your email, choose your store name, and your storefront is live immediately at your own store.bitcommerce.app address — no developer needed.',
     },
     {
       q: 'Do I need developer skills to set up bKash, Nagad, or Steadfast courier?',
@@ -17,15 +17,15 @@ export function FaqSection() {
     },
     {
       q: 'Can I connect my own custom domain (e.g. merchant.com)?',
-      a: 'Custom domain binding is on our roadmap and not yet available. Every store gets a free store.easycommerce.app subdomain today.',
+      a: 'Custom domain binding is on our roadmap and not yet available. Every store gets a free store.bitcommerce.app subdomain today.',
     },
     {
-      q: 'How does EasyCommerce handle inventory management?',
-      a: 'EasyCommerce uses a decoupled inventory domain. Product definitions (titles, prices, SEO) are kept separate from physical stock levels, allowing you to track available stock across multiple warehouses effortlessly.',
+      q: 'How does BitCommerce handle inventory management?',
+      a: 'BitCommerce uses a decoupled inventory domain. Product definitions (titles, prices, SEO) are kept separate from physical stock levels, allowing you to track available stock across multiple warehouses effortlessly.',
     },
     {
       q: 'Is my store data isolated securely from other merchants?',
-      a: 'Yes. EasyCommerce uses row-level multi-tenancy in the database, so every query is scoped to your store — other merchants can never see or access your data.',
+      a: 'Yes. BitCommerce uses row-level multi-tenancy in the database, so every query is scoped to your store — other merchants can never see or access your data.',
     },
   ];
 
@@ -34,7 +34,7 @@ export function FaqSection() {
   };
 
   return (
-    <section id="faq" className="py-20 px-6 bg-white border-t border-slate-200">
+    <section id="faq" className="py-20 px-6 bg-white border-t border-slate-200 scroll-mt-16">
       <div className="max-w-4xl mx-auto space-y-12">
         <div className="text-center space-y-4">
           <span className="text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">

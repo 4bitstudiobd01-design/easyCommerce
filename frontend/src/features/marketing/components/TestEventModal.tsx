@@ -26,7 +26,7 @@ export function TestEventModal({
   const samplePayloads: Record<string, any> = {
     PageView: {
       event_name: 'PageView',
-      event_source_url: 'https://easycommerce.store/products/silk-panjabi',
+      event_source_url: 'https://bitcommerce.store/products/silk-panjabi',
       user_data: { client_ip_address: '103.145.118.24', client_user_agent: 'Mozilla/5.0 Chrome/122.0' },
     },
     ViewContent: {

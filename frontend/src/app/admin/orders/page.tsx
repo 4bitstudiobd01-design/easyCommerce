@@ -78,7 +78,7 @@ export default function AdminOrdersPage() {
                   </td>
                   <td className="px-6 py-4">
                     <span className="font-bold text-slate-900 block">{order.storeName}</span>
-                    <span className="text-[10px] font-mono text-slate-400">{order.storeSlug}.easycommerce.app</span>
+                    <span className="text-[10px] font-mono text-slate-400">{order.storeSlug}.bitcommerce.app</span>
                   </td>
                   <td className="px-6 py-4">
                     <span className="font-bold text-slate-900 block">{order.customerName}</span>

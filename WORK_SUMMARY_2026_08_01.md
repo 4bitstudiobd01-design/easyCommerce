@@ -1,17 +1,17 @@
-# EasyCommerce Fullstack Master Work Summary
+# BitCommerce Fullstack Master Work Summary
 
 **Date:** August 02, 2026  
-**Project:** EasyCommerce (SaaS Multi-Tenant E-Commerce Platform)  
+**Project:** BitCommerce (SaaS Multi-Tenant E-Commerce Platform)  
 **Architecture:** NestJS Modular Monolith + Single Responsibility Principle (SRP) Services + TypeORM CLI Migrations + Next.js 14 App Router + Redux Toolkit & RTK Query.
 
 ---
 
 ## 🏛️ Executive Architectural Overview
 
-Today, the entire `EasyCommerce` multi-tenant e-commerce platform was built and structured from the ground up following production-grade engineering principles:
+Today, the entire `BitCommerce` multi-tenant e-commerce platform was built and structured from the ground up following production-grade engineering principles:
 
 ```text
-EasyCommerce/backend/src/
+BitCommerce/backend/src/
 ├── common/             # Shared filters, interceptors, guards, decorators, errors
 ├── config/             # Dynamic configuration factories (database.config.ts)
 ├── database/           # TypeORM Data Source (data-source.ts) & 13 CLI Migrations
@@ -81,7 +81,7 @@ EasyCommerce/backend/src/
 - **Frontend Routes:** Global `/track` and Store-specific `/store/[slug]/track`.
 
 ### 🌐 11. Subdomain Wildcard Routing Middleware & Dynamic SEO System (Option C)
-- **Frontend Middleware:** [middleware.ts](file:///Users/sumon/Desktop/EasyCommerce/frontend/src/middleware.ts) (Subdomain wildcard URL rewrite to `/store/[slug]`, e.g. `http://sumon-fashion.localhost:3000`).
+- **Frontend Middleware:** [middleware.ts](file:///Users/sumon/Desktop/BitCommerce/frontend/src/middleware.ts) (Subdomain wildcard URL rewrite to `/store/[slug]`, e.g. `http://sumon-fashion.localhost:3000`).
 
 ### 👑 12. Platform Super-Admin Control Panel System (`/admin` Route)
 - **Backend Services:** `GetPlatformStatsService`, `ListAllStoresService`, `ListAllSystemOrdersService`, `ToggleStoreStatusService`, `SuperAdminSeederService`.

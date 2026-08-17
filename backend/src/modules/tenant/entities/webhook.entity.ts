@@ -19,7 +19,7 @@ export enum WebhookEventEnum {
 
 /**
  * An outbound webhook endpoint. Each delivery is signed with `secret` using
- * HMAC-SHA256 over the raw JSON body, sent as the `x-easycommerce-signature`
+ * HMAC-SHA256 over the raw JSON body, sent as the `x-bitcommerce-signature`
  * header so the receiver can verify the payload actually came from us.
  */
 @Entity('store_webhooks')

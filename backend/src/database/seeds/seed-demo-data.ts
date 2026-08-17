@@ -54,7 +54,7 @@ async function seed() {
     process.exit(1);
   }
 
-  console.log('🌱 Starting EasyCommerce Full Product Module Demo Data Seeder (Chunk 14)...');
+  console.log('🌱 Starting BitCommerce Full Product Module Demo Data Seeder (Chunk 14)...');
   await AppDataSource.initialize();
   console.log('✅ Database connected.');
 
@@ -88,7 +88,7 @@ async function seed() {
   const abandonedCartRepo = AppDataSource.getRepository(AbandonedCartEntity);
 
   // 1. Seed Merchant User
-  const merchantEmail = 'belal@easycommerce.app';
+  const merchantEmail = 'belal@bitcommerce.app';
   let merchant = await userRepo.findOne({ where: { email: merchantEmail } });
 
   if (!merchant) {
@@ -123,7 +123,7 @@ async function seed() {
     store = storeRepo.create({
       name: 'My Diagnostic Store',
       slug: storeSlug,
-      domain: 'mydiagnostic.easycommerce.app',
+      domain: 'mydiagnostic.bitcommerce.app',
       category: 'Fashion & Electronics',
       phone: '+8801711223344',
       address: 'House 42, Road 11, Banani, Dhaka',
@@ -262,7 +262,7 @@ async function seed() {
       isFeatured: true,
       isVisible: true,
       showInStorefront: true,
-      seoTitle: 'Fashion & Apparel | EasyCommerce Bangladesh',
+      seoTitle: 'Fashion & Apparel | BitCommerce Bangladesh',
       metaDescription: 'Discover the latest fashion trends, stylish clothing, traditional panjabis, and premium apparel in Bangladesh.',
     },
     // Fashion -> Level 2
@@ -276,7 +276,7 @@ async function seed() {
       isFeatured: true,
       isVisible: true,
       showInStorefront: true,
-      seoTitle: "Men's Fashion Collection | EasyCommerce",
+      seoTitle: "Men's Fashion Collection | BitCommerce",
       metaDescription: "Shop men's casual shirts, formal trousers, polo t-shirts, and traditional panjabi online.",
     },
     {
@@ -289,7 +289,7 @@ async function seed() {
       isFeatured: true,
       isVisible: true,
       showInStorefront: true,
-      seoTitle: "Women's Fashion & Ethnic Wear | EasyCommerce",
+      seoTitle: "Women's Fashion & Ethnic Wear | BitCommerce",
       metaDescription: "Explore elegant sarees, designer kurtis, three-piece sets, and western apparel for women.",
     },
     {
@@ -302,7 +302,7 @@ async function seed() {
       isFeatured: false,
       isVisible: true,
       showInStorefront: true,
-      seoTitle: 'Kids & Baby Fashion | EasyCommerce',
+      seoTitle: 'Kids & Baby Fashion | BitCommerce',
       metaDescription: 'Soft, breathable and playful outfits for kids, infants and newborn babies.',
     },
     {
@@ -315,7 +315,7 @@ async function seed() {
       isFeatured: false,
       isVisible: true,
       showInStorefront: true,
-      seoTitle: 'Footwear & Shoes Collection | EasyCommerce',
+      seoTitle: 'Footwear & Shoes Collection | BitCommerce',
       metaDescription: 'Find premium sneakers, genuine leather formal shoes, and comfort sandals online.',
     },
     {
@@ -328,7 +328,7 @@ async function seed() {
       isFeatured: false,
       isVisible: true,
       showInStorefront: true,
-      seoTitle: 'Fashion Accessories | EasyCommerce',
+      seoTitle: 'Fashion Accessories | BitCommerce',
       metaDescription: 'Complete your outfit with genuine leather belts, wallets, wristwatches, and accessories.',
     },
     // Men's Fashion -> Level 3
@@ -399,7 +399,7 @@ async function seed() {
       isFeatured: true,
       isVisible: true,
       showInStorefront: true,
-      seoTitle: 'Electronics & Smart Gadgets | EasyCommerce',
+      seoTitle: 'Electronics & Smart Gadgets | BitCommerce',
       metaDescription: 'Shop verified electronics, smart devices, laptops, and authentic gadgets with official warranty.',
     },
     // Electronics -> Level 2
@@ -459,7 +459,7 @@ async function seed() {
       isFeatured: false,
       isVisible: true,
       showInStorefront: true,
-      seoTitle: 'Home & Living Essentials | EasyCommerce',
+      seoTitle: 'Home & Living Essentials | BitCommerce',
       metaDescription: 'Elevate your living space with minimalist home decor, kitchen appliances, and cozy bedding.',
     },
     // Home -> Level 2
@@ -575,7 +575,7 @@ async function seed() {
       isFeatured: false,
       isVisible: true,
       showInStorefront: true,
-      seoTitle: 'New Product Launches | EasyCommerce',
+      seoTitle: 'New Product Launches | BitCommerce',
       metaDescription: 'Be the first to explore our upcoming new product catalog additions.',
     },
   ];
@@ -1391,10 +1391,10 @@ async function seed() {
       collectionSlugs: ['digital-products'],
       shippingRequired: false,
       digitalDeliveryType: DigitalDeliveryType.DOWNLOAD,
-      digitalAssetUrl: 'https://cdn.easycommerce.app/assets/demo/invoice-template-v2.zip',
+      digitalAssetUrl: 'https://cdn.bitcommerce.app/assets/demo/invoice-template-v2.zip',
       downloadLimit: 10,
       downloadExpiryDays: 365,
-      seoTitle: 'EasyCommerce Invoice & Accounting Template Pack BD',
+      seoTitle: 'BitCommerce Invoice & Accounting Template Pack BD',
       metaDescription: 'Download instant automated Excel VAT invoice templates for online shop billing and expense management.',
     },
     {
@@ -1416,7 +1416,7 @@ async function seed() {
       collectionSlugs: ['digital-products'],
       shippingRequired: false,
       digitalDeliveryType: DigitalDeliveryType.ACCESS_LINK,
-      digitalAssetUrl: 'https://templates.easycommerce.app/canva/sm-brandkit-pack',
+      digitalAssetUrl: 'https://templates.bitcommerce.app/canva/sm-brandkit-pack',
       downloadExpiryDays: 180,
     },
     {
@@ -1436,7 +1436,7 @@ async function seed() {
       collectionSlugs: ['digital-products'],
       shippingRequired: false,
       digitalDeliveryType: DigitalDeliveryType.DOWNLOAD,
-      digitalAssetUrl: 'https://cdn.easycommerce.app/assets/demo/bangla-cv-pack.zip',
+      digitalAssetUrl: 'https://cdn.bitcommerce.app/assets/demo/bangla-cv-pack.zip',
       downloadLimit: 5,
       downloadExpiryDays: 90,
     },
@@ -1602,7 +1602,7 @@ async function seed() {
         serviceDurationUnit: pDef.serviceDurationUnit,
         seoTitle: pDef.seoTitle,
         metaDescription: pDef.metaDescription,
-        canonicalUrl: pDef.seoTitle ? `https://mydiagnostic.easycommerce.app/products/${pDef.slug}` : undefined,
+        canonicalUrl: pDef.seoTitle ? `https://mydiagnostic.bitcommerce.app/products/${pDef.slug}` : undefined,
         isSearchEngineIndexed: true,
         tenantId,
       });
@@ -2300,7 +2300,7 @@ async function seed() {
     await abandonedCartRepo.save(cart);
   }
   console.log(`✨ Seeded ${abandonedCartsData.length} realistic Abandoned Carts.`);
-  console.log('🎉 Full EasyCommerce Product Module Demo Data Seeding Completed Successfully!');
+  console.log('🎉 Full BitCommerce Product Module Demo Data Seeding Completed Successfully!');
   await AppDataSource.destroy();
 }
 

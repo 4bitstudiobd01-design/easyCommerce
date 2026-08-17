@@ -23,7 +23,7 @@ export interface CourierCredentialBag {
   secretKey?: string;
   clientId?: string;
   clientSecret?: string;
-  /** Pathao's merchant store id, distinct from the EasyCommerce store. */
+  /** Pathao's merchant store id, distinct from the BitCommerce store. */
   merchantStoreId?: string;
   username?: string;
   password?: string;

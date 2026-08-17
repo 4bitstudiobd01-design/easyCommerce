@@ -8,7 +8,7 @@ import { OVERVIEW_SLICE_COLORS } from '../utils/shipmentFormatters';
 interface ShipmentOverviewCardProps {
   summary?: ShipmentSummary;
   isLoading: boolean;
-  onViewReport: () => void;
+  onViewReport?: () => void;
 }
 
 const RADIUS = 54;
@@ -59,13 +59,15 @@ export const ShipmentOverviewCard = ({
     <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-5">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-bold text-slate-900">Shipment Overview</h3>
-        <button
-          type="button"
-          onClick={onViewReport}
-          className="text-[11px] font-bold text-blue-600 hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
-        >
-          View Report
-        </button>
+        {onViewReport && (
+          <button
+            type="button"
+            onClick={onViewReport}
+            className="text-[11px] font-bold text-blue-600 hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+          >
+            View Report
+          </button>
+        )}
       </div>
 
       <div className="flex items-center justify-center py-2">

@@ -51,7 +51,7 @@ export function Hero() {
 
           {/* Subtitle */}
           <p className="text-sm sm:text-base text-slate-600 max-w-lg font-normal leading-relaxed">
-            EasyCommerce gives you everything you need to launch, manage and grow your online business—from products and orders to payments, delivery and analytics.
+            BitCommerce gives you everything you need to launch, manage and grow your online business—from products and orders to payments, delivery and analytics.
           </p>
 
           {/* Action Buttons */}
@@ -110,7 +110,7 @@ export function Hero() {
                   <div className="w-6 h-6 rounded-md bg-blue-600 flex items-center justify-center text-white font-black text-xs">
                     <ShoppingBag className="w-3.5 h-3.5" />
                   </div>
-                  <span className="font-extrabold text-xs tracking-tight">EasyCommerce</span>
+                  <span className="font-extrabold text-xs tracking-tight">BitCommerce</span>
                 </div>
 
                 <div className="flex items-center gap-4 text-xs">

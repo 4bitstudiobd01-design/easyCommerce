@@ -340,7 +340,7 @@ export class ImportProductsService {
   getImportTemplateCsv(): string {
     const headers = ['name', 'sku', 'barcode', 'productType', 'status', 'basePrice', 'compareAtPrice', 'costPrice', 'category', 'brand'];
     const sampleRow1 = ['Men Cotton Polo Shirt', 'TS-POLO-001', '894000111222', 'PHYSICAL', 'ACTIVE', '1250', '1500', '700', 'Fashion', 'EasyBrand'];
-    const sampleRow2 = ['Python Programming eBook', 'EB-PY-002', '', 'DIGITAL', 'ACTIVE', '450', '600', '0', 'Books', 'EasyCommerce'];
+    const sampleRow2 = ['Python Programming eBook', 'EB-PY-002', '', 'DIGITAL', 'ACTIVE', '450', '600', '0', 'Books', 'BitCommerce'];
 
     return [headers.join(','), sampleRow1.join(','), sampleRow2.join(',')].join('\n');
   }

@@ -14,7 +14,7 @@ export class InventoryListItemDto {
   @ApiProperty({ example: 'iphone-15-pro-max' })
   productSlug: string;
 
-  @ApiProperty({ example: 'https://img.easycommerce.app/p1.jpg', nullable: true })
+  @ApiProperty({ example: 'https://img.bitcommerce.app/p1.jpg', nullable: true })
   productThumbnail?: string;
 
   @ApiProperty({ example: 'Smartphones', nullable: true })

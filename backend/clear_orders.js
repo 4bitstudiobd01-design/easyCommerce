@@ -3,7 +3,7 @@ require('dotenv').config({ path: '.env' });
 
 const AppDataSource = new DataSource({
   type: 'postgres',
-  url: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/easycommerce',
+  url: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/bitcommerce',
 });
 
 async function clear() {

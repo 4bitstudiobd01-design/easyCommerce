@@ -188,8 +188,8 @@ export default function CustomersPage() {
       if (sortByParam) params.set('sortBy', sortByParam);
       if (sortOrderParam) params.set('sortOrder', sortOrderParam);
 
-      const token = typeof window !== 'undefined' ? localStorage.getItem('easycommerce_token') : null;
-      const activeStoreId = typeof window !== 'undefined' ? localStorage.getItem('easycommerce_active_store_id') : null;
+      const token = typeof window !== 'undefined' ? localStorage.getItem('bitcommerce_token') : null;
+      const activeStoreId = typeof window !== 'undefined' ? localStorage.getItem('bitcommerce_active_store_id') : null;
 
       const headers: Record<string, string> = {};
       if (token) headers['authorization'] = `Bearer ${token}`;

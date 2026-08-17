@@ -3,8 +3,8 @@ import { Footer } from '@/components/landing/Footer';
 import { FileText } from 'lucide-react';
 
 export const metadata = {
-  title: 'Terms of Service | EasyCommerce',
-  description: 'Terms governing use of the EasyCommerce multi-tenant eCommerce platform.',
+  title: 'Terms of Service | BitCommerce',
+  description: 'Terms governing use of the BitCommerce multi-tenant eCommerce platform.',
 };
 
 export default function TermsOfServicePage() {
@@ -23,7 +23,7 @@ export default function TermsOfServicePage() {
 
         <div className="prose prose-slate prose-sm max-w-none space-y-8 text-slate-700 leading-relaxed">
           <p>
-            These terms govern your use of EasyCommerce to create and operate an online store. By registering a
+            These terms govern your use of BitCommerce to create and operate an online store. By registering a
             store, you agree to the terms below.
           </p>
 
@@ -40,7 +40,7 @@ export default function TermsOfServicePage() {
             <p>
               Order payments are processed through SSLCommerz using the gateway credentials you connect to your
               store; courier bookings are made through Steadfast or Pathao using your connected credentials.
-              EasyCommerce is not a party to the underlying payment or delivery contract — that relationship is
+              BitCommerce is not a party to the underlying payment or delivery contract — that relationship is
               between you, your customer, and the respective provider.
             </p>
           </section>
@@ -48,7 +48,7 @@ export default function TermsOfServicePage() {
           <section className="space-y-2">
             <h2 className="text-lg font-bold text-slate-900">Acceptable use</h2>
             <p>
-              You may not use EasyCommerce to sell illegal goods, engage in fraud, or attempt to access another
+              You may not use BitCommerce to sell illegal goods, engage in fraud, or attempt to access another
               merchant's store data or bypass the platform's tenant isolation.
             </p>
           </section>
@@ -56,7 +56,7 @@ export default function TermsOfServicePage() {
           <section className="space-y-2">
             <h2 className="text-lg font-bold text-slate-900">Current stage of the platform</h2>
             <p>
-              EasyCommerce is an early-access product. Features described on this site reflect what's built today;
+              BitCommerce is an early-access product. Features described on this site reflect what's built today;
               anything marked "Coming Soon" is not yet available. We'll update these terms as pricing, paid plans,
               and additional features go live.
             </p>

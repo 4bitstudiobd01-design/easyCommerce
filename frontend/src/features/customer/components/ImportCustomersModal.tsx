@@ -227,7 +227,7 @@ Tariq,Rahman,,01913555444,POS,ACTIVE`;
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', 'easycommerce-customer-sample.csv');
+    link.setAttribute('download', 'bitcommerce-customer-sample.csv');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

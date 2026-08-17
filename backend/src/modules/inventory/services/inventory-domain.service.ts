@@ -33,7 +33,7 @@ export class InventoryDomainService {
   }
 
   /**
-   * Evaluates the canonical stock status according to EasyCommerce business rules:
+   * Evaluates the canonical stock status according to BitCommerce business rules:
    * 1. If trackInventory is false -> NOT_TRACKED
    * 2. If availableStock <= 0 -> OUT_OF_STOCK
    * 3. If availableStock <= lowStockThreshold -> LOW_STOCK

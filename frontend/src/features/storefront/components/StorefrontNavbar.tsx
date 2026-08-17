@@ -49,7 +49,7 @@ export function StorefrontNavbar({
             )}
             <span className="flex items-center gap-1 text-emerald-400 font-bold">
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Verified EasyCommerce Tenant</span>
+              <span>Verified BitCommerce Tenant</span>
             </span>
           </div>
         </div>
@@ -75,7 +75,7 @@ export function StorefrontNavbar({
               {storeName}
             </span>
             <span className="text-[11px] font-bold block" style={{ color: primaryColor }}>
-              {slug}.easycommerce.app
+              {slug}.bitcommerce.app
             </span>
           </div>
         </Link>

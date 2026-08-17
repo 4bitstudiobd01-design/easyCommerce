@@ -35,7 +35,7 @@ export function Testimonials() {
             Be one of our first merchants
           </h2>
           <p className="text-slate-500 text-base font-normal">
-            EasyCommerce is early — that means direct support, fast fixes, and a product shaped by the merchants building on it now.
+            BitCommerce is early — that means direct support, fast fixes, and a product shaped by the merchants building on it now.
           </p>
         </div>
 

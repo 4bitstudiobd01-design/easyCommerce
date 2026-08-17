@@ -16,7 +16,7 @@ export function CtaBannerSection() {
               Ready to take your business online?
             </h2>
             <p className="text-xs sm:text-sm text-blue-100/90 font-normal leading-relaxed">
-              Join thousands of merchants who trust EasyCommerce to grow their online business.
+              Join thousands of merchants who trust BitCommerce to grow their online business.
             </p>
           </div>
 

@@ -1,6 +1,6 @@
 # 07_API_SPECIFICATION.md - API Specification
 
-# EasyCommerce RESTful API Standard & Endpoint Definitions
+# BitCommerce RESTful API Standard & Endpoint Definitions
 
 **Version:** 0.1.0  
 **Status:** Draft  
@@ -9,7 +9,7 @@
 
 ## 1. API Standards & Headers
 
-* Base URL: `https://api.easycommerce.app/v1`
+* Base URL: `https://api.bitcommerce.app/v1`
 * Content-Type: `application/json`
 * Tenant Header: `X-Tenant-ID: <tenant_id_or_slug>` (automatically inferred on custom storefront domains).
 * Authorization: `Bearer <jwt_token>`

@@ -23,7 +23,7 @@ export class JwtAuthGuard implements CanActivate {
 
     try {
       const payload = this.jwtService.verify(token, {
-        secret: process.env.JWT_SECRET || 'easycommerce_jwt_secret_key_change_in_prod',
+        secret: process.env.JWT_SECRET || 'bitcommerce_jwt_secret_key_change_in_prod',
       });
       (request as any).user = payload;
       return true;

@@ -23,12 +23,12 @@ export function StoreSwitcherDropdown({
   // Synchronize active store with localStorage or default to first store
   useEffect(() => {
     if (stores.length > 0) {
-      const savedStoreId = localStorage.getItem('easycommerce_active_store_id');
+      const savedStoreId = localStorage.getItem('bitcommerce_active_store_id');
       const foundStore = stores.find((s) => s.id === savedStoreId);
       const selected = foundStore || stores[0];
       setActiveStore(selected);
       if (selected && (!savedStoreId || !foundStore)) {
-        localStorage.setItem('easycommerce_active_store_id', selected.id);
+        localStorage.setItem('bitcommerce_active_store_id', selected.id);
         // If we had an invalid store ID in localStorage, we must reload the page 
         // to reset the headers in RTK Query which might have cached the old ID
         if (savedStoreId && !foundStore) {
@@ -62,7 +62,7 @@ export function StoreSwitcherDropdown({
 
   const handleSelectStore = (store: Store) => {
     setActiveStore(store);
-    localStorage.setItem('easycommerce_active_store_id', store.id);
+    localStorage.setItem('bitcommerce_active_store_id', store.id);
     setIsOpen(false);
     toast.success(`Switched active store to "${store.name}"!`);
 
@@ -88,8 +88,8 @@ export function StoreSwitcherDropdown({
 
   const currentStoreName = activeStore?.name || 'My Store';
   const currentDomain = activeStore?.slug
-    ? `${activeStore.slug}.easycommerce.app`
-    : 'easycommerce.app';
+    ? `${activeStore.slug}.bitcommerce.app`
+    : 'bitcommerce.app';
   const initialLetter = currentStoreName.charAt(0).toUpperCase();
 
   return (
@@ -196,7 +196,7 @@ export function StoreSwitcherDropdown({
                         <div className="min-w-0">
                           <p className="text-xs truncate">{store.name}</p>
                           <p className="text-[10px] text-slate-400 truncate">
-                            {store.slug}.easycommerce.app
+                            {store.slug}.bitcommerce.app
                           </p>
                         </div>
                       </div>

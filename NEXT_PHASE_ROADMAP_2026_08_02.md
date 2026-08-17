@@ -1,7 +1,7 @@
-# EasyCommerce Next Phase Roadmap & Handover Document
+# BitCommerce Next Phase Roadmap & Handover Document
 
 **Date:** August 02, 2026  
-**Project:** EasyCommerce (SaaS Multi-Tenant E-Commerce Platform)  
+**Project:** BitCommerce (SaaS Multi-Tenant E-Commerce Platform)  
 **Status:** All core modules, super-admin panel, pluggable notification drivers, promo coupons, printable invoices, thermal labels, and smartphone app settings UI completed and verified with 0 errors.
 
 ---
@@ -42,7 +42,7 @@
 - Dynamic location-based VAT & Tax calculator.
 
 ### ✅ Phase 4: Production Readiness & Audit Verification
-- Final production audit according to [docs/04_CHECKLIST.md](file:///Users/sumon/Desktop/EasyCommerce/docs/04_CHECKLIST.md).
+- Final production audit according to [docs/04_CHECKLIST.md](file:///Users/sumon/Desktop/BitCommerce/docs/04_CHECKLIST.md).
 
 ---
 
@@ -52,11 +52,11 @@ To start dev servers tomorrow, execute:
 
 ```bash
 # Backend Dev Server
-cd /Users/sumon/Desktop/EasyCommerce/backend
+cd /Users/sumon/Desktop/BitCommerce/backend
 npm run start:dev
 
 # Frontend Dev Server
-cd /Users/sumon/Desktop/EasyCommerce/frontend
+cd /Users/sumon/Desktop/BitCommerce/frontend
 npm run dev
 ```
 

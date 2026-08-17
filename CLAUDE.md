@@ -1,4 +1,4 @@
-# EasyCommerce
+# BitCommerce
 
 Enterprise-grade, multi-tenant eCommerce SaaS platform (Bangladesh first, global ready) — think Shopify/Zatiq Easy, but not a clone. Modular Monolith with DDD principles, built to serve thousands of merchants.
 

@@ -65,7 +65,7 @@ export function LoginForm() {
       
       {/* Header */}
       <h2 className="text-[26px] font-extrabold text-slate-900 tracking-tight mb-2">Welcome back!</h2>
-      <p className="text-[13px] font-medium text-slate-500 mb-8 text-center">Login to your EasyCommerce merchant account</p>
+      <p className="text-[13px] font-medium text-slate-500 mb-8 text-center">Login to your BitCommerce merchant account</p>
 
       {errorMsg && (
         <div className="w-full mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-bold text-center">

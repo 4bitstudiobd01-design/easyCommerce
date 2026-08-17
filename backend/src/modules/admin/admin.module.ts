@@ -28,7 +28,7 @@ import { SmsModule } from '../sms/sms.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET', 'easycommerce_jwt_secret_key_change_in_prod'),
+        secret: config.get<string>('JWT_SECRET', 'bitcommerce_jwt_secret_key_change_in_prod'),
         signOptions: { expiresIn: config.get<string>('JWT_EXPIRES_IN', '15m') },
       }),
     }),

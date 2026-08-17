@@ -61,11 +61,11 @@ export const createBaseQueryWithReauth = (baseUrl: string): BaseQueryFn<
     prepareHeaders: (headers, { getState }) => {
       const token =
         (getState() as RootState).auth.token ||
-        (typeof window !== 'undefined' ? localStorage.getItem('easycommerce_token') : null);
+        (typeof window !== 'undefined' ? localStorage.getItem('bitcommerce_token') : null);
       if (token) headers.set('authorization', `Bearer ${token}`);
 
       const storeId =
-        typeof window !== 'undefined' ? localStorage.getItem('easycommerce_active_store_id') : null;
+        typeof window !== 'undefined' ? localStorage.getItem('bitcommerce_active_store_id') : null;
       if (storeId) headers.set('x-store-id', storeId);
 
       return headers;
@@ -86,7 +86,7 @@ export const createBaseQueryWithReauth = (baseUrl: string): BaseQueryFn<
 
     const refreshToken =
       (api.getState() as RootState).auth.refreshToken ||
-      (typeof window !== 'undefined' ? localStorage.getItem('easycommerce_refresh_token') : null);
+      (typeof window !== 'undefined' ? localStorage.getItem('bitcommerce_refresh_token') : null);
 
     if (!refreshToken) {
       api.dispatch(logout());

@@ -1,6 +1,6 @@
 # 04_CHECKLIST.md - Final Implementation Verification Checklist
 
-# EasyCommerce Production Readiness Checklist
+# BitCommerce Production Readiness Checklist
 
 Before marking any task or pull request as complete, verify that every item below passes:
 

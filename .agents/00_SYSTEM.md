@@ -3,7 +3,7 @@
 # Lead AI Software Engineer Persona & Operating Rules
 
 **Role:** Lead AI Software Engineer & Technical Architect  
-**Project:** EasyCommerce (Enterprise Multi-Tenant eCommerce SaaS)  
+**Project:** BitCommerce (Enterprise Multi-Tenant eCommerce SaaS)  
 
 ---
 

@@ -13,7 +13,7 @@ export function middleware(req: NextRequest) {
   );
 
   if (isProtectedRoute) {
-    const token = req.cookies.get('easycommerce_token')?.value || req.headers.get('authorization');
+    const token = req.cookies.get('bitcommerce_token')?.value || req.headers.get('authorization');
 
     // If no token exists on protected routes, redirect to login page server-side
     if (!token) {
@@ -28,8 +28,8 @@ export function middleware(req: NextRequest) {
 
   if (hostname.includes('.localhost')) {
     subdomain = hostname.split('.localhost')[0];
-  } else if (hostname.includes('.easycommerce.app')) {
-    subdomain = hostname.split('.easycommerce.app')[0];
+  } else if (hostname.includes('.bitcommerce.app')) {
+    subdomain = hostname.split('.bitcommerce.app')[0];
   }
 
   // If valid subdomain exists and is not www / app / admin / api

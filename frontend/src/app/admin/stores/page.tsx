@@ -99,7 +99,7 @@ export default function AdminStoresPage() {
                           rel="noreferrer"
                           className="text-[11px] font-mono font-bold text-blue-600 hover:underline inline-flex items-center gap-1"
                         >
-                          <span>{item.slug}.easycommerce.app</span>
+                          <span>{item.slug}.bitcommerce.app</span>
                           <ExternalLink className="w-3 h-3" />
                         </a>
                       </div>

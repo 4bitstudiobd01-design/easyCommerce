@@ -11,7 +11,7 @@ export class InventoryHistoryItemProductDto {
   @ApiProperty({ example: 'iphone-15-pro' })
   slug: string;
 
-  @ApiPropertyOptional({ example: 'https://img.easycommerce.app/p1.jpg' })
+  @ApiPropertyOptional({ example: 'https://img.bitcommerce.app/p1.jpg' })
   thumbnail?: string;
 
   @ApiPropertyOptional({ example: 'IP15PRO-BASE' })

@@ -1,7 +1,7 @@
-# EasyCommerce Fullstack Master Work Summary (August 02, 2026)
+# BitCommerce Fullstack Master Work Summary (August 02, 2026)
 
 **Date:** August 02, 2026  
-**Project:** EasyCommerce (SaaS Multi-Tenant E-Commerce Platform)  
+**Project:** BitCommerce (SaaS Multi-Tenant E-Commerce Platform)  
 **Architecture:** NestJS Modular Monolith + Single Responsibility Principle (SRP) Services + TypeORM CLI Migrations + Next.js 14 App Router + Redux Toolkit & RTK Query.
 
 ---
@@ -11,7 +11,7 @@
 Today (August 02, 2026), the following enterprise features were built, integrated, and verified across the platform:
 
 ```text
-EasyCommerce/backend/src/
+BitCommerce/backend/src/
 ├── common/             # Shared filters, interceptors, guards, decorators, errors
 ├── config/             # Dynamic configuration factories (database.config.ts)
 ├── database/           # TypeORM Data Source (data-source.ts) & 20 CLI Migrations
@@ -41,7 +41,7 @@ EasyCommerce/backend/src/
   - All protected endpoints (`/catalog`, `/orders`, `/analytics`, `/inventory`, `/categories`, `/coupons`, `/reviews`) accept optional `x-store-id` header to filter and isolate data per selected store.
 - **Store Switcher Dropdown Widget (`StoreSwitcherDropdown.tsx`)**:
   - Rendered at the top of the merchant sidebar matching reference design (`Darucini Fashon v`).
-  - Displays store avatar logo/initial, store name, online indicator dot, and domain URL (`darucinifashon.easycommerce.app`).
+  - Displays store avatar logo/initial, store name, online indicator dot, and domain URL (`darucinifashon.bitcommerce.app`).
   - Dropdown popup listing all merchant stores with checkmarks + **"+ Create New Store"** option to launch the store creation modal anytime.
   - Selecting a store updates active store context and automatically refetches all products, orders, categories, inventory, and analytics!
 

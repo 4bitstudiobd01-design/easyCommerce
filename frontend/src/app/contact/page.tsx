@@ -51,7 +51,7 @@ export default function ContactPage() {
             We’d Love To Hear From You
           </h1>
           <p className="text-slate-600 text-base">
-            Have a question about EasyCommerce merchant plans, MFS integration, or custom enterprise solutions? Our Dhaka team is ready to help.
+            Have a question about BitCommerce merchant plans, MFS integration, or custom enterprise solutions? Our Dhaka team is ready to help.
           </p>
         </div>
 
@@ -85,8 +85,8 @@ export default function ContactPage() {
               </div>
               <h3 className="font-bold text-slate-900 text-base">Email Us</h3>
               <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                support@easycommerce.com<br />
-                sales@easycommerce.com
+                support@bitcommerce.com<br />
+                sales@bitcommerce.com
               </p>
             </div>
           </div>

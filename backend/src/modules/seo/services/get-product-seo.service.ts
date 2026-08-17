@@ -53,7 +53,7 @@ export class GetProductSeoService {
         ? Number((reviews.reduce((acc, r) => acc + r.rating, 0) / reviewCount).toFixed(1))
         : 5.0;
 
-    const storeName = store?.name || 'EasyCommerce Store';
+    const storeName = store?.name || 'BitCommerce Store';
     const storeSlug = store?.slug || 'store';
     const currency = store?.currency || 'BDT';
     const price = Number(product.basePrice || 0);
@@ -72,7 +72,7 @@ export class GetProductSeoService {
         ? product.variants[0].sku
         : product.id.slice(0, 8);
 
-    const canonicalUrl = `https://${storeSlug}.easycommerce.app/store/${storeSlug}?product=${product.id}`;
+    const canonicalUrl = `https://${storeSlug}.bitcommerce.app/store/${storeSlug}?product=${product.id}`;
 
     // Standard Google Search schema.org/Product JSON-LD
     const jsonLdSchema: Record<string, any> = {

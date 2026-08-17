@@ -21,7 +21,7 @@ export function Footer() {
                 Ready to take your business online?
               </h2>
               <p className="text-xs sm:text-sm text-blue-100 font-normal leading-relaxed">
-                Join thousands of merchants who trust EasyCommerce to grow their online business.
+                Join thousands of merchants who trust BitCommerce to grow their online business.
               </p>
             </div>
 
@@ -85,7 +85,7 @@ export function Footer() {
                     <ShoppingBag className="w-4.5 h-4.5" />
                   </div>
                   <span className="font-extrabold text-base tracking-tight text-white">
-                    EasyCommerce
+                    BitCommerce
                   </span>
                 </Link>
                 <p className="text-xs text-slate-400 font-normal leading-relaxed max-w-xs">
@@ -144,10 +144,10 @@ export function Footer() {
               <div className="space-y-3">
                 <p className="text-xs font-bold text-white tracking-wider">Resources</p>
                 <ul className="space-y-2 text-xs text-slate-400">
-                  <li><Link href="/#docs" className="hover:text-white transition-colors">Documentation</Link></li>
+                  <li><Link href="/about" className="hover:text-white transition-colors">Documentation</Link></li>
                   <li><Link href="/#faq" className="hover:text-white transition-colors">Help Center</Link></li>
                   <li><Link href="/about" className="hover:text-white transition-colors">Blog</Link></li>
-                  <li><Link href="/#guides" className="hover:text-white transition-colors">Guides</Link></li>
+                  <li><Link href="/#how-it-works" className="hover:text-white transition-colors">Guides</Link></li>
                 </ul>
               </div>
 
@@ -177,7 +177,7 @@ export function Footer() {
 
             {/* Bottom Horizontal Bar */}
             <div className="pt-8 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-500">
-              <p>© 2026 EasyCommerce. All rights reserved.</p>
+              <p>© 2026 BitCommerce. All rights reserved.</p>
               <p className="flex items-center gap-1">
                 Made with <span className="text-red-500 text-xs">❤️</span> for merchants
               </p>

@@ -34,7 +34,7 @@ async function bootstrap() {
   app.useGlobalInterceptors(new ResponseInterceptor());
 
   const config = new DocumentBuilder()
-    .setTitle('EasyCommerce API Documentation')
+    .setTitle('BitCommerce API Documentation')
     .setDescription('Enterprise Multi-Tenant eCommerce SaaS API Documentation')
     .setVersion('1.0')
     .addBearerAuth()
@@ -47,7 +47,7 @@ async function bootstrap() {
   await app.listen(port);
 
   const logger = new Logger('Bootstrap');
-  logger.log(`🚀 EasyCommerce Backend API running on http://localhost:${port}/api/v1`);
+  logger.log(`🚀 BitCommerce Backend API running on http://localhost:${port}/api/v1`);
   logger.log(`📖 Swagger API Documentation available on http://localhost:${port}/swagger`);
 }
 bootstrap();

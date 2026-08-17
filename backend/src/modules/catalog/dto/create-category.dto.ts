@@ -62,7 +62,7 @@ export class CreateCategoryDto {
   @IsBoolean()
   isFeatured?: boolean;
 
-  @ApiProperty({ example: 'Fashion & Apparel Collection | EasyCommerce', description: 'Meta SEO Title', required: false })
+  @ApiProperty({ example: 'Fashion & Apparel Collection | BitCommerce', description: 'Meta SEO Title', required: false })
   @IsOptional()
   @IsString()
   @MaxLength(255)

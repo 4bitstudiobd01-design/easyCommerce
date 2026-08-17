@@ -112,7 +112,7 @@ export default function CreateStorePage() {
                   placeholder="daruchini"
                   className="w-full pl-12 pr-28 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-semibold placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all"
                 />
-                <span className="absolute right-4 top-3.5 text-sm font-bold text-slate-400">.easycommerce.app</span>
+                <span className="absolute right-4 top-3.5 text-sm font-bold text-slate-400">.bitcommerce.app</span>
               </div>
               <p className="text-xs text-slate-500 mt-2">Your storefront web address link</p>
             </div>

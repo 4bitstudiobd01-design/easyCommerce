@@ -1,6 +1,6 @@
 # 03_PROMPTS.md - Reusable Task Prompt Templates
 
-# Task Execution Prompt Templates for EasyCommerce
+# Task Execution Prompt Templates for BitCommerce
 
 ---
 

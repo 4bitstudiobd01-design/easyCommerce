@@ -18,7 +18,7 @@ export class PlatformConfigService {
         configKey: 'global',
         heroContent: {
           title: 'Sell Anything Online Physical, Digital or Resell',
-          subtitle: 'Whether you sell physical products, digital downloads, e-books, or supplier resell items — EasyCommerce empowers any Bangladeshi merchant to launch and scale effortlessly.',
+          subtitle: 'Whether you sell physical products, digital downloads, e-books, or supplier resell items — BitCommerce empowers any Bangladeshi merchant to launch and scale effortlessly.',
           ctaPrimaryText: 'Launch Your Store Now',
           ctaPrimaryLink: '/register',
           ctaSecondaryText: 'Sign In to Merchant Admin',

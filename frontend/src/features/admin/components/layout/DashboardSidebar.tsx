@@ -39,7 +39,7 @@ export function DashboardSidebar({ isOpen = false, onClose, className = '' }: Da
             </div>
             <div>
               <span className="font-extrabold text-base text-white tracking-tight block leading-tight">
-                EasyCommerce
+                BitCommerce
               </span>
               <span className="text-[10px] font-extrabold text-blue-400 uppercase tracking-wider block">
                 Super Admin
@@ -89,7 +89,7 @@ export function DashboardSidebar({ isOpen = false, onClose, className = '' }: Da
 
         {/* Sidebar Footer */}
         <div className="p-4 border-t border-slate-800 text-[10px] font-bold text-slate-500 text-center">
-          EasyCommerce Enterprise v1.0.0
+          BitCommerce Enterprise v1.0.0
         </div>
       </aside>
     </>

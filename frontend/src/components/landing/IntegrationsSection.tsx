@@ -156,7 +156,7 @@ export function IntegrationsSection() {
               Payments, Delivery and beyond
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-sm">
-              EasyCommerce integrates with leading payment gateways and courier services to make your operations smooth.
+              BitCommerce integrates with leading payment gateways and courier services to make your operations smooth.
             </p>
             <div className="pt-3">
               <Link

@@ -51,7 +51,7 @@ const DEMO_INTEGRATIONS: DemoIntegration[] = [
     credentials: {
       clientId: 'demo_pathao_client_2210',
       clientSecret: 'demo_pathao_secret_5c1d',
-      username: 'demo.merchant@easycommerce.test',
+      username: 'demo.merchant@bitcommerce.test',
       password: 'demo_pathao_pass_9f2b',
     },
   },

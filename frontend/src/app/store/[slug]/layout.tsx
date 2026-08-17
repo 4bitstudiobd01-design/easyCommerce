@@ -21,19 +21,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         title: seo.metaTitle || `${seo.storeName} | Official Storefront`,
         description:
           seo.metaDescription ||
-          `Shop authentic products, pricing, and fast nationwide delivery from ${seo.storeName} on EasyCommerce.`,
+          `Shop authentic products, pricing, and fast nationwide delivery from ${seo.storeName} on BitCommerce.`,
         icons: {
           icon: seo.faviconUrl || '/icon.png',
         },
         alternates: {
-          canonical: seo.canonicalUrl || `https://${slug}.easycommerce.app`,
+          canonical: seo.canonicalUrl || `https://${slug}.bitcommerce.app`,
         },
         openGraph: {
-          title: seo.openGraphTags?.title || `${seo.storeName} | EasyCommerce Store`,
+          title: seo.openGraphTags?.title || `${seo.storeName} | BitCommerce Store`,
           description:
             seo.openGraphTags?.description ||
             `Browse products and order online from ${seo.storeName}.`,
-          url: seo.openGraphTags?.url || `https://${slug}.easycommerce.app`,
+          url: seo.openGraphTags?.url || `https://${slug}.bitcommerce.app`,
           siteName: seo.storeName,
           images: [
             {
@@ -50,7 +50,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         },
         twitter: {
           card: 'summary_large_image',
-          title: seo.openGraphTags?.title || `${seo.storeName} | EasyCommerce`,
+          title: seo.openGraphTags?.title || `${seo.storeName} | BitCommerce`,
           description: seo.openGraphTags?.description || `Shop online from ${seo.storeName}`,
           images: [
             seo.openGraphTags?.image ||
@@ -66,7 +66,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return {
     title: `${slug} | Storefront`,
-    description: `Official online storefront on EasyCommerce.`,
+    description: `Official online storefront on BitCommerce.`,
   };
 }
 

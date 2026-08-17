@@ -31,10 +31,10 @@ export function ProblemSolutionSection() {
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
-            {/* Column 1: Before EasyCommerce */}
+            {/* Column 1: Before BitCommerce */}
             <div className="space-y-4">
               <div className="inline-block px-3 py-1 bg-red-50 text-red-600 rounded-full text-xs font-bold border border-red-100">
-                Before EasyCommerce
+                Before BitCommerce
               </div>
               <ul className="space-y-3">
                 {BEFORE_ITEMS.map((item, idx) => (
@@ -48,10 +48,10 @@ export function ProblemSolutionSection() {
               </ul>
             </div>
 
-            {/* Column 2: With EasyCommerce */}
+            {/* Column 2: With BitCommerce */}
             <div className="space-y-4">
               <div className="inline-block px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold border border-emerald-100">
-                With EasyCommerce
+                With BitCommerce
               </div>
               <ul className="space-y-3">
                 {AFTER_ITEMS.map((item, idx) => (

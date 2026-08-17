@@ -1,18 +1,18 @@
 # 01_VISION.md - Product Vision & Core Mission
 
-# EasyCommerce: Enterprise Multi-Tenant eCommerce SaaS
+# BitCommerce: Enterprise Multi-Tenant eCommerce SaaS
 
 **Version:** 0.1.0  
 **Status:** Draft  
-**Owner:** EasyCommerce Product Team  
+**Owner:** BitCommerce Product Team  
 
 ---
 
 ## 1. Executive Summary
 
-EasyCommerce is an enterprise-grade multi-tenant eCommerce SaaS platform engineered to empower merchants to launch, run, and scale online businesses seamlessly. Focusing initially on the Bangladesh market before expanding across South Asia, Middle East, and globally, EasyCommerce bridges the gap between ease-of-use and deep enterprise capabilities.
+BitCommerce is an enterprise-grade multi-tenant eCommerce SaaS platform engineered to empower merchants to launch, run, and scale online businesses seamlessly. Focusing initially on the Bangladesh market before expanding across South Asia, Middle East, and globally, BitCommerce bridges the gap between ease-of-use and deep enterprise capabilities.
 
-Unlike simple store builders, EasyCommerce offers high-throughput transaction capabilities, native local payment and logistics integrations, deeply customizable storefronts, and modular enterprise architecture.
+Unlike simple store builders, BitCommerce offers high-throughput transaction capabilities, native local payment and logistics integrations, deeply customizable storefronts, and modular enterprise architecture.
 
 ---
 
@@ -35,7 +35,7 @@ Unlike simple store builders, EasyCommerce offers high-throughput transaction ca
 
 ```
 +-----------------------------------------------------------------------+
-|                         EASYCOMMERCE PILLARS                          |
+|                         BITCOMMERCE PILLARS                          |
 +-------------------+.--------------------+-----------------------------+
 | 1. Zero Code      | 2. Local-Native    | 3. Enterprise Scalability   |
 | Store Creation &  | Payments, Courier,  | High-throughput processing  |

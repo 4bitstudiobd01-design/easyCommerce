@@ -76,7 +76,7 @@ function StaffInviteContent() {
           <div className="w-14 h-14 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-2xl text-white font-extrabold text-xl flex items-center justify-center shadow-lg shadow-blue-600/30 mx-auto">
             <ShieldCheck className="w-8 h-8" />
           </div>
-          <h1 className="text-2xl font-black tracking-tight">EasyCommerce</h1>
+          <h1 className="text-2xl font-black tracking-tight">BitCommerce</h1>
           <p className="text-xs text-slate-400">Accept Staff Invitation & Set Account Password</p>
         </div>
 

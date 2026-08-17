@@ -71,7 +71,7 @@ const FEATURES = [
 
 export function FeaturesShowcase() {
   return (
-    <section id="features" className="py-20 px-6 bg-slate-50/50">
+    <section id="features" className="py-20 px-6 bg-slate-50/50 scroll-mt-16">
       <div className="max-w-7xl mx-auto space-y-12">
         {/* Section Heading */}
         <div className="text-center max-w-2xl mx-auto">

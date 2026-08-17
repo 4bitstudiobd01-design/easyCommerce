@@ -4,7 +4,7 @@ import { Metadata } from 'next';
 import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
-  title: 'EasyCommerce | Enterprise Multi-Tenant eCommerce Platform',
+  title: 'BitCommerce | Enterprise Multi-Tenant eCommerce Platform',
   description: 'Enterprise Multi-Tenant eCommerce SaaS Platform for merchants in Bangladesh and worldwide.',
   icons: {
     icon: '/icon.png',

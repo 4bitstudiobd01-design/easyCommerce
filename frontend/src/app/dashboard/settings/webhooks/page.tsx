@@ -111,7 +111,7 @@ export default function WebhooksSettingsPage() {
               Endpoints ({webhooks.length})
             </h2>
             <p className="text-[11.5px] font-medium text-slate-500 mt-0.5">
-              Payloads are signed with HMAC-SHA256 in the <code className="font-mono">x-easycommerce-signature</code> header.
+              Payloads are signed with HMAC-SHA256 in the <code className="font-mono">x-bitcommerce-signature</code> header.
             </p>
           </div>
           {!showForm && (
@@ -133,7 +133,7 @@ export default function WebhooksSettingsPage() {
               <input
                 value={targetUrl}
                 onChange={(e) => setTargetUrl(e.target.value)}
-                placeholder="https://your-app.com/hooks/easycommerce"
+                placeholder="https://your-app.com/hooks/bitcommerce"
                 className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-[12.5px] font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all"
               />
             </div>

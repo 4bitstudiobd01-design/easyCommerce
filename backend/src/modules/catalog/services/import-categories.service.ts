@@ -73,7 +73,7 @@ export class ImportCategoriesService {
         'TRUE',
         'TRUE',
         'TRUE',
-        'Fashion & Apparel | EasyCommerce',
+        'Fashion & Apparel | BitCommerce',
         'Discover trending fashion clothing and accessories online.',
       ],
       [

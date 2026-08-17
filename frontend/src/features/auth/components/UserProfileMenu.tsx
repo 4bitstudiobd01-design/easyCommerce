@@ -90,7 +90,7 @@ export function UserProfileMenu() {
     : 'MB';
 
   const displayName = user?.fullName || 'MD Belal Hossain';
-  const displayEmail = user?.email || 'belal@easycommerce.app';
+  const displayEmail = user?.email || 'belal@bitcommerce.app';
 
   return (
     <div

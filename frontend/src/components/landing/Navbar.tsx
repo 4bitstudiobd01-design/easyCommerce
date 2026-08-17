@@ -32,18 +32,10 @@ import {
   Building2,
   ShoppingBasket,
   MapPin,
-  Settings,
-  UserCheck,
-  History,
-  Terminal,
   LogOut,
   Menu,
   X,
   Layers,
-  FolderTree,
-  Tag,
-  Boxes,
-  Headphones,
 } from 'lucide-react';
 
 /* =======================================================================
@@ -127,7 +119,7 @@ const FEATURES_DATA = [
   {
     id: 'all-features',
     title: 'All Features',
-    desc: 'Explore everything EasyCommerce offers',
+    desc: 'Explore everything BitCommerce offers',
     icon: Sparkles,
     iconBg: 'bg-blue-50 text-blue-600',
     href: '/#features',
@@ -230,20 +222,12 @@ const RESOURCES_DATA = [
   },
 ];
 
-// --- 4. USER DROPDOWN ITEMS ---
-const USER_MENU_ITEMS = [
-  { label: 'My Stores', icon: Store, href: '/dashboard' },
-  { label: 'Account Settings', icon: Settings, href: '/dashboard/settings' },
-  { label: 'Billing & Subscription', icon: CreditCard, href: '/dashboard/settings' },
-  { label: 'Team Members', icon: UserCheck, href: '/dashboard/staff' },
-  { label: 'Activity Log', icon: History, href: '/dashboard/analytics' },
-  { label: 'Developer Settings', icon: Terminal, href: '/dashboard/settings' },
-];
+type DropdownMenu = 'features' | 'solutions' | 'resources';
 
 export function Navbar() {
-  const [activeDropdown, setActiveDropdown] = useState<'features' | 'solutions' | 'resources' | 'user' | null>(null);
+  const [activeDropdown, setActiveDropdown] = useState<DropdownMenu | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [mobileExpandedSection, setMobileExpandedSection] = useState<'features' | 'solutions' | 'resources' | null>(null);
+  const [mobileExpandedSection, setMobileExpandedSection] = useState<DropdownMenu | null>(null);
   const [mounted, setMounted] = useState(false);
 
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -275,7 +259,35 @@ export function Navbar() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const handleMouseEnter = (menu: 'features' | 'solutions' | 'resources' | 'user') => {
+  // Clear any pending hover-close timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
+  // Close menus on Escape so keyboard users are not trapped
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setActiveDropdown(null);
+      setIsMobileMenuOpen(false);
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, []);
+
+  // Lock background scroll while the mobile drawer is open
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isMobileMenuOpen]);
+
+  const handleMouseEnter = (menu: DropdownMenu) => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
@@ -297,15 +309,6 @@ export function Navbar() {
     setIsMobileMenuOpen(false);
   };
 
-  const userInitials = user?.fullName
-    ? user.fullName
-        .split(' ')
-        .map((n) => n[0])
-        .slice(0, 2)
-        .join('')
-        .toUpperCase()
-    : 'BH';
-
   return (
     <header ref={navRef} className="w-full bg-white border-b border-slate-100 sticky top-0 z-50 shadow-2xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
@@ -318,7 +321,7 @@ export function Navbar() {
             <ShoppingBag className="w-4.5 h-4.5" />
           </div>
           <span className="font-extrabold text-base tracking-tight text-slate-900">
-            EasyCommerce
+            BitCommerce
           </span>
         </Link>
 
@@ -336,6 +339,8 @@ export function Navbar() {
             <button
               type="button"
               onClick={() => setActiveDropdown(activeDropdown === 'features' ? null : 'features')}
+              aria-expanded={activeDropdown === 'features'}
+              aria-haspopup="true"
               className={`flex items-center gap-1 transition-colors py-1 cursor-pointer select-none ${
                 activeDropdown === 'features' ? 'text-blue-600 font-bold' : 'hover:text-blue-600'
               }`}
@@ -414,6 +419,8 @@ export function Navbar() {
             <button
               type="button"
               onClick={() => setActiveDropdown(activeDropdown === 'solutions' ? null : 'solutions')}
+              aria-expanded={activeDropdown === 'solutions'}
+              aria-haspopup="true"
               className={`flex items-center gap-1 transition-colors py-1 cursor-pointer select-none ${
                 activeDropdown === 'solutions' ? 'text-blue-600 font-bold' : 'hover:text-blue-600'
               }`}
@@ -500,6 +507,8 @@ export function Navbar() {
             <button
               type="button"
               onClick={() => setActiveDropdown(activeDropdown === 'resources' ? null : 'resources')}
+              aria-expanded={activeDropdown === 'resources'}
+              aria-haspopup="true"
               className={`flex items-center gap-1 transition-colors py-1 cursor-pointer select-none ${
                 activeDropdown === 'resources' ? 'text-blue-600 font-bold' : 'hover:text-blue-600'
               }`}
@@ -556,7 +565,7 @@ export function Navbar() {
                   {/* Bottom Link */}
                   <div className="mt-3 pt-3 border-t border-slate-100 flex justify-center">
                     <Link
-                      href="/#resources"
+                      href="/#faq"
                       onClick={() => setActiveDropdown(null)}
                       className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1.5 transition-colors group"
                     >
@@ -571,7 +580,7 @@ export function Navbar() {
 
           {/* --- 5. CHANGELOG LINK --- */}
           <Link
-            href="/about"
+            href="/changelog"
             className="hover:text-blue-600 transition-colors py-1 cursor-pointer"
           >
             Changelog
@@ -611,6 +620,7 @@ export function Navbar() {
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           className="md:hidden p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors"
           aria-label="Toggle Navigation Menu"
+          aria-expanded={isMobileMenuOpen}
         >
           {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
@@ -632,6 +642,7 @@ export function Navbar() {
               onClick={() =>
                 setMobileExpandedSection(mobileExpandedSection === 'features' ? null : 'features')
               }
+              aria-expanded={mobileExpandedSection === 'features'}
               className="w-full flex items-center justify-between text-xs font-extrabold text-slate-900 cursor-pointer select-none"
             >
               <div className="flex items-center gap-2">
@@ -670,6 +681,7 @@ export function Navbar() {
               onClick={() =>
                 setMobileExpandedSection(mobileExpandedSection === 'solutions' ? null : 'solutions')
               }
+              aria-expanded={mobileExpandedSection === 'solutions'}
               className="w-full flex items-center justify-between text-xs font-extrabold text-slate-900 cursor-pointer select-none"
             >
               <div className="flex items-center gap-2">
@@ -729,6 +741,7 @@ export function Navbar() {
               onClick={() =>
                 setMobileExpandedSection(mobileExpandedSection === 'resources' ? null : 'resources')
               }
+              aria-expanded={mobileExpandedSection === 'resources'}
               className="w-full flex items-center justify-between text-xs font-extrabold text-slate-900 cursor-pointer select-none"
             >
               <div className="flex items-center gap-2">

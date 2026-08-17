@@ -20,11 +20,11 @@ export class GetStoreSeoService {
       throw new NotFoundException('Store not found for SEO metadata.');
     }
 
-    const canonicalUrl = `https://${store.slug}.easycommerce.app`;
+    const canonicalUrl = `https://${store.slug}.bitcommerce.app`;
     const metaTitle = store.metaTitle || `${store.name} | Official Online Storefront`;
     const metaDescription =
       store.metaDescription ||
-      `Shop authentic products, pricing, and fast delivery from ${store.name} on EasyCommerce.`;
+      `Shop authentic products, pricing, and fast delivery from ${store.name} on BitCommerce.`;
 
     const jsonLdSchema: Record<string, any> = {
       '@context': 'https://schema.org',

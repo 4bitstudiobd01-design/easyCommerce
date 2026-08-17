@@ -71,7 +71,7 @@ export default function SuperAdminOverviewPage() {
                   </div>
                   <div>
                     <span className="font-extrabold text-slate-900 block">{s.name}</span>
-                    <span className="text-[10px] text-blue-600 font-mono">{s.slug}.easycommerce.app</span>
+                    <span className="text-[10px] text-blue-600 font-mono">{s.slug}.bitcommerce.app</span>
                   </div>
                 </div>
 

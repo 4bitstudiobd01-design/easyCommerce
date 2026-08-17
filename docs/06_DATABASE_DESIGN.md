@@ -1,6 +1,6 @@
 # 06_DATABASE_DESIGN.md - Business Entity & Domain-Driven Design
 
-# EasyCommerce Domain-Driven Business Entity Design
+# BitCommerce Domain-Driven Business Entity Design
 
 **Version:** 0.2.0  
 **Status:** Approved  
@@ -10,7 +10,7 @@
 
 ## 1. Overview & Architectural Principles
 
-This document defines the **Business Entity Design** for EasyCommerce. In alignment with Domain-Driven Design (DDD) and Modular Monolith principles:
+This document defines the **Business Entity Design** for BitCommerce. In alignment with Domain-Driven Design (DDD) and Modular Monolith principles:
 
 * **Business Modeling First**: Focuses strictly on domain boundaries, entity responsibilities, ownership, aggregate roots, and relationships. Physical database column definitions, SQL data types, and migrations are intentionally deferred to implementation.
 * **Strict Module Decoupling**: Modules (e.g., Catalog vs. Inventory) do NOT share internal database state or perform cross-domain joins.
@@ -69,7 +69,7 @@ Tenant Domain (Aggregate: Tenant)
 #### Entity Responsibilities & Boundaries
 * **`Tenant`**: Root organization account holding multi-tenant isolation context.
 * **`Store`**: Individual storefront instance under a tenant organization.
-* **`Domain`**: Custom domain binding (`merchant.com`) and subdomains (`merchant.easycommerce.app`) with SSL status.
+* **`Domain`**: Custom domain binding (`merchant.com`) and subdomains (`merchant.bitcommerce.app`) with SSL status.
 * **`Subscription` & `SubscriptionPlan`**: SaaS billing tier, usage quotas, feature flags, and renewal status.
 
 #### Relationships

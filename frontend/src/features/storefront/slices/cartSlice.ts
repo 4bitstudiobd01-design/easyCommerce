@@ -19,7 +19,7 @@ interface CartState {
 const getStoredCart = (): CartItem[] => {
   if (typeof window === 'undefined') return [];
   try {
-    const itemStr = localStorage.getItem('easycommerce_cart');
+    const itemStr = localStorage.getItem('bitcommerce_cart');
     return itemStr ? JSON.parse(itemStr) : [];
   } catch (e) {
     return [];
@@ -65,14 +65,14 @@ export const cartSlice = createSlice({
       state.isDrawerOpen = true;
 
       if (typeof window !== 'undefined') {
-        localStorage.setItem('easycommerce_cart', JSON.stringify(state.items));
+        localStorage.setItem('bitcommerce_cart', JSON.stringify(state.items));
       }
     },
 
     removeFromCart: (state, action: PayloadAction<string>) => {
       state.items = state.items.filter((item) => item.productId !== action.payload);
       if (typeof window !== 'undefined') {
-        localStorage.setItem('easycommerce_cart', JSON.stringify(state.items));
+        localStorage.setItem('bitcommerce_cart', JSON.stringify(state.items));
       }
     },
 
@@ -87,14 +87,14 @@ export const cartSlice = createSlice({
         }
       }
       if (typeof window !== 'undefined') {
-        localStorage.setItem('easycommerce_cart', JSON.stringify(state.items));
+        localStorage.setItem('bitcommerce_cart', JSON.stringify(state.items));
       }
     },
 
     clearCart: (state) => {
       state.items = [];
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('easycommerce_cart');
+        localStorage.removeItem('bitcommerce_cart');
       }
     },
 

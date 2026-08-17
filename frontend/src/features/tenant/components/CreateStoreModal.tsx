@@ -119,7 +119,7 @@ export function CreateStoreModal({ isOpen, onSuccess }: CreateStoreModalProps) {
                   placeholder="daruchini"
                   className="w-full pl-10 pr-28 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm font-semibold placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all"
                 />
-                <span className="absolute right-3.5 top-3 text-xs font-bold text-slate-400">.easycommerce.app</span>
+                <span className="absolute right-3.5 top-3 text-xs font-bold text-slate-400">.bitcommerce.app</span>
               </div>
               <p className="text-[11px] text-slate-500 mt-1">Your storefront web address link</p>
             </div>

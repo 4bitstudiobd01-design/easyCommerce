@@ -15,7 +15,7 @@ export interface DashboardHeaderProps {
 
 export function DashboardHeader({
   userName = 'Super Admin',
-  userEmail = 'admin@easycommerce.com',
+  userEmail = 'admin@bitcommerce.com',
   onMenuToggle,
   onLogout,
   className = '',
@@ -39,7 +39,7 @@ export function DashboardHeader({
             <ShieldCheck className="w-4 h-4" />
           </div>
           <div>
-            <h1 className="font-extrabold text-sm text-slate-900 dark:text-white tracking-tight">EasyCommerce Admin</h1>
+            <h1 className="font-extrabold text-sm text-slate-900 dark:text-white tracking-tight">BitCommerce Admin</h1>
             <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 block -mt-0.5 uppercase tracking-wider">Enterprise Control Center</span>
           </div>
         </div>

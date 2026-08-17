@@ -3,8 +3,8 @@ import { LoginForm } from '@/features/auth/components/LoginForm';
 import { Store, BarChart3, CreditCard, Truck, Globe, ChevronDown, ShoppingBag } from 'lucide-react';
 
 export const metadata = {
-  title: 'Merchant Sign In | EasyCommerce',
-  description: 'Sign in to your EasyCommerce merchant control panel.',
+  title: 'Merchant Sign In | BitCommerce',
+  description: 'Sign in to your BitCommerce merchant control panel.',
 };
 
 export default function LoginPage() {
@@ -34,7 +34,7 @@ export default function LoginPage() {
                   <ShoppingBag className="w-5 h-5 fill-current" strokeWidth={1.5} />
                 </div>
                 <div className="flex flex-col">
-                  <span className="font-extrabold text-[22px] text-slate-900 tracking-tight leading-none">EasyCommerce</span>
+                  <span className="font-extrabold text-[22px] text-slate-900 tracking-tight leading-none">BitCommerce</span>
                   <span className="text-slate-500 text-[12px] font-medium mt-1">Build. Manage. Grow.</span>
                 </div>
               </Link>
@@ -97,7 +97,7 @@ export default function LoginPage() {
             <div className="flex-1 relative w-full mt-auto flex items-end overflow-hidden">
               <img
                 src="/dashboard-mockup.png"
-                alt="EasyCommerce merchant dashboard and storefront app"
+                alt="BitCommerce merchant dashboard and storefront app"
                 className="w-[115%] max-w-none h-auto object-contain object-left-bottom -mb-6 -ml-2 drop-shadow-2xl"
               />
             </div>
@@ -135,7 +135,7 @@ export default function LoginPage() {
             <span>•</span>
             <Link href="#" className="hover:text-slate-900 transition-colors">Help Center</Link>
           </div>
-          <p className="text-[11px] font-medium text-slate-400">© 2026 EasyCommerce. All rights reserved.</p>
+          <p className="text-[11px] font-medium text-slate-400">© 2026 BitCommerce. All rights reserved.</p>
         </div>
 
       </div>

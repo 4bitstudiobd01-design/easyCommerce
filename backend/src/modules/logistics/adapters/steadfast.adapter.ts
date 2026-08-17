@@ -129,7 +129,7 @@ export class SteadfastCourierAdapter implements ICourierAdapter {
           recipient_phone: payload.recipientPhone,
           recipient_address: payload.recipientAddress,
           cod_amount: payload.codAmount,
-          note: payload.note || 'EasyCommerce Parcel',
+          note: payload.note || 'BitCommerce Parcel',
         },
         {
           headers: {

@@ -41,8 +41,8 @@ export default function ProductsPage() {
     if (categoryFilter) params.set('categoryId', categoryFilter);
     if (brandFilter) params.set('brandId', brandFilter);
 
-    const token = localStorage.getItem('easycommerce_token');
-    const storeId = localStorage.getItem('easycommerce_active_store_id');
+    const token = localStorage.getItem('bitcommerce_token');
+    const storeId = localStorage.getItem('bitcommerce_active_store_id');
 
     fetch(`${apiUrl}/products/export?${params.toString()}`, {
       headers: {

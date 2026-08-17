@@ -35,7 +35,7 @@ export const OgShareCardPreviewModal: React.FC<OgShareCardPreviewModalProps> = (
   url,
   price,
   currency = 'BDT',
-  storeName = 'EasyCommerce Store',
+  storeName = 'BitCommerce Store',
 }) => {
   const [activePlatform, setActivePlatform] = useState<'facebook' | 'whatsapp' | 'google'>('facebook');
   const [copied, setCopied] = useState(false);
@@ -49,7 +49,7 @@ export const OgShareCardPreviewModal: React.FC<OgShareCardPreviewModalProps> = (
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const domainName = url.replace(/^https?:\/\//, '').split('/')[0] || 'store.easycommerce.app';
+  const domainName = url.replace(/^https?:\/\//, '').split('/')[0] || 'store.bitcommerce.app';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/75 backdrop-blur-sm p-4 overflow-y-auto font-sans">

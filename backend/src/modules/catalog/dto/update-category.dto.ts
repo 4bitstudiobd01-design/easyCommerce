@@ -63,7 +63,7 @@ export class UpdateCategoryDto {
   @IsBoolean()
   isFeatured?: boolean;
 
-  @ApiProperty({ example: 'Men Fashion & Apparel Collection | EasyCommerce', description: 'Meta SEO Title', required: false })
+  @ApiProperty({ example: 'Men Fashion & Apparel Collection | BitCommerce', description: 'Meta SEO Title', required: false })
   @IsOptional()
   @IsString()
   @MaxLength(255)

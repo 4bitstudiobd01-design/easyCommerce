@@ -31,7 +31,7 @@ export function ProductSeoConfig({ product, storeSlug }: ProductSeoConfigProps) 
 
   const displayTitle = seoTitle.trim() || product.name || product.title || 'Product Title';
   const displayDescription = metaDescription.trim() || product.description || 'Buy online with fast delivery from our store.';
-  const displayUrl = `https://${storeSlug || 'mystore'}.easycommerce.io/products/${slug || 'product-slug'}`;
+  const displayUrl = `https://${storeSlug || 'mystore'}.bitcommerce.io/products/${slug || 'product-slug'}`;
 
   const handleSaveSeo = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,7 +83,7 @@ export function ProductSeoConfig({ product, storeSlug }: ProductSeoConfigProps) 
           </div>
           <input
             type="text"
-            placeholder={product.name || 'e.g. Premium Cotton T-Shirt | EasyCommerce'}
+            placeholder={product.name || 'e.g. Premium Cotton T-Shirt | BitCommerce'}
             value={seoTitle}
             onChange={(e) => setSeoTitle(e.target.value)}
             className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white"

@@ -130,8 +130,8 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
   const handleExportSelectedCsv = async () => {
     try {
       toast.info('Preparing export...');
-      const token = localStorage.getItem('easycommerce_token');
-      const storeId = localStorage.getItem('easycommerce_active_store_id');
+      const token = localStorage.getItem('bitcommerce_token');
+      const storeId = localStorage.getItem('bitcommerce_active_store_id');
       
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1'}/orders/bulk/export`, {
         method: 'POST',

@@ -111,7 +111,7 @@ export class RedxCourierAdapter implements ICourierAdapter {
           merchant_invoice_id: payload.invoice,
           cash_collection_amount: String(payload.codAmount),
           parcel_weight: Math.round((payload.weight ?? 0.5) * 1000),
-          instruction: payload.note || 'EasyCommerce Parcel',
+          instruction: payload.note || 'BitCommerce Parcel',
         },
         {
           headers: {

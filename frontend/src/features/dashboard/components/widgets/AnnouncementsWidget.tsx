@@ -12,7 +12,7 @@ export function AnnouncementsWidget() {
   return (
     <WidgetCard
       title="Platform Announcements"
-      subtitle="Updates from EasyCommerce"
+      subtitle="Updates from BitCommerce"
       icon={Megaphone}
       iconBgColor="bg-blue-50"
       iconTextColor="text-blue-600"

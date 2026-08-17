@@ -1,4 +1,4 @@
-# EasyCommerce
+# BitCommerce
 
 Enterprise-grade Multi-Tenant eCommerce SaaS Platform (Bangladesh First, Global Ready).
 
@@ -7,7 +7,7 @@ Enterprise-grade Multi-Tenant eCommerce SaaS Platform (Bangladesh First, Global 
 ## 📁 Repository Structure
 
 ```text
-EasyCommerce/
+BitCommerce/
 ├── .agents/                    # Agent instructions & context rules
 ├── backend/                    # NestJS API Backend & Microservice ready modules
 ├── frontend/                   # Next.js Storefront & Admin Portal apps
@@ -29,7 +29,7 @@ EasyCommerce/
 
 ## 🚀 Overview
 
-EasyCommerce is built on a **Modular Monolith** architecture with **Domain-Driven Design (DDD)** principles. It provides merchants with an out-of-the-box solution for creating storefronts, managing products and stock, processing local payments (bKash, Nagad, COD), and shipping orders via integrated courier APIs (Steadfast, Pathao).
+BitCommerce is built on a **Modular Monolith** architecture with **Domain-Driven Design (DDD)** principles. It provides merchants with an out-of-the-box solution for creating storefronts, managing products and stock, processing local payments (bKash, Nagad, COD), and shipping orders via integrated courier APIs (Steadfast, Pathao).
 
 ### Tech Stack
 * **Frontend**: Next.js (App Router), React, TypeScript, Tailwind CSS, shadcn/ui, Redux Toolkit (RTK) & RTK Query
@@ -40,16 +40,16 @@ EasyCommerce is built on a **Modular Monolith** architecture with **Domain-Drive
 
 ## 📚 Documentation
 
-For complete technical and product details, explore the [`docs/`](file:///Users/sumon/Desktop/EasyCommerce/docs) folder:
-* 📖 [Project Context](file:///Users/sumon/Desktop/EasyCommerce/docs/00_PROJECT_CONTEXT.md)
-* 🎯 [Product Vision](file:///Users/sumon/Desktop/EasyCommerce/docs/01_VISION.md)
-* 🏛️ [System Architecture](file:///Users/sumon/Desktop/EasyCommerce/docs/05_SYSTEM_ARCHITECTURE.md)
-* 🗄️ [Database Design](file:///Users/sumon/Desktop/EasyCommerce/docs/06_DATABASE_DESIGN.md)
-* 🔌 [API Specification](file:///Users/sumon/Desktop/EasyCommerce/docs/07_API_SPECIFICATION.md)
-* 🗺️ [Development Roadmap](file:///Users/sumon/Desktop/EasyCommerce/docs/09_ROADMAP.md)
+For complete technical and product details, explore the [`docs/`](file:///Users/sumon/Desktop/BitCommerce/docs) folder:
+* 📖 [Project Context](file:///Users/sumon/Desktop/BitCommerce/docs/00_PROJECT_CONTEXT.md)
+* 🎯 [Product Vision](file:///Users/sumon/Desktop/BitCommerce/docs/01_VISION.md)
+* 🏛️ [System Architecture](file:///Users/sumon/Desktop/BitCommerce/docs/05_SYSTEM_ARCHITECTURE.md)
+* 🗄️ [Database Design](file:///Users/sumon/Desktop/BitCommerce/docs/06_DATABASE_DESIGN.md)
+* 🔌 [API Specification](file:///Users/sumon/Desktop/BitCommerce/docs/07_API_SPECIFICATION.md)
+* 🗺️ [Development Roadmap](file:///Users/sumon/Desktop/BitCommerce/docs/09_ROADMAP.md)
 
 ---
 
 ## 🛠️ Development Setup
 
-Refer to [08_DEVELOPMENT_GUIDE.md](file:///Users/sumon/Desktop/EasyCommerce/docs/08_DEVELOPMENT_GUIDE.md) to set up your local development environment.
+Refer to [08_DEVELOPMENT_GUIDE.md](file:///Users/sumon/Desktop/BitCommerce/docs/08_DEVELOPMENT_GUIDE.md) to set up your local development environment.

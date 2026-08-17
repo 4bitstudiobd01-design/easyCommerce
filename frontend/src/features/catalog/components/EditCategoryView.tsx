@@ -238,13 +238,13 @@ export function EditCategoryView({ categoryId }: EditCategoryViewProps) {
   };
 
   const parentOptions = existingCategories.filter((c) => c.id !== categoryId);
-  const displaySeoTitle = seoTitle.trim() || (name.trim() ? `${name.trim()} | EasyCommerce` : 'Category Title | EasyCommerce');
+  const displaySeoTitle = seoTitle.trim() || (name.trim() ? `${name.trim()} | BitCommerce` : 'Category Title | BitCommerce');
   const displaySeoSlug = slug.trim() || slugify(name) || 'category-slug';
   const displayMetaDescription =
     metaDescription.trim() ||
     (description.trim()
       ? description.trim().slice(0, 160)
-      : 'Explore products in this category at EasyCommerce. Premium quality with fast shipping.');
+      : 'Explore products in this category at BitCommerce. Premium quality with fast shipping.');
 
   if (isLoadingCategory) {
     return (
@@ -636,7 +636,7 @@ export function EditCategoryView({ categoryId }: EditCategoryViewProps) {
                       setSeoTitle(e.target.value);
                       setIsDirty(true);
                     }}
-                    placeholder={`${name || 'Category'} | EasyCommerce`}
+                    placeholder={`${name || 'Category'} | BitCommerce`}
                     className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   />
                 </div>
@@ -668,7 +668,7 @@ export function EditCategoryView({ categoryId }: EditCategoryViewProps) {
                         E
                       </div>
                       <span className="text-[11px] text-slate-600 font-mono">
-                        https://easycommerce.com/categories/{displaySeoSlug}
+                        https://bitcommerce.com/categories/{displaySeoSlug}
                       </span>
                     </div>
                     <h4 className="text-sm font-semibold text-blue-800 hover:underline cursor-pointer truncate">

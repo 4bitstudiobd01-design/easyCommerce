@@ -3,8 +3,8 @@ import { Footer } from '@/components/landing/Footer';
 import { ShieldCheck } from 'lucide-react';
 
 export const metadata = {
-  title: 'Privacy Policy | EasyCommerce',
-  description: 'How EasyCommerce collects, uses, and protects merchant and customer data.',
+  title: 'Privacy Policy | BitCommerce',
+  description: 'How BitCommerce collects, uses, and protects merchant and customer data.',
 };
 
 export default function PrivacyPolicyPage() {
@@ -23,7 +23,7 @@ export default function PrivacyPolicyPage() {
 
         <div className="prose prose-slate prose-sm max-w-none space-y-8 text-slate-700 leading-relaxed">
           <p>
-            EasyCommerce ("we", "our", "the platform") is a multi-tenant eCommerce SaaS platform that lets merchants
+            BitCommerce ("we", "our", "the platform") is a multi-tenant eCommerce SaaS platform that lets merchants
             create and run their own online stores. This policy explains what data we collect, how it's used, and how
             it's kept separate between merchants.
           </p>
@@ -74,7 +74,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <p className="text-xs text-slate-400 pt-4 border-t border-slate-200">
-            EasyCommerce is an early-stage platform. This policy will be expanded as the product and our legal review
+            BitCommerce is an early-stage platform. This policy will be expanded as the product and our legal review
             of it matures — check back for updates.
           </p>
         </div>

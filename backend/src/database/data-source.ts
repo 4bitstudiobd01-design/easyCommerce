@@ -13,7 +13,7 @@ export const AppDataSource = new DataSource({
   // configured DB_USER was ignored and the connection silently fell back to 'postgres'.
   username: process.env.DB_USER || process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
-  database: process.env.DB_NAME || 'easycommerce',
+  database: process.env.DB_NAME || 'bitcommerce',
 
   entities: [__dirname + '/../**/*.entity{.ts,.js}'],
   migrations: [__dirname + '/migrations/*{.ts,.js}'],

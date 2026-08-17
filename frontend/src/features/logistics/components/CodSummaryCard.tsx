@@ -9,7 +9,7 @@ interface CodSummaryCardProps {
   codSummary?: CodSummary;
   currency: string;
   isLoading: boolean;
-  onViewAll: () => void;
+  onViewAll?: () => void;
 }
 
 export const CodSummaryCard = ({
@@ -46,13 +46,15 @@ export const CodSummaryCard = ({
     <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-5">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-bold text-slate-900">COD Summary (This Month)</h3>
-        <button
-          type="button"
-          onClick={onViewAll}
-          className="text-[11px] font-bold text-blue-600 hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded shrink-0"
-        >
-          View All
-        </button>
+        {onViewAll && (
+          <button
+            type="button"
+            onClick={onViewAll}
+            className="text-[11px] font-bold text-blue-600 hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded shrink-0"
+          >
+            View All
+          </button>
+        )}
       </div>
 
       <dl className="space-y-3">

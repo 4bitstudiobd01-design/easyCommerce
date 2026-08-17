@@ -35,7 +35,7 @@ export function HowItWorksSection() {
         {/* Header */}
         <div className="text-center max-w-xl mx-auto space-y-2">
           <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            How EasyCommerce Works
+            How BitCommerce Works
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 font-medium">
             Start your online business in just 4 simple steps

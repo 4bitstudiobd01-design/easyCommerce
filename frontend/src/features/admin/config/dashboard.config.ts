@@ -9,7 +9,7 @@ export interface GlobalDashboardConfig {
 }
 
 export const DASHBOARD_CONFIG: GlobalDashboardConfig = {
-  appName: 'EasyCommerce Super Admin',
+  appName: 'BitCommerce Super Admin',
   defaultPollingIntervalMs: 30000,
   maxRetryAttempts: 3,
   toastDurationMs: 4000,

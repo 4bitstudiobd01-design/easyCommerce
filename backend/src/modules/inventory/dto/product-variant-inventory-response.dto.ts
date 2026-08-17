@@ -14,7 +14,7 @@ export class ProductVariantInventoryItemDto {
   @ApiPropertyOptional({ example: 'IP15PM-256-NT' })
   sku?: string;
 
-  @ApiPropertyOptional({ example: 'https://img.easycommerce.app/var-1.jpg' })
+  @ApiPropertyOptional({ example: 'https://img.bitcommerce.app/var-1.jpg' })
   imageUrl?: string;
 
   @ApiProperty({ example: 45, description: 'Physical units on hand in warehouse' })
@@ -98,7 +98,7 @@ export class ProductVariantInventoryProductContextDto {
   @ApiPropertyOptional({ example: 'Mobiles & Tablets' })
   categoryName?: string;
 
-  @ApiPropertyOptional({ example: 'https://img.easycommerce.app/p1.jpg' })
+  @ApiPropertyOptional({ example: 'https://img.bitcommerce.app/p1.jpg' })
   thumbnail?: string;
 
   @ApiProperty({ example: true })

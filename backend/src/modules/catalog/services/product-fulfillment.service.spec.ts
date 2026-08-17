@@ -125,7 +125,7 @@ describe('Product Shipping & Fulfillment Services (Chunk 10)', () => {
         name: 'E-Book Guide PDF',
         productType: ProductType.DIGITAL,
         digitalDeliveryType: DigitalDeliveryType.DOWNLOAD,
-        digitalAssetUrl: 'https://cdn.easycommerce.io/assets/guide.pdf',
+        digitalAssetUrl: 'https://cdn.bitcommerce.io/assets/guide.pdf',
         downloadLimit: 5,
         downloadExpiryDays: 30,
       });
@@ -134,7 +134,7 @@ describe('Product Shipping & Fulfillment Services (Chunk 10)', () => {
         expect.objectContaining({
           productType: ProductType.DIGITAL,
           digitalDeliveryType: DigitalDeliveryType.DOWNLOAD,
-          digitalAssetUrl: 'https://cdn.easycommerce.io/assets/guide.pdf',
+          digitalAssetUrl: 'https://cdn.bitcommerce.io/assets/guide.pdf',
           downloadLimit: 5,
           downloadExpiryDays: 30,
         }),

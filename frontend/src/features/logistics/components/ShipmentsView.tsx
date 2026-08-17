@@ -42,18 +42,11 @@ import { CouriersView } from './CouriersView';
 import { resolveTimezone } from '../utils/shipmentFormatters';
 
 /**
- * The Courier module's tabs. Only Shipments is implemented in this release; the
- * others are declared so navigation stays intact and each can be built out
- * without restructuring this page.
+ * The Courier module's active tabs.
  */
 const TABS = [
   { key: 'shipments', label: 'Shipments' },
   { key: 'couriers', label: 'Couriers' },
-  { key: 'tracking', label: 'Tracking' },
-  { key: 'cod', label: 'COD' },
-  { key: 'returns', label: 'Returns' },
-  { key: 'analytics', label: 'Analytics' },
-  { key: 'settings', label: 'Settings' },
 ] as const;
 
 const DATE_RANGES: Array<{ value: ShipmentDateRangePreset; label: string }> = [
@@ -271,10 +264,10 @@ export const ShipmentsView = () => {
         'http://localhost:5001/api/v1';
 
       const token =
-        typeof window !== 'undefined' ? localStorage.getItem('easycommerce_token') : null;
+        typeof window !== 'undefined' ? localStorage.getItem('bitcommerce_token') : null;
       const activeStoreId =
         typeof window !== 'undefined'
-          ? localStorage.getItem('easycommerce_active_store_id')
+          ? localStorage.getItem('bitcommerce_active_store_id')
           : null;
 
       const headers: Record<string, string> = {};
@@ -470,22 +463,6 @@ export const ShipmentsView = () => {
 
       {activeTab === 'couriers' ? (
         <CouriersView />
-      ) : activeTab !== 'shipments' ? (
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-12 text-center">
-          <p className="text-sm font-bold text-slate-900">
-            {TABS.find((t) => t.key === activeTab)?.label}
-          </p>
-          <p className="text-xs text-slate-500 mt-1.5">
-            This section is not part of the Shipments release yet.
-          </p>
-          <button
-            type="button"
-            onClick={() => updateUrlParams({ tab: null })}
-            className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-          >
-            Back to Shipments
-          </button>
-        </div>
       ) : (
         /* 3. MAIN GRID — workspace ~80%, analytics rail ~20%. The rail is fixed
               so the shipment table keeps the width its nine columns need. */
@@ -839,7 +816,6 @@ export const ShipmentsView = () => {
             <ShipmentOverviewCard
               summary={summary}
               isLoading={isSummaryLoading}
-              onViewReport={() => updateUrlParams({ tab: 'analytics' })}
             />
             <CourierPerformanceCard
               couriers={summary?.courierPerformance}
@@ -851,7 +827,6 @@ export const ShipmentsView = () => {
               codSummary={summary?.codSummary}
               currency={summary?.currency ?? 'BDT'}
               isLoading={isSummaryLoading}
-              onViewAll={() => updateUrlParams({ tab: 'cod' })}
             />
             <QuickActionsCard
               onCreateShipment={() => setCreateDrawerMode('single')}

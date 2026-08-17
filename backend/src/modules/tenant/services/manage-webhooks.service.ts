@@ -69,7 +69,7 @@ export class ManageWebhooksService {
     const payload = {
       event: 'TEST',
       sentAt: new Date().toISOString(),
-      data: { message: 'This is a test event from EasyCommerce.' },
+      data: { message: 'This is a test event from BitCommerce.' },
     };
 
     const result = await this.dispatch(webhook, payload);
@@ -116,7 +116,7 @@ export class ManageWebhooksService {
       const response = await axios.post(webhook.targetUrl, body, {
         headers: {
           'Content-Type': 'application/json',
-          'x-easycommerce-signature': signature,
+          'x-bitcommerce-signature': signature,
         },
         timeout: 8000,
       });

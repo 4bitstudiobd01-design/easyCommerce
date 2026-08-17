@@ -52,7 +52,7 @@ export default function OrderTrackingPage() {
 
   return (
     <div className="min-h-screen bg-slate-900/5 text-slate-900 flex flex-col font-sans">
-      <StorefrontNavbar storeName="EasyCommerce Track" />
+      <StorefrontNavbar storeName="BitCommerce Track" />
 
       <main className="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-8 space-y-8">
         {/* Search Hero Box */}

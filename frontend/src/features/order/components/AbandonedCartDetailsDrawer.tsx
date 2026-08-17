@@ -271,7 +271,7 @@ export const AbandonedCartDetailsDrawer = ({
               </span>
             </div>
             <p className="text-[11px] font-mono text-slate-600 truncate bg-white p-2 rounded-lg border border-slate-200 select-all">
-              https://easycommerce.store/cart/recover?token={cart.recoveryToken}
+              https://bitcommerce.store/cart/recover?token={cart.recoveryToken}
             </p>
           </section>
         </div>

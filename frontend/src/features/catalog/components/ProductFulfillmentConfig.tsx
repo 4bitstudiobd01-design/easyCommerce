@@ -305,7 +305,7 @@ export function ProductFulfillmentConfig({
               </label>
               <input
                 type="text"
-                placeholder="https://cdn.easycommerce.io/assets/product-file.zip"
+                placeholder="https://cdn.bitcommerce.io/assets/product-file.zip"
                 value={digitalAssetUrl}
                 onChange={(e) => onDigitalAssetUrlChange(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono focus:bg-white"

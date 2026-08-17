@@ -7,7 +7,7 @@ export function HowItWorks() {
       badge: 'Step 01',
       title: 'Create an Account',
       icon: UserPlus,
-      desc: 'Welcome to EasyCommerce! Sign up to launch your online store and access powerful tools to grow your business.',
+      desc: 'Welcome to BitCommerce! Sign up to launch your online store and access powerful tools to grow your business.',
     },
     {
       badge: 'Step 02',

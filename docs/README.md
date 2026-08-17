@@ -1,6 +1,6 @@
-# EasyCommerce Documentation Index
+# BitCommerce Documentation Index
 
-Welcome to the official system documentation for **EasyCommerce**. This directory serves as the **Single Source of Truth** for product requirements, system architecture, database design, API specifications, and development workflows.
+Welcome to the official system documentation for **BitCommerce**. This directory serves as the **Single Source of Truth** for product requirements, system architecture, database design, API specifications, and development workflows.
 
 ---
 

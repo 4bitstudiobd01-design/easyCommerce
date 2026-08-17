@@ -7,7 +7,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsOptional, IsString, IsBoolean } from 'class-validator';
 
 export class UpdateProductSeoDto {
-  @ApiProperty({ example: "Men's Organic Polo Shirt | EasyCommerce", description: 'SEO Title tag', required: false })
+  @ApiProperty({ example: "Men's Organic Polo Shirt | BitCommerce", description: 'SEO Title tag', required: false })
   @IsOptional()
   @IsString()
   seoTitle?: string;
@@ -22,7 +22,7 @@ export class UpdateProductSeoDto {
   @IsString()
   slug?: string;
 
-  @ApiProperty({ example: 'https://easycommerce.io/products/mens-organic-polo-shirt', description: 'Canonical URL override', required: false })
+  @ApiProperty({ example: 'https://bitcommerce.io/products/mens-organic-polo-shirt', description: 'Canonical URL override', required: false })
   @IsOptional()
   @IsString()
   canonicalUrl?: string;

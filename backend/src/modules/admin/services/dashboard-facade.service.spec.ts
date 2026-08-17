@@ -23,7 +23,7 @@ describe('DashboardFacadeService', () => {
 
   const mockUserRepository = {
     find: jest.fn().mockResolvedValue([
-      { id: 'user-1', email: 'admin@easycommerce.com', role: 'SUPER_ADMIN', isActive: true },
+      { id: 'user-1', email: 'admin@bitcommerce.com', role: 'SUPER_ADMIN', isActive: true },
     ]),
   };
 

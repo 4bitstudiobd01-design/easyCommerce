@@ -265,12 +265,12 @@ export function CategoryDetailsView({ categoryId }: CategoryDetailsViewProps) {
   }
 
   const subcategories = category.subcategories || [];
-  const displaySeoTitle = category.seoTitle || `${category.name} | EasyCommerce`;
+  const displaySeoTitle = category.seoTitle || `${category.name} | BitCommerce`;
   const displayMetaDescription =
     category.metaDescription ||
     (category.description
       ? category.description.slice(0, 160)
-      : 'Explore products in this category at EasyCommerce. Premium quality with fast shipping.');
+      : 'Explore products in this category at BitCommerce. Premium quality with fast shipping.');
 
   const productsList = productsResponse?.data || [];
   const productsMeta = productsResponse?.meta || { total: 0, totalPages: 1, page: 1, limit: 10 };
@@ -845,7 +845,7 @@ export function CategoryDetailsView({ categoryId }: CategoryDetailsViewProps) {
 
               <div className="space-y-1">
                 <span className="text-slate-400 font-medium">Canonical URL</span>
-                <p className="font-mono text-blue-600">https://easycommerce.com/categories/{category.slug}</p>
+                <p className="font-mono text-blue-600">https://bitcommerce.com/categories/{category.slug}</p>
               </div>
             </div>
 
@@ -857,7 +857,7 @@ export function CategoryDetailsView({ categoryId }: CategoryDetailsViewProps) {
                     E
                   </div>
                   <span className="text-[11px] text-slate-600 font-mono">
-                    https://easycommerce.com/categories/{category.slug}
+                    https://bitcommerce.com/categories/{category.slug}
                   </span>
                 </div>
                 <h4 className="text-sm font-semibold text-blue-800 hover:underline cursor-pointer truncate">

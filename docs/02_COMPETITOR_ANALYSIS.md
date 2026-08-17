@@ -1,6 +1,6 @@
 # 02_COMPETITOR_ANALYSIS.md - Competitor Analysis
 
-# EasyCommerce Competitor Matrix & Market Benchmarking
+# BitCommerce Competitor Matrix & Market Benchmarking
 
 **Version:** 0.1.0  
 **Status:** Draft  
@@ -9,7 +9,7 @@
 
 ## 1. Competitive Landscape Overview
 
-The eCommerce SaaS market is split into global enterprise platforms and regional/local store builders. EasyCommerce positions itself at the intersection of enterprise performance and local market tailoring.
+The eCommerce SaaS market is split into global enterprise platforms and regional/local store builders. BitCommerce positions itself at the intersection of enterprise performance and local market tailoring.
 
 ### Direct & Indirect Competitors
 
@@ -24,7 +24,7 @@ The eCommerce SaaS market is split into global enterprise platforms and regional
 
 ## 2. Feature Comparison Matrix
 
-| Feature / Capability | Shopify | Zatiq / Local Builders | WooCommerce | EasyCommerce (Target) |
+| Feature / Capability | Shopify | Zatiq / Local Builders | WooCommerce | BitCommerce (Target) |
 | :--- | :---: | :---: | :---: | :---: |
 | **Multi-Tenancy** | ✅ | ✅ | ❌ | ✅ (Native Isolation) |
 | **BD Mobile Financial Services (bKash/Nagad)** | ⚠️ Third-party | ✅ Native | ⚠️ Third-party plugin | ✅ Native First-Party |
@@ -36,7 +36,7 @@ The eCommerce SaaS market is split into global enterprise platforms and regional
 
 ---
 
-## 3. EasyCommerce Strategic Advantages (The Moat)
+## 3. BitCommerce Strategic Advantages (The Moat)
 
 1. **Local-First Deep Integration**: Automated courier booking, shipping label generation, address validation for Bangladeshi districts/thanas, and direct MFS webhooks.
 2. **Superior Tech Stack**: Next.js App Router for storefronts combined with NestJS modular architecture ensures blazingly fast page loads and SEO optimization.
@@ -47,7 +47,7 @@ The eCommerce SaaS market is split into global enterprise platforms and regional
 
 ## 4. What We Will NOT Copy
 
-To protect simplicity, performance, and security, EasyCommerce explicitly avoids:
+To protect simplicity, performance, and security, BitCommerce explicitly avoids:
 * ❌ **Shopify App Store Over-Complexity**: Requiring 10+ paid third-party apps for basic merchant needs (e.g. basic SEO, local courier labels). Key features will be native first-party integrations.
 * ❌ **WooCommerce Plugin Dependencies**: Fragile plugin ecosystems that lead to plugin conflicts, database bloat, security vulnerabilities, and site crashes during updates.
 * ❌ **Legacy Clunky Admin UX**: Complex, dated administrative interfaces requiring extensive merchant training.
