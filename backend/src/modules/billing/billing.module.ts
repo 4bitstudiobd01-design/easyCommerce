@@ -16,6 +16,7 @@ import { EnforcePlanLimitService } from './services/enforce-plan-limit.service';
 import { InitiatePlanRenewalPaymentService } from './services/initiate-plan-renewal-payment.service';
 import { ValidatePlanRenewalPaymentService } from './services/validate-plan-renewal-payment.service';
 import { ExpireOverdueSubscriptionsService } from './services/expire-overdue-subscriptions.service';
+import { ChangePlanService } from './services/change-plan.service';
 import { BillingController } from './billing.controller';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
@@ -48,6 +49,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     InitiatePlanRenewalPaymentService,
     ValidatePlanRenewalPaymentService,
     ExpireOverdueSubscriptionsService,
+    ChangePlanService,
     JwtAuthGuard,
   ],
   exports: [

@@ -9,6 +9,9 @@ export interface Plan {
   id: string;
   code: PlanCode;
   name: string;
+  description: string;
+  features: string[];
+  displayOrder: number;
   monthlyPriceBdt: number;
   maxStores: number | null;
   maxStaffPerStore: number | null;
@@ -23,11 +26,23 @@ export interface Subscription {
   currentPeriodStart: string;
   currentPeriodEnd: string;
   gracePeriodEndsAt: string | null;
+  pendingPlanId: string | null;
+  pendingPlanEffectiveAt: string | null;
 }
 
 export interface SubscriptionSnapshot {
   subscription: Subscription;
   plan: Plan;
+  /** Set when a downgrade is scheduled for the end of the paid period. */
+  pendingPlan: Plan | null;
+}
+
+export interface ChangePlanResponse {
+  isScheduled: boolean;
+  effectiveAt: string | null;
+  currentPlanCode: PlanCode;
+  pendingPlanCode: PlanCode | null;
+  message: string;
 }
 
 export interface InitiatePlanRenewalResponse {
@@ -62,6 +77,23 @@ export const billingApi = createApi({
       invalidatesTags: ['Subscription'],
       transformResponse: (response: { data: InitiatePlanRenewalResponse }) => response.data,
     }),
+    changePlan: builder.mutation<ChangePlanResponse, { planCode: PlanCode }>({
+      query: (body) => ({
+        url: '/subscription/change-plan',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Subscription'],
+      transformResponse: (response: { data: ChangePlanResponse }) => response.data,
+    }),
+    cancelScheduledChange: builder.mutation<ChangePlanResponse, void>({
+      query: () => ({
+        url: '/subscription/cancel-scheduled-change',
+        method: 'POST',
+      }),
+      invalidatesTags: ['Subscription'],
+      transformResponse: (response: { data: ChangePlanResponse }) => response.data,
+    }),
   }),
 });
 
@@ -69,4 +101,6 @@ export const {
   useGetPlansQuery,
   useGetMySubscriptionQuery,
   useInitiatePlanRenewalMutation,
+  useChangePlanMutation,
+  useCancelScheduledChangeMutation,
 } = billingApi;

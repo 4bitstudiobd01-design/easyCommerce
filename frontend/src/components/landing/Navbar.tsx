@@ -24,9 +24,7 @@ import {
   BookOpen,
   HelpCircle,
   FileText,
-  Video,
   MessageSquare,
-  Code,
   Store,
   Rocket,
   Building2,
@@ -170,15 +168,20 @@ const SOLUTIONS_DATA = [
   },
 ];
 
-// --- 3. RESOURCES ITEMS (6 Items) ---
+/**
+ * --- 3. RESOURCES ITEMS ---
+ * Only destinations that genuinely exist. Documentation, API Reference and
+ * Video Tutorials were removed rather than pointed at a placeholder page —
+ * add them back when there is real content behind them.
+ */
 const RESOURCES_DATA = [
   {
-    id: 'documentation',
-    title: 'Documentation',
-    desc: 'Guides and technical documentation',
-    icon: BookOpen,
-    iconBg: 'bg-blue-50 text-blue-600',
-    href: '/about',
+    id: 'blog',
+    title: 'Blog',
+    desc: 'Latest updates and business tips',
+    icon: FileText,
+    iconBg: 'bg-indigo-50 text-indigo-600',
+    href: '/blog',
   },
   {
     id: 'help-center',
@@ -189,36 +192,12 @@ const RESOURCES_DATA = [
     href: '/contact',
   },
   {
-    id: 'blog',
-    title: 'Blog',
-    desc: 'Latest updates and business tips',
-    icon: FileText,
-    iconBg: 'bg-indigo-50 text-indigo-600',
-    href: '/about',
-  },
-  {
-    id: 'video-tutorials',
-    title: 'Video Tutorials',
-    desc: 'Step-by-step video guides',
-    icon: Video,
-    iconBg: 'bg-rose-50 text-rose-600',
-    href: '/#how-it-works',
-  },
-  {
     id: 'community',
     title: 'Community',
     desc: 'Join our community and discussions',
     icon: MessageSquare,
     iconBg: 'bg-amber-50 text-amber-600',
     href: '/contact',
-  },
-  {
-    id: 'api-reference',
-    title: 'API Reference',
-    desc: 'Developer API reference',
-    icon: Code,
-    iconBg: 'bg-violet-50 text-violet-600',
-    href: '/about',
   },
 ];
 

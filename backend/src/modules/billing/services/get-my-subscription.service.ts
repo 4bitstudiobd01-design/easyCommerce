@@ -7,6 +7,8 @@ import { PlanEntity, PlanCodeEnum } from '../entities/plan.entity';
 export interface SubscriptionSnapshot {
   subscription: SubscriptionEntity;
   plan: PlanEntity;
+  /** The plan a scheduled downgrade will move to, if one is pending. */
+  pendingPlan: PlanEntity | null;
 }
 
 @Injectable()
@@ -41,7 +43,7 @@ export class GetMySubscriptionService {
       });
       subscription = await this.subscriptionRepository.save(subscription);
 
-      return { subscription, plan: freePlan };
+      return { subscription, plan: freePlan, pendingPlan: null };
     }
 
     const plan = await this.planRepository.findOne({ where: { id: subscription.planId } });
@@ -49,6 +51,10 @@ export class GetMySubscriptionService {
       throw new NotFoundException('Subscription references a plan that no longer exists.');
     }
 
-    return { subscription, plan };
+    const pendingPlan = subscription.pendingPlanId
+      ? await this.planRepository.findOne({ where: { id: subscription.pendingPlanId } })
+      : null;
+
+    return { subscription, plan, pendingPlan: pendingPlan ?? null };
   }
 }

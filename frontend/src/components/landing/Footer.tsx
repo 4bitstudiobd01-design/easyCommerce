@@ -144,10 +144,9 @@ export function Footer() {
               <div className="space-y-3">
                 <p className="text-xs font-bold text-white tracking-wider">Resources</p>
                 <ul className="space-y-2 text-xs text-slate-400">
-                  <li><Link href="/about" className="hover:text-white transition-colors">Documentation</Link></li>
+                  <li><Link href="/blog" className="hover:text-white transition-colors">Blog</Link></li>
                   <li><Link href="/#faq" className="hover:text-white transition-colors">Help Center</Link></li>
-                  <li><Link href="/about" className="hover:text-white transition-colors">Blog</Link></li>
-                  <li><Link href="/#how-it-works" className="hover:text-white transition-colors">Guides</Link></li>
+                  <li><Link href="/#how-it-works" className="hover:text-white transition-colors">How It Works</Link></li>
                 </ul>
               </div>
 
@@ -157,8 +156,6 @@ export function Footer() {
                 <ul className="space-y-2 text-xs text-slate-400">
                   <li><Link href="/about" className="hover:text-white transition-colors">About Us</Link></li>
                   <li><Link href="/contact" className="hover:text-white transition-colors">Contact Us</Link></li>
-                  <li><Link href="/about" className="hover:text-white transition-colors">Careers</Link></li>
-                  <li><Link href="/about" className="hover:text-white transition-colors">Partners</Link></li>
                 </ul>
               </div>
 
@@ -169,7 +166,6 @@ export function Footer() {
                   <li><Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
                   <li><Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
                   <li><Link href="/terms" className="hover:text-white transition-colors">Refund Policy</Link></li>
-                  <li><Link href="/about" className="hover:text-white transition-colors">Partners</Link></li>
                 </ul>
               </div>
 

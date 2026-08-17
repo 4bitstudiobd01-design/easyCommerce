@@ -19,6 +19,8 @@ import { ListPlansService } from './services/list-plans.service';
 import { InitiatePlanRenewalPaymentService } from './services/initiate-plan-renewal-payment.service';
 import { ValidatePlanRenewalPaymentService } from './services/validate-plan-renewal-payment.service';
 import { InitiatePlanRenewalDto } from './dto/initiate-plan-renewal.dto';
+import { ChangePlanDto } from './dto/change-plan.dto';
+import { ChangePlanService } from './services/change-plan.service';
 
 @ApiTags('Billing & Subscriptions')
 @Controller('billing')
@@ -29,6 +31,7 @@ export class BillingController {
     private readonly listPlansService: ListPlansService,
     private readonly initiatePlanRenewalPaymentService: InitiatePlanRenewalPaymentService,
     private readonly validatePlanRenewalPaymentService: ValidatePlanRenewalPaymentService,
+    private readonly changePlanService: ChangePlanService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -61,6 +64,33 @@ export class BillingController {
   ) {
     const tenantId = await this.getTenantIdForUserService.execute(userId);
     return this.initiatePlanRenewalPaymentService.execute(tenantId, dto.planCode, email);
+  }
+
+  @Post('subscription/change-plan')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Schedule a downgrade to a cheaper plan at the end of the paid period',
+  })
+  @ApiResponse({ status: 201, description: 'Downgrade scheduled or applied' })
+  @ApiResponse({ status: 403, description: 'Current usage exceeds the target plan limits' })
+  async changePlan(@CurrentUser('sub') userId: string, @Body() dto: ChangePlanDto) {
+    const tenantId = await this.getTenantIdForUserService.execute(userId);
+    const result = await this.changePlanService.execute(tenantId, dto.planCode);
+    // ResponseInterceptor treats a top-level `message` as a pre-built envelope
+    // and drops everything else, so nest the payload under `data` explicitly.
+    return { message: result.message, data: result };
+  }
+
+  @Post('subscription/cancel-scheduled-change')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cancel a previously scheduled plan downgrade' })
+  @ApiResponse({ status: 201, description: 'Scheduled change cancelled' })
+  async cancelScheduledChange(@CurrentUser('sub') userId: string) {
+    const tenantId = await this.getTenantIdForUserService.execute(userId);
+    const result = await this.changePlanService.cancelScheduledChange(tenantId);
+    return { message: result.message, data: result };
   }
 
   // --- SSLCommerz Payment Redirect Callback Routes (public) ---

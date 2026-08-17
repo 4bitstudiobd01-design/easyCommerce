@@ -13,6 +13,7 @@ import {
   ShoppingCart,
   Database,
   Globe,
+  FileText,
   ShieldCheck,
   LogOut,
 } from 'lucide-react';
@@ -112,6 +113,11 @@ export function AdminSidebar() {
         <Link href="/admin/cms" className={navItemClass('/admin/cms')}>
           <Globe className="w-4 h-4" />
           <span>Landing Page CMS</span>
+        </Link>
+
+        <Link href="/admin/blog" className={navItemClass('/admin/blog')}>
+          <FileText className="w-4 h-4" />
+          <span>Blog Posts</span>
         </Link>
       </nav>
 

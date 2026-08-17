@@ -7,6 +7,9 @@ import {
   useGetPlansQuery,
   useGetMySubscriptionQuery,
   useInitiatePlanRenewalMutation,
+  useChangePlanMutation,
+  useCancelScheduledChangeMutation,
+  Plan,
   PlanCode,
 } from '@/features/billing/api/billingApi';
 import {
@@ -16,14 +19,29 @@ import {
   AlertTriangle,
   Loader2,
   CreditCard,
+  ArrowDownCircle,
+  CalendarClock,
+  X,
 } from 'lucide-react';
+
+function formatDate(value: string | null | undefined): string {
+  if (!value) return '—';
+  return new Date(value).toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
 
 export default function BillingSettingsPage() {
   const router = useRouter();
   const { data: plans = [], isLoading: isLoadingPlans } = useGetPlansQuery();
   const { data: snapshot, isLoading: isLoadingSubscription, refetch } = useGetMySubscriptionQuery();
   const [initiateRenewal, { isLoading: isInitiating }] = useInitiatePlanRenewalMutation();
+  const [changePlan, { isLoading: isChanging }] = useChangePlanMutation();
+  const [cancelScheduledChange, { isLoading: isCancelling }] = useCancelScheduledChangeMutation();
   const [upgradingPlan, setUpgradingPlan] = useState<PlanCode | null>(null);
+  const [planToDowngrade, setPlanToDowngrade] = useState<Plan | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -56,9 +74,33 @@ export default function BillingSettingsPage() {
     }
   };
 
+  const handleDowngrade = async () => {
+    if (!planToDowngrade) return;
+    try {
+      const res = await changePlan({ planCode: planToDowngrade.code }).unwrap();
+      toast.success(res.message);
+      setPlanToDowngrade(null);
+    } catch (err: any) {
+      // The server explains exactly what blocks the change (for example, too
+      // many active stores), so surface its message rather than a generic one.
+      toast.error(err?.data?.message || 'Could not change your plan.');
+    }
+  };
+
+  const handleCancelScheduled = async () => {
+    try {
+      const res = await cancelScheduledChange().unwrap();
+      toast.success(res.message);
+    } catch (err: any) {
+      toast.error(err?.data?.message || 'Could not cancel the scheduled change.');
+    }
+  };
+
   const isLoading = isLoadingPlans || isLoadingSubscription;
   const currentPlanCode = snapshot?.plan?.code;
   const status = snapshot?.subscription?.status;
+  const pendingPlan = snapshot?.pendingPlan;
+  const currentPrice = Number(snapshot?.plan?.monthlyPriceBdt ?? 0);
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -83,6 +125,35 @@ export default function BillingSettingsPage() {
         </div>
       ) : (
         <>
+          {/* Scheduled downgrade notice */}
+          {pendingPlan && (
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-xl bg-amber-100 text-amber-700 shrink-0">
+                  <CalendarClock className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-xs font-extrabold text-amber-900">
+                    Scheduled change to {pendingPlan.name}
+                  </p>
+                  <p className="text-[11px] text-amber-800 mt-0.5">
+                    You keep {snapshot?.plan?.name} features until{' '}
+                    {formatDate(snapshot?.subscription?.pendingPlanEffectiveAt)}, then move to{' '}
+                    {pendingPlan.name}.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleCancelScheduled}
+                disabled={isCancelling}
+                className="shrink-0 px-3.5 py-2 bg-white border border-amber-300 text-amber-800 hover:bg-amber-100 disabled:opacity-60 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors"
+              >
+                {isCancelling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
+                <span>Keep current plan</span>
+              </button>
+            </div>
+          )}
+
           {/* Current plan summary */}
           <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
@@ -138,6 +209,10 @@ export default function BillingSettingsPage() {
             {plans.map((plan) => {
               const isCurrent = plan.code === currentPlanCode;
               const isPaid = Number(plan.monthlyPriceBdt) > 0;
+              // Compared by price, not by "is it paid" — moving from Enterprise
+              // to Growth is a downgrade even though both cost money.
+              const isUpgrade = Number(plan.monthlyPriceBdt) > currentPrice;
+              const isPendingTarget = pendingPlan?.code === plan.code;
 
               return (
                 <div
@@ -176,10 +251,19 @@ export default function BillingSettingsPage() {
                             : `Up to ${plan.maxStaffPerStore} staff per store`}
                         </span>
                       </li>
+                      {plan.features?.map((feature) => (
+                        <li
+                          key={feature}
+                          className="flex items-center gap-2 text-xs text-slate-700 font-medium"
+                        >
+                          <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
                     </ul>
                   </div>
 
-                  {!isCurrent && isPaid && (
+                  {!isCurrent && isUpgrade && (
                     <button
                       onClick={() => handleUpgrade(plan.code)}
                       disabled={isInitiating}
@@ -194,9 +278,20 @@ export default function BillingSettingsPage() {
                     </button>
                   )}
 
-                  {!isCurrent && !isPaid && (
-                    <div className="text-center text-[11px] text-slate-400 font-medium py-2">
-                      Downgrade happens automatically if your paid plan expires.
+                  {!isCurrent && !isUpgrade && !isPendingTarget && (
+                    <button
+                      onClick={() => setPlanToDowngrade(plan)}
+                      disabled={isChanging}
+                      className="w-full py-2.5 px-4 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-60 font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-colors"
+                    >
+                      <ArrowDownCircle className="w-3.5 h-3.5" />
+                      <span>Switch to {plan.name}</span>
+                    </button>
+                  )}
+
+                  {isPendingTarget && (
+                    <div className="text-center text-[11px] text-amber-700 font-bold py-2 bg-amber-50 border border-amber-200 rounded-xl">
+                      Scheduled for {formatDate(snapshot?.subscription?.pendingPlanEffectiveAt)}
                     </div>
                   )}
                 </div>
@@ -204,6 +299,76 @@ export default function BillingSettingsPage() {
             })}
           </div>
         </>
+      )}
+
+      {/* Downgrade confirmation */}
+      {planToDowngrade && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="downgrade-title"
+        >
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 rounded-2xl bg-amber-50 text-amber-600 shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 id="downgrade-title" className="font-extrabold text-base text-slate-900">
+                  Switch to {planToDowngrade.name}?
+                </h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  {currentPrice > 0
+                    ? `You keep ${snapshot?.plan?.name} features until ${formatDate(
+                        snapshot?.subscription?.currentPeriodEnd,
+                      )}. After that your account moves to ${planToDowngrade.name}.`
+                    : `Your account moves to ${planToDowngrade.name} straight away.`}
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                New limits
+              </span>
+              <div className="flex items-center gap-2 text-xs text-slate-700 font-medium">
+                <Check className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span>
+                  {planToDowngrade.maxStores === null
+                    ? 'Unlimited stores'
+                    : `Up to ${planToDowngrade.maxStores} store(s)`}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-slate-700 font-medium">
+                <Check className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span>
+                  {planToDowngrade.maxStaffPerStore === null
+                    ? 'Unlimited staff per store'
+                    : `Up to ${planToDowngrade.maxStaffPerStore} staff per store`}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => setPlanToDowngrade(null)}
+                disabled={isChanging}
+                className="flex-1 py-2.5 px-4 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-60 font-bold text-xs rounded-xl transition-colors"
+              >
+                Keep current plan
+              </button>
+              <button
+                onClick={handleDowngrade}
+                disabled={isChanging}
+                className="flex-1 py-2.5 px-4 bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-colors"
+              >
+                {isChanging && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                <span>Confirm switch</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

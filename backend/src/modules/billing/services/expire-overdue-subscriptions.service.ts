@@ -23,10 +23,49 @@ export class ExpireOverdueSubscriptionsService {
     await this.execute();
   }
 
-  async execute(): Promise<{ markedPastDue: number; downgradedToFree: number }> {
+  async execute(): Promise<{
+    markedPastDue: number;
+    downgradedToFree: number;
+    scheduledChangesApplied: number;
+  }> {
     const now = new Date();
     let markedPastDue = 0;
     let downgradedToFree = 0;
+    let scheduledChangesApplied = 0;
+
+    // 0. Apply downgrades the merchant scheduled for the end of their paid
+    //    period. This must run before the past-due sweep below, otherwise a
+    //    subscription that ended with a pending change would be marked
+    //    PAST_DUE instead of moving to the plan the merchant chose.
+    const dueChanges = await this.subscriptionRepository.find({
+      where: { pendingPlanEffectiveAt: LessThanOrEqual(now) },
+    });
+
+    for (const sub of dueChanges) {
+      if (!sub.pendingPlanId) continue;
+
+      const pendingPlan = await this.planRepository.findOne({ where: { id: sub.pendingPlanId } });
+      if (!pendingPlan) {
+        // The target plan disappeared; drop the schedule rather than stranding it.
+        sub.pendingPlanId = null;
+        sub.pendingPlanEffectiveAt = null;
+        await this.subscriptionRepository.save(sub);
+        continue;
+      }
+
+      const periodEnd = new Date(now);
+      periodEnd.setMonth(periodEnd.getMonth() + 1);
+
+      sub.planId = pendingPlan.id;
+      sub.status = SubscriptionStatusEnum.ACTIVE;
+      sub.currentPeriodStart = now;
+      sub.currentPeriodEnd = periodEnd;
+      sub.gracePeriodEndsAt = null;
+      sub.pendingPlanId = null;
+      sub.pendingPlanEffectiveAt = null;
+      await this.subscriptionRepository.save(sub);
+      scheduledChangesApplied++;
+    }
 
     // 1. Active paid subscriptions whose period has ended enter a grace period.
     const overdueActive = await this.subscriptionRepository.find({
@@ -69,12 +108,12 @@ export class ExpireOverdueSubscriptionsService {
       }
     }
 
-    if (markedPastDue || downgradedToFree) {
+    if (markedPastDue || downgradedToFree || scheduledChangesApplied) {
       this.logger.log(
-        `Subscription sweep: ${markedPastDue} marked PAST_DUE, ${downgradedToFree} downgraded to Free.`,
+        `Subscription sweep: ${scheduledChangesApplied} scheduled change(s) applied, ${markedPastDue} marked PAST_DUE, ${downgradedToFree} downgraded to Free.`,
       );
     }
 
-    return { markedPastDue, downgradedToFree };
+    return { markedPastDue, downgradedToFree, scheduledChangesApplied };
   }
 }
