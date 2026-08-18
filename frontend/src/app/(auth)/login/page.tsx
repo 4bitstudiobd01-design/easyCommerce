@@ -1,6 +1,6 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { LoginForm } from '@/features/auth/components/LoginForm';
-import { MerchantDashboardPreview } from '@/features/auth/components/MerchantDashboardPreview';
 import { Store, BarChart3, CreditCard, Truck, Globe, ChevronDown, ShoppingBag } from 'lucide-react';
 
 export const metadata = {
@@ -94,11 +94,16 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Dashboard mockup — anchored bottom-left and bleeding off the panel edge */}
-            <div className="flex-1 relative w-full mt-auto flex items-end overflow-visible">
-              <div className="w-full pb-8">
-                <MerchantDashboardPreview />
-              </div>
+            {/* Hero image — anchored bottom-left and bleeding off the panel edge */}
+            <div className="flex-1 relative w-full mt-auto min-h-[220px] rounded-2xl overflow-hidden shadow-2xl shadow-slate-900/20">
+              <Image
+                src="/dashboard-analytics.jpg"
+                alt="Merchant analytics dashboard on a laptop screen"
+                fill
+                sizes="(min-width: 1024px) 50vw, 100vw"
+                className="object-cover"
+                priority
+              />
             </div>
 
           </div>
