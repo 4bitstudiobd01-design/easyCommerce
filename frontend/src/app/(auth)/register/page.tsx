@@ -36,8 +36,8 @@ const HIGHLIGHTS = [
 
 export default function RegisterPage() {
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900 font-sans p-0 sm:p-6 lg:p-8">
-      <div className="w-full min-h-[calc(100vh-4rem)] bg-white rounded-none sm:rounded-3xl shadow-xl shadow-slate-300/40 overflow-hidden grid grid-cols-1 lg:grid-cols-[minmax(0,48fr)_minmax(0,52fr)]">
+    <div className="h-screen overflow-hidden bg-slate-100 text-slate-900 font-sans p-0 sm:p-6 lg:p-8">
+      <div className="w-full h-full bg-white rounded-none sm:rounded-3xl shadow-xl shadow-slate-300/40 overflow-hidden grid grid-cols-1 lg:grid-cols-[minmax(0,48fr)_minmax(0,52fr)]">
 
         {/* LEFT COLUMN: Branding & Highlights */}
         <div className="hidden lg:flex flex-col bg-[#F6F8FF] relative overflow-hidden pl-12 xl:pl-16 pr-10 pt-12 pb-0">
@@ -80,7 +80,7 @@ export default function RegisterPage() {
             </p>
 
             {/* Highlights */}
-            <div className="space-y-5 mb-10">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-5 mb-10">
               {HIGHLIGHTS.map(({ icon: Icon, title, description, className }) => (
                 <div key={title} className="flex gap-3.5">
                   <div className={`p-2.5 rounded-xl shrink-0 h-fit ${className}`}>
@@ -107,7 +107,7 @@ export default function RegisterPage() {
         </div>
 
         {/* RIGHT COLUMN: Form */}
-        <div className="flex flex-col px-6 sm:px-10 lg:px-14 xl:px-20 py-10">
+        <div className="flex flex-col px-6 sm:px-10 lg:px-14 xl:px-20 py-10 h-full overflow-y-auto">
           {/* Top Nav */}
           <div className="flex items-center justify-end mb-6 shrink-0">
             <p className="text-[13px] font-medium text-slate-500">
