@@ -56,7 +56,7 @@ export default function RegisterPage() {
             {/* Logo */}
             <Link href="/" className="flex items-center gap-3 mb-10">
               <div className="p-2.5 bg-blue-600 rounded-xl text-white shadow-md">
-                <ShoppingBag className="w-5 h-5 fill-current" strokeWidth={1.5} />
+                <ShoppingBag className="w-5 h-5" strokeWidth={2} />
               </div>
               <div className="flex flex-col">
                 <span className="font-extrabold text-[22px] text-slate-900 tracking-tight leading-none">BitCommerce</span>
@@ -98,9 +98,9 @@ export default function RegisterPage() {
                 capped so a tall/square source image cannot stretch the layout. */}
             <div className="mt-auto pt-8">
               <img
-                src="/Dashboard.png"
+                src="/login-page-img.png"
                 alt="BitCommerce merchant dashboard preview"
-                className="w-auto max-w-full max-h-[340px] xl:max-h-[380px] h-auto object-contain object-left-bottom mix-blend-multiply"
+                className="w-auto max-w-full max-h-[340px] xl:max-h-[380px] h-auto object-contain object-left-bottom"
               />
             </div>
           </div>
