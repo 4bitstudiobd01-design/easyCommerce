@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { RegisterForm } from '@/features/auth/components/RegisterForm';
+import { MerchantDashboardPreview } from '@/features/auth/components/MerchantDashboardPreview';
 import { Rocket, CreditCard, ShieldCheck, Headphones, Heart, ShoppingBag } from 'lucide-react';
 
 export const metadata = {
@@ -94,14 +95,9 @@ export default function RegisterPage() {
               ))}
             </div>
 
-            {/* Dashboard Mockup — anchored to the bottom of the panel. Height is
-                capped so a tall/square source image cannot stretch the layout. */}
-            <div className="mt-auto pt-8">
-              <img
-                src="/dashboard-mockup.jpg"
-                alt="BitCommerce merchant dashboard preview"
-                className="w-auto max-w-full max-h-[340px] xl:max-h-[380px] h-auto object-contain object-left-bottom mix-blend-multiply"
-              />
+            {/* Dashboard Mockup — anchored to the bottom of the panel */}
+            <div className="mt-auto pt-8 pb-9">
+              <MerchantDashboardPreview />
             </div>
           </div>
         </div>
