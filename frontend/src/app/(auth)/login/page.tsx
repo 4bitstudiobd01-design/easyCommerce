@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { LoginForm } from '@/features/auth/components/LoginForm';
+import { MerchantDashboardPreview } from '@/features/auth/components/MerchantDashboardPreview';
 import { Store, BarChart3, CreditCard, Truck, Globe, ChevronDown, ShoppingBag } from 'lucide-react';
 
 export const metadata = {
@@ -94,12 +95,10 @@ export default function LoginPage() {
             </div>
 
             {/* Dashboard mockup — anchored bottom-left and bleeding off the panel edge */}
-            <div className="flex-1 relative w-full mt-auto flex items-end overflow-hidden">
-              <img
-                src="/dashboard-mockup.png"
-                alt="BitCommerce merchant dashboard and storefront app"
-                className="w-[115%] max-w-none h-auto object-contain object-left-bottom -mb-6 -ml-2 drop-shadow-2xl"
-              />
+            <div className="flex-1 relative w-full mt-auto flex items-end overflow-visible">
+              <div className="w-full pb-8">
+                <MerchantDashboardPreview />
+              </div>
             </div>
 
           </div>
