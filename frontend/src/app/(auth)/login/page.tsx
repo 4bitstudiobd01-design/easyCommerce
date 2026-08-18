@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-white flex text-slate-900 font-sans">
+    <div className="h-screen overflow-hidden bg-white flex text-slate-900 font-sans">
 
       {/* LEFT COLUMN: Branding & Features */}
       <div className="hidden lg:flex lg:w-1/2 p-3">
@@ -122,7 +122,7 @@ export default function LoginPage() {
         </div>
 
         {/* Center Form */}
-        <div className="flex-1 flex items-center justify-center p-8 mt-16 lg:mt-0">
+        <div className="flex-1 flex items-center justify-center p-8 mt-16 lg:mt-0 overflow-y-auto">
           <LoginForm />
         </div>
 
