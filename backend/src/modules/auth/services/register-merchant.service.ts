@@ -1,4 +1,4 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { FindUserByEmailService } from '../../user/services/find-user-by-email.service';
@@ -7,12 +7,14 @@ import { UserRoleEnum } from '../../user/entities/user.entity';
 import { RegisterMerchantDto } from '../dto/register-merchant.dto';
 import { AuthResponseDto } from '../dto/auth-response.dto';
 import { normalizePhone } from '../../../common/utils/normalize-phone.util';
+import { CreateStoreService } from '../../tenant/services/create-store.service';
 
 @Injectable()
 export class RegisterMerchantService {
   constructor(
     private readonly findUserByEmailService: FindUserByEmailService,
     private readonly createUserService: CreateUserService,
+    private readonly createStoreService: CreateStoreService,
     private readonly jwtService: JwtService,
   ) {}
 
@@ -21,6 +23,10 @@ export class RegisterMerchantService {
 
     if (existingUser) {
       throw new ConflictException('User with this email already exists.');
+    }
+
+    if ((dto.storeName && !dto.storeSlug) || (!dto.storeName && dto.storeSlug)) {
+      throw new BadRequestException('storeName and storeSlug must be provided together.');
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
@@ -33,6 +39,19 @@ export class RegisterMerchantService {
       role: UserRoleEnum.STORE_OWNER,
       isActive: true,
     });
+
+    if (dto.storeName && dto.storeSlug) {
+      // Registration created the account; if the merchant's first store fails to
+      // create (e.g. slug taken), the account still exists — surface the error so
+      // the client can retry store creation rather than silently dropping it.
+      await this.createStoreService.execute(savedUser.id, {
+        name: dto.storeName,
+        slug: dto.storeSlug,
+        category: dto.businessType,
+        country: dto.country,
+        phone: dto.phone ? normalizePhone(dto.phone) : undefined,
+      });
+    }
 
     const payload = {
       sub: savedUser.id,

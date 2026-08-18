@@ -54,6 +54,7 @@ export class CreateStoreService {
       name: dto.name,
       slug,
       category: dto.category,
+      country: dto.country || 'Bangladesh',
       phone: dto.phone,
       address: dto.address,
       logo: dto.logo,

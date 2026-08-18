@@ -48,6 +48,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Prevent hydration mismatch before the client knows the auth state.
   if (!isMounted) return null;
 
+  // While the *initial* store lookup is in flight, hold off on rendering dashboard
+  // content: otherwise the page briefly paints with no-store data before the
+  // onboarding redirect (or the real store data) resolves, which reads as an
+  // unwanted flash toward "create your store" right after registering. Only the
+  // first lookup is gated (isLoading) — later background refetches (isFetching)
+  // must not re-trigger this, or every store-data refresh would blank the page.
+  const isResolvingStore = user?.role !== 'SUPER_ADMIN' && isAuthenticated && isStoreLoading;
+  const isRedirectingToOnboarding =
+    user?.role !== 'SUPER_ADMIN' && isStoreSuccess && !store && pathname !== '/dashboard/create-store';
+
+  if (isResolvingStore || isRedirectingToOnboarding) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="w-6 h-6 border-2 border-slate-200 border-t-blue-600 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   // Session ended (expired refresh token, or explicit logout). The redirect above is
   // already running; show a short message instead of a blank page so the screen never
   // looks like "your store has no data".

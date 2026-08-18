@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString, MinLength, MaxLength, IsOptional, Matches } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MinLength, MaxLength, IsOptional, Matches, Length } from 'class-validator';
 
 export class RegisterMerchantDto {
   @ApiProperty({ example: 'owner@mystore.com', description: 'Merchant email' })
@@ -27,4 +27,30 @@ export class RegisterMerchantDto {
     message: 'phone must be a valid Bangladeshi mobile number, e.g. 01700000000',
   })
   phone?: string;
+
+  @ApiProperty({ example: 'Daruchini Fashion', description: 'Store name — provide together with storeSlug to create the merchant\'s first store in the same request', required: false })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  storeName?: string;
+
+  @ApiProperty({ example: 'daruchini', description: 'Unique store URL slug / subdomain', required: false })
+  @IsOptional()
+  @IsString()
+  @Length(3, 50)
+  @Matches(/^[a-z0-9-]+$/, {
+    message: 'storeSlug must contain only lowercase letters, numbers, and hyphens',
+  })
+  storeSlug?: string;
+
+  @ApiProperty({ example: 'Fashion & Apparel', description: 'Store business category', required: false })
+  @IsOptional()
+  @IsString()
+  businessType?: string;
+
+  @ApiProperty({ example: 'Bangladesh', description: 'Store country', required: false })
+  @IsOptional()
+  @IsString()
+  country?: string;
 }

@@ -22,7 +22,7 @@ export function CurrentStorefrontCard() {
   const { data: themeData } = useGetAvailableThemesQuery();
 
   const activeTheme = themeData?.themes.find((t) => t.id === themeData.activeThemeId);
-  const storeUrl = store?.domain || (store?.slug ? `${store.slug}.easyc.app` : '');
+  const storeUrl = store?.domain || (store?.slug ? `${store.slug}.bitcommerce.app` : '');
   const storefrontHref = store?.slug ? `/store/${store.slug}` : '#';
 
   if (isLoading || !store) {

@@ -63,6 +63,9 @@ export class StoreEntity {
   @Column({ type: 'varchar', length: 100, nullable: true })
   category?: string;
 
+  @Column({ type: 'varchar', length: 100, default: 'Bangladesh' })
+  country: string;
+
   @Column({ type: 'varchar', length: 50, nullable: true })
   phone?: string;
 

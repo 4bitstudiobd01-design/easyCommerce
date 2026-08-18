@@ -8,6 +8,10 @@ export interface RegisterRequest {
   fullName: string;
   /** Optional; normalized to the canonical +880 form on the server. */
   phone?: string;
+  /** Provide together with storeSlug to create the merchant's first store in the same request. */
+  storeName?: string;
+  storeSlug?: string;
+  businessType?: string;
 }
 
 export interface LoginRequest {

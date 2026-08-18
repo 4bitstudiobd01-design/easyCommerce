@@ -129,11 +129,11 @@ export default function LoginPage() {
         {/* Footer */}
         <div className="absolute bottom-0 left-0 right-0 p-8 flex flex-col items-center justify-center gap-2 z-10">
           <div className="flex items-center gap-3 text-[11px] font-bold text-slate-500">
-            <Link href="#" className="hover:text-slate-900 transition-colors">Privacy Policy</Link>
+            <Link href="/privacy" className="hover:text-slate-900 transition-colors">Privacy Policy</Link>
             <span>•</span>
-            <Link href="#" className="hover:text-slate-900 transition-colors">Terms of Service</Link>
+            <Link href="/terms" className="hover:text-slate-900 transition-colors">Terms of Service</Link>
             <span>•</span>
-            <Link href="#" className="hover:text-slate-900 transition-colors">Help Center</Link>
+            <Link href="/contact" className="hover:text-slate-900 transition-colors">Help Center</Link>
           </div>
           <p className="text-[11px] font-medium text-slate-400">© 2026 BitCommerce. All rights reserved.</p>
         </div>

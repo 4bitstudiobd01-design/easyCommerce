@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 
 /** Public storefront domain shown as the subdomain suffix. */
-const STORE_DOMAIN = '.easyco.app';
+const STORE_DOMAIN = '.bitcommerce.app';
 
 /**
  * Mirrors the `phone` rule on the backend RegisterMerchantDto. The server
@@ -92,6 +92,12 @@ export function RegisterForm() {
     if (password.length < 8 || !/[a-zA-Z]/.test(password) || !/\d/.test(password)) {
       return 'Password must be at least 8 characters and include letters and numbers.';
     }
+    if (storeName.trim().length < 2) {
+      return 'Please enter your store name.';
+    }
+    if (subdomain.trim().length < 3) {
+      return 'Store subdomain must be at least 3 characters.';
+    }
     if (!acceptedTerms) {
       return 'Please accept the Terms of Service to continue.';
     }
@@ -111,12 +117,22 @@ export function RegisterForm() {
 
     try {
       const localPhone = phone.trim().replace(/[\s-]/g, '');
+      const trimmedStoreName = storeName.trim();
+      const trimmedSubdomain = subdomain.trim();
 
       const response = await registerMerchant({
         email: email.trim(),
         password,
         fullName: fullName.trim(),
         ...(localPhone ? { phone: localPhone } : {}),
+        ...(trimmedStoreName && trimmedSubdomain
+          ? {
+              storeName: trimmedStoreName,
+              storeSlug: trimmedSubdomain,
+              ...(businessType ? { businessType } : {}),
+              country,
+            }
+          : {}),
       }).unwrap();
 
       dispatch(
@@ -259,6 +275,7 @@ export function RegisterForm() {
                 <input
                   id="storeName"
                   type="text"
+                  required
                   value={storeName}
                   onChange={(e) => handleStoreNameChange(e.target.value)}
                   placeholder="Enter your store name"
@@ -275,6 +292,7 @@ export function RegisterForm() {
                 <input
                   id="subdomain"
                   type="text"
+                  required
                   value={subdomain}
                   onChange={(e) => {
                     setSubdomainEdited(true);
@@ -342,8 +360,14 @@ export function RegisterForm() {
               className="w-4 h-4 mt-0.5 rounded border-slate-300 text-blue-600 focus:ring-blue-600 cursor-pointer shrink-0"
             />
             <label htmlFor="accept-terms" className="text-[12.5px] font-medium text-slate-600 cursor-pointer leading-relaxed">
-              I agree to the <Link href="#" className="text-blue-600 font-bold hover:underline">Terms of Service</Link> and{' '}
-              <Link href="#" className="text-blue-600 font-bold hover:underline">Privacy Policy</Link>
+              I agree to the{' '}
+              <Link href="/terms" target="_blank" className="text-blue-600 font-bold hover:underline">
+                Terms of Service
+              </Link>{' '}
+              and{' '}
+              <Link href="/privacy" target="_blank" className="text-blue-600 font-bold hover:underline">
+                Privacy Policy
+              </Link>
             </label>
           </div>
 

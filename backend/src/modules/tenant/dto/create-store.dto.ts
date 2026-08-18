@@ -21,6 +21,11 @@ export class CreateStoreDto {
   @IsString()
   category?: string;
 
+  @ApiProperty({ example: 'Bangladesh', description: 'Store country', required: false })
+  @IsOptional()
+  @IsString()
+  country?: string;
+
   @ApiProperty({ example: '+8801700000000', description: 'Store phone number', required: false })
   @IsOptional()
   @IsString()
