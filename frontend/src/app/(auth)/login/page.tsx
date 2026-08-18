@@ -31,7 +31,7 @@ export default function LoginPage() {
             <div className="mb-12">
               <Link href="/" className="flex items-center gap-3">
                 <div className="p-2.5 bg-blue-600 rounded-xl text-white shadow-md">
-                  <ShoppingBag className="w-5 h-5 fill-current" strokeWidth={1.5} />
+                  <ShoppingBag className="w-5 h-5" strokeWidth={2} />
                 </div>
                 <div className="flex flex-col">
                   <span className="font-extrabold text-[22px] text-slate-900 tracking-tight leading-none">BitCommerce</span>
@@ -93,12 +93,12 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Dashboard mockup — anchored bottom-left and bleeding off the panel edge */}
+            {/* Dashboard mockup — anchored bottom-left, glow/shadow baked into the asset */}
             <div className="flex-1 relative w-full mt-auto flex items-end overflow-hidden">
               <img
-                src="/Dashboard.png"
+                src="/login-page-img.png"
                 alt="BitCommerce merchant dashboard and storefront app"
-                className="w-[115%] max-w-none h-auto object-contain object-left-bottom -mb-6 -ml-2 drop-shadow-2xl"
+                className="w-full max-w-none h-auto object-contain object-left-bottom"
               />
             </div>
 
