@@ -61,11 +61,11 @@ export function LoginForm() {
   };
 
   return (
-    <div className="w-full max-w-[420px] bg-white rounded-2xl border border-slate-100 shadow-xl shadow-slate-200/50 p-10 flex flex-col items-center">
-      
+    <div className="w-full max-w-[440px] bg-white rounded-2xl border border-slate-100 shadow-xl shadow-slate-200/50 p-12 flex flex-col items-center">
+
       {/* Header */}
-      <h2 className="text-[26px] font-extrabold text-slate-900 tracking-tight mb-2">Welcome back!</h2>
-      <p className="text-[13px] font-medium text-slate-500 mb-8 text-center">Login to your BitCommerce merchant account</p>
+      <h2 className="text-[30px] font-extrabold text-slate-900 tracking-tight mb-3">Welcome back!</h2>
+      <p className="text-[13px] font-medium text-slate-500 mb-10 text-center">Login to your BitCommerce merchant account</p>
 
       {errorMsg && (
         <div className="w-full mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-bold text-center">
@@ -74,11 +74,11 @@ export function LoginForm() {
       )}
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="w-full space-y-5">
-        
+      <form onSubmit={handleSubmit} className="w-full space-y-9">
+
         {/* Email Field */}
         <div>
-          <label className="block text-[13px] font-bold text-slate-700 mb-1.5">
+          <label className="block text-[13px] font-bold text-slate-700 mb-2.5">
             Email or Phone
           </label>
           <div className="relative">
@@ -90,14 +90,14 @@ export function LoginForm() {
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               placeholder="Enter your email or phone number"
-              className="w-full pl-10 pr-4 h-11 border border-slate-200 rounded-xl text-slate-900 text-[13px] font-medium placeholder-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors"
+              className="w-full pl-10 pr-4 h-12 border border-slate-200 rounded-2xl text-slate-900 text-[13px] font-medium placeholder-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors"
             />
           </div>
         </div>
 
         {/* Password Field */}
         <div>
-          <div className="flex justify-between items-center mb-1.5">
+          <div className="flex justify-between items-center mb-2.5">
             <label className="block text-[13px] font-bold text-slate-700">
               Password
             </label>
@@ -113,7 +113,7 @@ export function LoginForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"
-              className="w-full pl-10 pr-10 h-11 border border-slate-200 rounded-xl text-slate-900 text-[13px] font-medium placeholder-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors"
+              className="w-full pl-10 pr-10 h-12 border border-slate-200 rounded-2xl text-slate-900 text-[13px] font-medium placeholder-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors"
             />
             <button
               type="button"
@@ -126,7 +126,7 @@ export function LoginForm() {
         </div>
 
         {/* Remember Me */}
-        <div className="flex items-center justify-between pt-1">
+        <div className="flex items-center justify-between">
           <label className="flex items-center gap-2 cursor-pointer group">
             <input
               type="checkbox"
@@ -146,7 +146,7 @@ export function LoginForm() {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full h-11 mt-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-colors text-[14px] shadow-md shadow-blue-600/20 disabled:opacity-50 active:scale-[0.98]"
+          className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-colors text-[14px] shadow-md shadow-blue-600/20 disabled:opacity-50 active:scale-[0.98]"
         >
           {isLoading ? (
             <span>Authenticating...</span>
@@ -161,7 +161,7 @@ export function LoginForm() {
       </form>
 
       {/* Divider */}
-      <div className="w-full flex items-center gap-4 my-8">
+      <div className="w-full flex items-center gap-4 my-9">
         <div className="flex-1 h-px bg-slate-100"></div>
         <span className="text-[12px] font-medium text-slate-400">or continue with</span>
         <div className="flex-1 h-px bg-slate-100"></div>
