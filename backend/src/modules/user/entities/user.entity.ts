@@ -46,6 +46,10 @@ export class UserEntity {
   @Column({ type: 'uuid', nullable: true })
   tenantId?: string;
 
+  /** When the user accepted the Terms of Service / Privacy Policy at registration. Null if never recorded (e.g. accounts created before this was tracked). */
+  @Column({ type: 'timestamptz', nullable: true })
+  termsAcceptedAt?: Date;
+
   @OneToMany(() => SessionEntity, (session) => session.user)
   sessions: SessionEntity[];
 

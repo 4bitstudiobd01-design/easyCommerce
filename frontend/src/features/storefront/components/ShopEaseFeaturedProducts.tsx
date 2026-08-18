@@ -13,61 +13,63 @@ interface ShopEaseFeaturedProductsProps {
 }
 
 export const ShopEaseFeaturedProducts = ({
-  products = SHOPEASE_FEATURED_PRODUCTS,
+  products = [],
   storeSlug = 'main',
   onOpenDetail,
 }: ShopEaseFeaturedProductsProps) => {
-  const displayProducts = products.length > 0 ? products : SHOPEASE_FEATURED_PRODUCTS;
+  const displayProducts = products;
 
   return (
-    <section id="featured-products" className="py-12 bg-slate-50/50">
+    <section id="featured-products" className="py-14 sm:py-18 bg-slate-50/60 border-b border-slate-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* SECTION TITLE */}
-        <div className="text-center mb-10 space-y-2">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-blue-700 text-[11px] font-extrabold uppercase tracking-wider">
-            <span>🔥 Handpicked Deals</span>
+        <div className="text-center mb-10 sm:mb-12 space-y-2.5">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-blue-700 text-[11px] font-black uppercase tracking-wider shadow-2xs">
+            <span>✨ Featured Collection</span>
           </div>
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
-            Featured & Trending Products
+            Trending Products
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-xl mx-auto">
-            Discover top-rated products with exclusive discounts, genuine quality, and instant delivery.
+            Discover verified items with fast doorstep delivery, genuine warranty, and instant checkout.
           </p>
         </div>
 
-        {/* PRODUCTS GRID (6 COLUMNS ON WIDE SCREENS) */}
+        {/* PRODUCTS GRID */}
         {displayProducts.length === 0 ? (
-          <div className="p-12 bg-white rounded-3xl border border-slate-200 text-center max-w-md mx-auto my-6 space-y-3">
-            <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto border border-blue-100">
-              <Package className="w-6 h-6" />
+          <div className="p-12 sm:p-16 bg-white rounded-3xl border border-slate-200/80 text-center max-w-md mx-auto my-6 space-y-3.5 shadow-sm">
+            <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto border border-blue-100 shadow-2xs">
+              <Package className="w-7 h-7" />
             </div>
-            <h3 className="font-extrabold text-base text-slate-900">No Products Available</h3>
-            <p className="text-xs text-slate-500">
-              Stay tuned, new items will be added to this store soon!
+            <h3 className="font-black text-lg text-slate-900">No Products Listed Yet</h3>
+            <p className="text-xs text-slate-500 leading-relaxed max-w-xs mx-auto">
+              This store is currently setting up its product inventory. Please check back soon!
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-4">
-            {displayProducts.map((product) => (
-              <ShopEaseProductCard
-                key={product.id}
-                product={product}
-                storeSlug={storeSlug}
-                onOpenDetail={onOpenDetail}
-              />
-            ))}
-          </div>
-        )}
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6">
+              {displayProducts.map((product) => (
+                <ShopEaseProductCard
+                  key={product.id}
+                  product={product}
+                  storeSlug={storeSlug}
+                  onOpenDetail={onOpenDetail}
+                />
+              ))}
+            </div>
 
-        {/* VIEW ALL PRODUCTS BUTTON */}
-        <div className="text-center mt-8">
-          <Link
-            href={`/store/${storeSlug}/shop`}
-            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md shadow-blue-500/20 inline-flex items-center gap-2 transition-all"
-          >
-            View All Products
-          </Link>
-        </div>
+            {/* VIEW ALL PRODUCTS BUTTON */}
+            <div className="text-center mt-10 sm:mt-12">
+              <Link
+                href={`/store/${storeSlug}/shop`}
+                className="px-8 py-3.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-md shadow-blue-600/20 inline-flex items-center gap-2 transition-all cursor-pointer"
+              >
+                <span>View Full Catalog</span>
+              </Link>
+            </div>
+          </>
+        )}
       </div>
     </section>
   );

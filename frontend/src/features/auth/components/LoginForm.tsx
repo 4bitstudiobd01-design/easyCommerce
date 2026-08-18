@@ -54,7 +54,14 @@ export function LoginForm() {
         router.push('/dashboard');
       }
     } catch (err: any) {
-      const message = err?.data?.message || 'Invalid credentials. Please try again.';
+      let message = 'Invalid credentials. Please try again.';
+      if (err?.status === 'FETCH_ERROR' || err?.error?.includes?.('Failed to fetch')) {
+        message = 'Unable to connect to server. Please ensure the backend server is running on port 5001.';
+      } else if (err?.data?.message) {
+        message = Array.isArray(err.data.message) ? err.data.message[0] : err.data.message;
+      } else if (err?.data?.errorSources?.[0]?.details) {
+        message = err.data.errorSources[0].details;
+      }
       setErrorMsg(message);
       toast.error(message);
     }

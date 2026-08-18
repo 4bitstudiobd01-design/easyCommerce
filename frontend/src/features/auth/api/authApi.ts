@@ -12,6 +12,9 @@ export interface RegisterRequest {
   storeName?: string;
   storeSlug?: string;
   businessType?: string;
+  country?: string;
+  /** Must be true — the backend rejects registration otherwise. */
+  acceptedTerms: boolean;
 }
 
 export interface LoginRequest {

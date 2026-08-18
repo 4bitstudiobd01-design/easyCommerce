@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString, MinLength, MaxLength, IsOptional, Matches, Length } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MinLength, MaxLength, IsOptional, Matches, Length, Equals } from 'class-validator';
 
 export class RegisterMerchantDto {
   @ApiProperty({ example: 'owner@mystore.com', description: 'Merchant email' })
@@ -53,4 +53,8 @@ export class RegisterMerchantDto {
   @IsOptional()
   @IsString()
   country?: string;
+
+  @ApiProperty({ example: true, description: 'Must be true — confirms the merchant accepted the Terms of Service and Privacy Policy' })
+  @Equals(true, { message: 'You must accept the Terms of Service and Privacy Policy to register.' })
+  acceptedTerms: boolean;
 }

@@ -38,6 +38,7 @@ export class RegisterMerchantService {
       phone: dto.phone ? normalizePhone(dto.phone) : undefined,
       role: UserRoleEnum.STORE_OWNER,
       isActive: true,
+      termsAcceptedAt: new Date(),
     });
 
     if (dto.storeName && dto.storeSlug) {

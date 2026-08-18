@@ -72,9 +72,6 @@ export function StorefrontMobileBottomNav({ slug = 'main' }: StorefrontMobileBot
         >
           <div className="relative">
             <Heart className="w-4 h-4" />
-            <span className="absolute -top-1 -right-2 w-3.5 h-3.5 rounded-full bg-rose-500 text-white text-[8px] font-black flex items-center justify-center">
-              2
-            </span>
           </div>
           <span className="text-[9px] mt-0.5 font-medium tracking-tight">Saved</span>
         </button>

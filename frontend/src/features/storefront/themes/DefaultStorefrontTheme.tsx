@@ -46,19 +46,37 @@ export const DefaultStorefrontTheme = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // Extract category names (merge API categories and default reference categories)
+  // Extract real category names for navbar and filter
   const categoryNames = useMemo(() => {
-    const defaultNames = SHOPEASE_CATEGORIES.map((c) => c.name);
-    const apiNames = categories.length > 0 ? categories : [];
-    return Array.from(new Set([...defaultNames, ...apiNames]));
-  }, [categories]);
+    if (categories && categories.length > 0) return categories;
+    const fromProducts = Array.from(
+      new Set(products.map((p) => p.category?.name).filter(Boolean))
+    ) as string[];
+    return fromProducts;
+  }, [categories, products]);
 
-  // Merge live API products or use reference demo products
+  // Extract structured real categories with images for the category slider/grid
+  const structuredCategories = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; imageUrl: string }>();
+    products.forEach((p) => {
+      if (p.category?.name && !map.has(p.category.name)) {
+        map.set(p.category.name, {
+          id: p.category.id || p.category.name,
+          name: p.category.name,
+          imageUrl:
+            typeof p.images?.[0] === 'string'
+              ? p.images[0]
+              : (p.images?.[0] as any)?.url ||
+                'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=300',
+        });
+      }
+    });
+    return Array.from(map.values());
+  }, [products]);
+
+  // Use only live store products
   const allProducts: ShopEaseProduct[] = useMemo(() => {
-    if (products && products.length > 0) {
-      return products as ShopEaseProduct[];
-    }
-    return SHOPEASE_FEATURED_PRODUCTS;
+    return (products || []) as ShopEaseProduct[];
   }, [products]);
 
   // Filter products by selected category and search input
@@ -100,6 +118,9 @@ export const DefaultStorefrontTheme = ({
       <ShopEaseNavbar
         storeName={storeName}
         slug={slug}
+        logo={logo}
+        primaryColor={primaryColor}
+        category={category}
         categories={categoryNames}
         selectedCategory={selectedCategory}
         onSelectCategory={setSelectedCategory}
@@ -112,13 +133,15 @@ export const DefaultStorefrontTheme = ({
         {/* 2. HERO BANNER */}
         <ShopEaseHero storeName={storeName} onShopNowClick={handleShopNow} />
 
-        {/* 3. CATEGORIES */}
-        <ShopEaseCategories
-          categories={SHOPEASE_CATEGORIES}
-          selectedCategory={selectedCategory}
-          storeSlug={slug}
-          onSelectCategory={handleCategorySelect}
-        />
+        {/* 3. CATEGORIES (Show only if store has categories) */}
+        {structuredCategories.length > 0 && (
+          <ShopEaseCategories
+            categories={structuredCategories}
+            selectedCategory={selectedCategory}
+            storeSlug={slug}
+            onSelectCategory={handleCategorySelect}
+          />
+        )}
 
         {/* 4. FEATURED PRODUCTS */}
         <ShopEaseFeaturedProducts
@@ -131,11 +154,15 @@ export const DefaultStorefrontTheme = ({
         <ShopEasePromoBanner onShopNowClick={handleShopNow} />
 
         {/* 6. WHY CHOOSE US */}
-        <ShopEaseWhyChooseUs />
+        <ShopEaseWhyChooseUs storeName={storeName} />
       </main>
 
       {/* 7. DARK FOOTER */}
-      <ShopEaseFooter storeName={storeName} slug={slug} />
+      <ShopEaseFooter
+        storeName={storeName}
+        slug={slug}
+        primaryColor={primaryColor}
+      />
 
       {/* 8. ULTRA-MODERN NATIVE MOBILE SHOPPING APP DOCK */}
       <StorefrontMobileBottomNav slug={slug} />

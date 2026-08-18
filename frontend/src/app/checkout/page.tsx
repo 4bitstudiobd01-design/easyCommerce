@@ -61,19 +61,19 @@ const DEFAULT_SAMPLE_ITEMS = [
 export default function CheckoutPage() {
   const dispatch = useDispatch();
   const rawCartItems = useSelector((state: RootState) => state.cart.items);
-  const activeCartItems = rawCartItems.length > 0 ? rawCartItems : DEFAULT_SAMPLE_ITEMS;
+  const activeCartItems = rawCartItems;
 
-  // Form states matching exact inputs in reference screenshot
-  const [fullName, setFullName] = useState('MD Belal Hossain');
-  const [phoneNumber, setPhoneNumber] = useState('1712-345678');
+  // Form states initialized cleanly
+  const [fullName, setFullName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [countryCode, setCountryCode] = useState('+880');
-  const [emailAddress, setEmailAddress] = useState('belal.hossain@example.com');
-  const [address, setAddress] = useState('House 12, Road 5, Dhanmondi');
+  const [emailAddress, setEmailAddress] = useState('');
+  const [address, setAddress] = useState('');
   const [country, setCountry] = useState('Bangladesh');
   const [division, setDivision] = useState('Dhaka');
   const [district, setDistrict] = useState('Dhaka');
-  const [cityArea, setCityArea] = useState('Dhanmondi');
-  const [zipCode, setZipCode] = useState('1205');
+  const [cityArea, setCityArea] = useState('');
+  const [zipCode, setZipCode] = useState('');
   const [orderNote, setOrderNote] = useState('');
 
   // Shipping & Payment selection
@@ -91,13 +91,27 @@ export default function CheckoutPage() {
 
   const isSubmitting = isCreatingOrder || isInitiatingPayment;
 
+  const storeSlug = activeCartItems[0]?.storeSlug || 'main';
+
+  // Autofill customer profile if previously logged in / ordered
+  React.useEffect(() => {
+    try {
+      const stored = localStorage.getItem(`bitcommerce_customer_${storeSlug}`);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.name) setFullName(parsed.name);
+        if (parsed.phone) setPhoneNumber(parsed.phone);
+        if (parsed.email) setEmailAddress(parsed.email);
+      }
+    } catch (e) {}
+  }, [storeSlug]);
+
   // Price calculations
   const itemsCount = activeCartItems.reduce((acc, item) => acc + item.quantity, 0);
-  const subtotal = activeCartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const subtotal = activeCartItems.reduce((acc, item) => acc + (item.price || (item as any).basePrice || 0) * item.quantity, 0);
   const shippingCharge = shippingMethod === 'express' ? 120 : 60;
-  const discount = 350; // Discount matching exact mockup
+  const discount = 0;
   const totalAmount = Math.max(0, subtotal + shippingCharge - discount);
-  const storeSlug = activeCartItems[0]?.storeSlug || 'mydiagnostic';
 
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();

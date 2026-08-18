@@ -68,19 +68,18 @@ export const ShopEaseShopView = ({
     }
   }, [searchParams]);
 
-  // Combine category names from API and fallback mock
+  // Extract real category names
   const categoryNames = useMemo(() => {
-    const defaultNames = SHOPEASE_CATEGORIES.map((c) => c.name);
-    const apiNames = categories.length > 0 ? categories : [];
-    return Array.from(new Set([...defaultNames, ...apiNames]));
-  }, [categories]);
+    if (categories && categories.length > 0) return categories;
+    const fromProducts = Array.from(
+      new Set(products.map((p) => p.category?.name).filter(Boolean))
+    ) as string[];
+    return fromProducts;
+  }, [categories, products]);
 
-  // Use live products from API or fallback to rich mock data
+  // Use only live products from store API
   const masterProducts: ShopEaseProduct[] = useMemo(() => {
-    if (products && products.length > 0) {
-      return products as ShopEaseProduct[];
-    }
-    return SHOPEASE_FEATURED_PRODUCTS;
+    return (products || []) as ShopEaseProduct[];
   }, [products]);
 
   // Handle brand checkbox toggle
@@ -191,6 +190,9 @@ export const ShopEaseShopView = ({
       <ShopEaseNavbar
         storeName={storeName}
         slug={slug}
+        logo={logo}
+        primaryColor={primaryColor}
+        category={category}
         categories={categoryNames}
         selectedCategory={selectedCategory}
         onSelectCategory={(cat) => {
@@ -224,14 +226,14 @@ export const ShopEaseShopView = ({
         >
           All
         </button>
-        {SHOPEASE_CATEGORIES.map((cat) => {
-          const isSelected = selectedCategory === cat.name;
+        {categoryNames.map((catName) => {
+          const isSelected = selectedCategory === catName;
           return (
             <button
-              key={cat.id}
+              key={catName}
               type="button"
               onClick={() => {
-                setSelectedCategory(cat.name);
+                setSelectedCategory(catName);
                 setCurrentPage(1);
               }}
               className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 ${
@@ -240,7 +242,7 @@ export const ShopEaseShopView = ({
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}
             >
-              {cat.name}
+              {catName}
             </button>
           );
         })}
@@ -290,6 +292,7 @@ export const ShopEaseShopView = ({
           {/* LEFT SIDEBAR FILTERS (DESKTOP ONLY - HIDDEN ON MOBILE) */}
           <div className="hidden lg:block lg:col-span-3 min-w-0">
             <ShopSidebarFilter
+              categories={categoryNames}
               selectedCategory={selectedCategory}
               onSelectCategory={(cat) => {
                 setSelectedCategory(cat);
@@ -334,6 +337,7 @@ export const ShopEaseShopView = ({
       <ShopMobileFilterDrawer
         isOpen={isMobileFilterOpen}
         onClose={() => setIsMobileFilterOpen(false)}
+        categories={categoryNames}
         selectedCategory={selectedCategory}
         onSelectCategory={(cat) => {
           setSelectedCategory(cat);
@@ -359,7 +363,11 @@ export const ShopEaseShopView = ({
       <ShopTrustStrip />
 
       {/* 8. DARK FOOTER */}
-      <ShopEaseFooter storeName={storeName} slug={slug} />
+      <ShopEaseFooter
+        storeName={storeName}
+        slug={slug}
+        primaryColor={primaryColor}
+      />
 
       {/* 9. ULTRA-MODERN NATIVE MOBILE SHOPPING APP DOCK */}
       <StorefrontMobileBottomNav slug={slug} />

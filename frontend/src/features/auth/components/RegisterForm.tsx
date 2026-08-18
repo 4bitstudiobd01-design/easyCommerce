@@ -124,6 +124,7 @@ export function RegisterForm() {
         email: email.trim(),
         password,
         fullName: fullName.trim(),
+        acceptedTerms,
         ...(localPhone ? { phone: localPhone } : {}),
         ...(trimmedStoreName && trimmedSubdomain
           ? {
@@ -146,10 +147,14 @@ export function RegisterForm() {
       toast.success('Store account created successfully.');
       router.push('/dashboard');
     } catch (err: any) {
-      const raw = err?.data?.message;
-      const message = Array.isArray(raw)
-        ? raw[0]
-        : raw || 'Registration failed. Please check your details.';
+      let message = 'Registration failed. Please check your details.';
+      if (err?.status === 'FETCH_ERROR' || err?.error?.includes?.('Failed to fetch')) {
+        message = 'Unable to connect to server. Please ensure the backend server is running on port 5001.';
+      } else if (err?.data?.message) {
+        message = Array.isArray(err.data.message) ? err.data.message[0] : err.data.message;
+      } else if (err?.data?.errorSources?.[0]?.details) {
+        message = err.data.errorSources[0].details;
+      }
       setErrorMsg(message);
       toast.error(message);
     }

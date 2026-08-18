@@ -10,10 +10,12 @@ import {
 } from '../data/defaultStorefrontData';
 
 interface ShopSidebarFilterProps {
+  categories?: string[];
   selectedCategory: string;
   onSelectCategory: (category: string) => void;
   priceRange: [number, number];
   onPriceRangeChange: (range: [number, number]) => void;
+  brands?: string[];
   selectedBrands: string[];
   onToggleBrand: (brandName: string) => void;
   selectedMinRating: number;
@@ -22,10 +24,12 @@ interface ShopSidebarFilterProps {
 }
 
 export const ShopSidebarFilter = ({
+  categories = [],
   selectedCategory,
   onSelectCategory,
   priceRange,
   onPriceRangeChange,
+  brands = [],
   selectedBrands,
   onToggleBrand,
   selectedMinRating,
@@ -38,7 +42,8 @@ export const ShopSidebarFilter = ({
   const [isRatingsOpen, setIsRatingsOpen] = useState(true);
   const [showAllBrands, setShowAllBrands] = useState(false);
 
-  const displayBrands = showAllBrands ? SHOPEASE_BRANDS : SHOPEASE_BRANDS.slice(0, 5);
+  const availableBrands = brands.length > 0 ? brands : [];
+  const displayBrands = showAllBrands ? availableBrands : availableBrands.slice(0, 5);
 
   const hasActiveFilters =
     selectedCategory !== 'ALL' ||
@@ -80,30 +85,31 @@ export const ShopSidebarFilter = ({
         </button>
 
         {isCategoriesOpen && (
-          <ul className="space-y-1.5 pt-1 text-xs">
-            {SHOPEASE_CATEGORIES.map((cat) => {
-              const isSelected =
-                selectedCategory.toLowerCase() === cat.name.toLowerCase() ||
-                selectedCategory.toLowerCase() === cat.slug.toLowerCase() ||
-                selectedCategory.toLowerCase() === cat.id.toLowerCase();
-              return (
-                <li key={cat.id}>
-                  <button
-                    type="button"
-                    onClick={() => onSelectCategory(isSelected ? 'ALL' : cat.name)}
-                    className={`w-full flex items-center justify-between py-1.5 px-2 rounded-lg transition-colors text-left ${
-                      isSelected
-                        ? 'text-blue-600 font-extrabold bg-blue-50/60'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium'
-                    }`}
-                  >
-                    <span>{cat.name}</span>
-                    <span className="text-[11px] text-slate-400 font-semibold">{cat.itemCount}</span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+          categories.length === 0 ? (
+            <p className="text-[11px] text-slate-400 font-medium py-1 px-1">No categories yet</p>
+          ) : (
+            <ul className="space-y-1.5 pt-1 text-xs">
+              {categories.map((catName) => {
+                const isSelected =
+                  selectedCategory.toLowerCase() === catName.toLowerCase();
+                return (
+                  <li key={catName}>
+                    <button
+                      type="button"
+                      onClick={() => onSelectCategory(isSelected ? 'ALL' : catName)}
+                      className={`w-full flex items-center justify-between py-1.5 px-2 rounded-lg transition-colors text-left ${
+                        isSelected
+                          ? 'text-blue-600 font-extrabold bg-blue-50/60'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium'
+                      }`}
+                    >
+                      <span>{catName}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )
         )}
       </div>
 
@@ -183,39 +189,42 @@ export const ShopSidebarFilter = ({
         </button>
 
         {isBrandsOpen && (
-          <div className="space-y-2 pt-1">
-            <ul className="space-y-2 text-xs">
-              {displayBrands.map((brand) => {
-                const isChecked = selectedBrands.includes(brand.name);
-                return (
-                  <li key={brand.id} className="flex items-center justify-between">
-                    <label className="flex items-center gap-2.5 cursor-pointer select-none text-slate-700 hover:text-slate-900">
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => onToggleBrand(brand.name)}
-                        className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500 rounded-md cursor-pointer"
-                      />
-                      <span className={`text-xs font-medium ${isChecked ? 'font-bold text-blue-600' : ''}`}>
-                        {brand.name}
-                      </span>
-                    </label>
-                    <span className="text-[11px] text-slate-400 font-semibold">{brand.count}</span>
-                  </li>
-                );
-              })}
-            </ul>
+          availableBrands.length === 0 ? (
+            <p className="text-[11px] text-slate-400 font-medium py-1 px-1">No brands yet</p>
+          ) : (
+            <div className="space-y-2 pt-1">
+              <ul className="space-y-2 text-xs">
+                {displayBrands.map((brandName) => {
+                  const isChecked = selectedBrands.includes(brandName);
+                  return (
+                    <li key={brandName} className="flex items-center justify-between">
+                      <label className="flex items-center gap-2.5 cursor-pointer select-none text-slate-700 hover:text-slate-900">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => onToggleBrand(brandName)}
+                          className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500 rounded-md cursor-pointer"
+                        />
+                        <span className={`text-xs font-medium ${isChecked ? 'font-bold text-blue-600' : ''}`}>
+                          {brandName}
+                        </span>
+                      </label>
+                    </li>
+                  );
+                })}
+              </ul>
 
-            {SHOPEASE_BRANDS.length > 5 && (
-              <button
-                type="button"
-                onClick={() => setShowAllBrands(!showAllBrands)}
-                className="text-[11px] font-bold text-blue-600 hover:text-blue-700 pt-1 flex items-center gap-1"
-              >
-                <span>{showAllBrands ? 'View Less ▴' : 'View More ▾'}</span>
-              </button>
-            )}
-          </div>
+              {availableBrands.length > 5 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllBrands(!showAllBrands)}
+                  className="text-[11px] font-bold text-blue-600 hover:text-blue-700 pt-1 flex items-center gap-1"
+                >
+                  <span>{showAllBrands ? 'Show Less' : `+${availableBrands.length - 5} More`}</span>
+                </button>
+              )}
+            </div>
+          )
         )}
       </div>
 
