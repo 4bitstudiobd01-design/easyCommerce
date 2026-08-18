@@ -21,6 +21,7 @@ interface ShopSidebarFilterProps {
   selectedMinRating: number;
   onSelectMinRating: (rating: number) => void;
   onResetFilters: () => void;
+  ratingCounts?: Record<number, number>;
 }
 
 export const ShopSidebarFilter = ({
@@ -35,6 +36,7 @@ export const ShopSidebarFilter = ({
   selectedMinRating,
   onSelectMinRating,
   onResetFilters,
+  ratingCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
 }: ShopSidebarFilterProps) => {
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(true);
   const [isPriceOpen, setIsPriceOpen] = useState(true);
@@ -51,6 +53,8 @@ export const ShopSidebarFilter = ({
     priceRange[1] < 5000 ||
     selectedBrands.length > 0 ||
     selectedMinRating > 0;
+
+  const RATING_LEVELS = [5, 4, 3, 2, 1];
 
   return (
     <aside className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-6">
@@ -245,15 +249,16 @@ export const ShopSidebarFilter = ({
 
         {isRatingsOpen && (
           <ul className="space-y-2 pt-1 text-xs">
-            {SHOPEASE_RATINGS.map((ratingOption) => {
-              const isChecked = selectedMinRating === ratingOption.stars;
+            {RATING_LEVELS.map((stars) => {
+              const isChecked = selectedMinRating === stars;
+              const count = ratingCounts[stars] ?? 0;
               return (
-                <li key={ratingOption.stars} className="flex items-center justify-between">
+                <li key={stars} className="flex items-center justify-between">
                   <label className="flex items-center gap-2 cursor-pointer select-none">
                     <input
                       type="checkbox"
                       checked={isChecked}
-                      onChange={() => onSelectMinRating(isChecked ? 0 : ratingOption.stars)}
+                      onChange={() => onSelectMinRating(isChecked ? 0 : stars)}
                       className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer"
                     />
                     <div className="flex items-center gap-0.5">
@@ -261,9 +266,9 @@ export const ShopSidebarFilter = ({
                         <Star
                           key={i}
                           className={`w-3 h-3 ${
-                            i < ratingOption.stars
+                            i < stars
                               ? 'fill-amber-400 text-amber-400'
-                              : 'text-slate-300'
+                              : 'text-slate-200'
                           }`}
                         />
                       ))}
@@ -272,7 +277,7 @@ export const ShopSidebarFilter = ({
                       & up
                     </span>
                   </label>
-                  <span className="text-[11px] text-slate-400 font-semibold">({ratingOption.count})</span>
+                  <span className="text-[11px] text-slate-400 font-semibold">({count})</span>
                 </li>
               );
             })}

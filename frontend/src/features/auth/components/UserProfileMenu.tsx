@@ -14,18 +14,14 @@ import {
   Settings,
   CreditCard,
   UserCheck,
-  History,
-  Terminal,
   LogOut,
 } from 'lucide-react';
 
 const USER_MENU_ITEMS = [
   { label: 'My Stores', icon: Store, href: '/dashboard' },
   { label: 'Account Settings', icon: Settings, href: '/dashboard/settings' },
-  { label: 'Billing & Subscription', icon: CreditCard, href: '/dashboard/settings' },
+  { label: 'Billing & Subscription', icon: CreditCard, href: '/dashboard/settings/billing' },
   { label: 'Team Members', icon: UserCheck, href: '/dashboard/staff' },
-  { label: 'Activity Log', icon: History, href: '/dashboard/analytics' },
-  { label: 'Developer Settings', icon: Terminal, href: '/dashboard/settings' },
 ];
 
 export function UserProfileMenu() {

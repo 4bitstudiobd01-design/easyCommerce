@@ -31,6 +31,7 @@ interface ShopMobileFilterDrawerProps {
   onSelectMinRating: (rating: number) => void;
   onResetFilters: () => void;
   totalProductsCount: number;
+  ratingCounts?: Record<number, number>;
 }
 
 export function ShopMobileFilterDrawer({
@@ -48,6 +49,7 @@ export function ShopMobileFilterDrawer({
   onSelectMinRating,
   onResetFilters,
   totalProductsCount,
+  ratingCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
 }: ShopMobileFilterDrawerProps) {
   const [activeTab, setActiveTab] = useState<'categories' | 'price' | 'brands' | 'rating'>('categories');
 
@@ -59,6 +61,8 @@ export function ShopMobileFilterDrawer({
     priceRange[1] < 5000 ||
     selectedBrands.length > 0 ||
     selectedMinRating > 0;
+
+  const RATING_LEVELS = [5, 4, 3, 2, 1];
 
   return (
     <div className="fixed inset-0 z-50 lg:hidden flex flex-col justify-end animate-in fade-in duration-200">
@@ -210,13 +214,14 @@ export function ShopMobileFilterDrawer({
               Customer Rating
             </h3>
             <div className="grid grid-cols-2 gap-2">
-              {SHOPEASE_RATINGS.map((rate) => {
-                const isSelected = selectedMinRating === rate.stars;
+              {RATING_LEVELS.map((stars) => {
+                const isSelected = selectedMinRating === stars;
+                const count = ratingCounts[stars] ?? 0;
                 return (
                   <button
-                    key={rate.stars}
+                    key={stars}
                     type="button"
-                    onClick={() => onSelectMinRating(isSelected ? 0 : rate.stars)}
+                    onClick={() => onSelectMinRating(isSelected ? 0 : stars)}
                     className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-between transition-all active:scale-95 ${
                       isSelected
                         ? 'border-blue-600 bg-blue-50/50 text-blue-700'
@@ -225,7 +230,8 @@ export function ShopMobileFilterDrawer({
                   >
                     <div className="flex items-center gap-1">
                       <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                      <span>{rate.stars} & Up</span>
+                      <span>{stars} & Up</span>
+                      <span className="text-[10px] text-slate-400 font-semibold">({count})</span>
                     </div>
                     {isSelected && <Check className="w-3.5 h-3.5 text-blue-600" />}
                   </button>

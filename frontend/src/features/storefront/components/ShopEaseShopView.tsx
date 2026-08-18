@@ -82,6 +82,20 @@ export const ShopEaseShopView = ({
     return (products || []) as ShopEaseProduct[];
   }, [products]);
 
+  // Calculate real rating distribution from actual products in this store
+  const ratingCounts = useMemo(() => {
+    const counts: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    masterProducts.forEach((p) => {
+      const r = Number(p.rating || (p as any).avgRating || 0);
+      if (r >= 5) counts[5] += 1;
+      if (r >= 4) counts[4] += 1;
+      if (r >= 3) counts[3] += 1;
+      if (r >= 2) counts[2] += 1;
+      if (r >= 1) counts[1] += 1;
+    });
+    return counts;
+  }, [masterProducts]);
+
   // Handle brand checkbox toggle
   const handleToggleBrand = (brandName: string) => {
     setSelectedBrands((prev) =>
@@ -141,7 +155,7 @@ export const ShopEaseShopView = ({
           );
 
         // Rating Filter
-        const prodRating = prod.rating || 4.5;
+        const prodRating = Number(prod.rating || (prod as any).avgRating || 0);
         const matchesRating = selectedMinRating === 0 || prodRating >= selectedMinRating;
 
         return matchesCategory && matchesSearch && matchesPrice && matchesBrand && matchesRating;
@@ -149,8 +163,8 @@ export const ShopEaseShopView = ({
       .sort((a, b) => {
         const priceA = Number((a as any).price ?? a.basePrice ?? 0);
         const priceB = Number((b as any).price ?? b.basePrice ?? 0);
-        const ratingA = a.rating || 4.5;
-        const ratingB = b.rating || 4.5;
+        const ratingA = Number(a.rating || (a as any).avgRating || 0);
+        const ratingB = Number(b.rating || (b as any).avgRating || 0);
 
         switch (sortBy) {
           case 'price-asc':
@@ -218,16 +232,16 @@ export const ShopEaseShopView = ({
             setSelectedCategory('ALL');
             setCurrentPage(1);
           }}
-          className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 ${
+          className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
             selectedCategory === 'ALL'
               ? 'bg-blue-600 text-white shadow-xs'
-              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
           }`}
         >
           All
         </button>
         {categoryNames.map((catName) => {
-          const isSelected = selectedCategory === catName;
+          const isSelected = selectedCategory.toLowerCase() === catName.toLowerCase();
           return (
             <button
               key={catName}
@@ -236,10 +250,10 @@ export const ShopEaseShopView = ({
                 setSelectedCategory(catName);
                 setCurrentPage(1);
               }}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 ${
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
                 isSelected
                   ? 'bg-blue-600 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
               {catName}
@@ -311,6 +325,7 @@ export const ShopEaseShopView = ({
                 setCurrentPage(1);
               }}
               onResetFilters={handleResetFilters}
+              ratingCounts={ratingCounts}
             />
           </div>
 
@@ -357,6 +372,7 @@ export const ShopEaseShopView = ({
         }}
         onResetFilters={handleResetFilters}
         totalProductsCount={totalProductsCount}
+        ratingCounts={ratingCounts}
       />
 
       {/* 7. SHOP TRUST & PROPOSITIONS STRIP */}

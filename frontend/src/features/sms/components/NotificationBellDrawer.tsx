@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useGetPushNotificationsQuery, useMarkNotificationsReadMutation } from '../api/smsApi';
-import { Bell, CheckCheck, ShoppingBag, Clock, Sparkles } from 'lucide-react';
+import { Bell, CheckCheck, ShoppingBag, Clock } from 'lucide-react';
 
 export function NotificationBellDrawer() {
   const [isOpen, setIsOpen] = useState(false);
@@ -41,7 +41,6 @@ export function NotificationBellDrawer() {
         <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-white rounded-3xl border border-slate-200 shadow-2xl p-5 z-50 space-y-4 animate-in fade-in zoom-in-95 duration-150">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-blue-600" />
               <h4 className="font-extrabold text-sm text-slate-900">Real-Time Alerts</h4>
             </div>
 

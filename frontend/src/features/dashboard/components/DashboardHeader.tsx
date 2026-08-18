@@ -52,10 +52,10 @@ export const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
           <Link
             href={`/store/${store.slug}`}
             target="_blank"
-            className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline px-2 py-1 rounded-lg transition-colors"
+            className="hidden sm:inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-blue-50/80 hover:bg-blue-100 border border-blue-200/80 text-blue-700 hover:text-blue-800 text-xs font-bold transition-all shadow-2xs active:scale-95 group"
           >
             <span>Visit Store</span>
-            <ExternalLink className="w-3.5 h-3.5" />
+            <ExternalLink className="w-3.5 h-3.5 text-blue-500 group-hover:text-blue-700 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
           </Link>
         )}
 

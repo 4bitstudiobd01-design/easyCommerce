@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useGetMyStoresQuery, Store } from '../api/tenantApi';
-import { ChevronDown, Plus, Check, Store as StoreIcon, Globe, Sparkles, ExternalLink, Settings } from 'lucide-react';
+import { ChevronDown, Plus, Check, Store as StoreIcon, Globe, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
@@ -137,27 +137,6 @@ export function StoreSwitcherDropdown({
       {/* DROPDOWN POPUP MENU */}
       {isOpen && (
         <div className="absolute left-0 right-0 bottom-full mb-2 z-50 bg-slate-900 border border-slate-700/90 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150 p-1.5 space-y-1">
-          
-          {/* STORE ACTIONS */}
-          <div className="flex flex-col space-y-0.5 p-1">
-            <Link
-              href={`/store/${activeStore?.slug}`}
-              target="_blank"
-              onClick={() => setIsOpen(false)}
-              className="w-full p-2.5 rounded-xl flex items-center gap-2.5 text-left text-slate-300 hover:bg-slate-800/80 hover:text-white font-medium transition-colors"
-            >
-              <ExternalLink className="w-4 h-4 text-slate-400" />
-              <span className="text-xs">View Store</span>
-            </Link>
-            <Link
-              href="/dashboard/settings"
-              onClick={() => setIsOpen(false)}
-              className="w-full p-2.5 rounded-xl flex items-center gap-2.5 text-left text-slate-300 hover:bg-slate-800/80 hover:text-white font-medium transition-colors"
-            >
-              <Settings className="w-4 h-4 text-slate-400" />
-              <span className="text-xs">Store Settings</span>
-            </Link>
-          </div>
 
           {stores.length > 1 && (
             <>

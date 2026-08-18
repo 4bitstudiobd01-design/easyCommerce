@@ -33,8 +33,8 @@ export const ShopProductGrid = ({
   totalProductsCount,
   onOpenDetail,
 }: ShopProductGridProps) => {
-  const startItem = products.length === 0 ? 0 : (currentPage - 1) * 8 + 1;
-  const endItem = Math.min(currentPage * 8, totalProductsCount || products.length);
+  const startItem = totalProductsCount === 0 ? 0 : (currentPage - 1) * 8 + 1;
+  const endItem = Math.min(currentPage * 8, totalProductsCount);
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -43,7 +43,7 @@ export const ShopProductGrid = ({
         {/* Count Label */}
         <span className="text-xs text-slate-500 font-medium">
           Showing <strong className="text-slate-800 font-bold">{startItem}-{endItem}</strong> of{' '}
-          <strong className="text-slate-800 font-bold">{totalProductsCount || 128}</strong> products
+          <strong className="text-slate-800 font-bold">{totalProductsCount}</strong> products
         </span>
 
         {/* Sort & View Mode Controls */}
