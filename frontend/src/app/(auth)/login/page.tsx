@@ -109,10 +109,10 @@ export default function LoginPage() {
       </div>
 
       {/* RIGHT COLUMN: Form */}
-      <div className="w-full lg:w-1/2 flex flex-col relative bg-white">
+      <div className="w-full lg:w-1/2 flex flex-col bg-white h-full">
 
         {/* Top Nav */}
-        <div className="absolute top-0 left-0 right-0 p-8 flex items-center justify-end gap-6 z-10">
+        <div className="p-6 lg:p-8 flex items-center justify-end gap-6 shrink-0">
           <p className="text-[13px] font-medium text-slate-500">
             Don't have an account? <Link href="/register" className="text-blue-600 font-bold hover:underline">Sign up</Link>
           </p>
@@ -123,13 +123,18 @@ export default function LoginPage() {
           </button>
         </div>
 
-        {/* Center Form */}
-        <div className="flex-1 flex items-center justify-center p-8 mt-16 lg:mt-0 overflow-y-auto">
-          <LoginForm />
+        {/* Center Form — min-h-0 lets this shrink inside the flex column, and
+            m-auto on the inner wrapper centers the form when it fits while
+            falling back to a flush top (scrollable) instead of overlapping
+            the nav/footer when it doesn't. */}
+        <div className="flex-1 min-h-0 overflow-y-auto flex px-6 lg:px-8">
+          <div className="w-full max-w-[420px] m-auto">
+            <LoginForm />
+          </div>
         </div>
 
         {/* Footer */}
-        <div className="absolute bottom-0 left-0 right-0 p-8 flex flex-col items-center justify-center gap-2 z-10">
+        <div className="p-6 lg:p-8 flex flex-col items-center justify-center gap-2 shrink-0">
           <div className="flex items-center gap-3 text-[11px] font-bold text-slate-500">
             <Link href="#" className="hover:text-slate-900 transition-colors">Privacy Policy</Link>
             <span>•</span>
