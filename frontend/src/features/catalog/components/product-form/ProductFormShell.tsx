@@ -16,9 +16,11 @@ import {
   Boxes,
   Layers,
   Truck,
+  Eye,
 } from 'lucide-react';
 import { ProductFormState } from '@/features/catalog/hooks/useProductForm';
 import { PRODUCT_FORM_TABS } from './tabs';
+import { ProductLivePreviewModal } from '@/features/catalog/components/ProductLivePreviewModal';
 
 interface ProductFormShellProps {
   form: ProductFormState;
@@ -64,6 +66,7 @@ export function ProductFormShell({ form, children }: ProductFormShellProps) {
   } = form;
 
   const [activeSection, setActiveSection] = useState('general');
+  const [showPreview, setShowPreview] = useState(false);
 
   // Scroll to section with offset for sticky header
   const scrollToSection = (sectionId: string) => {
@@ -137,6 +140,16 @@ export function ProductFormShell({ form, children }: ProductFormShellProps) {
 
         {/* Action Header Buttons */}
         <div className="flex items-center gap-2 self-start sm:self-auto">
+          {/* Preview Button */}
+          <button
+            type="button"
+            onClick={() => setShowPreview(true)}
+            className="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-300 font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-2"
+            title="Preview how customers will see this product"
+          >
+            <Eye className="w-4 h-4" />
+            <span className="hidden sm:inline">Preview</span>
+          </button>
           {isEditMode ? (
             <>
               <Link
@@ -308,6 +321,16 @@ export function ProductFormShell({ form, children }: ProductFormShellProps) {
             </ul>
           </div>
 
+          {/* Live Preview Button in Sidebar */}
+          <button
+            type="button"
+            onClick={() => setShowPreview(true)}
+            className="w-full py-2.5 px-4 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 active:scale-95"
+          >
+            <Eye className="w-4 h-4" />
+            <span>Preview Storefront</span>
+          </button>
+
           {/* Quick Submit Action Buttons in Sidebar */}
           <div className="space-y-2 pt-1">
             {isEditMode ? (
@@ -346,6 +369,13 @@ export function ProductFormShell({ form, children }: ProductFormShellProps) {
           </div>
         </div>
       </div>
+
+      {/* Live Storefront Preview Modal */}
+      <ProductLivePreviewModal
+        form={form}
+        isOpen={showPreview}
+        onClose={() => setShowPreview(false)}
+      />
     </div>
   );
 }
