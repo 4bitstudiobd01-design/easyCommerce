@@ -54,7 +54,7 @@ export default function RegisterPage() {
 
           <div className="relative z-10 flex flex-col h-full">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-3 mb-10">
+            <Link href="/" className="flex items-center gap-3 mb-8 shrink-0">
               <div className="p-2.5 bg-blue-600 rounded-xl text-white shadow-md">
                 <ShoppingBag className="w-5 h-5" strokeWidth={2} />
               </div>
@@ -65,22 +65,22 @@ export default function RegisterPage() {
             </Link>
 
             {/* Trust pill */}
-            <div className="inline-flex items-center gap-2 self-start h-8 px-3.5 rounded-full bg-blue-50 border border-blue-100 mb-6">
+            <div className="inline-flex items-center gap-2 self-start h-8 px-3.5 rounded-full bg-blue-50 border border-blue-100 mb-5 shrink-0">
               <Heart className="w-3.5 h-3.5 text-blue-600 fill-blue-600" />
               <span className="text-[12px] font-bold text-blue-700">Trusted by 1,000+ merchants</span>
             </div>
 
             {/* Headline */}
-            <h1 className="text-[34px] font-extrabold tracking-tight leading-[1.2] mb-4">
+            <h1 className="text-[34px] font-extrabold tracking-tight leading-[1.2] mb-4 shrink-0">
               Start your eCommerce <br />
               <span className="text-blue-600">journey today</span>
             </h1>
-            <p className="text-slate-600 text-[13px] font-medium leading-relaxed max-w-[340px] mb-9">
+            <p className="text-slate-600 text-[13px] font-medium leading-relaxed max-w-[340px] mb-7 shrink-0">
               Create your BitCommerce merchant account and launch your online store in minutes.
             </p>
 
             {/* Highlights */}
-            <div className="grid grid-cols-2 gap-x-6 gap-y-5 mb-10">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-5 mb-6 shrink-0">
               {HIGHLIGHTS.map(({ icon: Icon, title, description, className }) => (
                 <div key={title} className="flex gap-3.5">
                   <div className={`p-2.5 rounded-xl shrink-0 h-fit ${className}`}>
@@ -94,13 +94,14 @@ export default function RegisterPage() {
               ))}
             </div>
 
-            {/* Dashboard Mockup — anchored to the bottom of the panel. Height is
-                capped so a tall/square source image cannot stretch the layout. */}
-            <div className="mt-auto pt-8">
+            {/* Dashboard Mockup — fills whatever space remains below the fold and
+                scales itself (object-contain) so it can never be clipped by the
+                panel's overflow-hidden boundary. */}
+            <div className="flex-1 min-h-0 flex items-end justify-start">
               <img
                 src="/login-page-img.png"
                 alt="BitCommerce merchant dashboard preview"
-                className="w-auto max-w-full max-h-[340px] xl:max-h-[380px] h-auto object-contain object-left-bottom"
+                className="w-full h-full max-w-full object-contain object-left-bottom"
               />
             </div>
           </div>
