@@ -40,7 +40,7 @@ export default function RegisterPage() {
       <div className="w-full h-full bg-white rounded-none sm:rounded-3xl shadow-xl shadow-slate-300/40 overflow-hidden grid grid-cols-1 lg:grid-cols-[minmax(0,48fr)_minmax(0,52fr)]">
 
         {/* LEFT COLUMN: Branding & Highlights */}
-        <div className="hidden lg:flex flex-col bg-[#F6F8FF] relative overflow-hidden pl-12 xl:pl-16 pr-10 pt-12 pb-0">
+        <div className="hidden lg:flex flex-col bg-[#F6F8FF] relative overflow-hidden pl-12 xl:pl-16 pr-10 pt-8 pb-0">
           {/* Decorative dotted grid */}
           <div
             className="absolute top-10 right-12 w-24 h-16 opacity-[0.18]"
@@ -54,41 +54,41 @@ export default function RegisterPage() {
 
           <div className="relative z-10 flex flex-col h-full">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-3 mb-8 shrink-0">
-              <div className="p-2.5 bg-blue-600 rounded-xl text-white shadow-md">
-                <ShoppingBag className="w-5 h-5" strokeWidth={2} />
+            <Link href="/" className="flex items-center gap-3 mb-5 shrink-0">
+              <div className="p-2 bg-blue-600 rounded-xl text-white shadow-md">
+                <ShoppingBag className="w-4 h-4" strokeWidth={2} />
               </div>
               <div className="flex flex-col">
-                <span className="font-extrabold text-[22px] text-slate-900 tracking-tight leading-none">BitCommerce</span>
-                <span className="text-slate-500 text-[12px] font-medium mt-1">Build. Manage. Grow.</span>
+                <span className="font-extrabold text-[19px] text-slate-900 tracking-tight leading-none">BitCommerce</span>
+                <span className="text-slate-500 text-[11px] font-medium mt-0.5">Build. Manage. Grow.</span>
               </div>
             </Link>
 
             {/* Trust pill */}
-            <div className="inline-flex items-center gap-2 self-start h-8 px-3.5 rounded-full bg-blue-50 border border-blue-100 mb-5 shrink-0">
-              <Heart className="w-3.5 h-3.5 text-blue-600 fill-blue-600" />
-              <span className="text-[12px] font-bold text-blue-700">Trusted by 1,000+ merchants</span>
+            <div className="inline-flex items-center gap-2 self-start h-7 px-3 rounded-full bg-blue-50 border border-blue-100 mb-4 shrink-0">
+              <Heart className="w-3 h-3 text-blue-600 fill-blue-600" />
+              <span className="text-[11px] font-bold text-blue-700">Trusted by 1,000+ merchants</span>
             </div>
 
             {/* Headline */}
-            <h1 className="text-[34px] font-extrabold tracking-tight leading-[1.2] mb-4 shrink-0">
+            <h1 className="text-[26px] font-extrabold tracking-tight leading-[1.2] mb-2.5 shrink-0">
               Start your eCommerce <br />
               <span className="text-blue-600">journey today</span>
             </h1>
-            <p className="text-slate-600 text-[13px] font-medium leading-relaxed max-w-[340px] mb-7 shrink-0">
+            <p className="text-slate-600 text-[12px] font-medium leading-relaxed max-w-[340px] mb-4 shrink-0">
               Create your BitCommerce merchant account and launch your online store in minutes.
             </p>
 
             {/* Highlights */}
-            <div className="grid grid-cols-2 gap-x-6 gap-y-5 mb-6 shrink-0">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-3 mb-4 shrink-0">
               {HIGHLIGHTS.map(({ icon: Icon, title, description, className }) => (
-                <div key={title} className="flex gap-3.5">
-                  <div className={`p-2.5 rounded-xl shrink-0 h-fit ${className}`}>
-                    <Icon className="w-4 h-4" strokeWidth={2} />
+                <div key={title} className="flex gap-3">
+                  <div className={`p-2 rounded-xl shrink-0 h-fit ${className}`}>
+                    <Icon className="w-3.5 h-3.5" strokeWidth={2} />
                   </div>
                   <div>
-                    <h3 className="font-bold text-slate-900 text-[13px] mb-0.5">{title}</h3>
-                    <p className="text-[11.5px] text-slate-500 font-medium leading-relaxed">{description}</p>
+                    <h3 className="font-bold text-slate-900 text-[12.5px] mb-0.5">{title}</h3>
+                    <p className="text-[11px] text-slate-500 font-medium leading-relaxed">{description}</p>
                   </div>
                 </div>
               ))}
@@ -97,11 +97,11 @@ export default function RegisterPage() {
             {/* Dashboard Mockup — fills whatever space remains below the fold and
                 scales itself (object-contain) so it can never be clipped by the
                 panel's overflow-hidden boundary. */}
-            <div className="flex-1 min-h-0 flex items-end justify-start">
+            <div className="flex-1 min-h-0 flex items-end justify-center">
               <img
                 src="/login-page-img.png"
                 alt="BitCommerce merchant dashboard preview"
-                className="w-full h-full max-w-full object-contain object-left-bottom"
+                className="w-full h-full max-w-full object-contain object-bottom"
               />
             </div>
           </div>
