@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { useCreateStoreMutation } from '@/features/tenant/api/tenantApi';
 import { Store, Sparkles, Globe, Phone, MapPin, Tag, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 export default function CreateStorePage() {
@@ -15,7 +14,6 @@ export default function CreateStorePage() {
   const [errorMsg, setErrorMsg] = useState('');
 
   const [createStore, { isLoading }] = useCreateStoreMutation();
-  const router = useRouter();
 
   // Auto-generate slug from store name
   useEffect(() => {
@@ -34,7 +32,7 @@ export default function CreateStorePage() {
     setErrorMsg('');
 
     try {
-      await createStore({
+      const newStore = await createStore({
         name,
         slug: slug.toLowerCase().trim(),
         category,
@@ -42,8 +40,13 @@ export default function CreateStorePage() {
         address,
       }).unwrap();
 
+      // Make the newly created store the active one, so the dashboard (and this
+      // browser tab) immediately reads/writes this store instead of whichever
+      // store x-store-id previously pointed at.
+      localStorage.setItem('bitcommerce_active_store_id', newStore.id);
+
       toast.success('Store created successfully!');
-      router.push('/dashboard');
+      window.location.href = '/dashboard';
     } catch (err: any) {
       setErrorMsg(
         err?.data?.message || 'Failed to create store. Please try again.'

@@ -16,6 +16,13 @@ import {
   ShopEaseProduct,
 } from '../data/defaultStorefrontData';
 
+interface HeroBannerSlide {
+  id: string;
+  imageUrl: string;
+  ctaText?: string;
+  ctaLink?: string;
+}
+
 interface DefaultStorefrontThemeProps {
   storeName?: string;
   slug?: string;
@@ -24,6 +31,8 @@ interface DefaultStorefrontThemeProps {
   address?: string;
   logo?: string;
   primaryColor?: string;
+  fontFamily?: string;
+  heroBanners?: HeroBannerSlide[];
   products?: Product[];
   categories?: string[];
   onSelectProduct: (product: Product) => void;
@@ -38,6 +47,8 @@ export const DefaultStorefrontTheme = ({
   address,
   logo,
   primaryColor = '#2563eb',
+  fontFamily,
+  heroBanners = [],
   products = [],
   categories = [],
   onSelectProduct,
@@ -113,7 +124,10 @@ export const DefaultStorefrontTheme = ({
   };
 
   return (
-    <div className="min-h-screen bg-white font-sans text-slate-900 flex flex-col selection:bg-blue-600 selection:text-white">
+    <div
+      className="min-h-screen bg-white font-sans text-slate-900 flex flex-col selection:bg-blue-600 selection:text-white"
+      style={fontFamily ? { fontFamily } : undefined}
+    >
       {/* 1. NAVBAR */}
       <ShopEaseNavbar
         storeName={storeName}
@@ -131,7 +145,12 @@ export const DefaultStorefrontTheme = ({
       {/* MAIN BODY SECTIONS */}
       <main className="flex-1">
         {/* 2. HERO BANNER */}
-        <ShopEaseHero storeName={storeName} onShopNowClick={handleShopNow} />
+        <ShopEaseHero
+          storeName={storeName}
+          onShopNowClick={handleShopNow}
+          primaryColor={primaryColor}
+          banners={heroBanners}
+        />
 
         {/* 3. CATEGORIES (Show only if store has categories) */}
         {structuredCategories.length > 0 && (

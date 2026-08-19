@@ -2,6 +2,13 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { createBaseQueryWithReauth } from '@/store/baseQueryWithReauth';
 import { RootState } from '@/store';
 
+export interface HeroBanner {
+  id: string;
+  imageUrl: string;
+  ctaText?: string;
+  ctaLink?: string;
+}
+
 export interface Store {
   id: string;
   name: string;
@@ -18,7 +25,7 @@ export interface Store {
   unlockedThemeIds?: string[];
   primaryColor?: string;
   fontFamily?: string;
-  heroBanners?: any[];
+  heroBanners?: HeroBanner[];
   facebookPixelId?: string;
   facebookCapiToken?: string;
   facebookTestEventCode?: string;
@@ -183,7 +190,7 @@ export interface UpdateStoreRequest {
   metaDescription?: string;
   primaryColor?: string;
   fontFamily?: string;
-  heroBanners?: any[];
+  heroBanners?: HeroBanner[];
   facebookPixelId?: string;
   facebookCapiToken?: string;
   facebookTestEventCode?: string;
@@ -428,6 +435,60 @@ export const tenantApi = createApi({
       invalidatesTags: ['Store', 'Themes'],
       transformResponse: (response: { data: any } | any) => (response as any).data || response,
     }),
+
+    // --- Branding asset uploads (logo / favicon / hero banner images) ---
+    uploadStoreMedia: builder.mutation<
+      { url: string },
+      { file: File; fileableType: 'STORE_LOGO' | 'STORE_FAVICON' | 'STORE_BANNER' }
+    >({
+      // Use queryFn so we can read the JWT token from localStorage and attach it manually.
+      // Plain `query` would use the tenantApi baseQuery which points to /stores and
+      // its prepareHeaders would NOT run when we construct a full URL manually.
+      queryFn: async ({ file, fileableType }, { getState }) => {
+        try {
+          const state = getState() as any;
+          const token =
+            state?.auth?.token ||
+            (typeof window !== 'undefined' ? localStorage.getItem('bitcommerce_token') : null);
+
+          const apiBase =
+            process.env.NEXT_PUBLIC_API_URL?.replace('/stores', '') ||
+            'http://localhost:5001/api/v1';
+
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('fileableType', fileableType);
+          formData.append('fileType', fileableType === 'STORE_BANNER' ? 'BANNER' : 'IMAGE');
+
+          const headers: HeadersInit = {};
+          if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+          }
+
+          const response = await fetch(`${apiBase}/files/upload-single`, {
+            method: 'POST',
+            headers,
+            body: formData,
+          });
+
+          if (!response.ok) {
+            const errBody = await response.json().catch(() => ({}));
+            return {
+              error: {
+                status: response.status,
+                data: errBody,
+              },
+            };
+          }
+
+          const body = await response.json();
+          const url = body?.data?.url || body?.url || '';
+          return { data: { url } };
+        } catch (err: any) {
+          return { error: { status: 'FETCH_ERROR', error: err?.message } };
+        }
+      },
+    }),
   }),
 });
 
@@ -453,4 +514,5 @@ export const {
   useGetAvailableThemesQuery,
   useInitiateThemePaymentMutation,
   useActivateThemeMutation,
+  useUploadStoreMediaMutation,
 } = tenantApi;

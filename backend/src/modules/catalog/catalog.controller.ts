@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Put,
   Patch,
   Delete,
   Body,
@@ -43,6 +44,10 @@ import { ListCollectionsService } from './services/list-collections.service';
 import { DeleteCollectionService } from './services/delete-collection.service';
 
 import { CreateAttributeService } from './services/create-attribute.service';
+import { UpdateAttributeService, UpdateAttributeDto } from './services/update-attribute.service';
+import { DeleteAttributeService } from './services/delete-attribute.service';
+import { AddAttributeOptionService } from './services/add-attribute-option.service';
+import { DeleteAttributeOptionService } from './services/delete-attribute-option.service';
 import { ListAttributesService } from './services/list-attributes.service';
 import { GetCategoryAttributesService } from './services/get-category-attributes.service';
 import { AssignCategoryAttributesService } from './services/assign-category-attributes.service';
@@ -51,6 +56,7 @@ import { ListProductAttributeValuesService } from './services/list-product-attri
 
 import { GenerateProductVariantsService } from './services/generate-product-variants.service';
 import { UpdateProductVariantService } from './services/update-product-variant.service';
+import { DeleteProductVariantService } from './services/delete-product-variant.service';
 import { BulkUpdateVariantsService } from './services/bulk-update-variants.service';
 
 import { CreateShippingProfileService, ListShippingProfilesService, CreateShippingProfileDto } from './services/shipping-profile.service';
@@ -159,6 +165,10 @@ export class CatalogController {
     private readonly listCollectionsService: ListCollectionsService,
     private readonly deleteCollectionService: DeleteCollectionService,
     private readonly createAttributeService: CreateAttributeService,
+    private readonly updateAttributeService: UpdateAttributeService,
+    private readonly deleteAttributeService: DeleteAttributeService,
+    private readonly addAttributeOptionService: AddAttributeOptionService,
+    private readonly deleteAttributeOptionService: DeleteAttributeOptionService,
     private readonly listAttributesService: ListAttributesService,
     private readonly getCategoryAttributesService: GetCategoryAttributesService,
     private readonly assignCategoryAttributesService: AssignCategoryAttributesService,
@@ -166,6 +176,7 @@ export class CatalogController {
     private readonly listProductAttributeValuesService: ListProductAttributeValuesService,
     private readonly generateProductVariantsService: GenerateProductVariantsService,
     private readonly updateProductVariantService: UpdateProductVariantService,
+    private readonly deleteProductVariantService: DeleteProductVariantService,
     private readonly bulkUpdateVariantsService: BulkUpdateVariantsService,
     private readonly createShippingProfileService: CreateShippingProfileService,
     private readonly listShippingProfilesService: ListShippingProfilesService,
@@ -246,6 +257,64 @@ export class CatalogController {
   ): Promise<AttributeDefinitionEntity> {
     const tenantId = await this.getMerchantTenantId(userId, storeId);
     return this.createAttributeService.execute(tenantId, dto);
+  }
+
+  @Post('attributes/:id/options')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Add a new option to an existing attribute definition' })
+  @RequirePermissions('products:write')
+  async addAttributeOption(
+    @CurrentUser('sub') userId: string,
+    @Param('id') attributeId: string,
+    @Body() dto: { label: string; value?: string; sortOrder?: number },
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
+    return this.addAttributeOptionService.execute(attributeId, tenantId, dto);
+  }
+
+  @Put('attributes/:id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update an attribute definition and its options' })
+  @RequirePermissions('products:write')
+  async updateAttribute(
+    @CurrentUser('sub') userId: string,
+    @Param('id') attributeId: string,
+    @Body() dto: UpdateAttributeDto,
+    @Headers('x-store-id') storeId?: string,
+  ): Promise<AttributeDefinitionEntity> {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
+    return this.updateAttributeService.execute(attributeId, tenantId, dto);
+  }
+
+  @Delete('attributes/:id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete an attribute definition' })
+  @RequirePermissions('products:write')
+  async deleteAttribute(
+    @CurrentUser('sub') userId: string,
+    @Param('id') attributeId: string,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
+    return this.deleteAttributeService.execute(attributeId, tenantId);
+  }
+
+  @Delete('attributes/options/:optionId')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete a single attribute option' })
+  @RequirePermissions('products:write')
+  async deleteAttributeOption(
+    @CurrentUser('sub') userId: string,
+    @Param('optionId') optionId: string,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
+    return this.deleteAttributeOptionService.execute(optionId, tenantId);
   }
 
   @Get('attributes')
@@ -364,6 +433,21 @@ export class CatalogController {
   ): Promise<ProductVariantEntity> {
     const tenantId = await this.getMerchantTenantId(userId, storeId);
     return this.updateProductVariantService.execute(productId, variantId, tenantId, dto);
+  }
+
+  @Delete('products/:id/variants/:variantId')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete a single product variant' })
+  @RequirePermissions('products:write')
+  async deleteProductVariant(
+    @CurrentUser('sub') userId: string,
+    @Param('id') productId: string,
+    @Param('variantId') variantId: string,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
+    return this.deleteProductVariantService.execute(productId, variantId, tenantId);
   }
 
   // --- SHIPPING PROFILES ENDPOINTS (CHUNK 10) ---

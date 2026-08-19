@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { ProductEntity } from '../entities/product.entity';
 import { FindStoreBySlugService } from '../../tenant/services/find-store-by-slug.service';
 import { StoreEntity } from '../../tenant/entities/store.entity';
+import { sanitizePublicStore } from '../../tenant/utils/sanitize-public-store.util';
 
 export interface PublicStoreProductsResponse {
   store: StoreEntity;
@@ -38,7 +39,7 @@ export class FindPublicStoreProductsService {
     });
 
     return {
-      store,
+      store: sanitizePublicStore(store),
       products,
     };
   }

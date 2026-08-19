@@ -29,6 +29,7 @@ import { StoreResponseDto } from './dto/store-response.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { StoreEntity } from './entities/store.entity';
+import { sanitizePublicStore } from './utils/sanitize-public-store.util';
 
 @ApiTags('Tenant & Stores')
 @Controller('stores')
@@ -94,8 +95,9 @@ export class TenantController {
   async updateMyStore(
     @CurrentUser('sub') userId: string,
     @Body() dto: UpdateStoreDto,
+    @Headers('x-store-id') storeId?: string,
   ): Promise<StoreEntity> {
-    return this.updateStoreService.execute(userId, dto);
+    return this.updateStoreService.execute(userId, dto, storeId);
   }
 
   @Delete('me')
@@ -292,6 +294,7 @@ export class TenantController {
   @ApiOperation({ summary: 'Get store details by subdomain slug' })
   @ApiResponse({ status: 200, description: 'Public store profile' })
   async getStoreBySlug(@Param('slug') slug: string): Promise<StoreEntity> {
-    return this.findStoreBySlugService.execute(slug);
+    const store = await this.findStoreBySlugService.execute(slug);
+    return sanitizePublicStore(store);
   }
 }

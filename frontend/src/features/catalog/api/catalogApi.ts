@@ -1069,6 +1069,40 @@ export const catalogApi = createApi({
       invalidatesTags: ['Attribute'],
       transformResponse: (response: { data: AttributeDefinition }) => response.data,
     }),
+    addAttributeOption: builder.mutation<AttributeOption, { attributeId: string; label: string; value?: string; sortOrder?: number }>({
+      query: ({ attributeId, ...body }) => ({
+        url: `/attributes/${attributeId}/options`,
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Attribute'],
+      transformResponse: (response: { data: AttributeOption }) => response.data,
+    }),
+    updateAttribute: builder.mutation<AttributeDefinition, { id: string; name?: string; type?: AttributeType; description?: string; isRequired?: boolean; isFilterable?: boolean; isVariantOption?: boolean; options?: any[] }>({
+      query: ({ id, ...body }) => ({
+        url: `/attributes/${id}`,
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: ['Attribute'],
+      transformResponse: (response: { data: AttributeDefinition }) => response.data,
+    }),
+    deleteAttribute: builder.mutation<{ success: boolean; message: string }, string>({
+      query: (id) => ({
+        url: `/attributes/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Attribute'],
+      transformResponse: (response: { data: { success: boolean; message: string } }) => response.data || response,
+    }),
+    deleteAttributeOption: builder.mutation<{ success: boolean; message: string }, string>({
+      query: (optionId) => ({
+        url: `/attributes/options/${optionId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Attribute'],
+      transformResponse: (response: { data: { success: boolean; message: string } }) => response.data || response,
+    }),
     getCategoryAttributes: builder.query<AttributeDefinition[], string>({
       query: (categoryId) => `/categories/${categoryId}/attributes`,
       providesTags: (_result, _err, categoryId) => [{ type: 'Attribute', id: `cat-${categoryId}` }],
@@ -1157,6 +1191,14 @@ export const catalogApi = createApi({
       }),
       invalidatesTags: (_result, _err, { productId }) => [{ type: 'Product', id: productId }, 'Variant', 'Inventory'],
       transformResponse: (response: { data: ProductVariant[] }) => response.data || [],
+    }),
+    deleteProductVariant: builder.mutation<{ success: boolean; message: string }, { productId: string; variantId: string }>({
+      query: ({ productId, variantId }) => ({
+        url: `/products/${productId}/variants/${variantId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: (_result, _err, { productId }) => [{ type: 'Product', id: productId }, 'Variant', 'Inventory'],
+      transformResponse: (response: { data: { success: boolean; message: string } }) => response.data || response,
     }),
 
     // --- PRODUCT MEDIA ENDPOINTS ---
@@ -1292,6 +1334,10 @@ export const {
   useCreateCollectionMutation,
   useGetAttributesQuery,
   useCreateAttributeMutation,
+  useUpdateAttributeMutation,
+  useDeleteAttributeMutation,
+  useAddAttributeOptionMutation,
+  useDeleteAttributeOptionMutation,
   useGetCategoryAttributesQuery,
   useAssignCategoryAttributesMutation,
   useGetProductAttributesQuery,
@@ -1301,6 +1347,7 @@ export const {
   useDeleteProductMutation,
   useGenerateVariantsMutation,
   useUpdateVariantMutation,
+  useDeleteProductVariantMutation,
   useBulkUpdateVariantsMutation,
   useGetProductMediaQuery,
   useUploadProductMediaMutation,

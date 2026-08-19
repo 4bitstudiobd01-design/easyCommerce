@@ -2,6 +2,9 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
+import { BullModule } from '@nestjs/bullmq';
+import { BullBoardModule } from '@bull-board/nestjs';
+import { ExpressAdapter } from '@bull-board/express';
 import { typeOrmConfig } from './config/database.config';
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -23,6 +26,8 @@ import { CustomerModule } from './modules/customer/customer.module';
 import { MarketingModule } from './modules/marketing/marketing.module';
 import { TrackingModule } from './modules/tracking/tracking.module';
 import { BlogModule } from './modules/blog/blog.module';
+import { FileModule } from './modules/file/file.module';
+import { NotificationModule } from './common/notification/notification.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { APP_FILTER } from '@nestjs/core';
 
@@ -32,11 +37,34 @@ import { APP_FILTER } from '@nestjs/core';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    // BullMQ — async job queue backed by Redis
+    BullModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        connection: {
+          host: config.get<string>('REDIS_HOST', 'localhost'),
+          port: config.get<number>('REDIS_PORT', 6379),
+        },
+        defaultJobOptions: {
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 5000 },
+          removeOnComplete: 100,
+          removeOnFail: 200,
+        },
+      }),
+    }),
+    // Bull Board — queue admin UI at /admin/queues
+    BullBoardModule.forRoot({
+      route: '/admin/queues',
+      adapter: ExpressAdapter,
+    }),
     ScheduleModule.forRoot(),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: typeOrmConfig,
     }),
+    // System-level notification (email/SMS via queue)
+    NotificationModule,
     UserModule,
     AuthModule,
     TenantModule,
@@ -57,6 +85,7 @@ import { APP_FILTER } from '@nestjs/core';
     MarketingModule,
     TrackingModule,
     BlogModule,
+    FileModule,
   ],
   controllers: [],
   providers: [

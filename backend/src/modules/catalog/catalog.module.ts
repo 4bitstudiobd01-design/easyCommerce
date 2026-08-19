@@ -45,6 +45,10 @@ import { ListCollectionsService } from './services/list-collections.service';
 import { DeleteCollectionService } from './services/delete-collection.service';
 
 import { CreateAttributeService } from './services/create-attribute.service';
+import { UpdateAttributeService } from './services/update-attribute.service';
+import { DeleteAttributeService } from './services/delete-attribute.service';
+import { AddAttributeOptionService } from './services/add-attribute-option.service';
+import { DeleteAttributeOptionService } from './services/delete-attribute-option.service';
 import { ListAttributesService } from './services/list-attributes.service';
 import { GetCategoryAttributesService } from './services/get-category-attributes.service';
 import { AssignCategoryAttributesService } from './services/assign-category-attributes.service';
@@ -53,6 +57,7 @@ import { ListProductAttributeValuesService } from './services/list-product-attri
 
 import { GenerateProductVariantsService } from './services/generate-product-variants.service';
 import { UpdateProductVariantService } from './services/update-product-variant.service';
+import { DeleteProductVariantService } from './services/delete-product-variant.service';
 import { BulkUpdateVariantsService } from './services/bulk-update-variants.service';
 
 import { CreateShippingProfileService, ListShippingProfilesService } from './services/shipping-profile.service';
@@ -152,6 +157,10 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     ListCollectionsService,
     DeleteCollectionService,
     CreateAttributeService,
+    UpdateAttributeService,
+    DeleteAttributeService,
+    AddAttributeOptionService,
+    DeleteAttributeOptionService,
     ListAttributesService,
     GetCategoryAttributesService,
     AssignCategoryAttributesService,
@@ -159,6 +168,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     ListProductAttributeValuesService,
     GenerateProductVariantsService,
     UpdateProductVariantService,
+    DeleteProductVariantService,
     BulkUpdateVariantsService,
     CreateShippingProfileService,
     ListShippingProfilesService,
@@ -214,6 +224,10 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     ListCollectionsService,
     DeleteCollectionService,
     CreateAttributeService,
+    UpdateAttributeService,
+    DeleteAttributeService,
+    AddAttributeOptionService,
+    DeleteAttributeOptionService,
     ListAttributesService,
     GetCategoryAttributesService,
     AssignCategoryAttributesService,
@@ -221,6 +235,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     ListProductAttributeValuesService,
     GenerateProductVariantsService,
     UpdateProductVariantService,
+    DeleteProductVariantService,
     BulkUpdateVariantsService,
     CreateShippingProfileService,
     ListShippingProfilesService,

@@ -24,8 +24,6 @@ export enum EmailDriverEnum {
 
 export interface HeroBannerItem {
   id: string;
-  title: string;
-  subtitle: string;
   imageUrl: string;
   ctaText?: string;
   ctaLink?: string;

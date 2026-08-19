@@ -7,9 +7,10 @@ import { Loader2 } from 'lucide-react';
 /**
  * Dedicated /dashboard/products/[id]/edit route.
  *
- * The product form is a single ~1100-line component covering identity, pricing, tax,
- * inventory, media, fulfillment and attributes. Copying it here would leave two forms
- * to keep in sync, so this route hands off to that same form in edit mode instead.
+ * The product form (tabs under features/catalog/components/product-form/) covers
+ * identity, pricing, tax, inventory, media, fulfillment and attributes across one
+ * shared useProductForm session. Copying it here would leave two forms to keep in
+ * sync, so this route hands off to that same form in edit mode instead.
  */
 export default function EditProductRoute() {
   const params = useParams();

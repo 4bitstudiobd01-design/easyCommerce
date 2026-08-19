@@ -8,6 +8,19 @@ import { GreenwebSmsDriver } from '../drivers/greenweb.driver';
 import { SmtpEmailDriver } from '../drivers/smtp-email.driver';
 import { WebPushDriver } from '../drivers/webpush.driver';
 import { SendSmsService } from './send-sms.service';
+import { NotificationProducer } from '../../../common/notification/notification.producer';
+import {
+  orderPlacedEmailTemplate,
+  OrderPlacedTemplateParams,
+} from '../../../common/notification/templates/order-placed.template';
+import {
+  orderStatusEmailTemplate,
+  OrderStatusTemplateParams,
+} from '../../../common/notification/templates/order-status.template';
+import {
+  otpEmailTemplate,
+  OtpTemplateParams,
+} from '../../../common/notification/templates/otp.template';
 
 export interface DispatchNotificationPayload {
   tenantId: string;
@@ -19,6 +32,11 @@ export interface DispatchNotificationPayload {
   pushTitle?: string;
   pushMessage?: string;
   notificationType?: NotificationTypeEnum;
+  /** Optional: use a built-in HTML template instead of plain emailBody */
+  template?: {
+    type: 'ORDER_PLACED' | 'ORDER_STATUS' | 'OTP';
+    params: OrderPlacedTemplateParams | OrderStatusTemplateParams | OtpTemplateParams;
+  };
 }
 
 @Injectable()
@@ -35,12 +53,14 @@ export class NotificationDispatcherService {
     private readonly smtpEmailDriver: SmtpEmailDriver,
     private readonly webPushDriver: WebPushDriver,
     private readonly sendSmsService: SendSmsService,
+    // System-level async notification queue (Mailpit locally, SMTP in production)
+    private readonly notificationProducer: NotificationProducer,
   ) {}
 
   async dispatch(payload: DispatchNotificationPayload): Promise<void> {
     const store = await this.storeRepository.findOne({ where: { tenantId: payload.tenantId } });
 
-    // 1. Dispatch SMS using active SMS Driver
+    // ── 1. SMS via store-specific driver ─────────────────────────────────────
     if (payload.recipientPhone && payload.smsMessage) {
       const activeSmsDriver = store?.smsDriver || SmsDriverEnum.BULKSMSBD;
 
@@ -70,27 +90,43 @@ export class NotificationDispatcherService {
       }
     }
 
-    // 2. Dispatch Email using active Email Driver
-    if (payload.recipientEmail && payload.emailSubject && payload.emailBody) {
+    // ── 2. Email via system-level async queue (Mailpit / SMTP) ───────────────
+    if (payload.recipientEmail && payload.emailSubject) {
       const activeEmailDriver = store?.emailDriver || EmailDriverEnum.SMTP;
 
       if (activeEmailDriver !== EmailDriverEnum.DISABLED) {
-        await this.smtpEmailDriver.sendEmail({
-          toEmail: payload.recipientEmail,
-          subject: payload.emailSubject,
-          htmlBody: payload.emailBody,
-          smtpHost: store?.smtpHost,
-          smtpPort: store?.smtpPort,
-          smtpUser: store?.smtpUser,
-          smtpPass: store?.smtpPass,
-          fromEmail: store?.fromEmail,
-        });
+        // Resolve HTML body: use template if provided, else store-level SMTP, else queue
+        let htmlBody: string | undefined;
+
+        if (payload.template) {
+          htmlBody = this.resolveTemplate(payload.template);
+        }
+
+        if (htmlBody || payload.emailBody) {
+          // Use system-level async queue (Mailpit locally, real SMTP in prod)
+          await this.notificationProducer.sendNotification(
+            payload.recipientEmail,
+            payload.emailSubject,
+            payload.emailBody || 'Please view this email in an HTML-compatible client.',
+            {
+              email: true,
+              sms: false,
+              htmlBody,
+              tenantId: payload.tenantId,
+              type: payload.notificationType,
+            },
+          );
+
+          this.logger.log(
+            `[DISPATCHER] Email queued → ${payload.recipientEmail} | subject: "${payload.emailSubject}"`,
+          );
+        }
       }
     }
 
-    // 3. Dispatch In-App Web Push Notification to Merchant Dashboard
-    const pushTitle = payload.pushTitle || payload.emailSubject || 'New Order Notification';
-    const pushMessage = payload.pushMessage || payload.smsMessage || 'A new order has been received on your storefront!';
+    // ── 3. In-app Web Push Notification ─────────────────────────────────────
+    const pushTitle = payload.pushTitle || payload.emailSubject || 'New Notification';
+    const pushMessage = payload.pushMessage || payload.smsMessage || 'You have a new notification.';
 
     const pushNotification = this.pushNotificationRepository.create({
       title: pushTitle,
@@ -106,5 +142,20 @@ export class NotificationDispatcherService {
       title: pushTitle,
       message: pushMessage,
     });
+  }
+
+  private resolveTemplate(template: DispatchNotificationPayload['template']): string {
+    if (!template) return '';
+
+    switch (template.type) {
+      case 'ORDER_PLACED':
+        return orderPlacedEmailTemplate(template.params as OrderPlacedTemplateParams);
+      case 'ORDER_STATUS':
+        return orderStatusEmailTemplate(template.params as OrderStatusTemplateParams);
+      case 'OTP':
+        return otpEmailTemplate(template.params as OtpTemplateParams);
+      default:
+        return '';
+    }
   }
 }

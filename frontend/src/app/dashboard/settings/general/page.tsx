@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useGetMyStoreQuery, useUpdateStoreMutation } from '@/features/tenant/api/tenantApi';
+import { ImageInputWithUpload } from '@/features/tenant/components/ImageInputWithUpload';
 import { Store as StoreIcon, ArrowLeft, Save } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -14,19 +15,21 @@ export default function GeneralSettingsPage() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
+  const [logo, setLogo] = useState('');
 
   useEffect(() => {
     if (store) {
       setName(store.name || '');
       setPhone(store.phone || '');
       setAddress(store.address || '');
+      setLogo(store.logo || '');
     }
   }, [store]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await updateStore({ name, phone, address } as any).unwrap();
+      await updateStore({ name, phone, address, logo: logo || undefined } as any).unwrap();
       toast.success('Shop settings saved successfully!');
     } catch (err: any) {
       toast.error(err?.data?.message || 'Failed to save shop settings.');
@@ -55,7 +58,19 @@ export default function GeneralSettingsPage() {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Store Logo with Upload & Link */}
+          <div className="p-5 bg-slate-50 border border-slate-200/80 rounded-2xl">
+            <ImageInputWithUpload
+              label="Store Logo"
+              value={logo}
+              onChange={(url) => setLogo(url)}
+              placeholder="https://example.com/logo.png"
+              description="Upload your store logo or provide an image link. Transparent PNG or square SVG recommended."
+              previewShape="square"
+            />
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-xs font-semibold">
             <div>
               <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">

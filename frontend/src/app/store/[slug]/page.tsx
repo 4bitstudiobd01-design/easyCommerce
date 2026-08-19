@@ -243,6 +243,8 @@ export default function StorefrontPage() {
         address={store.address}
         logo={store.logo}
         primaryColor={primaryColor}
+        fontFamily={store.fontFamily}
+        heroBanners={store.heroBanners}
         products={filteredProducts}
         categories={categories}
         onSelectProduct={(p) => setSelectedProduct(p)}

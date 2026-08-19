@@ -1,18 +1,89 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowRight, Sparkles, Zap } from 'lucide-react';
 import Link from 'next/link';
+
+export interface HeroBannerSlide {
+  id: string;
+  imageUrl: string;
+  ctaText?: string;
+  ctaLink?: string;
+}
 
 interface ShopEaseHeroProps {
   storeName?: string;
   onShopNowClick?: () => void;
+  primaryColor?: string;
+  banners?: HeroBannerSlide[];
 }
+
+const AUTO_ROTATE_MS = 6000;
 
 export const ShopEaseHero = ({
   storeName = 'ShopEase',
   onShopNowClick,
+  primaryColor,
+  banners = [],
 }: ShopEaseHeroProps) => {
+  const [activeSlide, setActiveSlide] = useState(0);
+  const hasCustomBanners = banners.length > 0;
+
+  useEffect(() => {
+    if (banners.length < 2) return;
+    const timer = setInterval(() => {
+      setActiveSlide((i) => (i + 1) % banners.length);
+    }, AUTO_ROTATE_MS);
+    return () => clearInterval(timer);
+  }, [banners.length]);
+
+  if (hasCustomBanners) {
+    const slide = banners[activeSlide % banners.length];
+    return (
+      <section className="relative overflow-hidden bg-gradient-to-b from-slate-50/70 via-white to-slate-50/30 py-4 sm:py-8 lg:py-10 border-b border-slate-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="group relative w-full h-[300px] sm:h-[400px] lg:h-[460px] rounded-3xl overflow-hidden bg-slate-100 border border-slate-200/80 shadow-[0_12px_40px_rgba(0,0,0,0.08)]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              key={slide.id}
+              src={slide.imageUrl}
+              alt={storeName}
+              className="absolute inset-0 w-full h-full object-cover animate-in fade-in duration-500 group-hover:scale-105 transition-transform duration-700"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />
+
+            <div className="absolute inset-x-0 bottom-0 p-5 sm:p-8 lg:p-10 flex justify-center sm:justify-start">
+              <Link
+                href={slide.ctaLink || '#featured-products'}
+                className="px-6 py-3 sm:px-7 sm:py-3.5 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-lg inline-flex items-center gap-2 transition-all active:scale-95 hover:brightness-110"
+                style={{ backgroundColor: primaryColor || '#2563eb' }}
+              >
+                <span>{slide.ctaText || 'Shop Now'}</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+
+            {banners.length > 1 && (
+              <div className="absolute bottom-5 right-5 sm:right-8 flex items-center gap-1.5">
+                {banners.map((b, i) => (
+                  <button
+                    key={b.id}
+                    type="button"
+                    aria-label={`Show slide ${i + 1}`}
+                    onClick={() => setActiveSlide(i)}
+                    className={`h-1.5 rounded-full transition-all ${
+                      i === activeSlide % banners.length ? 'w-6 bg-white' : 'w-1.5 bg-white/50 hover:bg-white/75'
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-slate-50/70 via-white to-slate-50/30 py-6 sm:py-10 lg:py-16 border-b border-slate-100">
       {/* Subtle Ambient Background Glow */}
@@ -65,7 +136,8 @@ export const ShopEaseHero = ({
                 <button
                   type="button"
                   onClick={onShopNowClick}
-                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-md shadow-blue-600/25 inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                  className="px-5 py-2.5 bg-blue-600 hover:brightness-110 active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-md shadow-blue-600/25 inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                  style={primaryColor ? { backgroundColor: primaryColor } : undefined}
                 >
                   <span>Explore Shop</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -73,7 +145,8 @@ export const ShopEaseHero = ({
               ) : (
                 <Link
                   href="#featured-products"
-                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-md shadow-blue-600/25 inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                  className="px-5 py-2.5 bg-blue-600 hover:brightness-110 active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-md shadow-blue-600/25 inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                  style={primaryColor ? { backgroundColor: primaryColor } : undefined}
                 >
                   <span>Explore Shop</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -135,7 +208,8 @@ export const ShopEaseHero = ({
                 <button
                   type="button"
                   onClick={onShopNowClick}
-                  className="px-8 py-3.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-sm rounded-xl shadow-lg shadow-blue-600/25 inline-flex items-center gap-2.5 transition-all group cursor-pointer"
+                  className="px-8 py-3.5 bg-blue-600 hover:brightness-110 active:scale-95 text-white font-extrabold text-sm rounded-xl shadow-lg shadow-blue-600/25 inline-flex items-center gap-2.5 transition-all group cursor-pointer"
+                  style={primaryColor ? { backgroundColor: primaryColor } : undefined}
                 >
                   <span>Explore Products</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -143,7 +217,8 @@ export const ShopEaseHero = ({
               ) : (
                 <Link
                   href="#featured-products"
-                  className="px-8 py-3.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-sm rounded-xl shadow-lg shadow-blue-600/25 inline-flex items-center gap-2.5 transition-all group cursor-pointer"
+                  className="px-8 py-3.5 bg-blue-600 hover:brightness-110 active:scale-95 text-white font-extrabold text-sm rounded-xl shadow-lg shadow-blue-600/25 inline-flex items-center gap-2.5 transition-all group cursor-pointer"
+                  style={primaryColor ? { backgroundColor: primaryColor } : undefined}
                 >
                   <span>Explore Products</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

@@ -1,11 +1,51 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString, IsEnum, IsNumber, IsArray, IsBoolean, Min } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsOptional,
+  IsString,
+  IsEnum,
+  IsNumber,
+  IsArray,
+  IsBoolean,
+  Min,
+  MaxLength,
+  IsUrl,
+  IsHexColor,
+  ValidateNested,
+} from 'class-validator';
 import {
   SmsDriverEnum,
   EmailDriverEnum,
   HeroBannerItem,
   NavigationLinkItem,
 } from '../entities/store.entity';
+
+// require_tld: false — uploaded assets are served from the API's own origin
+// (e.g. http://localhost:5001/uploads/... in local dev, or an internal host),
+// which the default isURL() rejects for lacking a public top-level domain.
+const IMAGE_URL_OPTIONS = { require_protocol: true, require_tld: false, protocols: ['http', 'https'] };
+
+export class HeroBannerItemDto implements HeroBannerItem {
+  @ApiProperty({ example: 'banner-1' })
+  @IsString()
+  id: string;
+
+  @ApiProperty({ example: 'https://cdn.example.com/banners/summer-sale.jpg' })
+  @IsUrl(IMAGE_URL_OPTIONS)
+  imageUrl: string;
+
+  @ApiProperty({ example: 'Shop Collection', required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  ctaText?: string;
+
+  @ApiProperty({ example: '/store/my-store', required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  ctaLink?: string;
+}
 
 export class UpdateStoreDto {
   @ApiProperty({ example: 'My Online Fashion Store', required: false })
@@ -25,22 +65,24 @@ export class UpdateStoreDto {
 
   @ApiProperty({ example: 'https://example.com/logo.png', required: false })
   @IsOptional()
-  @IsString()
+  @IsUrl(IMAGE_URL_OPTIONS)
   logo?: string;
 
   @ApiProperty({ example: 'https://example.com/favicon.ico', required: false })
   @IsOptional()
-  @IsString()
+  @IsUrl(IMAGE_URL_OPTIONS)
   favicon?: string;
 
   @ApiProperty({ example: 'Sumon Fashion - Premium Apparel Store', required: false })
   @IsOptional()
   @IsString()
+  @MaxLength(70)
   metaTitle?: string;
 
   @ApiProperty({ example: 'Shop top quality clothing online with fast BD delivery.', required: false })
   @IsOptional()
   @IsString()
+  @MaxLength(160)
   metaDescription?: string;
 
   // Marketing Pixels & Conversions API
@@ -86,17 +128,20 @@ export class UpdateStoreDto {
 
   @ApiProperty({ example: '#2563eb', required: false })
   @IsOptional()
-  @IsString()
+  @IsHexColor()
   primaryColor?: string;
 
   @ApiProperty({ example: 'Inter', required: false })
   @IsOptional()
   @IsString()
+  @MaxLength(50)
   fontFamily?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, type: [HeroBannerItemDto] })
   @IsOptional()
   @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => HeroBannerItemDto)
   heroBanners?: HeroBannerItem[];
 
   @ApiProperty({ example: 'www.sumonfashion.com', required: false })
