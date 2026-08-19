@@ -1,0 +1,308 @@
+import { StoreKpiCardItem, StoreRecord } from './types';
+
+export const STORE_KPIS: StoreKpiCardItem[] = [
+  {
+    id: 'total-stores',
+    title: 'Total Stores',
+    value: '2,731',
+    change: '10.2%',
+    isPositive: true,
+    period: 'vs Jul 31 - Aug 6',
+    iconType: 'total-stores',
+  },
+  {
+    id: 'active-stores',
+    title: 'Active Stores',
+    value: '2,358',
+    change: '9.3%',
+    isPositive: true,
+    period: 'vs Jul 31 - Aug 6',
+    iconType: 'active-stores',
+  },
+  {
+    id: 'suspended-stores',
+    title: 'Suspended Stores',
+    value: '112',
+    change: '4.7%',
+    isPositive: false,
+    period: 'vs Jul 31 - Aug 6',
+    iconType: 'suspended-stores',
+  },
+  {
+    id: 'blocked-stores',
+    title: 'Blocked Stores',
+    value: '28',
+    change: '12.5%',
+    isPositive: false,
+    period: 'vs Jul 31 - Aug 6',
+    iconType: 'blocked-stores',
+  },
+  {
+    id: 'new-stores',
+    title: 'New Stores (This Week)',
+    value: '156',
+    change: '19.6%',
+    isPositive: true,
+    period: 'vs Jul 31 - Aug 6',
+    iconType: 'new-stores',
+  },
+];
+
+export const INITIAL_STORES: StoreRecord[] = [
+  {
+    id: 'st-1',
+    codeId: 'store_01HBXX3Z9Q',
+    name: 'Urban Style Store',
+    initials: 'US',
+    avatarBg: 'bg-slate-900',
+    merchant: {
+      name: 'Rahim Hossain',
+      email: 'rahim@email.com',
+    },
+    domain: 'urbanstyle.easyco.com',
+    plan: 'Business',
+    status: 'Active',
+    country: {
+      code: 'BD',
+      name: 'Bangladesh',
+    },
+    orders30d: {
+      count: '1,248',
+      trend: '18.7%',
+      isPositive: true,
+    },
+    revenue30d: {
+      amount: '৳2,45,000',
+      trend: '22.5%',
+      isPositive: true,
+    },
+    createdAt: {
+      date: 'Aug 14, 2026',
+      time: '10:32 AM',
+    },
+  },
+  {
+    id: 'st-2',
+    codeId: 'store_01HBXX3Z9R',
+    name: 'ABC Fashion Store',
+    initials: 'AF',
+    avatarBg: 'bg-rose-400',
+    merchant: {
+      name: 'Karim Ahmed',
+      email: 'karim@email.com',
+    },
+    domain: 'abcfashion.easyco.com',
+    plan: 'Growth',
+    status: 'Active',
+    country: {
+      code: 'BD',
+      name: 'Bangladesh',
+    },
+    orders30d: {
+      count: '982',
+      trend: '15.2%',
+      isPositive: true,
+    },
+    revenue30d: {
+      amount: '৳1,80,000',
+      trend: '18.3%',
+      isPositive: true,
+    },
+    createdAt: {
+      date: 'Aug 14, 2026',
+      time: '09:17 AM',
+    },
+  },
+  {
+    id: 'st-3',
+    codeId: 'store_01HBXX3Z9S',
+    name: 'Gadget Hub',
+    initials: 'GH',
+    avatarBg: 'bg-indigo-400',
+    merchant: {
+      name: 'Mim Akter',
+      email: 'mim@email.com',
+    },
+    domain: 'gadgethub.easyco.com',
+    plan: 'Business',
+    status: 'Active',
+    country: {
+      code: 'BD',
+      name: 'Bangladesh',
+    },
+    orders30d: {
+      count: '752',
+      trend: '12.1%',
+      isPositive: true,
+    },
+    revenue30d: {
+      amount: '৳1,45,000',
+      trend: '15.7%',
+      isPositive: true,
+    },
+    createdAt: {
+      date: 'Aug 13, 2026',
+      time: '08:50 PM',
+    },
+  },
+  {
+    id: 'st-4',
+    codeId: 'store_01HBXX3Z9T',
+    name: 'Book Haven',
+    initials: 'BH',
+    avatarBg: 'bg-amber-500',
+    merchant: {
+      name: 'Sabir Islam',
+      email: 'sabir@email.com',
+    },
+    domain: 'bookhaven.easyco.com',
+    plan: 'Growth',
+    status: 'Active',
+    country: {
+      code: 'BD',
+      name: 'Bangladesh',
+    },
+    orders30d: {
+      count: '644',
+      trend: '9.4%',
+      isPositive: true,
+    },
+    revenue30d: {
+      amount: '৳1,28,000',
+      trend: '12.1%',
+      isPositive: true,
+    },
+    createdAt: {
+      date: 'Aug 13, 2026',
+      time: '07:32 PM',
+    },
+  },
+  {
+    id: 'st-5',
+    codeId: 'store_01HBXX3Z9U',
+    name: 'Daily Essentials',
+    initials: 'DE',
+    avatarBg: 'bg-amber-400',
+    merchant: {
+      name: 'Sabir Islam',
+      email: 'sabir@email.com',
+    },
+    domain: 'dailyessentials.easyco.com',
+    plan: 'Starter',
+    status: 'Active',
+    country: {
+      code: 'BD',
+      name: 'Bangladesh',
+    },
+    orders30d: {
+      count: '512',
+      trend: '7.3%',
+      isPositive: true,
+    },
+    revenue30d: {
+      amount: '৳98,000',
+      trend: '9.4%',
+      isPositive: true,
+    },
+    createdAt: {
+      date: 'Aug 13, 2026',
+      time: '06:12 PM',
+    },
+  },
+  {
+    id: 'st-6',
+    codeId: 'store_01HBXX3Z9V',
+    name: 'Tech Solution',
+    initials: 'TS',
+    avatarBg: 'bg-slate-400',
+    merchant: {
+      name: 'Nahid Hasan',
+      email: 'nahid@email.com',
+    },
+    domain: 'techsolution.easyco.com',
+    plan: 'Starter',
+    status: 'Trial',
+    country: {
+      code: 'BD',
+      name: 'Bangladesh',
+    },
+    orders30d: {
+      count: '45',
+      trend: '3.2%',
+      isPositive: true,
+    },
+    revenue30d: {
+      amount: '৳12,500',
+      trend: '5.4%',
+      isPositive: true,
+    },
+    createdAt: {
+      date: 'Aug 13, 2026',
+      time: '05:45 PM',
+    },
+  },
+  {
+    id: 'st-7',
+    codeId: 'store_01HBXX3Z9W',
+    name: 'Home Mart',
+    initials: 'HM',
+    avatarBg: 'bg-teal-400',
+    merchant: {
+      name: 'Riyan Ahmed',
+      email: 'riyan@email.com',
+    },
+    domain: 'homemart.easyco.com',
+    plan: 'Growth',
+    status: 'Suspended',
+    country: {
+      code: 'BD',
+      name: 'Bangladesh',
+    },
+    orders30d: {
+      count: '0',
+      trend: '-',
+      isNeutral: true,
+    },
+    revenue30d: {
+      amount: '৳0',
+      trend: '-',
+      isNeutral: true,
+    },
+    createdAt: {
+      date: 'Aug 12, 2026',
+      time: '03:20 PM',
+    },
+  },
+  {
+    id: 'st-8',
+    codeId: 'store_01HBXX3Z9X',
+    name: 'FreshShop',
+    initials: 'FS',
+    avatarBg: 'bg-rose-500',
+    merchant: {
+      name: 'Tonu Rahman',
+      email: 'tonu@email.com',
+    },
+    domain: 'freshshop.easyco.com',
+    plan: 'Starter',
+    status: 'Blocked',
+    country: {
+      code: 'BD',
+      name: 'Bangladesh',
+    },
+    orders30d: {
+      count: '0',
+      trend: '-',
+      isNeutral: true,
+    },
+    revenue30d: {
+      amount: '৳0',
+      trend: '-',
+      isNeutral: true,
+    },
+    createdAt: {
+      date: 'Aug 10, 2026',
+      time: '11:10 AM',
+    },
+  },
+];

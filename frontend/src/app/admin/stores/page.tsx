@@ -1,14 +1,8 @@
 'use client';
 
 import React from 'react';
-import { PlaceholderPage } from '@/components/dashboard/common/PlaceholderPage';
+import { StoresManagementView } from '@/components/dashboard/stores/StoresManagementView';
 
 export default function StoresPage() {
-  return (
-    <PlaceholderPage
-      title="Stores"
-      section="Platform"
-      description="View and manage multi-tenant storefronts, custom domains, and activation states."
-    />
-  );
+  return <StoresManagementView />;
 }

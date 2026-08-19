@@ -109,22 +109,31 @@ export function AdminSidebar({
 
   return (
     <aside
+      id="admin-sidebar"
       className={`h-screen bg-white border-r border-slate-200/90 flex flex-col transition-all duration-300 ease-in-out shrink-0 select-none z-30
-        ${/* Mobile Slide-in Drawer */ ''}
-        fixed inset-y-0 left-0 lg:static
+        fixed inset-y-0 left-0 md:static
         ${
           isMobileOpen
-            ? 'translate-x-0 w-64 shadow-2xl'
-            : '-translate-x-full lg:translate-x-0'
+            ? 'translate-x-0 w-64 min-w-[256px] shadow-2xl'
+            : '-translate-x-full md:translate-x-0'
         }
         ${
-          !isMobileOpen && isCollapsed ? 'lg:w-[72px]' : 'lg:w-64'
+          isCollapsed
+            ? 'w-[72px] min-w-[72px] max-w-[72px]'
+            : 'w-64 min-w-[256px] max-w-[256px]'
         }
       `}
     >
       {/* 1. Brand / Logo Header (Always fixed at top of sidebar) */}
       <div className="h-16 px-4 border-b border-slate-100 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3 min-w-0">
+        <button
+          type="button"
+          onClick={isCollapsed ? onToggleCollapse : undefined}
+          className={`flex items-center gap-3 min-w-0 text-left ${
+            isCollapsed ? 'cursor-pointer hover:opacity-80' : ''
+          }`}
+          title={isCollapsed ? 'Click to expand sidebar' : undefined}
+        >
           <div className="w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center text-white shadow-xs shadow-emerald-600/30 shrink-0">
             <ShoppingBag className="w-5 h-5" />
           </div>
@@ -139,14 +148,14 @@ export function AdminSidebar({
               </span>
             </div>
           )}
-        </div>
+        </button>
 
         {/* Mobile close button */}
         {isMobileOpen && (
           <button
             type="button"
             onClick={onCloseMobile}
-            className="lg:hidden p-1.5 text-slate-400 hover:text-slate-700 rounded-lg"
+            className="md:hidden p-1.5 text-slate-400 hover:text-slate-700 rounded-lg cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -207,20 +216,25 @@ export function AdminSidebar({
       </div>
 
       {/* 3. Footer Collapse / Expand Toggle Button (Pinned at bottom of sidebar) */}
-      <div className="p-3 border-t border-slate-100 shrink-0 hidden lg:block bg-white">
+      <div className="p-3 border-t border-slate-100 shrink-0 bg-white">
         <button
           type="button"
-          onClick={onToggleCollapse}
-          className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:text-slate-900 hover:bg-slate-50 border border-transparent hover:border-slate-200 transition-all ${
+          id="sidebar-collapse-toggle"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onToggleCollapse();
+          }}
+          className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-500 hover:text-slate-900 hover:bg-slate-100 border border-transparent hover:border-slate-200 transition-all cursor-pointer ${
             isCollapsed ? 'justify-center px-2' : ''
           }`}
           title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
         >
           {isCollapsed ? (
-            <ChevronRight className="w-4 h-4 text-slate-600" />
+            <ChevronRight className="w-4 h-4 text-slate-600 shrink-0" />
           ) : (
             <>
-              <ChevronLeft className="w-4 h-4 text-slate-500" />
+              <ChevronLeft className="w-4 h-4 text-slate-500 shrink-0" />
               <span>Collapse</span>
             </>
           )}
