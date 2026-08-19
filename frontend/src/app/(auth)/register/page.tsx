@@ -107,9 +107,9 @@ export default function RegisterPage() {
         </div>
 
         {/* RIGHT COLUMN: Form */}
-        <div className="flex flex-col px-6 sm:px-10 lg:px-14 xl:px-20 py-10 h-full overflow-y-auto">
+        <div className="flex flex-col px-6 sm:px-10 lg:px-14 xl:px-20 py-5 h-full overflow-y-auto">
           {/* Top Nav */}
-          <div className="flex items-center justify-end mb-6 shrink-0">
+          <div className="flex items-center justify-end mb-3 shrink-0">
             <p className="text-[13px] font-medium text-slate-500">
               Already have an account?{' '}
               <Link href="/login" className="text-blue-600 font-bold hover:underline">Log in</Link>

@@ -140,200 +140,200 @@ export function RegisterForm() {
   };
 
   const fieldClass =
-    'w-full pl-10 pr-4 h-11 bg-white border border-slate-200 rounded-xl text-slate-900 text-[13px] font-medium placeholder-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors';
-  const labelClass = 'block text-[12.5px] font-bold text-slate-700 mb-1.5';
-  const hintClass = 'text-[11px] font-medium text-slate-400 mt-1.5';
+    'w-full pl-10 pr-4 h-9 bg-white border border-slate-200 rounded-xl text-slate-900 text-[13px] font-medium placeholder-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors';
+  const labelClass = 'block text-[12.5px] font-bold text-slate-700 mb-0.5';
+  const hintClass = 'text-[10.5px] font-medium text-slate-400 mt-0.5';
 
   return (
     <div className="w-full max-w-[680px] mx-auto">
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
 
         {/* Header */}
-        <div className="text-center mb-7">
-          <h2 className="text-[24px] font-extrabold text-slate-900 tracking-tight mb-1.5">Create your account</h2>
-          <p className="text-[13px] font-medium text-slate-500">Join thousands of merchants using BitCommerce</p>
+        <div className="text-center mb-3">
+          <h2 className="text-[19px] font-extrabold text-slate-900 tracking-tight mb-0.5">Create your account</h2>
+          <p className="text-[12.5px] font-medium text-slate-500">Join thousands of merchants using BitCommerce</p>
         </div>
 
         {errorMsg && (
-          <div className="mb-5 p-3.5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-bold text-center">
+          <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-bold text-center">
             {errorMsg}
           </div>
         )}
 
         <form onSubmit={handleSubmit} noValidate>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
-
-            {/* Full Name */}
-            <div>
-              <label htmlFor="fullName" className={labelClass}>Full Name</label>
-              <div className="relative">
-                <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  id="fullName"
-                  type="text"
-                  required
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Enter your full name"
-                  className={fieldClass}
-                />
-              </div>
-            </div>
-
-            {/* Email */}
-            <div>
-              <label htmlFor="email" className={labelClass}>Email Address</label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  id="email"
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
-                  className={fieldClass}
-                />
-              </div>
-            </div>
-
-            {/* Phone with country code */}
-            <div>
-              <label htmlFor="phone" className={labelClass}>Phone Number</label>
-              <div className="flex gap-2">
-                <div className="relative shrink-0">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px] leading-none">🇧🇩</span>
-                  <select
-                    aria-label="Country calling code"
-                    className="h-11 pl-8 pr-7 bg-white border border-slate-200 rounded-xl text-slate-700 text-[13px] font-medium appearance-none focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors cursor-pointer"
-                  >
-                    <option>+880</option>
-                  </select>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                </div>
-                <div className="relative flex-1">
-                  <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+            {/* Left stack — sized independently so a hint on the right doesn't stretch these rows */}
+            <div className="flex flex-col gap-y-2">
+              {/* Full Name */}
+              <div>
+                <label htmlFor="fullName" className={labelClass}>Full Name</label>
+                <div className="relative">
+                  <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
-                    id="phone"
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="Enter your phone number"
+                    id="fullName"
+                    type="text"
+                    required
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Enter your full name"
                     className={fieldClass}
                   />
                 </div>
               </div>
-            </div>
 
-            {/* Password */}
-            <div>
-              <label htmlFor="password" className={labelClass}>Password</label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Create a password"
-                  className="w-full pl-10 pr-10 h-11 bg-white border border-slate-200 rounded-xl text-slate-900 text-[13px] font-medium placeholder-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+              {/* Phone with country code */}
+              <div>
+                <label htmlFor="phone" className={labelClass}>Phone Number</label>
+                <div className="flex gap-2">
+                  <div className="relative shrink-0">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px] leading-none">🇧🇩</span>
+                    <select
+                      aria-label="Country calling code"
+                      className="h-9 pl-8 pr-7 bg-white border border-slate-200 rounded-xl text-slate-700 text-[13px] font-medium appearance-none focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors cursor-pointer"
+                    >
+                      <option>+880</option>
+                    </select>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+                  <div className="relative flex-1">
+                    <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      id="phone"
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="Enter your phone number"
+                      className={fieldClass}
+                    />
+                  </div>
+                </div>
               </div>
-              <p className={hintClass}>Minimum 8 characters with letters and numbers</p>
-            </div>
 
-            {/* Store Name */}
-            <div>
-              <label htmlFor="storeName" className={labelClass}>Store Name</label>
-              <div className="relative">
-                <Store className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  id="storeName"
-                  type="text"
-                  value={storeName}
-                  onChange={(e) => handleStoreNameChange(e.target.value)}
-                  placeholder="Enter your store name"
-                  className={fieldClass}
-                />
+              {/* Store Name */}
+              <div>
+                <label htmlFor="storeName" className={labelClass}>Store Name</label>
+                <div className="relative">
+                  <Store className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    id="storeName"
+                    type="text"
+                    value={storeName}
+                    onChange={(e) => handleStoreNameChange(e.target.value)}
+                    placeholder="Enter your store name"
+                    className={fieldClass}
+                  />
+                </div>
               </div>
-              <p className={hintClass}>This will be your store display name</p>
-            </div>
 
-            {/* Store Subdomain */}
-            <div>
-              <label htmlFor="subdomain" className={labelClass}>Store Subdomain</label>
-              <div className="flex items-stretch h-11 bg-white border border-slate-200 rounded-xl overflow-hidden focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 transition-colors">
-                <input
-                  id="subdomain"
-                  type="text"
-                  value={subdomain}
-                  onChange={(e) => {
-                    setSubdomainEdited(true);
-                    setSubdomain(toSlug(e.target.value));
-                  }}
-                  placeholder="yourstore"
-                  className="flex-1 min-w-0 px-3.5 text-slate-900 text-[13px] font-medium placeholder-slate-400 focus:outline-none"
-                />
-                <span className="flex items-center px-3 bg-slate-50 border-l border-slate-200 text-slate-500 text-[12.5px] font-medium shrink-0">
-                  {STORE_DOMAIN}
-                </span>
-              </div>
-              <p className={hintClass}>
-                Your store will be available at {subdomain || 'yourstore'}{STORE_DOMAIN}
-              </p>
-            </div>
-
-            {/* Business Type */}
-            <div>
-              <label htmlFor="businessType" className={labelClass}>Business Type</label>
-              <div className="relative">
-                <Briefcase className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 z-10" />
-                <select
-                  id="businessType"
-                  value={businessType}
-                  onChange={(e) => setBusinessType(e.target.value)}
-                  className={`${fieldClass} appearance-none cursor-pointer ${businessType ? 'text-slate-900' : 'text-slate-400'}`}
-                >
-                  <option value="">Select your business type</option>
-                  {BUSINESS_TYPES.map((type) => (
-                    <option key={type} value={type} className="text-slate-900">{type}</option>
-                  ))}
-                </select>
-                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              {/* Business Type */}
+              <div>
+                <label htmlFor="businessType" className={labelClass}>Business Type</label>
+                <div className="relative">
+                  <Briefcase className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 z-10" />
+                  <select
+                    id="businessType"
+                    value={businessType}
+                    onChange={(e) => setBusinessType(e.target.value)}
+                    className={`${fieldClass} appearance-none cursor-pointer ${businessType ? 'text-slate-900' : 'text-slate-400'}`}
+                  >
+                    <option value="">Select your business type</option>
+                    {BUSINESS_TYPES.map((type) => (
+                      <option key={type} value={type} className="text-slate-900">{type}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
               </div>
             </div>
 
-            {/* Country */}
-            <div>
-              <label htmlFor="country" className={labelClass}>Country</label>
-              <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[13px] leading-none z-10">🇧🇩</span>
-                <select
-                  id="country"
-                  value={country}
-                  onChange={(e) => setCountry(e.target.value)}
-                  className="w-full pl-10 pr-9 h-11 bg-white border border-slate-200 rounded-xl text-slate-900 text-[13px] font-medium appearance-none focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors cursor-pointer"
-                >
-                  {COUNTRIES.map((name) => (
-                    <option key={name} value={name}>{name}</option>
-                  ))}
-                </select>
-                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            {/* Right stack */}
+            <div className="flex flex-col gap-y-2">
+              {/* Email */}
+              <div>
+                <label htmlFor="email" className={labelClass}>Email Address</label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    id="email"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email"
+                    className={fieldClass}
+                  />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div>
+                <label htmlFor="password" className={labelClass}>Password</label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Create a password"
+                    className="w-full pl-10 pr-10 h-9 bg-white border border-slate-200 rounded-xl text-slate-900 text-[13px] font-medium placeholder-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Store Subdomain */}
+              <div>
+                <label htmlFor="subdomain" className={labelClass}>Store Subdomain</label>
+                <div className="flex items-stretch h-9 bg-white border border-slate-200 rounded-xl overflow-hidden focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 transition-colors">
+                  <input
+                    id="subdomain"
+                    type="text"
+                    value={subdomain}
+                    onChange={(e) => {
+                      setSubdomainEdited(true);
+                      setSubdomain(toSlug(e.target.value));
+                    }}
+                    placeholder="yourstore"
+                    className="flex-1 min-w-0 px-3.5 text-slate-900 text-[13px] font-medium placeholder-slate-400 focus:outline-none"
+                  />
+                  <span className="flex items-center px-3 bg-slate-50 border-l border-slate-200 text-slate-500 text-[12.5px] font-medium shrink-0">
+                    {STORE_DOMAIN}
+                  </span>
+                </div>
+              </div>
+
+              {/* Country */}
+              <div>
+                <label htmlFor="country" className={labelClass}>Country</label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[13px] leading-none z-10">🇧🇩</span>
+                  <select
+                    id="country"
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    className="w-full pl-10 pr-9 h-9 bg-white border border-slate-200 rounded-xl text-slate-900 text-[13px] font-medium appearance-none focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors cursor-pointer"
+                  >
+                    {COUNTRIES.map((name) => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
               </div>
             </div>
           </div>
 
           {/* Terms */}
-          <div className="flex items-start gap-2.5 mt-5">
+          <div className="flex items-start gap-2 mt-3">
             <input
               id="accept-terms"
               type="checkbox"
@@ -351,7 +351,7 @@ export function RegisterForm() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full h-12 mt-5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-colors text-[14px] shadow-md shadow-blue-600/20 disabled:opacity-50 active:scale-[0.99]"
+            className="w-full h-10 mt-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-colors text-[13.5px] shadow-md shadow-blue-600/20 disabled:opacity-50 active:scale-[0.99]"
           >
             {isLoading ? (
               <span>Creating account...</span>
@@ -365,7 +365,7 @@ export function RegisterForm() {
         </form>
 
         {/* Divider */}
-        <div className="flex items-center gap-4 my-6">
+        <div className="flex items-center gap-4 my-2.5">
           <div className="flex-1 h-px bg-slate-200" />
           <span className="text-[12px] font-medium text-slate-400">or sign up with</span>
           <div className="flex-1 h-px bg-slate-200" />
@@ -373,7 +373,7 @@ export function RegisterForm() {
 
         {/* Social Buttons */}
         <div className="grid grid-cols-3 gap-3">
-          <button type="button" className="h-11 flex items-center justify-center gap-2 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
+          <button type="button" className="h-9 flex items-center justify-center gap-2 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
             <svg className="w-4 h-4" viewBox="0 0 24 24">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
               <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -382,13 +382,13 @@ export function RegisterForm() {
             </svg>
             <span className="text-[13px] font-bold text-slate-700">Google</span>
           </button>
-          <button type="button" className="h-11 flex items-center justify-center gap-2 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
+          <button type="button" className="h-9 flex items-center justify-center gap-2 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
             <svg className="w-4 h-4 text-[#1877F2]" fill="currentColor" viewBox="0 0 24 24">
               <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
             </svg>
             <span className="text-[13px] font-bold text-slate-700">Facebook</span>
           </button>
-          <button type="button" className="h-11 flex items-center justify-center gap-2 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
+          <button type="button" className="h-9 flex items-center justify-center gap-2 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.641-.026 2.669-1.48 3.655-2.922 1.156-1.682 1.631-3.313 1.657-3.398-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.68.827-1.333 2.275-1.144 3.644 1.346.104 2.597-.61 3.431-1.632z"/>
             </svg>
@@ -397,7 +397,7 @@ export function RegisterForm() {
         </div>
 
         {/* Free trial banner */}
-        <div className="mt-5 flex items-center gap-3 p-4 bg-[#F6F8FF] border border-blue-100 rounded-xl">
+        <div className="mt-2.5 flex items-center gap-3 p-2 bg-[#F6F8FF] border border-blue-100 rounded-xl">
           <div className="p-2 bg-blue-100 text-blue-600 rounded-lg shrink-0">
             <Gift className="w-4 h-4" />
           </div>
@@ -410,7 +410,7 @@ export function RegisterForm() {
       </div>
 
       {/* Footer */}
-      <div className="mt-6 flex flex-col items-center gap-2">
+      <div className="mt-2.5 flex flex-col items-center gap-1">
         <div className="flex items-center gap-2 text-[12px] font-medium text-slate-500">
           <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
           <span>Your data is protected with industry-standard security.</span>
