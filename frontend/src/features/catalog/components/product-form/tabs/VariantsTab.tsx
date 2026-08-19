@@ -9,14 +9,25 @@ interface VariantsTabProps {
 }
 
 export function VariantsTab({ form }: VariantsTabProps) {
-  const { hasVariants, setHasVariants, numericBasePrice, currencySymbol } = form;
+  const {
+    hasVariants,
+    setHasVariants,
+    numericBasePrice,
+    currencySymbol,
+    editId,
+    sourceProduct,
+    ensureProductSaved,
+  } = form;
 
   return (
     <ProductVariantMatrix
+      productId={editId}
       hasVariants={hasVariants}
       onHasVariantsChange={setHasVariants}
+      existingVariants={sourceProduct?.variants || []}
       basePrice={numericBasePrice}
       currencySymbol={currencySymbol}
+      onEnsureSaved={ensureProductSaved}
     />
   );
 }

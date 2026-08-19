@@ -44,6 +44,7 @@ interface ProductVariantMatrixProps {
   existingVariants?: ProductVariant[];
   basePrice?: number;
   currencySymbol?: string;
+  onEnsureSaved?: () => Promise<string | null>;
 }
 
 // Common preset options for instant 1-click creation
@@ -82,6 +83,7 @@ export function ProductVariantMatrix({
   existingVariants = [],
   basePrice = 0,
   currencySymbol = '৳',
+  onEnsureSaved,
 }: ProductVariantMatrixProps) {
   const { data: allAttributes = [], refetch: refetchAttributes } = useGetAttributesQuery();
   const [createAttribute, { isLoading: isCreatingAttr }] = useCreateAttributeMutation();
@@ -334,8 +336,12 @@ export function ProductVariantMatrix({
 
   // Generate Matrix
   const handleGenerate = async () => {
-    if (!productId) {
-      toast.error('Please save basic product information before generating variants.');
+    let targetProductId = productId;
+    if (!targetProductId && onEnsureSaved) {
+      targetProductId = (await onEnsureSaved()) || undefined;
+    }
+
+    if (!targetProductId) {
       return;
     }
 
@@ -352,7 +358,7 @@ export function ProductVariantMatrix({
 
     try {
       const variants = await generateVariants({
-        productId,
+        productId: targetProductId,
         dimensions: payloadDimensions,
       }).unwrap();
 

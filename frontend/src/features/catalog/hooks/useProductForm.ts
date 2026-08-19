@@ -352,7 +352,6 @@ export function useProductForm() {
       } else {
         toast.success('Product saved as draft.');
       }
-
       // After an edit, return to the product being viewed rather than the list.
       router.push(isEditMode ? `/dashboard/products/${editId}` : '/dashboard/products');
     } catch (err: any) {
@@ -363,11 +362,54 @@ export function useProductForm() {
     }
   };
 
+  const ensureProductSaved = async (): Promise<string | null> => {
+    if (!name.trim()) {
+      toast.error('Please enter a Product Name in the General section above.');
+      const nameInput = document.getElementById('product-name');
+      if (nameInput) {
+        nameInput.focus();
+        nameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return null;
+    }
+
+    if (editId) {
+      return editId;
+    }
+
+    try {
+      const payload: any = {
+        name: name.trim(),
+        description: description.trim() || undefined,
+        slug: customSlug.trim() || undefined,
+        productType,
+        status: 'DRAFT',
+        hasVariants: true,
+        trackInventory,
+        allowBackorder,
+        sku: sku.trim() || undefined,
+        price: numericBasePrice > 0 ? numericBasePrice : undefined,
+        compareAtPrice: numericCompareAt > 0 ? numericCompareAt : undefined,
+        categoryId: categoryId || undefined,
+        brandId: brandId || undefined,
+      };
+
+      const saved = await createProduct(payload).unwrap();
+      toast.success('Product draft created.');
+      router.replace(`/dashboard/products/create?edit=${saved.id}`);
+      return saved.id;
+    } catch (err: any) {
+      toast.error(err?.data?.message || 'Failed to initialize product.');
+      return null;
+    }
+  };
+
   return {
     // mode
     editId,
     duplicateId,
     sourceId,
+    sourceProduct,
     isEditMode,
     isDuplicateMode,
     isLoadingSource,
@@ -457,6 +499,7 @@ export function useProductForm() {
 
     // submit
     handleFormSubmit,
+    ensureProductSaved,
   };
 }
 
