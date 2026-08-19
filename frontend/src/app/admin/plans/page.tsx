@@ -1,14 +1,8 @@
 'use client';
 
 import React from 'react';
-import { PlaceholderPage } from '@/components/dashboard/common/PlaceholderPage';
+import { PlansManagementView } from '@/components/dashboard/plans/PlansManagementView';
 
 export default function PlansPage() {
-  return (
-    <PlaceholderPage
-      title="Plans"
-      section="Platform"
-      description="Configure pricing plans, feature tier quotas, product limits, and transaction fees."
-    />
-  );
+  return <PlansManagementView />;
 }
