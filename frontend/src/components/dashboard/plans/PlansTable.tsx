@@ -158,11 +158,27 @@ export function PlansTable({
                   {/* 1. Plan Icon & Info */}
                   <td className="py-3.5 pl-4 pr-3">
                     <div className="flex items-center gap-3">
-                      {renderIcon(p.iconType, p.iconBg)}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onViewDetails(p);
+                        }}
+                        className="cursor-pointer transition-transform hover:scale-105"
+                      >
+                        {renderIcon(p.iconType, p.iconBg)}
+                      </button>
                       <div className="min-w-0">
-                        <span className="text-[13px] font-bold text-slate-900 block leading-tight truncate">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onViewDetails(p);
+                          }}
+                          className="text-[13px] font-bold text-slate-900 hover:text-emerald-700 hover:underline block leading-tight truncate text-left cursor-pointer transition-colors"
+                        >
                           {p.name}
-                        </span>
+                        </button>
                         <span className="text-[11px] text-slate-400 font-normal block mt-0.5 truncate">
                           {p.subtitle}
                         </span>
@@ -283,10 +299,10 @@ export function PlansTable({
                                   setActiveMenuId(null);
                                   onViewDetails(p);
                                 }}
-                                className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+                                className="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
                               >
                                 <Eye className="w-3.5 h-3.5" />
-                                <span>View Overview</span>
+                                <span>View Plan Details</span>
                               </button>
 
                               <button

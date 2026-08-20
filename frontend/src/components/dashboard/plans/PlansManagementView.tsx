@@ -19,14 +19,19 @@ import { RecentChangesCard } from './RecentChangesCard';
 import { AddPlanModal } from './AddPlanModal';
 import { PlanDetailsDrawer } from './PlanDetailsDrawer';
 import { ExportPlansModal } from './ExportPlansModal';
+import { PlanDetailsView } from './details/PlanDetailsView';
+import { ComparePlansModal } from './details/ComparePlansModal';
+import { CreatePlanView } from './create/CreatePlanView';
 import { INITIAL_PLANS, PLANS_KPIS } from './plansMockData';
 import { PlanFilterState, PlanRecord } from './types';
 
 export function PlansManagementView() {
   const [plans, setPlans] = useState<PlanRecord[]>(INITIAL_PLANS);
   const [selectedPlan, setSelectedPlan] = useState<PlanRecord>(INITIAL_PLANS[0]);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [activeDetailsPlan, setActiveDetailsPlan] = useState<PlanRecord | null>(null);
+  const [isCreatingPlan, setIsCreatingPlan] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
   const [drawerPlan, setDrawerPlan] = useState<PlanRecord | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [dateRange, setDateRange] = useState('Aug 8 - Aug 14, 2026');
@@ -71,31 +76,37 @@ export function PlansManagementView() {
     });
   }, [plans, filters]);
 
-  const handleAddPlan = (newPlan: Partial<PlanRecord>) => {
-    setPlans((prev) => [newPlan as PlanRecord, ...prev]);
+  const handleAddPlan = (newPlan: PlanRecord) => {
+    setPlans((prev) => [newPlan, ...prev]);
+    setSelectedPlan(newPlan);
   };
 
   const handleViewDetails = (plan: PlanRecord) => {
-    setDrawerPlan(plan);
-    setIsDetailsOpen(true);
+    setActiveDetailsPlan(plan);
+  };
+
+  const handleUpdatePlan = (updatedPlan: PlanRecord) => {
+    setPlans((prev) =>
+      prev.map((item) => (item.id === updatedPlan.id ? updatedPlan : item))
+    );
+    if (selectedPlan.id === updatedPlan.id) {
+      setSelectedPlan(updatedPlan);
+    }
   };
 
   const handleToggleStatus = (plan: PlanRecord) => {
+    const nextStatus = plan.status === 'Active' ? 'Inactive' : 'Active';
+    const updatedPlan: PlanRecord = {
+      ...plan,
+      status: nextStatus,
+    };
     setPlans((prev) =>
-      prev.map((item) =>
-        item.id === plan.id
-          ? {
-              ...item,
-              status: item.status === 'Active' ? 'Inactive' : 'Active',
-            }
-          : item
-      )
+      prev.map((item) => (item.id === plan.id ? updatedPlan : item))
     );
-    toast.success(
-      `Plan "${plan.name}" marked as ${
-        plan.status === 'Active' ? 'Inactive' : 'Active'
-      }`
-    );
+    if (selectedPlan.id === plan.id) {
+      setSelectedPlan(updatedPlan);
+    }
+    toast.success(`Plan "${plan.name}" marked as ${nextStatus}`);
   };
 
   const handleDuplicatePlan = (plan: PlanRecord) => {
@@ -103,6 +114,7 @@ export function PlansManagementView() {
       ...plan,
       id: `plan-${Date.now()}`,
       name: `${plan.name} (Copy)`,
+      code: `${(plan.code || plan.name).toUpperCase()}_COPY`,
       merchantsCount: '0',
       merchantsShare: '(0%)',
       mrr: '৳0',
@@ -120,6 +132,28 @@ export function PlansManagementView() {
     }
     toast.success(`Plan "${plan.name}" deleted`);
   };
+
+  // 1. If Create Plan mode is active, render CreatePlanView full page
+  if (isCreatingPlan) {
+    return (
+      <CreatePlanView
+        onBack={() => setIsCreatingPlan(false)}
+        onCreatePlan={handleAddPlan}
+      />
+    );
+  }
+
+  // 2. If Plan Details mode is active, render PlanDetailsView full page
+  if (activeDetailsPlan) {
+    return (
+      <PlanDetailsView
+        plan={activeDetailsPlan}
+        onBack={() => setActiveDetailsPlan(null)}
+        onUpdatePlan={handleUpdatePlan}
+        onDuplicatePlan={handleDuplicatePlan}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6 pb-12">
@@ -199,7 +233,7 @@ export function PlansManagementView() {
           {/* Add Plan Button */}
           <button
             type="button"
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={() => setIsCreatingPlan(true)}
             className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white rounded-xl text-xs font-bold shadow-xs shadow-emerald-600/30 transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
@@ -243,9 +277,9 @@ export function PlansManagementView() {
           <PlanOverviewDonutCard />
 
           <QuickActionsCard
-            onAddPlan={() => setIsAddModalOpen(true)}
+            onAddPlan={() => setIsCreatingPlan(true)}
             onOpenFeatures={() => toast.info('Manage feature matrix')}
-            onOpenComparison={() => toast.info('Compare plan tiers')}
+            onOpenComparison={() => setIsCompareModalOpen(true)}
             onOpenPricing={() => toast.info('Pricing rules and regional currencies')}
           />
         </div>
@@ -258,16 +292,15 @@ export function PlansManagementView() {
       </div>
 
       {/* 5. Modals & Drawers */}
-      <AddPlanModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onAddPlan={handleAddPlan}
-      />
-
       <ExportPlansModal
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
         totalPlansCount={plans.length}
+      />
+
+      <ComparePlansModal
+        isOpen={isCompareModalOpen}
+        onClose={() => setIsCompareModalOpen(false)}
       />
 
       <PlanDetailsDrawer
