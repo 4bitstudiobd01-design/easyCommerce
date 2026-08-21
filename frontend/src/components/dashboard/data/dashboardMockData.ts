@@ -308,8 +308,8 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
   {
     title: 'OPERATIONS',
     items: [
-      { title: 'Support', href: '/admin/support', iconName: 'Headphones' },
-      { title: 'Notifications', href: '/admin/notifications', iconName: 'Bell', badge: 12 },
+      { title: 'Support', href: '/admin/support', iconName: 'Headphones', badge: 12 },
+      { title: 'Notifications', href: '/admin/notifications', iconName: 'Bell' },
       { title: 'Integrations', href: '/admin/integrations', iconName: 'Boxes' },
       { title: 'System Health', href: '/admin/health', iconName: 'Activity' },
     ],
