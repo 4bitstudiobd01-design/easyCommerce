@@ -49,9 +49,9 @@ export function LoginForm() {
       toast.success('Signed in successfully.');
 
       if (response.user?.role === 'SUPER_ADMIN') {
-        router.push('/admin');
+        router.replace('/admin');
       } else {
-        router.push('/dashboard');
+        router.replace('/dashboard');
       }
     } catch (err: any) {
       let message = 'Invalid credentials. Please try again.';

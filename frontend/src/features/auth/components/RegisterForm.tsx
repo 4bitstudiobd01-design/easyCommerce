@@ -145,7 +145,7 @@ export function RegisterForm() {
       );
 
       toast.success('Store account created successfully.');
-      router.push('/dashboard');
+      router.replace('/dashboard');
     } catch (err: any) {
       let message = 'Registration failed. Please check your details.';
       if (err?.status === 'FETCH_ERROR' || err?.error?.includes?.('Failed to fetch')) {
@@ -228,6 +228,7 @@ export function RegisterForm() {
                     />
                   </div>
                 </div>
+                <p className={hintClass}>Include the leading 0, e.g. 01700000000</p>
               </div>
 
               {/* Store Name */}

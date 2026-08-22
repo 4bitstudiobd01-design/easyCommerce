@@ -71,7 +71,7 @@ export function UserProfileMenu() {
     dispatch(logout());
     toast.success('Logged out successfully.');
     setIsOpen(false);
-    router.push('/login');
+    router.replace('/login');
   };
 
   // Compute 2-letter uppercase initials (e.g., "MD Belal Hossain" -> "MB")

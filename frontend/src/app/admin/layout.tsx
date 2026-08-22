@@ -23,7 +23,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }, [token, isAuthenticated, router]);
 
-  if (!isMounted || (!token && !isAuthenticated)) return null;
+  if (!isMounted || (!token && !isAuthenticated)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="w-6 h-6 border-2 border-slate-200 border-t-blue-600 rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50/80 text-slate-900 flex font-sans">
