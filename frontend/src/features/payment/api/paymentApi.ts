@@ -207,6 +207,50 @@ export interface SeedPaymentDemoDataResponse {
   eventsCreated: number;
 }
 
+export interface OrderBalance {
+  grandTotal: number;
+  amountPaid: number;
+  balanceDue: number;
+}
+
+/** One row from an order's own payment history (distinct from the tenant-wide PaymentTransaction list). */
+export interface OrderPaymentEntry {
+  id: string;
+  orderId: string;
+  orderNumber: string;
+  transactionNumber?: string;
+  tranId: string;
+  amount: number;
+  refundedAmount: number;
+  currency: string;
+  gateway: PaymentGatewayCode;
+  paymentMethod: PaymentMethodType;
+  status: PaymentTransactionStatus;
+  paidAt?: string;
+  createdAt: string;
+}
+
+export type ManualPaymentMethod = 'CASH' | 'BKASH' | 'NAGAD' | 'ROCKET' | 'BANK_TRANSFER' | 'OTHER';
+
+export interface RecordManualPaymentParams {
+  orderId: string;
+  amount: number;
+  method: ManualPaymentMethod;
+  note?: string;
+}
+
+export interface CreatePaymentLinkParams {
+  orderId: string;
+  amount?: number;
+  sendSms?: boolean;
+}
+
+export interface PaymentLinkResult {
+  gatewayUrl: string;
+  tranId: string;
+  amount: number;
+}
+
 /** Unwraps the platform's `{ success, data }` envelope when present. */
 const unwrap = <T,>(response: unknown): T => {
   const payload = response as { data?: T } | T;
@@ -234,7 +278,7 @@ const API_ROOT =
 export const paymentApi = createApi({
   reducerPath: 'paymentApi',
   baseQuery: createBaseQueryWithReauth(API_ROOT),
-  tagTypes: ['Payment', 'PaymentTransaction', 'PaymentSummary', 'PaymentGateway'],
+  tagTypes: ['Payment', 'PaymentTransaction', 'PaymentSummary', 'PaymentGateway', 'OrderBalance', 'OrderPaymentHistory'],
   endpoints: (builder) => ({
     initiatePayment: builder.mutation<InitiatePaymentResponse, { orderId: string }>({
       query: (body) => ({
@@ -309,6 +353,43 @@ export const paymentApi = createApi({
       invalidatesTags: ['Payment', 'PaymentTransaction', 'PaymentSummary', 'PaymentGateway'],
       transformResponse: (response: unknown) => unwrap<SeedPaymentDemoDataResponse>(response),
     }),
+
+    getOrderBalance: builder.query<OrderBalance, string>({
+      query: (orderId) => `/payments/orders/${orderId}/balance`,
+      providesTags: (_result, _error, orderId) => [{ type: 'OrderBalance', id: orderId }],
+      transformResponse: (response: unknown) => unwrap<OrderBalance>(response),
+    }),
+
+    getOrderPaymentHistory: builder.query<OrderPaymentEntry[], string>({
+      query: (orderId) => `/payments/orders/${orderId}/history`,
+      providesTags: (_result, _error, orderId) => [{ type: 'OrderPaymentHistory', id: orderId }],
+      transformResponse: (response: unknown) => {
+        const data = unwrap<OrderPaymentEntry[]>(response);
+        return Array.isArray(data) ? data : [];
+      },
+    }),
+
+    recordManualPayment: builder.mutation<OrderPaymentEntry, RecordManualPaymentParams>({
+      query: ({ orderId, ...body }) => ({
+        url: `/payments/orders/${orderId}/manual-payment`,
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: (_result, _error, { orderId }) => [
+        { type: 'OrderBalance', id: orderId },
+        { type: 'OrderPaymentHistory', id: orderId },
+      ],
+      transformResponse: (response: unknown) => unwrap<OrderPaymentEntry>(response),
+    }),
+
+    createPaymentLink: builder.mutation<PaymentLinkResult, CreatePaymentLinkParams>({
+      query: ({ orderId, ...body }) => ({
+        url: `/payments/orders/${orderId}/payment-link`,
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response: unknown) => unwrap<PaymentLinkResult>(response),
+    }),
   }),
 });
 
@@ -320,4 +401,8 @@ export const {
   useGetPaymentDetailsQuery,
   useGetPaymentGatewaysQuery,
   useSeedPaymentDemoDataMutation,
+  useGetOrderBalanceQuery,
+  useGetOrderPaymentHistoryQuery,
+  useRecordManualPaymentMutation,
+  useCreatePaymentLinkMutation,
 } = paymentApi;

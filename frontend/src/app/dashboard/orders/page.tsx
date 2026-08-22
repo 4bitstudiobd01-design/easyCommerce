@@ -2,23 +2,21 @@
 
 import React, { useState } from 'react';
 import { OrderListTable } from '@/features/order/components/OrderListTable';
-import { useGetMerchantOrdersQuery, Order } from '@/features/order/api/orderApi';
-import { useGetMyStoreQuery } from '@/features/tenant/api/tenantApi';
-
-import { useRouter } from 'next/navigation';
+import { SendCourierModal } from '@/features/order/components/SendCourierModal';
+import { Order } from '@/features/order/api/orderApi';
 
 export default function OrdersPage() {
-  const router = useRouter();
-
-  const handleOpenCourierModal = (order: Order) => {
-    router.push(`/dashboard/orders/${order.id}/book-courier`);
-  };
+  const [courierOrder, setCourierOrder] = useState<Order | null>(null);
 
   return (
     <>
       <OrderListTable
-        onDispatchCourierClick={(order) => handleOpenCourierModal(order)}
+        onDispatchCourierClick={(order) => setCourierOrder(order)}
       />
+
+      {courierOrder && (
+        <SendCourierModal order={courierOrder} onClose={() => setCourierOrder(null)} />
+      )}
     </>
   );
 }

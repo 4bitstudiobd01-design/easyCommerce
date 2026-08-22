@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { Order } from '../api/orderApi';
-import { X, Printer, ShieldCheck, Phone, MapPin, Building2 } from 'lucide-react';
+import { useGetOrderInvoiceQuery } from '../api/orderApi';
+import { X, Printer, Loader2, Phone } from 'lucide-react';
 
 interface InvoiceModalProps {
   isOpen: boolean;
@@ -21,27 +22,40 @@ function formatMoney(value: number | string | null | undefined): string {
   });
 }
 
+const TERMS_AND_CONDITIONS =
+  '1. This invoice is computer-generated and valid without a signature. 2. Returns accepted within 7 days of delivery in original condition. 3. For queries, contact the store using the details above.';
+
 export function InvoiceModal({ isOpen, onClose, order }: InvoiceModalProps) {
+  const { data: invoice, isLoading } = useGetOrderInvoiceQuery(order?.id ?? '', { skip: !isOpen || !order });
+
   if (!isOpen || !order) return null;
 
   const handlePrint = () => {
     window.print();
   };
 
+  const displayOrder = invoice?.order ?? order;
+  const storeName = invoice?.storeName ?? 'Your Store';
+  const storePhone = invoice?.storePhone;
+  const storeAddress = invoice?.storeAddress;
+  const balanceDue = invoice?.balanceDue ?? Number(displayOrder.grandTotal);
+  const generatedAt = invoice?.generatedAt ? new Date(invoice.generatedAt) : new Date();
+
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-2xl w-full p-8 relative space-y-6 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 print:bg-white print:p-0">
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-2xl w-full relative max-h-[90vh] overflow-y-auto print:rounded-none print:border-none print:shadow-none print:max-h-none print:max-w-none">
         {/* Modal Controls */}
-        <div className="flex items-center justify-between border-b border-slate-100 pb-4 print:hidden">
+        <div className="flex items-center justify-between border-b border-slate-100 px-8 py-4 print:hidden sticky top-0 bg-white z-10">
           <div className="flex items-center gap-2">
-            <Printer className="w-5 h-5 text-blue-600" />
-            <h3 className="font-extrabold text-base text-slate-900">Cash Memo Customer Invoice</h3>
+            <Printer className="w-5 h-5 text-emerald-600" />
+            <h3 className="font-extrabold text-base text-slate-900">Invoice</h3>
           </div>
 
           <div className="flex items-center gap-3">
             <button
               onClick={handlePrint}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-600/20 flex items-center gap-2 transition-all"
+              disabled={isLoading}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md shadow-emerald-600/20 flex items-center gap-2 transition-all disabled:opacity-50"
             >
               <Printer className="w-4 h-4" />
               <span>Print Invoice</span>
@@ -56,106 +70,142 @@ export function InvoiceModal({ isOpen, onClose, order }: InvoiceModalProps) {
           </div>
         </div>
 
-        {/* Printable Cash Memo Invoice Document Area */}
-        <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-200 space-y-6 font-sans text-xs text-slate-800 print:p-0 print:border-none print:bg-white print:text-black">
-          {/* Header */}
-          <div className="flex items-start justify-between border-b border-slate-200 pb-4">
-            <div>
-              <span className="font-extrabold text-lg text-slate-900 tracking-tight block">
-                BitCommerce Store
-              </span>
-              <p className="text-[11px] text-slate-500 mt-0.5">SaaS Multi-Tenant E-Commerce Platform</p>
-            </div>
-            <div className="text-right">
-              <span className="font-mono font-extrabold text-sm text-blue-600 block">
-                INVOICE #{order.orderNumber}
-              </span>
-              <span className="text-[11px] text-slate-400">
-                Date: {new Date(order.createdAt).toLocaleDateString()}
-              </span>
-            </div>
+        {isLoading ? (
+          <div className="p-16 flex items-center justify-center">
+            <Loader2 className="w-6 h-6 text-emerald-600 animate-spin" />
           </div>
-
-          {/* Customer & Shipping Information */}
-          <div className="grid grid-cols-2 gap-4 bg-white p-4 rounded-xl border border-slate-100 print:border-slate-300">
-            <div>
-              <span className="font-extrabold text-[10px] uppercase text-slate-400 block mb-1">
-                Billed / Shipped To:
-              </span>
-              <span className="font-bold text-slate-900 text-sm block">{order.customerName}</span>
-              <span className="text-slate-600 block">{order.customerPhone}</span>
-              <span className="text-slate-600 block mt-0.5">{order.shippingAddress}, {order.city}</span>
-            </div>
-
-            <div className="text-right">
-              <span className="font-extrabold text-[10px] uppercase text-slate-400 block mb-1">
-                Payment Details:
-              </span>
-              <span className="font-bold text-slate-900 block">{order.paymentMethod}</span>
-              <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 font-bold text-[10px] rounded-md border border-emerald-200 inline-block mt-1">
-                {order.paymentStatus}
-              </span>
-            </div>
-          </div>
-
-          {/* Itemized Table */}
-          <div className="overflow-hidden rounded-xl border border-slate-200">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-100 text-slate-600 font-bold text-[10px] uppercase">
-                <tr>
-                  <th className="p-3">Product Description</th>
-                  <th className="p-3">SKU</th>
-                  <th className="p-3 text-center">Qty</th>
-                  <th className="p-3 text-right">Unit Price</th>
-                  <th className="p-3 text-right">Total Price</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 bg-white font-semibold">
-                {order.items?.map((item) => (
-                  <tr key={item.id}>
-                    <td className="p-3 font-bold text-slate-900">{item.productTitle}</td>
-                    <td className="p-3 font-mono text-slate-400 text-[11px]">{item.sku}</td>
-                    <td className="p-3 text-center font-bold">{item.quantity}</td>
-                    <td className="p-3 text-right">৳{formatMoney(item.unitPrice)}</td>
-                    <td className="p-3 text-right font-extrabold">৳{formatMoney(item.totalPrice)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Summary Breakdown */}
-          <div className="flex justify-end pt-2">
-            <div className="w-64 space-y-1.5 text-xs font-semibold">
-              <div className="flex justify-between text-slate-500">
-                <span>Subtotal:</span>
-                <span className="font-bold text-slate-900">৳{formatMoney(order.subtotal)}</span>
-              </div>
-
-              <div className="flex justify-between text-slate-500">
-                <span>Delivery Charge:</span>
-                <span className="font-bold text-slate-900">৳{formatMoney(order.deliveryFee)}</span>
-              </div>
-
-              {Number(order.discountAmount) > 0 && (
-                <div className="flex justify-between text-slate-500">
-                  <span>Discount:</span>
-                  <span className="font-bold text-emerald-700">-৳{formatMoney(order.discountAmount)}</span>
+        ) : (
+          /* Printable Invoice Document Area */
+          <div className="p-8 font-sans text-slate-800 print:p-0">
+            {/* Header */}
+            <div className="flex items-start justify-between pb-6">
+              <div>
+                <h1 className="font-extrabold text-2xl text-slate-900 tracking-tight">{storeName}</h1>
+                {storeAddress && <p className="text-xs text-slate-500 mt-1">{storeAddress}</p>}
+                <div className="flex flex-col gap-0.5 mt-1.5 text-xs text-slate-500">
+                  {storePhone && storePhone !== 'N/A' && (
+                    <span className="flex items-center gap-1.5">
+                      <Phone className="w-3 h-3" /> {storePhone}
+                    </span>
+                  )}
                 </div>
-              )}
-
-              <div className="pt-2 border-t border-slate-200 flex justify-between font-black text-sm text-slate-900">
-                <span>Grand Total:</span>
-                <span className="text-blue-600">৳{formatMoney(order.grandTotal)}</span>
+              </div>
+              <div className="text-right">
+                <h2 className="font-black text-3xl text-slate-900 tracking-tight">INVOICE</h2>
+                <p className="text-xs text-slate-500 mt-2">
+                  Invoice# <span className="font-bold text-slate-900">{displayOrder.orderNumber}</span>
+                </p>
               </div>
             </div>
-          </div>
 
-          {/* Footer Terms */}
-          <div className="pt-4 border-t border-slate-200 text-center text-[10px] text-slate-400">
-            Thank you for shopping with us! For any customer queries, please retain this cash memo invoice.
+            {/* Bill To / Ship To */}
+            <div className="grid grid-cols-2 gap-8 pb-6">
+              <div>
+                <p className="font-extrabold text-[10px] uppercase text-slate-400 tracking-wider mb-1.5">Bill To</p>
+                <p className="font-bold text-slate-900 text-sm">{displayOrder.customerName}</p>
+                {displayOrder.customerEmail && <p className="text-slate-500 text-xs mt-0.5">{displayOrder.customerEmail}</p>}
+                <p className="text-slate-500 text-xs mt-0.5">{displayOrder.customerPhone}</p>
+                <p className="text-slate-500 text-xs mt-1.5 leading-relaxed">
+                  {displayOrder.shippingAddress}, {displayOrder.city}
+                </p>
+              </div>
+              <div>
+                <p className="font-extrabold text-[10px] uppercase text-slate-400 tracking-wider mb-1.5">Ship To</p>
+                <p className="font-bold text-slate-900 text-sm">{displayOrder.customerName}</p>
+                <p className="text-slate-500 text-xs mt-0.5">{displayOrder.customerPhone}</p>
+                <p className="text-slate-500 text-xs mt-1.5 leading-relaxed">
+                  {displayOrder.shippingAddress}, {displayOrder.city}
+                </p>
+              </div>
+            </div>
+
+            {/* Status Strip */}
+            <div className="rounded-xl overflow-hidden border border-emerald-700 mb-6">
+              <div className="grid grid-cols-4 bg-emerald-700 text-white text-[10px] font-bold uppercase tracking-wider">
+                <div className="p-3">Invoice Date</div>
+                <div className="p-3">Payment Method</div>
+                <div className="p-3">Order Status</div>
+                <div className="p-3">Payment Status</div>
+              </div>
+              <div className="grid grid-cols-4 bg-emerald-50 text-xs font-bold text-slate-800">
+                <div className="p-3">{new Date(displayOrder.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+                <div className="p-3">{displayOrder.paymentMethod === 'COD' ? 'Cash on Delivery' : displayOrder.paymentMethod}</div>
+                <div className="p-3">{displayOrder.orderStatus.replace(/_/g, ' ')}</div>
+                <div className="p-3">{displayOrder.paymentStatus.replace(/_/g, ' ')}</div>
+              </div>
+            </div>
+
+            {/* Itemized Table */}
+            <div className="rounded-xl overflow-hidden border border-slate-200 mb-6">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-emerald-700 text-white font-bold text-[10px] uppercase">
+                  <tr>
+                    <th className="p-3 w-8">#</th>
+                    <th className="p-3">Item & Description</th>
+                    <th className="p-3 text-center">Qty</th>
+                    <th className="p-3 text-right">Unit Price</th>
+                    <th className="p-3 text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 bg-white">
+                  {displayOrder.items?.map((item, index) => (
+                    <tr key={item.id}>
+                      <td className="p-3 text-slate-400 align-top">{index + 1}</td>
+                      <td className="p-3 align-top">
+                        <p className="font-bold text-slate-900">{item.productTitle}</p>
+                        {item.sku && <p className="text-[10px] text-slate-400 mt-0.5">Variant: {item.sku}</p>}
+                      </td>
+                      <td className="p-3 text-center align-top">{item.quantity}</td>
+                      <td className="p-3 text-right align-top">৳{formatMoney(item.unitPrice)}</td>
+                      <td className="p-3 text-right align-top font-bold">৳{formatMoney(item.totalPrice)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Footer content: thanks note + summary */}
+            <div className="flex items-start justify-between gap-8 mb-6">
+              <p className="text-xs text-slate-500 italic mt-1">Thanks for your business. 🎉</p>
+
+              <div className="w-64 space-y-1.5 text-xs shrink-0">
+                <div className="flex justify-between text-slate-500">
+                  <span>Sub Total</span>
+                  <span className="font-bold text-slate-900">৳{formatMoney(displayOrder.subtotal)}</span>
+                </div>
+                {Number(displayOrder.discountAmount) > 0 && (
+                  <div className="flex justify-between text-slate-500">
+                    <span>Discount</span>
+                    <span className="font-bold text-emerald-700">-৳{formatMoney(displayOrder.discountAmount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-slate-500">
+                  <span>Delivery Charge</span>
+                  <span className="font-bold text-slate-900">৳{formatMoney(displayOrder.deliveryFee)}</span>
+                </div>
+                <div className="pt-2 border-t border-slate-200 flex justify-between font-black text-sm text-slate-900">
+                  <span>Total</span>
+                  <span>৳{formatMoney(displayOrder.grandTotal)}</span>
+                </div>
+                <div className="bg-emerald-50 rounded-lg px-3 py-2 flex justify-between font-black text-sm text-emerald-700 mt-2">
+                  <span>Balance Due</span>
+                  <span>৳{formatMoney(balanceDue)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Terms & Conditions */}
+            <div className="pt-4 border-t border-slate-200">
+              <p className="font-extrabold text-[10px] uppercase text-slate-400 tracking-wider mb-1.5">Terms & Conditions</p>
+              <p className="text-[10px] text-slate-500 leading-relaxed">{TERMS_AND_CONDITIONS}</p>
+            </div>
+
+            {/* Powered by footer */}
+            <div className="pt-4 mt-4 border-t border-slate-100 text-center text-[10px] text-slate-400">
+              Powered by {storeName} • Generated {generatedAt.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

@@ -5,6 +5,8 @@ export interface OrderCalculationInput {
   items: Array<{
     unitPrice: number;
     quantity: number;
+    /** Per-line discount, subtracted from this line before summing into subtotal. */
+    discountAmount?: number;
   }>;
   deliveryFee: number;
   discountAmount: number;
@@ -40,11 +42,19 @@ export class OrderCalculationService {
       if (item.quantity <= 0) {
         throw new BadRequestException('Quantity must be greater than zero');
       }
+      const lineDiscount = item.discountAmount ?? 0;
+      if (lineDiscount < 0) {
+        throw new BadRequestException('Line discount cannot be negative');
+      }
+      const lineTotal = item.unitPrice * item.quantity;
+      if (lineDiscount > lineTotal) {
+        throw new BadRequestException('Line discount cannot exceed the line total');
+      }
 
-      // Convert to a precise number, e.g., cents if using integers, but since JS is float, 
+      // Convert to a precise number, e.g., cents if using integers, but since JS is float,
       // we'll just do standard float math and round appropriately.
       // In a real financial system, you would use a library like Decimal.js or currency.js
-      subtotal += item.unitPrice * item.quantity;
+      subtotal += lineTotal - lineDiscount;
     }
 
     // subtotal + deliveryFee - discountAmount

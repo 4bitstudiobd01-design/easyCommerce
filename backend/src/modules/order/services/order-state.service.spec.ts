@@ -31,8 +31,12 @@ describe('OrderStateService', () => {
       expect(service.canTransition(OrderStatusEnum.SHIPPED, OrderStatusEnum.DELIVERED)).toBe(true);
     });
 
-    it('should reject DELIVERED to PENDING', () => {
-      expect(service.canTransition(OrderStatusEnum.DELIVERED, OrderStatusEnum.PENDING)).toBe(false);
+    it('should allow DELIVERED back to PENDING (merchant correcting a mistake)', () => {
+      expect(service.canTransition(OrderStatusEnum.DELIVERED, OrderStatusEnum.PENDING)).toBe(true);
+    });
+
+    it('should allow SHIPPED back to PROCESSING', () => {
+      expect(service.canTransition(OrderStatusEnum.SHIPPED, OrderStatusEnum.PROCESSING)).toBe(true);
     });
 
     it('should reject CANCELLED to CONFIRMED', () => {
@@ -59,28 +63,23 @@ describe('OrderStateService', () => {
       expect(service.canTransition(OrderStatusEnum.DELIVERED, OrderStatusEnum.COMPLETED)).toBe(true);
     });
 
-    it('should only allow COMPLETED to be reached from DELIVERED', () => {
-      const reachableFrom = [
+    it('should only allow COMPLETED to be reached from DELIVERED (forward) — backward moves from COMPLETED are handled separately', () => {
+      const reachableGoingForwardOnly = [
         OrderStatusEnum.PENDING,
         OrderStatusEnum.ON_HOLD,
         OrderStatusEnum.CONFIRMED,
         OrderStatusEnum.PROCESSING,
         OrderStatusEnum.READY_TO_SHIP,
         OrderStatusEnum.SHIPPED,
-        OrderStatusEnum.DELIVERED,
-        OrderStatusEnum.CANCELLED,
-        OrderStatusEnum.RETURNED,
       ].filter((from) => service.canTransition(from, OrderStatusEnum.COMPLETED));
 
-      expect(reachableFrom).toEqual([OrderStatusEnum.DELIVERED]);
+      // None of the earlier stages can jump straight to COMPLETED — only DELIVERED can.
+      expect(reachableGoingForwardOnly).toEqual([]);
+      expect(service.canTransition(OrderStatusEnum.DELIVERED, OrderStatusEnum.COMPLETED)).toBe(true);
     });
 
-    it('should treat CANCELLED, RETURNED and COMPLETED as terminal', () => {
-      const terminals = [
-        OrderStatusEnum.CANCELLED,
-        OrderStatusEnum.RETURNED,
-        OrderStatusEnum.COMPLETED,
-      ];
+    it('should treat CANCELLED and RETURNED as fully terminal (no transitions out, including into each other)', () => {
+      const terminals = [OrderStatusEnum.CANCELLED, OrderStatusEnum.RETURNED];
       const allStatuses = Object.values(OrderStatusEnum);
 
       for (const terminal of terminals) {
@@ -90,19 +89,74 @@ describe('OrderStateService', () => {
         expect(onwardTransitions).toEqual([]);
       }
     });
+
+    it('should allow COMPLETED backward to an earlier fulfilment stage', () => {
+      expect(service.canTransition(OrderStatusEnum.COMPLETED, OrderStatusEnum.DELIVERED)).toBe(true);
+      expect(service.canTransition(OrderStatusEnum.COMPLETED, OrderStatusEnum.PENDING)).toBe(true);
+    });
+
+    it('should only allow CANCELLED from non-terminal, pre-shipment-or-later stages', () => {
+      expect(service.canTransition(OrderStatusEnum.READY_TO_SHIP, OrderStatusEnum.CANCELLED)).toBe(true);
+      expect(service.canTransition(OrderStatusEnum.DELIVERED, OrderStatusEnum.CANCELLED)).toBe(false);
+      expect(service.canTransition(OrderStatusEnum.COMPLETED, OrderStatusEnum.CANCELLED)).toBe(false);
+    });
+
+    it('should only allow RETURNED from DELIVERED', () => {
+      expect(service.canTransition(OrderStatusEnum.DELIVERED, OrderStatusEnum.RETURNED)).toBe(true);
+      expect(service.canTransition(OrderStatusEnum.SHIPPED, OrderStatusEnum.RETURNED)).toBe(false);
+      expect(service.canTransition(OrderStatusEnum.COMPLETED, OrderStatusEnum.RETURNED)).toBe(true);
+    });
+  });
+
+  describe('isBackwardTransition', () => {
+    it('should identify SHIPPED to PROCESSING as backward', () => {
+      expect(service.isBackwardTransition(OrderStatusEnum.SHIPPED, OrderStatusEnum.PROCESSING)).toBe(true);
+    });
+
+    it('should not identify PENDING to CONFIRMED as backward', () => {
+      expect(service.isBackwardTransition(OrderStatusEnum.PENDING, OrderStatusEnum.CONFIRMED)).toBe(false);
+    });
+
+    it('should not identify a move into CANCELLED as backward (it is a terminal move, handled separately)', () => {
+      expect(service.isBackwardTransition(OrderStatusEnum.PROCESSING, OrderStatusEnum.CANCELLED)).toBe(false);
+    });
   });
 
   describe('assertTransition', () => {
-    it('should not throw on valid transition', () => {
+    it('should not throw on a valid forward transition without a reason', () => {
       expect(() =>
         service.assertTransition(OrderStatusEnum.PENDING, OrderStatusEnum.CONFIRMED),
       ).not.toThrow();
     });
 
-    it('should throw BadRequestException on invalid transition', () => {
+    it('should throw BadRequestException on an impossible transition', () => {
+      expect(() =>
+        service.assertTransition(OrderStatusEnum.CANCELLED, OrderStatusEnum.PROCESSING),
+      ).toThrow(BadRequestException);
+    });
+
+    it('should throw when a backward transition is attempted without a reason', () => {
       expect(() =>
         service.assertTransition(OrderStatusEnum.DELIVERED, OrderStatusEnum.PROCESSING),
       ).toThrow(BadRequestException);
+    });
+
+    it('should not throw when a backward transition includes a reason', () => {
+      expect(() =>
+        service.assertTransition(OrderStatusEnum.DELIVERED, OrderStatusEnum.PROCESSING, 'Marked delivered by mistake'),
+      ).not.toThrow();
+    });
+
+    it('should throw when cancelling without a reason', () => {
+      expect(() =>
+        service.assertTransition(OrderStatusEnum.PENDING, OrderStatusEnum.CANCELLED),
+      ).toThrow(BadRequestException);
+    });
+
+    it('should not throw when cancelling with a reason', () => {
+      expect(() =>
+        service.assertTransition(OrderStatusEnum.PENDING, OrderStatusEnum.CANCELLED, 'Customer requested cancellation'),
+      ).not.toThrow();
     });
   });
 });

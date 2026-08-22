@@ -17,17 +17,21 @@ import {
   X,
   ChevronDown,
   Loader2,
-  AlertTriangle,
   DollarSign
 } from 'lucide-react';
 import { useGetOrderByIdQuery, useUpdateOrderStatusMutation, useCollectCodPaymentMutation, OrderStatusType, useGetReturnsByOrderQuery, useGetRefundsByOrderQuery, useProcessRefundMutation, useUpdateReturnStatusMutation } from '../api/orderApi';
 import { useSyncConsignmentMutation } from '../../logistics/api/logisticsApi';
-import { BookCourierModal } from './BookCourierModal';
+import { useGetOrderBalanceQuery, useGetOrderPaymentHistoryQuery } from '../../payment/api/paymentApi';
+import { SendCourierModal } from './SendCourierModal';
 import { CreateReturnModal } from './CreateReturnModal';
 import { RefundModal } from './RefundModal';
+import { RecordManualPaymentModal } from './RecordManualPaymentModal';
+import { SendPaymentLinkModal } from './SendPaymentLinkModal';
+import { StatusChangeConfirmModal } from './StatusChangeConfirmModal';
 import { OrderActivityFeed } from './OrderActivityFeed';
-import { RefreshCw, IndianRupee } from 'lucide-react';
+import { RefreshCw, IndianRupee, Phone, Copy, Tag } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { toast } from 'sonner';
 
 interface OrderDetailsProps {
   orderId: string;
@@ -44,15 +48,16 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
   const { data: refunds } = useGetRefundsByOrderQuery(orderId, { skip: !orderId });
   const [processRefund, { isLoading: isProcessingRefund }] = useProcessRefundMutation();
   const [updateReturnStatus, { isLoading: isUpdatingReturn }] = useUpdateReturnStatusMutation();
-  
-  const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; targetStatus?: OrderStatusType; title?: string }>({ isOpen: false });
-  const [cancelModal, setCancelModal] = useState(false);
+  const { data: balance } = useGetOrderBalanceQuery(orderId, { skip: !orderId });
+  const { data: paymentHistory } = useGetOrderPaymentHistoryQuery(orderId, { skip: !orderId });
+
+  const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; targetStatus?: OrderStatusType }>({ isOpen: false });
   const [codModal, setCodModal] = useState(false);
   const [returnModal, setReturnModal] = useState(false);
   const [refundModal, setRefundModal] = useState(false);
-  const [bookCourierModalOpen, setBookCourierModalOpen] = useState(false);
-  const [cancelReason, setCancelReason] = useState('Customer requested cancellation');
-  const [cancelNote, setCancelNote] = useState('');
+  const [courierModalOpen, setCourierModalOpen] = useState(false);
+  const [manualPaymentModal, setManualPaymentModal] = useState(false);
+  const [paymentLinkModal, setPaymentLinkModal] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -70,8 +75,6 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
     try {
       await updateStatus({ id: orderId, orderStatus: status, reason }).unwrap();
       setConfirmModal({ isOpen: false });
-      setCancelModal(false);
-      setCancelNote('');
     } catch (err: any) {
       console.error('Failed to update status', err);
       alert(err?.data?.message || 'Failed to update order status');
@@ -187,7 +190,7 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
 
           {order.orderStatus === 'PENDING' && (
             <button 
-              onClick={() => setConfirmModal({ isOpen: true, targetStatus: 'CONFIRMED', title: 'Confirm Order' })}
+              onClick={() => setConfirmModal({ isOpen: true, targetStatus: 'CONFIRMED' })}
               className="px-4 py-2 bg-slate-900 text-white text-sm font-bold rounded-lg shadow-sm hover:bg-slate-800 transition-colors"
             >
               Confirm Order
@@ -195,7 +198,7 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
           )}
           {order.orderStatus === 'CONFIRMED' && (
             <button 
-              onClick={() => setConfirmModal({ isOpen: true, targetStatus: 'PROCESSING', title: 'Start Processing' })}
+              onClick={() => setConfirmModal({ isOpen: true, targetStatus: 'PROCESSING' })}
               className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg shadow-sm hover:bg-blue-700 transition-colors"
             >
               Start Processing
@@ -203,13 +206,22 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
           )}
           {order.orderStatus === 'PROCESSING' && (
             <button 
-              onClick={() => setConfirmModal({ isOpen: true, targetStatus: 'READY_TO_SHIP', title: 'Mark Ready to Ship' })}
+              onClick={() => setConfirmModal({ isOpen: true, targetStatus: 'READY_TO_SHIP' })}
               className="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg shadow-sm hover:bg-indigo-700 transition-colors"
             >
               Mark Ready to Ship
             </button>
           )}
           
+          {balance && balance.balanceDue > 0 && order.paymentMethod !== 'COD' && (
+            <button
+              onClick={() => setPaymentLinkModal(true)}
+              className="px-4 py-2 bg-white text-slate-700 text-sm font-bold rounded-lg shadow-sm border border-slate-200 hover:bg-slate-50 transition-colors"
+            >
+              Send Payment Link
+            </button>
+          )}
+
           {['PENDING', 'CONFIRMED', 'PROCESSING', 'READY_TO_SHIP', 'ON_HOLD'].includes(order.orderStatus) && (
             <div className="relative" ref={menuRef}>
               <button 
@@ -234,7 +246,7 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
                     Issue Refund
                   </button>
                   <button
-                    onClick={() => { setShowMoreMenu(false); setCancelModal(true); }}
+                    onClick={() => { setShowMoreMenu(false); setConfirmModal({ isOpen: true, targetStatus: 'CANCELLED' }); }}
                     className="w-full text-left px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 transition-colors"
                   >
                     Cancel Order
@@ -281,6 +293,16 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
                     {order.consignment.trackingCode || 'Not Assigned'}
                   </p>
                 </div>
+                <div className="bg-slate-50 border border-slate-100 rounded p-2 mt-1 mb-2">
+                  <p className="text-[10px] text-slate-400 font-bold uppercase mb-0.5">Courier Bill (Merchant only)</p>
+                  <p className="text-xs font-medium text-slate-700">
+                    Quoted ৳{Number(order.deliveryFee).toLocaleString()} · Courier charged ৳{Number(order.consignment.deliveryCharge).toLocaleString()}
+                    {' · '}
+                    <span className={Number(order.consignment.deliveryCharge) > Number(order.deliveryFee) ? 'text-rose-600 font-bold' : 'text-emerald-600 font-bold'}>
+                      {Number(order.consignment.deliveryCharge) > Number(order.deliveryFee) ? '-' : '+'}৳{Math.abs(Number(order.consignment.deliveryCharge) - Number(order.deliveryFee)).toLocaleString()} margin
+                    </span>
+                  </p>
+                </div>
                 {order.consignment.lastSyncAt && (
                   <p className="text-[10px] text-slate-500 mb-2">
                     Last updated: {new Date(order.consignment.lastSyncAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true })}
@@ -301,7 +323,7 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
                 <p className="text-xs font-medium text-slate-500 mb-3">Awaiting courier dispatch</p>
                 {order.orderStatus === 'READY_TO_SHIP' && (
                   <button 
-                    onClick={() => setBookCourierModalOpen(true)}
+                    onClick={() => setCourierModalOpen(true)}
                     className="px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors text-xs font-bold rounded-lg border border-blue-200 w-full"
                   >
                     Book Courier
@@ -392,8 +414,29 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
                   {order.items?.map((item) => (
                     <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="px-5 py-4">
-                        <p className="font-bold text-slate-900">{item.productTitle}</p>
-                        {item.sku && <p className="text-[10px] text-slate-500 mt-0.5">SKU: {item.sku}</p>}
+                        <div className="flex items-center gap-3">
+                          {item.productImageUrl ? (
+                            <img src={item.productImageUrl} alt="" className="w-9 h-9 rounded-lg object-cover border border-slate-100 shrink-0" />
+                          ) : (
+                            <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
+                              <Package className="w-4 h-4 text-slate-300" />
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="font-bold text-slate-900 truncate">{item.productTitle}</p>
+                            <p className="text-[10px] text-slate-500 mt-0.5 flex items-center gap-1">
+                              {item.isCustomItem && (
+                                <span className="inline-flex items-center gap-1 text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded font-bold">
+                                  <Tag className="w-2.5 h-2.5" /> Custom
+                                </span>
+                              )}
+                              {item.sku && `SKU: ${item.sku}`}
+                              {Number(item.discountAmount) > 0 && (
+                                <span className="text-emerald-600">-৳{Number(item.discountAmount).toLocaleString()} discount</span>
+                              )}
+                            </p>
+                          </div>
+                        </div>
                       </td>
                       <td className="px-5 py-4 text-right">৳{Number(item.unitPrice).toLocaleString()}</td>
                       <td className="px-5 py-4 text-center">x{item.quantity}</td>
@@ -456,19 +499,35 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
                 <div className={`px-2.5 py-1 rounded-md text-[10px] font-bold ${
                   order.paymentStatus === 'PAID' || order.paymentStatus === 'COD_COLLECTED'
                     ? 'bg-emerald-50 text-emerald-700'
+                    : order.paymentStatus === 'PARTIALLY_PAID'
+                    ? 'bg-blue-50 text-blue-700'
                     : order.paymentStatus === 'FAILED'
                     ? 'bg-red-50 text-red-700'
                     : 'bg-amber-50 text-amber-700'
                 }`}>
-                  {order.paymentStatus.replace(/_/g, ' ')}
+                  {order.paymentStatus === 'PARTIALLY_PAID' ? 'PARTIALLY PAID' : order.paymentStatus.replace(/_/g, ' ')}
                 </div>
               </div>
-              
+
               <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 space-y-2 text-xs">
                 <div className="flex justify-between">
-                  <span className="font-medium text-slate-500">Amount</span>
+                  <span className="font-medium text-slate-500">Order Total</span>
                   <span className="font-bold text-slate-900">৳{order.grandTotal}</span>
                 </div>
+                {balance && (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="font-medium text-slate-500">Amount Paid</span>
+                      <span className="font-bold text-emerald-600">৳{balance.amountPaid.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between pt-2 border-t border-slate-100">
+                      <span className="font-medium text-slate-500">Balance Due</span>
+                      <span className={`font-bold ${balance.balanceDue > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                        ৳{balance.balanceDue.toLocaleString()}
+                      </span>
+                    </div>
+                  </>
+                )}
                 {order.paymentMethod === 'COD' && (
                   <div className="flex justify-between">
                     <span className="font-medium text-slate-500">Collection</span>
@@ -485,14 +544,41 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
                 )}
               </div>
 
+              {paymentHistory && paymentHistory.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-slate-100 space-y-2">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Payment History</p>
+                  {paymentHistory.map((p) => (
+                    <div key={p.id} className="flex justify-between items-center text-xs">
+                      <div>
+                        <span className="font-bold text-slate-700">{p.paymentMethod.replace(/_/g, ' ')}</span>
+                        <span className="text-slate-400 ml-1.5">{new Date(p.createdAt).toLocaleDateString()}</span>
+                      </div>
+                      <span className="font-bold text-slate-900">৳{Number(p.amount).toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {order.paymentMethod === 'COD' && order.paymentStatus === 'COD_PENDING' && (
                 <div className="mt-4 pt-4 border-t border-slate-100">
-                  <button 
+                  <button
                     onClick={() => setCodModal(true)}
                     className="w-full py-2 bg-slate-900 text-white hover:bg-slate-800 transition-colors text-xs font-bold rounded-lg flex items-center justify-center gap-2"
                   >
                     <DollarSign className="w-3.5 h-3.5" />
                     Mark Collected
+                  </button>
+                </div>
+              )}
+
+              {balance && balance.balanceDue > 0 && order.paymentMethod !== 'COD' && (
+                <div className="mt-4 pt-4 border-t border-slate-100">
+                  <button
+                    onClick={() => setManualPaymentModal(true)}
+                    className="w-full py-2 bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 transition-colors text-xs font-bold rounded-lg flex items-center justify-center gap-2"
+                  >
+                    <DollarSign className="w-3.5 h-3.5" />
+                    Record Manual Payment
                   </button>
                 </div>
               )}
@@ -515,9 +601,29 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
                 </div>
               </div>
               <div className="space-y-2 pt-2 border-t border-slate-100 text-xs">
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span className="font-medium text-slate-500">Phone</span>
-                  <a href={`tel:${order.customerPhone}`} className="font-bold text-blue-600 hover:underline">{order.customerPhone}</a>
+                  <div className="flex items-center gap-2">
+                    <a href={`tel:${order.customerPhone}`} className="font-bold text-blue-600 hover:underline">{order.customerPhone}</a>
+                    <a
+                      href={`tel:${order.customerPhone}`}
+                      title="Call customer"
+                      className="p-1 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded transition-colors"
+                    >
+                      <Phone className="w-3.5 h-3.5" />
+                    </a>
+                    <button
+                      type="button"
+                      title="Copy order number and phone"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`Order #${order.orderNumber}\nPhone: ${order.customerPhone}`);
+                        toast.success('Copied to clipboard.');
+                      }}
+                      className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
                 {order.customerEmail && (
                   <div className="flex justify-between">
@@ -590,107 +696,15 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
       </div>
 
       {/* Modals */}
-      {confirmModal.isOpen && confirmModal.targetStatus && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden">
-            <div className="p-6">
-              <h3 className="text-xl font-bold text-slate-900 mb-2">{confirmModal.title}</h3>
-              <p className="text-sm text-slate-500 mb-6">
-                Are you sure you want to transition Order <span className="font-bold text-slate-900">#{order.orderNumber}</span> to <span className="font-bold text-slate-900">{confirmModal.targetStatus.replace(/_/g, ' ')}</span>?
-              </p>
-              
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-6 space-y-1 text-sm">
-                <div className="flex justify-between"><span className="text-slate-500">Customer:</span><span className="font-bold text-slate-900">{order.customerName}</span></div>
-                <div className="flex justify-between"><span className="text-slate-500">Items:</span><span className="font-bold text-slate-900">{order.items?.length || 0} items</span></div>
-                <div className="flex justify-between"><span className="text-slate-500">Total:</span><span className="font-bold text-slate-900">৳{Number(order.grandTotal).toLocaleString()}</span></div>
-              </div>
-
-              <div className="flex items-center justify-end gap-3">
-                <button
-                  disabled={isUpdating}
-                  onClick={() => setConfirmModal({ isOpen: false })}
-                  className="px-4 py-2 bg-white text-slate-700 text-sm font-bold rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  disabled={isUpdating}
-                  onClick={() => handleUpdateStatus(confirmModal.targetStatus!)}
-                  className="px-4 py-2 bg-slate-900 text-white text-sm font-bold rounded-lg hover:bg-slate-800 transition-colors flex items-center gap-2"
-                >
-                  {isUpdating ? <><Loader2 className="w-4 h-4 animate-spin" /> Updating...</> : 'Confirm Transition'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {cancelModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden">
-            <div className="p-6">
-              <div className="flex items-center gap-3 mb-4 text-red-600">
-                <AlertTriangle className="w-6 h-6" />
-                <h3 className="text-xl font-bold">Cancel Order</h3>
-              </div>
-              <p className="text-sm text-slate-600 mb-4">
-                Are you sure you want to cancel Order <span className="font-bold text-slate-900">#{order.orderNumber}</span>? 
-                This will release reserved inventory back to stock.
-              </p>
-
-              {order.paymentStatus === 'PAID' && (
-                <div className="mb-4 bg-amber-50 border border-amber-200 p-3 rounded-lg text-xs text-amber-800">
-                  <span className="font-bold">Note:</span> This order is marked as Paid. Cancelling it does not automatically issue a payment gateway refund.
-                </div>
-              )}
-              
-              <div className="space-y-4 mb-6">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Reason for cancellation</label>
-                  <select
-                    value={cancelReason}
-                    onChange={(e) => setCancelReason(e.target.value)}
-                    className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 bg-white"
-                  >
-                    <option value="Customer requested cancellation">Customer requested cancellation</option>
-                    <option value="Product unavailable">Product unavailable</option>
-                    <option value="Duplicate order">Duplicate order</option>
-                    <option value="Fraudulent/Spam">Fraudulent / Spam order</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Additional Note (Optional)</label>
-                  <textarea
-                    value={cancelNote}
-                    onChange={(e) => setCancelNote(e.target.value)}
-                    placeholder="Provide more context..."
-                    className="w-full p-3 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 bg-white min-h-[80px]"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-3">
-                <button
-                  disabled={isUpdating}
-                  onClick={() => setCancelModal(false)}
-                  className="px-4 py-2 bg-white text-slate-700 text-sm font-bold rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors"
-                >
-                  Keep Order
-                </button>
-                <button
-                  disabled={isUpdating}
-                  onClick={() => handleUpdateStatus('CANCELLED', cancelReason + (cancelNote ? ` - ${cancelNote}` : ''))}
-                  className="px-4 py-2 bg-red-600 text-white text-sm font-bold rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
-                >
-                  {isUpdating ? <><Loader2 className="w-4 h-4 animate-spin" /> Cancelling...</> : 'Cancel Order'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <StatusChangeConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ isOpen: false })}
+        order={order}
+        targetStatus={confirmModal.targetStatus ?? null}
+        currentStatus={order.orderStatus}
+        isSubmitting={isUpdating}
+        onConfirm={(status, reason) => handleUpdateStatus(status, reason)}
+      />
 
       {/* Collect COD Modal */}
       {codModal && (
@@ -732,18 +746,25 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
         </div>
       )}
 
-      {bookCourierModalOpen && order && (
-        <BookCourierModal
+      {courierModalOpen && order && (
+        <SendCourierModal order={order} onClose={() => setCourierModalOpen(false)} />
+      )}
+
+      {order && (
+        <RecordManualPaymentModal
+          isOpen={manualPaymentModal}
+          onClose={() => setManualPaymentModal(false)}
           orderId={order.id}
           orderNumber={order.orderNumber}
-          customerName={order.customerName}
-          customerPhone={order.customerPhone}
-          shippingAddress={order.shippingAddress}
-          city={order.city}
-          paymentMethod={order.paymentMethod}
-          paymentStatus={order.paymentStatus}
-          grandTotal={Number(order.grandTotal)}
-          onClose={() => setBookCourierModalOpen(false)}
+        />
+      )}
+
+      {order && (
+        <SendPaymentLinkModal
+          isOpen={paymentLinkModal}
+          onClose={() => setPaymentLinkModal(false)}
+          orderId={order.id}
+          orderNumber={order.orderNumber}
         />
       )}
     </div>
