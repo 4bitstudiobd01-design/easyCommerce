@@ -127,6 +127,24 @@ export interface InvoiceData {
   generatedAt: string;
 }
 
+export interface TimelineEvent {
+  id: string;
+  type: 'STATUS_CHANGE' | 'ORDER_EDITED' | 'INTERNAL_NOTE' | 'CUSTOMER_COMMUNICATION' | 'SHIPMENT' | 'RETURN';
+  title: string;
+  description?: string;
+  actor: string;
+  timestamp: string;
+  metadata?: any;
+}
+
+export interface PaginatedTimeline {
+  events: TimelineEvent[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
+}
+
 export interface AbandonedCart {
   id: string;
   customerName?: string;
@@ -358,7 +376,7 @@ export const orderApi = createApi({
     // --- CHUNK 8: COD PAYMENT ENDPOINT ---
     collectCodPayment: builder.mutation<Order, string>({
       query: (id) => ({
-        url: `/orders/${id}/payment/cod/collect`,
+        url: `/${id}/payment/cod/collect`,
         method: 'POST',
       }),
       invalidatesTags: (result, error, id) => [
@@ -366,15 +384,26 @@ export const orderApi = createApi({
       ],
       transformResponse: (response: { data: Order }) => response.data,
     }),
+    undoCollectCodPayment: builder.mutation<Order, { id: string; reason: string }>({
+      query: ({ id, reason }) => ({
+        url: `/${id}/payment/cod/undo-collect`,
+        method: 'POST',
+        body: { reason },
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Order', id },
+      ],
+      transformResponse: (response: { data: Order }) => response.data,
+    }),
 
     // --- CHUNK 9: RETURNS & REFUNDS ENDPOINTS ---
     getReturnsByOrder: builder.query<Return[], string>({
-      query: (orderId) => `/orders/${orderId}/returns`,
+      query: (orderId) => `/${orderId}/returns`,
       providesTags: (result, error, arg) => [{ type: 'Order', id: arg }],
     }),
     createReturn: builder.mutation<Return, { orderId: string; items: { orderItemId: string; quantity: number; reason: string }[]; note?: string }>({
       query: ({ orderId, ...body }) => ({
-        url: `/orders/${orderId}/returns`,
+        url: `/${orderId}/returns`,
         method: 'POST',
         body,
       }),
@@ -382,19 +411,19 @@ export const orderApi = createApi({
     }),
     updateReturnStatus: builder.mutation<Return, { orderId: string; returnId: string; status: string; rejectionReason?: string; condition?: string; inspectionNote?: string; restockDecision?: boolean }>({
       query: ({ orderId, returnId, ...body }) => ({
-        url: `/orders/${orderId}/returns/${returnId}/status`,
+        url: `/${orderId}/returns/${returnId}/status`,
         method: 'POST',
         body,
       }),
       invalidatesTags: (result, error, arg) => [{ type: 'Order', id: arg.orderId }],
     }),
     getRefundsByOrder: builder.query<Refund[], string>({
-      query: (orderId) => `/orders/${orderId}/refunds`,
+      query: (orderId) => `/${orderId}/refunds`,
       providesTags: (result, error, arg) => [{ type: 'Order', id: arg }],
     }),
     createRefund: builder.mutation<Refund, { orderId: string; amount: number; returnId?: string; reason?: string }>({
       query: ({ orderId, ...body }) => ({
-        url: `/orders/${orderId}/refunds`,
+        url: `/${orderId}/refunds`,
         method: 'POST',
         body,
       }),
@@ -402,7 +431,7 @@ export const orderApi = createApi({
     }),
     processRefund: builder.mutation<Refund, { orderId: string; refundId: string }>({
       query: ({ orderId, refundId }) => ({
-        url: `/orders/${orderId}/refunds/${refundId}/process`,
+        url: `/${orderId}/refunds/${refundId}/process`,
         method: 'POST',
       }),
       invalidatesTags: (result, error, arg) => [{ type: 'Order', id: arg.orderId }],
@@ -411,7 +440,7 @@ export const orderApi = createApi({
     // --- CHUNK 10: BULK OPERATIONS ---
     bulkUpdateOrderStatus: builder.mutation<{ total: number; successful: number; failed: number; errors: any[] }, { orderIds?: string[]; selectAllMatching?: boolean; filters?: any; targetStatus: OrderStatusType; reason?: string }>({
       query: (body) => ({
-        url: '/orders/bulk/status',
+        url: '/bulk/status',
         method: 'POST',
         body,
       }),
@@ -420,19 +449,19 @@ export const orderApi = createApi({
     }),
 
     // --- CHUNK 11: NOTES & TIMELINE ---
-    getOrderTimeline: builder.query<any[], string>({
-      query: (orderId) => `/orders/${orderId}/timeline`,
-      providesTags: (result, error, id) => [{ type: 'Order', id: `${id}-timeline` }],
-      transformResponse: (response: { data: any[] }) => response.data,
+    getOrderTimeline: builder.query<PaginatedTimeline, { orderId: string; page?: number; limit?: number }>({
+      query: ({ orderId, page = 1, limit = 10 }) => `/${orderId}/timeline?page=${page}&limit=${limit}`,
+      providesTags: (result, error, { orderId }) => [{ type: 'Order', id: `${orderId}-timeline` }],
+      transformResponse: (response: { data: PaginatedTimeline }) => response.data,
     }),
     getOrderNotes: builder.query<any[], string>({
-      query: (orderId) => `/orders/${orderId}/notes`,
+      query: (orderId) => `/${orderId}/notes`,
       providesTags: (result, error, id) => [{ type: 'Order', id: `${id}-notes` }],
       transformResponse: (response: { data: any[] }) => response.data,
     }),
     createOrderNote: builder.mutation<any, { orderId: string; content: string; isCustomerVisible?: boolean }>({
       query: ({ orderId, ...body }) => ({
-        url: `/orders/${orderId}/notes`,
+        url: `/${orderId}/notes`,
         method: 'POST',
         body,
       }),
@@ -459,6 +488,7 @@ export const {
   useSendRecoverySmsMutation,
   useTrackAbandonedCartMutation,
   useCollectCodPaymentMutation,
+  useUndoCollectCodPaymentMutation,
   useGetReturnsByOrderQuery,
   useCreateReturnMutation,
   useUpdateReturnStatusMutation,

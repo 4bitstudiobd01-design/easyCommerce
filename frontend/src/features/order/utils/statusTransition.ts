@@ -26,9 +26,13 @@ export function isBackwardTransition(current: OrderStatusType, target: OrderStat
   return targetIndex < currentIndex;
 }
 
-/** A reason is required for any backward move or a move into a terminal state. */
+/**
+ * A reason is required for any backward move, a move into a terminal state, or
+ * un-cancelling an order (CANCELLED can move to any non-RETURNED status, but that
+ * correction still needs a reason — mirrors the backend's OrderStateService).
+ */
 export function requiresReason(current: OrderStatusType, target: OrderStatusType): boolean {
-  return isBackwardTransition(current, target) || TERMINAL_STATUSES.includes(target);
+  return isBackwardTransition(current, target) || TERMINAL_STATUSES.includes(target) || current === 'CANCELLED';
 }
 
 export function isTerminalTarget(target: OrderStatusType): boolean {

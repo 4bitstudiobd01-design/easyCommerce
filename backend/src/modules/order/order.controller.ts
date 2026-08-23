@@ -23,10 +23,12 @@ import { GenerateOrderInvoiceService } from './services/generate-order-invoice.s
 import { GenerateThermalLabelService } from './services/generate-thermal-label.service';
 import { FindStoreByUserService } from '../tenant/services/find-store-by-user.service';
 import { CollectCodService } from './services/collect-cod.service';
+import { UndoCollectCodService } from './services/undo-collect-cod.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { EditOrderDto } from './dto/edit-order.dto';
 import { OrderListDto } from './dto/order-list.dto';
+import { UndoCollectCodDto } from './dto/undo-collect-cod.dto';
 import { EditOrderService } from './services/edit-order.service';
 
 @ApiTags('Orders & Sales')
@@ -44,6 +46,7 @@ export class OrderController {
     private readonly findStoreByUserService: FindStoreByUserService,
     private readonly editOrderService: EditOrderService,
     private readonly collectCodService: CollectCodService,
+    private readonly undoCollectCodService: UndoCollectCodService,
   ) {}
 
   private async getMerchantTenantId(userId: string, storeId?: string): Promise<string> {
@@ -185,5 +188,20 @@ export class OrderController {
   ) {
     const tenantId = await this.getMerchantTenantId(userId, storeId);
     return this.collectCodService.execute(id, tenantId, userId);
+  }
+
+  @Post(':id/payment/cod/undo-collect')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Undo a mistaken COD collection' })
+  @ApiResponse({ status: 200, description: 'COD payment reverted to pending' })
+  async undoCollectCodPayment(
+    @CurrentUser('sub') userId: string,
+    @Param('id') id: string,
+    @Body() dto: UndoCollectCodDto,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
+    return this.undoCollectCodService.execute(id, tenantId, userId, dto.reason);
   }
 }

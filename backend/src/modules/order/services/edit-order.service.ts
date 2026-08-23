@@ -167,6 +167,11 @@ export class EditOrderService {
 
     let savedOrder: OrderEntity;
 
+    // Diff against the pre-edit snapshot before any field is overwritten, so the
+    // audit trail shows exactly what a merchant changed instead of a generic
+    // "Order edited" marker.
+    const changeSummary = this.summarizeChanges(order, dto, totals, newOrderItems);
+
     // 4. Transactionally save everything
     await this.dataSource.transaction(async (manager) => {
       // Remove old items
@@ -194,12 +199,13 @@ export class EditOrderService {
 
       savedOrder = await manager.save(order);
 
-      // Add audit history
+      // Add audit history. previousStatus is deliberately left unset — that's how
+      // the timeline distinguishes an edit marker from a real status transition.
       const history = manager.create(OrderStatusHistoryEntity, {
         orderId: order.id,
         newStatus: order.orderStatus, // Status did not change, just an edit marker
         changedBy: userId,
-        reason: 'Order edited by merchant',
+        reason: changeSummary || 'Order edited by merchant (no field changes detected)',
         tenantId,
       });
 
@@ -207,5 +213,59 @@ export class EditOrderService {
     });
 
     return savedOrder!;
+  }
+
+  /**
+   * Builds a human-readable summary of what a merchant actually changed, for the
+   * order timeline. Compares the pre-edit order (still holding its original field
+   * values and items at this point) against the incoming DTO and the newly built
+   * item list. Field labels only list old -> new when the value actually differs.
+   */
+  private summarizeChanges(
+    order: OrderEntity,
+    dto: EditOrderDto,
+    totals: { deliveryFee: number; discountAmount: number },
+    newItems: OrderItemEntity[],
+  ): string {
+    const changes: string[] = [];
+
+    const compareField = (label: string, oldValue: unknown, newValue: unknown) => {
+      const oldNormalized = oldValue ?? '';
+      const newNormalized = newValue ?? '';
+      if (String(oldNormalized) !== String(newNormalized)) {
+        changes.push(`${label}: "${oldNormalized || '—'}" → "${newNormalized || '—'}"`);
+      }
+    };
+
+    compareField('Customer name', order.customerName, dto.customerName);
+    compareField('Phone', order.customerPhone, dto.customerPhone);
+    compareField('Email', order.customerEmail, dto.customerEmail);
+    compareField('Address', order.shippingAddress, dto.shippingAddress);
+    compareField('City', order.city, dto.city);
+    compareField('Area', order.area, dto.area);
+    compareField('Thana', order.thana, dto.thana);
+    compareField('District', order.district, dto.district);
+    compareField('Division', order.division, dto.division);
+    compareField('Customer note', order.customerNote, dto.customerNote);
+    compareField('Internal note', order.internalNote, dto.internalNote);
+    compareField('Delivery fee', Number(order.deliveryFee), totals.deliveryFee);
+    compareField('Discount', Number(order.discountAmount), totals.discountAmount);
+
+    const oldItemCount = order.items.reduce((sum, i) => sum + i.quantity, 0);
+    const newItemCount = newItems.reduce((sum, i) => sum + i.quantity, 0);
+    const oldItemKeys = order.items
+      .map((i) => `${i.productId ?? i.productTitle}:${i.quantity}`)
+      .sort()
+      .join(',');
+    const newItemKeys = newItems
+      .map((i) => `${i.productId ?? i.productTitle}:${i.quantity}`)
+      .sort()
+      .join(',');
+
+    if (oldItemKeys !== newItemKeys) {
+      changes.push(`Items: ${order.items.length} line(s)/${oldItemCount} units → ${newItems.length} line(s)/${newItemCount} units`);
+    }
+
+    return changes.join('; ');
   }
 }

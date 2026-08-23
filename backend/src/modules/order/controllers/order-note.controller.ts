@@ -1,9 +1,11 @@
-import { Controller, Post, Get, Body, Param, UseGuards, Req, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Query, Headers, UseGuards, BadRequestException, HttpStatus } from '@nestjs/common';
 import { OrderNoteService, CreateOrderNoteDto } from '../services/order-note.service';
 import { OrderTimelineService } from '../services/order-timeline.service';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
+import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import { FindStoreByUserService } from '../../tenant/services/find-store-by-user.service';
 import { UserRoleEnum } from '../../user/entities/user.entity';
 
 @Controller('orders/:orderId')
@@ -12,17 +14,26 @@ export class OrderNoteController {
   constructor(
     private readonly orderNoteService: OrderNoteService,
     private readonly orderTimelineService: OrderTimelineService,
+    private readonly findStoreByUserService: FindStoreByUserService,
   ) {}
+
+  private async getMerchantTenantId(userId: string, storeId?: string): Promise<string> {
+    const store = await this.findStoreByUserService.execute(userId, storeId);
+    if (!store) {
+      throw new BadRequestException('Merchant must create a store before managing orders.');
+    }
+    return store.tenantId;
+  }
 
   @Post('notes')
   @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
   async createNote(
     @Param('orderId') orderId: string,
-    @Req() req: any,
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') storeId: string | undefined,
     @Body() dto: CreateOrderNoteDto,
   ) {
-    const tenantId = req.user.tenantId;
-    const userId = req.user.id;
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
 
     const note = await this.orderNoteService.createNote(orderId, tenantId, dto, userId);
     return {
@@ -36,12 +47,14 @@ export class OrderNoteController {
   @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
   async getNotes(
     @Param('orderId') orderId: string,
-    @Req() req: any,
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') storeId: string | undefined,
   ) {
-    const tenantId = req.user.tenantId;
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
     const notes = await this.orderNoteService.getNotesForOrder(orderId, tenantId);
     return {
       statusCode: HttpStatus.OK,
+      message: 'Notes retrieved successfully',
       data: notes,
     };
   }
@@ -50,12 +63,21 @@ export class OrderNoteController {
   @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
   async getTimeline(
     @Param('orderId') orderId: string,
-    @Req() req: any,
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') storeId: string | undefined,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
-    const tenantId = req.user.tenantId;
-    const timeline = await this.orderTimelineService.getTimeline(orderId, tenantId);
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
+    const timeline = await this.orderTimelineService.getTimeline(
+      orderId,
+      tenantId,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 10,
+    );
     return {
       statusCode: HttpStatus.OK,
+      message: 'Timeline retrieved successfully',
       data: timeline,
     };
   }

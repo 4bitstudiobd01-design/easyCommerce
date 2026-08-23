@@ -726,9 +726,7 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                 <th className="px-6 py-3.5">Date</th>
                 <th className="px-6 py-3.5">Total</th>
                 <th className="px-4 py-3.5">Payment</th>
-                <th className="px-4 py-3.5">Address</th>
                 <th className="px-4 py-3.5">Courier</th>
-                <th className="px-4 py-3.5">Courier Bill</th>
                 <th className="px-4 py-3.5">Source</th>
                 <th className="px-6 py-3.5">Status</th>
                 <th className="px-4 py-3.5 text-right">Actions</th>
@@ -737,15 +735,15 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
             <tbody className="divide-y divide-slate-100 font-medium">
               {isOrdersLoading ? (
                 <>
-                  <TableRowSkeleton columns={13} />
-                  <TableRowSkeleton columns={13} />
-                  <TableRowSkeleton columns={13} />
-                  <TableRowSkeleton columns={13} />
-                  <TableRowSkeleton columns={13} />
+                  <TableRowSkeleton columns={11} />
+                  <TableRowSkeleton columns={11} />
+                  <TableRowSkeleton columns={11} />
+                  <TableRowSkeleton columns={11} />
+                  <TableRowSkeleton columns={11} />
                 </>
               ) : orders?.length === 0 ? (
                 <tr>
-                  <td colSpan={13} className="text-center py-16">
+                  <td colSpan={11} className="text-center py-16">
                     <Package className="w-12 h-12 text-slate-200 mx-auto mb-3" />
                     <h3 className="text-sm font-bold text-slate-700">No orders found</h3>
                     <p className="text-xs text-slate-500 mt-1">Try changing your filters or search criteria.</p>
@@ -770,7 +768,11 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                   return (
                     <tr
                       key={order.id}
-                      className={`hover:bg-slate-50/80 transition-colors ${
+                      onClick={() =>
+                        setPreviewOrderId((current) => (current === order.id ? null : order.id))
+                      }
+                      aria-expanded={previewOrderId === order.id}
+                      className={`cursor-pointer hover:bg-slate-50/80 transition-colors ${
                         previewOrderId === order.id
                           ? 'bg-blue-50/60'
                           : isChecked
@@ -778,7 +780,7 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                           : ''
                       }`}
                     >
-                      <td className="px-4 py-4 text-center">
+                      <td className="px-4 py-4 text-center" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
                           checked={isChecked}
@@ -788,16 +790,9 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                       </td>
 
                       <td className="px-4 py-4">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setPreviewOrderId((current) => (current === order.id ? null : order.id))
-                          }
-                          aria-expanded={previewOrderId === order.id}
-                          className="font-extrabold text-slate-900 cursor-pointer hover:text-blue-600 transition-colors"
-                        >
+                        <span className="font-extrabold text-slate-900">
                           #{order.orderNumber}
-                        </button>
+                        </span>
                       </td>
 
                       <td className="px-6 py-4">
@@ -805,7 +800,7 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                           <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-600 font-extrabold text-[10px] flex items-center justify-center shrink-0 border border-slate-200">
                             {customerInitials}
                           </div>
-                          <div>
+                          <div className="max-w-[200px]">
                             <span className="font-bold text-slate-900 block">{order.customerName}</span>
                             <a
                               href={`tel:${order.customerPhone}`}
@@ -814,6 +809,12 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                             >
                               {order.customerPhone}
                             </a>
+                            <p
+                              className="text-[10px] text-slate-400 truncate"
+                              title={[order.shippingAddress, order.area, order.thana, order.district, order.city].filter(Boolean).join(', ')}
+                            >
+                              {[order.shippingAddress, order.area, order.thana, order.district, order.city].filter(Boolean).join(', ') || '-'}
+                            </p>
                           </div>
                         </div>
                       </td>
@@ -838,12 +839,6 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                         </span>
                       </td>
 
-                      <td className="px-4 py-4 text-slate-600 max-w-[180px]">
-                        <p className="truncate" title={[order.shippingAddress, order.area, order.thana, order.district, order.city].filter(Boolean).join(', ')}>
-                          {[order.shippingAddress, order.city].filter(Boolean).join(', ') || '-'}
-                        </p>
-                      </td>
-
                       <td className="px-4 py-4">
                         {order.consignment ? (
                           <div>
@@ -857,46 +852,45 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                         )}
                       </td>
 
-                      <td className="px-4 py-4 text-slate-600">
-                        {order.consignment ? `৳${Number(order.consignment.deliveryCharge).toLocaleString()}` : '-'}
-                      </td>
-
                       <td className="px-4 py-4">
                         <ChannelBadge channel={order.channel} utmSource={order.utmSource} />
                       </td>
 
-                      <td className="px-6 py-4">
-                        <select
-                          value={order.orderStatus}
-                          onChange={(e) => {
-                            const targetStatus = e.target.value as OrderStatusType;
-                            if (targetStatus === order.orderStatus) return;
-                            setPendingStatusChange({ order, targetStatus });
-                          }}
-                          disabled={isUpdating}
-                          className={`px-3 py-1 rounded-md font-bold text-[10px] border-0 focus:outline-none cursor-pointer transition-colors appearance-none ${
-                            ['DELIVERED', 'COMPLETED'].includes(order.orderStatus) ? 'bg-emerald-50 text-emerald-700' :
-                            ['CANCELLED', 'RETURNED'].includes(order.orderStatus) ? 'bg-rose-50 text-rose-700' :
-                            order.orderStatus === 'PROCESSING' ? 'bg-blue-50 text-blue-700' :
-                            order.orderStatus === 'SHIPPED' ? 'bg-violet-50 text-violet-700' :
-                            order.orderStatus === 'READY_TO_SHIP' ? 'bg-sky-50 text-sky-700' :
-                            'bg-amber-50 text-amber-700'
-                          }`}
-                        >
-                          <option value="PENDING">New (Pending)</option>
-                          <option value="ON_HOLD">On Hold</option>
-                          <option value="CONFIRMED">Confirmed</option>
-                          <option value="PROCESSING">Processing</option>
-                          <option value="READY_TO_SHIP">Ready to Ship</option>
-                          <option value="SHIPPED">Shipped</option>
-                          <option value="DELIVERED">Delivered</option>
-                          <option value="COMPLETED">Completed</option>
-                          <option value="CANCELLED">Cancelled</option>
-                          <option value="RETURNED">Returned</option>
-                        </select>
+                      <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                        <div className="relative inline-block">
+                          <select
+                            value={order.orderStatus}
+                            onChange={(e) => {
+                              const targetStatus = e.target.value as OrderStatusType;
+                              if (targetStatus === order.orderStatus) return;
+                              setPendingStatusChange({ order, targetStatus });
+                            }}
+                            disabled={isUpdating}
+                            className={`pl-3 pr-6 py-1 rounded-md font-bold text-[10px] border-0 focus:outline-none cursor-pointer transition-colors appearance-none ${
+                              ['DELIVERED', 'COMPLETED'].includes(order.orderStatus) ? 'bg-emerald-50 text-emerald-700' :
+                              ['CANCELLED', 'RETURNED'].includes(order.orderStatus) ? 'bg-rose-50 text-rose-700' :
+                              order.orderStatus === 'PROCESSING' ? 'bg-blue-50 text-blue-700' :
+                              order.orderStatus === 'SHIPPED' ? 'bg-violet-50 text-violet-700' :
+                              order.orderStatus === 'READY_TO_SHIP' ? 'bg-sky-50 text-sky-700' :
+                              'bg-amber-50 text-amber-700'
+                            }`}
+                          >
+                            <option value="PENDING">New (Pending)</option>
+                            <option value="ON_HOLD">On Hold</option>
+                            <option value="CONFIRMED">Confirmed</option>
+                            <option value="PROCESSING">Processing</option>
+                            <option value="READY_TO_SHIP">Ready to Ship</option>
+                            <option value="SHIPPED">Shipped</option>
+                            <option value="DELIVERED">Delivered</option>
+                            <option value="COMPLETED">Completed</option>
+                            <option value="CANCELLED">Cancelled</option>
+                            <option value="RETURNED">Returned</option>
+                          </select>
+                          <ChevronDown className="w-3 h-3 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-60" />
+                        </div>
                       </td>
 
-                      <td className="px-4 py-4 text-right">
+                      <td className="px-4 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1">
                           <Link
                             href={`/dashboard/orders/${order.id}`}

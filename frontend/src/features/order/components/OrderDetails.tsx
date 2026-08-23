@@ -19,7 +19,7 @@ import {
   Loader2,
   DollarSign
 } from 'lucide-react';
-import { useGetOrderByIdQuery, useUpdateOrderStatusMutation, useCollectCodPaymentMutation, OrderStatusType, useGetReturnsByOrderQuery, useGetRefundsByOrderQuery, useProcessRefundMutation, useUpdateReturnStatusMutation } from '../api/orderApi';
+import { useGetOrderByIdQuery, useUpdateOrderStatusMutation, useCollectCodPaymentMutation, useUndoCollectCodPaymentMutation, OrderStatusType, useGetReturnsByOrderQuery, useGetRefundsByOrderQuery, useProcessRefundMutation, useUpdateReturnStatusMutation } from '../api/orderApi';
 import { useSyncConsignmentMutation } from '../../logistics/api/logisticsApi';
 import { useGetOrderBalanceQuery, useGetOrderPaymentHistoryQuery } from '../../payment/api/paymentApi';
 import { SendCourierModal } from './SendCourierModal';
@@ -44,6 +44,7 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
   const [updateStatus, { isLoading: isUpdating }] = useUpdateOrderStatusMutation();
   const [syncConsignment, { isLoading: isSyncing }] = useSyncConsignmentMutation();
   const [collectCodPayment, { isLoading: isCollectingCod }] = useCollectCodPaymentMutation();
+  const [undoCollectCodPayment, { isLoading: isUndoingCod }] = useUndoCollectCodPaymentMutation();
   const { data: returns } = useGetReturnsByOrderQuery(orderId, { skip: !orderId });
   const { data: refunds } = useGetRefundsByOrderQuery(orderId, { skip: !orderId });
   const [processRefund, { isLoading: isProcessingRefund }] = useProcessRefundMutation();
@@ -53,6 +54,8 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
 
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; targetStatus?: OrderStatusType }>({ isOpen: false });
   const [codModal, setCodModal] = useState(false);
+  const [undoCodModal, setUndoCodModal] = useState(false);
+  const [undoCodReason, setUndoCodReason] = useState('');
   const [returnModal, setReturnModal] = useState(false);
   const [refundModal, setRefundModal] = useState(false);
   const [courierModalOpen, setCourierModalOpen] = useState(false);
@@ -99,6 +102,18 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
     } catch (err: any) {
       console.error('Failed to collect COD', err);
       alert(err?.data?.message || 'Failed to collect COD');
+    }
+  };
+
+  const handleUndoCollectCod = async () => {
+    if (!order?.id || !undoCodReason.trim()) return;
+    try {
+      await undoCollectCodPayment({ id: order.id, reason: undoCodReason.trim() }).unwrap();
+      setUndoCodModal(false);
+      setUndoCodReason('');
+    } catch (err: any) {
+      console.error('Failed to undo COD collection', err);
+      alert(err?.data?.message || 'Failed to undo COD collection');
     }
   };
 
@@ -571,6 +586,18 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
                 </div>
               )}
 
+              {order.paymentMethod === 'COD' && order.paymentStatus === 'COD_COLLECTED' && (
+                <div className="mt-4 pt-4 border-t border-slate-100">
+                  <button
+                    onClick={() => setUndoCodModal(true)}
+                    className="w-full py-2 bg-white text-red-600 border border-red-200 hover:bg-red-50 transition-colors text-xs font-bold rounded-lg flex items-center justify-center gap-2"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    Undo Collection
+                  </button>
+                </div>
+              )}
+
               {balance && balance.balanceDue > 0 && order.paymentMethod !== 'COD' && (
                 <div className="mt-4 pt-4 border-t border-slate-100">
                   <button
@@ -637,9 +664,35 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
 
           {/* Shipping Address */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
-              <MapPin className="w-4 h-4 text-slate-400" />
-              <h3 className="text-sm font-bold text-slate-900">Shipping Address</h3>
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-2 bg-slate-50/50">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-slate-400" />
+                <h3 className="text-sm font-bold text-slate-900">Shipping Address</h3>
+              </div>
+              <button
+                type="button"
+                title="Copy customer details"
+                onClick={() => {
+                  const addressLines = [
+                    order.shippingAddress,
+                    order.area,
+                    [order.thana, order.district].filter(Boolean).join(', '),
+                    `${order.city}${order.division ? `, ${order.division}` : ''}`,
+                  ].filter(Boolean);
+                  navigator.clipboard.writeText(
+                    [
+                      `Order #${order.orderNumber}`,
+                      order.customerName,
+                      order.customerPhone,
+                      ...addressLines,
+                    ].join('\n'),
+                  );
+                  toast.success('Customer details copied to clipboard.');
+                }}
+                className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+              >
+                <Copy className="w-3.5 h-3.5" />
+              </button>
             </div>
             <div className="p-5 text-sm">
               <p className="font-bold text-slate-900">{order.customerName}</p>
@@ -740,6 +793,61 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
               >
                 {isCollectingCod && <Loader2 className="w-4 h-4 animate-spin" />}
                 Confirm Collection
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Undo COD Collection Modal */}
+      {undoCodModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="p-6">
+              <h3 className="text-xl font-bold">Undo COD Collection</h3>
+              <p className="text-sm text-slate-500 mt-2">
+                Order <span className="font-bold text-slate-900">{order.orderNumber}</span>
+              </p>
+
+              <div className="mt-6 bg-red-50 border border-red-100 rounded-xl p-4">
+                <p className="text-[10px] uppercase font-bold text-red-600 tracking-wider">Amount</p>
+                <p className="text-2xl font-black text-red-900 mt-1">৳{order.grandTotal}</p>
+              </div>
+
+              <p className="text-sm text-slate-600 font-medium mt-6">
+                This reverts the payment status back to pending and voids the collection record. This action is recorded in the audit log.
+              </p>
+
+              <div className="mt-4">
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">
+                  Reason (required)
+                </label>
+                <textarea
+                  value={undoCodReason}
+                  onChange={(e) => setUndoCodReason(e.target.value)}
+                  placeholder="e.g. Marked as collected by mistake"
+                  className="w-full p-3 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 bg-white min-h-[70px]"
+                />
+              </div>
+            </div>
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setUndoCodModal(false);
+                  setUndoCodReason('');
+                }}
+                disabled={isUndoingCod}
+                className="px-4 py-2 text-sm font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUndoCollectCod}
+                disabled={isUndoingCod || !undoCodReason.trim()}
+                className="px-5 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 rounded-lg shadow-sm flex items-center gap-2"
+              >
+                {isUndoingCod && <Loader2 className="w-4 h-4 animate-spin" />}
+                Confirm Undo
               </button>
             </div>
           </div>

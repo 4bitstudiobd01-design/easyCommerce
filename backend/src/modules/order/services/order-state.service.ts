@@ -5,8 +5,11 @@ import { OrderStatusEnum } from '../entities/order.entity';
  * The happy-path fulfilment sequence, in order. ON_HOLD is deliberately NOT part
  * of this sequence — it's a side-branch reachable from PENDING that only ever
  * goes back to PENDING or to CANCELLED (matching the original state machine).
- * CANCELLED/RETURNED sit outside the sequence entirely — reachable from most
- * forward states but never transition onward again (terminal in both directions).
+ * RETURNED sits outside the sequence entirely — reachable only from DELIVERED
+ * or COMPLETED (the return/refund flow) and never transitions onward again.
+ * CANCELLED is reachable from most forward states and, unlike RETURNED, can be
+ * un-cancelled back into any non-terminal status — a merchant correcting a
+ * mistaken cancellation — provided a reason is given (enforced by assertTransition).
  */
 const FORWARD_SEQUENCE: OrderStatusEnum[] = [
   OrderStatusEnum.PENDING,
@@ -43,13 +46,21 @@ export class OrderStateService {
   canTransition(currentStatus: OrderStatusEnum, newStatus: OrderStatusEnum): boolean {
     if (currentStatus === newStatus) return true;
 
-    // Terminal states never transition anywhere, including into each other.
-    if (TERMINAL_STATUSES.includes(currentStatus)) return false;
+    // RETURNED is fully terminal — the refund flow has already run, so it never
+    // transitions anywhere, including back into CANCELLED.
+    if (currentStatus === OrderStatusEnum.RETURNED) return false;
 
-    if (TERMINAL_STATUSES.includes(newStatus)) {
-      if (newStatus === OrderStatusEnum.CANCELLED) {
-        return CANCELLABLE_FROM.includes(currentStatus);
-      }
+    // CANCELLED can be un-cancelled into any other non-RETURNED status — a merchant
+    // correcting a mistaken cancellation. RETURNED still isn't reachable from here;
+    // that flow only ever starts from DELIVERED/COMPLETED.
+    if (currentStatus === OrderStatusEnum.CANCELLED) {
+      return newStatus !== OrderStatusEnum.RETURNED;
+    }
+
+    if (newStatus === OrderStatusEnum.CANCELLED) {
+      return CANCELLABLE_FROM.includes(currentStatus);
+    }
+    if (newStatus === OrderStatusEnum.RETURNED) {
       // RETURNED is only reachable from DELIVERED or COMPLETED (the return/refund flow).
       return currentStatus === OrderStatusEnum.DELIVERED || currentStatus === OrderStatusEnum.COMPLETED;
     }
@@ -101,9 +112,9 @@ export class OrderStateService {
   /**
    * Asserts that a transition is valid, throwing a BadRequestException if not.
    * Also enforces that a reason is supplied whenever one is required (backward
-   * moves and moves into a terminal state) — defense-in-depth behind the frontend's
-   * own confirmation-modal gating, so this can never be bypassed by calling the API
-   * directly.
+   * moves, moves into a terminal state, and un-cancelling) — defense-in-depth
+   * behind the frontend's own confirmation-modal gating, so this can never be
+   * bypassed by calling the API directly.
    */
   assertTransition(currentStatus: OrderStatusEnum, newStatus: OrderStatusEnum, reason?: string): void {
     if (!this.canTransition(currentStatus, newStatus)) {
@@ -113,7 +124,9 @@ export class OrderStateService {
     }
 
     const reasonRequired =
-      this.isBackwardTransition(currentStatus, newStatus) || TERMINAL_STATUSES.includes(newStatus);
+      this.isBackwardTransition(currentStatus, newStatus) ||
+      TERMINAL_STATUSES.includes(newStatus) ||
+      currentStatus === OrderStatusEnum.CANCELLED;
 
     if (reasonRequired && (!reason || !reason.trim())) {
       throw new BadRequestException(

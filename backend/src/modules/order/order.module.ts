@@ -10,6 +10,7 @@ import { ReturnEntity } from './entities/return.entity';
 import { ReturnItemEntity } from './entities/return-item.entity';
 import { AbandonedCartEntity } from './entities/abandoned-cart.entity';
 import { OrderNoteEntity } from './entities/order-note.entity';
+import { UserEntity } from '../user/entities/user.entity';
 import { ProductEntity } from '../catalog/entities/product.entity';
 import { ConsignmentEntity } from '../logistics/entities/consignment.entity';
 import { TenantModule } from '../tenant/tenant.module';
@@ -31,6 +32,7 @@ import { EditOrderService } from './services/edit-order.service';
 import { OrderStateService } from './services/order-state.service';
 import { OrderCalculationService } from './services/order-calculation.service';
 import { CollectCodService } from './services/collect-cod.service';
+import { UndoCollectCodService } from './services/undo-collect-cod.service';
 import { CreateReturnService } from './services/create-return.service';
 import { UpdateReturnStatusService } from './services/update-return-status.service';
 import { FindReturnsByOrderService } from './services/find-returns-by-order.service';
@@ -61,6 +63,7 @@ import { GenerateOrderNumberService } from './services/generate-order-number.ser
       ProductEntity,
       ConsignmentEntity,
       PaymentEntity,
+      UserEntity,
     ]),
     TenantModule,
     CustomerModule,
@@ -92,6 +95,7 @@ import { GenerateOrderNumberService } from './services/generate-order-number.ser
     OrderCalculationService,
     EditOrderService,
     CollectCodService,
+    UndoCollectCodService,
     JwtAuthGuard,
     CreateReturnService,
     UpdateReturnStatusService,

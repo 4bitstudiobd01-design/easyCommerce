@@ -39,12 +39,16 @@ describe('OrderStateService', () => {
       expect(service.canTransition(OrderStatusEnum.SHIPPED, OrderStatusEnum.PROCESSING)).toBe(true);
     });
 
-    it('should reject CANCELLED to CONFIRMED', () => {
-      expect(service.canTransition(OrderStatusEnum.CANCELLED, OrderStatusEnum.CONFIRMED)).toBe(false);
+    it('should allow un-cancelling CANCELLED to CONFIRMED (merchant correcting a mistaken cancellation)', () => {
+      expect(service.canTransition(OrderStatusEnum.CANCELLED, OrderStatusEnum.CONFIRMED)).toBe(true);
     });
 
-    it('should reject CANCELLED to PROCESSING', () => {
-      expect(service.canTransition(OrderStatusEnum.CANCELLED, OrderStatusEnum.PROCESSING)).toBe(false);
+    it('should allow un-cancelling CANCELLED to PROCESSING', () => {
+      expect(service.canTransition(OrderStatusEnum.CANCELLED, OrderStatusEnum.PROCESSING)).toBe(true);
+    });
+
+    it('should reject un-cancelling CANCELLED into RETURNED (return flow only starts from DELIVERED/COMPLETED)', () => {
+      expect(service.canTransition(OrderStatusEnum.CANCELLED, OrderStatusEnum.RETURNED)).toBe(false);
     });
 
     it('should reject RETURNED to SHIPPED', () => {
@@ -78,16 +82,22 @@ describe('OrderStateService', () => {
       expect(service.canTransition(OrderStatusEnum.DELIVERED, OrderStatusEnum.COMPLETED)).toBe(true);
     });
 
-    it('should treat CANCELLED and RETURNED as fully terminal (no transitions out, including into each other)', () => {
-      const terminals = [OrderStatusEnum.CANCELLED, OrderStatusEnum.RETURNED];
+    it('should treat RETURNED as fully terminal (no transitions out, including into CANCELLED)', () => {
       const allStatuses = Object.values(OrderStatusEnum);
+      const onwardTransitions = allStatuses.filter(
+        (target) => target !== OrderStatusEnum.RETURNED && service.canTransition(OrderStatusEnum.RETURNED, target),
+      );
+      expect(onwardTransitions).toEqual([]);
+    });
 
-      for (const terminal of terminals) {
-        const onwardTransitions = allStatuses.filter(
-          (target) => target !== terminal && service.canTransition(terminal, target),
-        );
-        expect(onwardTransitions).toEqual([]);
-      }
+    it('should allow CANCELLED to un-cancel into any non-RETURNED status', () => {
+      const allStatuses = Object.values(OrderStatusEnum);
+      const reachable = allStatuses.filter(
+        (target) => target !== OrderStatusEnum.CANCELLED && service.canTransition(OrderStatusEnum.CANCELLED, target),
+      );
+      expect(reachable.sort()).toEqual(
+        allStatuses.filter((s) => s !== OrderStatusEnum.CANCELLED && s !== OrderStatusEnum.RETURNED).sort(),
+      );
     });
 
     it('should allow COMPLETED backward to an earlier fulfilment stage', () => {
@@ -131,8 +141,20 @@ describe('OrderStateService', () => {
 
     it('should throw BadRequestException on an impossible transition', () => {
       expect(() =>
+        service.assertTransition(OrderStatusEnum.RETURNED, OrderStatusEnum.PROCESSING, 'Any reason'),
+      ).toThrow(BadRequestException);
+    });
+
+    it('should throw when un-cancelling without a reason', () => {
+      expect(() =>
         service.assertTransition(OrderStatusEnum.CANCELLED, OrderStatusEnum.PROCESSING),
       ).toThrow(BadRequestException);
+    });
+
+    it('should not throw when un-cancelling with a reason', () => {
+      expect(() =>
+        service.assertTransition(OrderStatusEnum.CANCELLED, OrderStatusEnum.PROCESSING, 'Marked cancelled by mistake'),
+      ).not.toThrow();
     });
 
     it('should throw when a backward transition is attempted without a reason', () => {

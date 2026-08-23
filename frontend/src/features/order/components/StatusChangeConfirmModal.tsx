@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { OrderStatusType, Order } from '../api/orderApi';
-import { isTerminalTarget, isBackwardTransition } from '../utils/statusTransition';
+import { isTerminalTarget, isBackwardTransition, requiresReason } from '../utils/statusTransition';
 
 const CANCEL_REASONS = [
   'Customer requested cancellation',
@@ -52,7 +52,8 @@ export function StatusChangeConfirmModal({
 
   const terminal = isTerminalTarget(targetStatus);
   const backward = isBackwardTransition(currentStatus, targetStatus);
-  const reasonRequired = terminal || backward;
+  const uncancelling = currentStatus === 'CANCELLED';
+  const reasonRequired = requiresReason(currentStatus, targetStatus);
 
   const reasonOptions = targetStatus === 'CANCELLED' ? CANCEL_REASONS : BACKWARD_REASONS;
 
@@ -74,6 +75,8 @@ export function StatusChangeConfirmModal({
   const title = reasonRequired
     ? terminal
       ? `${targetStatus === 'CANCELLED' ? 'Cancel' : 'Return'} Order`
+      : uncancelling
+      ? 'Restore Cancelled Order'
       : 'Move Order Backward'
     : 'Confirm Status Change';
 
@@ -149,7 +152,7 @@ export function StatusChangeConfirmModal({
           <div className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">
-                Reason {terminal ? `for ${targetStatus === 'CANCELLED' ? 'cancellation' : 'return'}` : 'for reverting'}
+                Reason {terminal ? `for ${targetStatus === 'CANCELLED' ? 'cancellation' : 'return'}` : uncancelling ? 'for restoring' : 'for reverting'}
               </label>
               <select
                 value={reason}
