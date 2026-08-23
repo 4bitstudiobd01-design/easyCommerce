@@ -117,6 +117,10 @@ export function RegisterForm() {
         password,
         fullName: fullName.trim(),
         ...(localPhone ? { phone: localPhone } : {}),
+        storeName: storeName.trim() || undefined,
+        subdomain: subdomain.trim().toLowerCase() || undefined,
+        category: businessType || undefined,
+        address: country || undefined,
       }).unwrap();
 
       dispatch(

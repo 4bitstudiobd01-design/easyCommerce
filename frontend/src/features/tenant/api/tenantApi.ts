@@ -245,9 +245,13 @@ export interface UpdateStoreRequest {
   featuredProductsCount?: number;
 }
 
+const API_ROOT = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1')
+  .replace(/\/+$/, '')
+  .replace(/\/stores$/, '');
+
 export const tenantApi = createApi({
   reducerPath: 'tenantApi',
-  baseQuery: createBaseQueryWithReauth(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1/stores'),
+  baseQuery: createBaseQueryWithReauth(`${API_ROOT}/stores`),
   tagTypes: ['Store', 'Themes', 'DeliveryZone', 'ApiKey', 'Webhook'],
   endpoints: (builder) => ({
     getMyStores: builder.query<Store[], void>({

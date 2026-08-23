@@ -195,9 +195,13 @@ export interface Refund {
   createdAt: string;
 }
 
+const API_ROOT = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1')
+  .replace(/\/+$/, '')
+  .replace(/\/orders$/, '');
+
 export const orderApi = createApi({
   reducerPath: 'orderApi',
-  baseQuery: createBaseQueryWithReauth(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1/orders'),
+  baseQuery: createBaseQueryWithReauth(`${API_ROOT}/orders`),
   tagTypes: ['Order', 'AbandonedCart', 'OrderKpi'],
   endpoints: (builder) => ({
     createPublicOrder: builder.mutation<Order, CreateOrderRequest>({

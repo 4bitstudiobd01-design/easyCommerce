@@ -8,6 +8,10 @@ export interface RegisterRequest {
   fullName: string;
   /** Optional; normalized to the canonical +880 form on the server. */
   phone?: string;
+  storeName?: string;
+  subdomain?: string;
+  category?: string;
+  address?: string;
 }
 
 export interface LoginRequest {
@@ -23,10 +27,14 @@ export interface AuthResponse {
   user: User;
 }
 
+const API_ROOT = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1')
+  .replace(/\/+$/, '')
+  .replace(/\/auth$/, '');
+
 export const authApi = createApi({
   reducerPath: 'authApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1/auth',
+    baseUrl: `${API_ROOT}/auth`,
   }),
   endpoints: (builder) => ({
     registerMerchant: builder.mutation<AuthResponse, RegisterRequest>({

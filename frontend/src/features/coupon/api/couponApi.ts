@@ -34,9 +34,13 @@ export interface ValidateCouponResponse {
   message: string;
 }
 
+const API_ROOT = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1')
+  .replace(/\/+$/, '')
+  .replace(/\/coupons$/, '');
+
 export const couponApi = createApi({
   reducerPath: 'couponApi',
-  baseQuery: createBaseQueryWithReauth(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1/coupons'),
+  baseQuery: createBaseQueryWithReauth(`${API_ROOT}/coupons`),
   tagTypes: ['Coupon'],
   endpoints: (builder) => ({
     getMerchantCoupons: builder.query<Coupon[], void>({

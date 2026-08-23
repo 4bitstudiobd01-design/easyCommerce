@@ -27,4 +27,24 @@ export class RegisterMerchantDto {
     message: 'phone must be a valid Bangladeshi mobile number, e.g. 01700000000',
   })
   phone?: string;
+
+  @ApiProperty({ example: 'Daruchini Fashion', description: 'Store name', required: false })
+  @IsOptional()
+  @IsString()
+  storeName?: string;
+
+  @ApiProperty({ example: 'daruchini', description: 'Store subdomain slug', required: false })
+  @IsOptional()
+  @IsString()
+  subdomain?: string;
+
+  @ApiProperty({ example: 'Fashion & Apparel', description: 'Business category', required: false })
+  @IsOptional()
+  @IsString()
+  category?: string;
+
+  @ApiProperty({ example: 'Dhaka, Bangladesh', description: 'Store address / location', required: false })
+  @IsOptional()
+  @IsString()
+  address?: string;
 }

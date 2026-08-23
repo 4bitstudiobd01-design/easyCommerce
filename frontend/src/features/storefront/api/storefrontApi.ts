@@ -7,10 +7,14 @@ export interface PublicStorefrontResponse {
   products: Product[];
 }
 
+const API_ROOT = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1')
+  .replace(/\/+$/, '')
+  .replace(/\/catalog\/public$/, '');
+
 export const storefrontApi = createApi({
   reducerPath: 'storefrontApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1/catalog/public',
+    baseUrl: `${API_ROOT}/catalog/public`,
   }),
   tagTypes: ['PublicStorefront'],
   endpoints: (builder) => ({

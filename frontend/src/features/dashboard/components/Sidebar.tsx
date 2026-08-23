@@ -22,7 +22,10 @@ import {
   BarChart2,
   MonitorSmartphone,
   FileText,
-  ShoppingBag
+  ShoppingBag,
+  Target,
+  Activity,
+  BarChart3,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -175,17 +178,71 @@ export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onCl
               </span>
             )}
           </Link>
+
+          <NavGroupHeader>CRM & Growth</NavGroupHeader>
           <Link 
-            href="/dashboard/customers" 
-            className={navItemClass('/dashboard/customers')}
-            onMouseEnter={(e) => handleTooltipEnter(e, "Customers")}
-            onFocus={(e) => handleTooltipEnter(e, "Customers")}
+            href="/dashboard/crm/customers" 
+            className={navItemClass('/dashboard/crm/customers')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Customers 360")}
+            onFocus={(e) => handleTooltipEnter(e, "Customers 360")}
             onMouseLeave={handleTooltipLeave}
             onBlur={handleTooltipLeave}
           >
             <div className="flex items-center gap-2.5">
               <Users className={iconClass} strokeWidth={iconStroke} />
-              {!isDesktopCollapsed && <span>Customers</span>}
+              {!isDesktopCollapsed && <span>Customers 360</span>}
+            </div>
+          </Link>
+          <Link 
+            href="/dashboard/crm/leads" 
+            className={navItemClass('/dashboard/crm/leads')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Leads Pipeline")}
+            onFocus={(e) => handleTooltipEnter(e, "Leads Pipeline")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <Target className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Leads Pipeline</span>}
+            </div>
+          </Link>
+          <Link 
+            href="/dashboard/crm/segments" 
+            className={navItemClass('/dashboard/crm/segments')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Segments")}
+            onFocus={(e) => handleTooltipEnter(e, "Segments")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <Layers className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Segments</span>}
+            </div>
+          </Link>
+          <Link 
+            href="/dashboard/crm/activities" 
+            className={navItemClass('/dashboard/crm/activities')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Activity Hub")}
+            onFocus={(e) => handleTooltipEnter(e, "Activity Hub")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <Activity className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Activity Hub</span>}
+            </div>
+          </Link>
+          <Link 
+            href="/dashboard/crm/analytics" 
+            className={navItemClass('/dashboard/crm/analytics')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "CRM Analytics")}
+            onFocus={(e) => handleTooltipEnter(e, "CRM Analytics")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <BarChart3 className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>CRM Analytics</span>}
             </div>
           </Link>
 

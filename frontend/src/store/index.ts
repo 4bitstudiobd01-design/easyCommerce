@@ -25,6 +25,7 @@ import { seoApi } from '@/features/seo/api/seoApi';
 import { billingApi } from '@/features/billing/api/billingApi';
 import { customerApi } from '@/features/customer/api/customerApi';
 import { marketingApi } from '@/features/marketing/api/marketingApi';
+import { crmApi } from '@/features/crm/api/crmApi';
 
 export const store = configureStore({
   reducer: {
@@ -54,6 +55,7 @@ export const store = configureStore({
     [billingApi.reducerPath]: billingApi.reducer,
     [customerApi.reducerPath]: customerApi.reducer,
     [marketingApi.reducerPath]: marketingApi.reducer,
+    [crmApi.reducerPath]: crmApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -74,7 +76,8 @@ export const store = configureStore({
       seoApi.middleware,
       billingApi.middleware,
       customerApi.middleware,
-      marketingApi.middleware
+      marketingApi.middleware,
+      crmApi.middleware
     ),
 });
 

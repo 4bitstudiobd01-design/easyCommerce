@@ -166,9 +166,13 @@ export interface CreateContactMessageRequest {
   message: string;
 }
 
+const API_ROOT = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1')
+  .replace(/\/+$/, '')
+  .replace(/\/admin$/, '');
+
 export const adminApi = createApi({
   reducerPath: 'adminApi',
-  baseQuery: createBaseQueryWithReauth(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1/admin'),
+  baseQuery: createBaseQueryWithReauth(`${API_ROOT}/admin`),
   tagTypes: ['AdminStats', 'AdminStores', 'AdminOrders', 'PlatformConfig', 'AdminSummary', 'AdminAnalytics', 'AdminOperations', 'AdminInfra', 'AdminContactMessages'],
   endpoints: (builder) => ({
     getPlatformStats: builder.query<PlatformStatsOverview, void>({

@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { FindUserByEmailService } from '../../user/services/find-user-by-email.service';
 import { CreateUserService } from '../../user/services/create-user.service';
+import { CreateStoreService } from '../../tenant/services/create-store.service';
 import { UserRoleEnum } from '../../user/entities/user.entity';
 import { RegisterMerchantDto } from '../dto/register-merchant.dto';
 import { AuthResponseDto } from '../dto/auth-response.dto';
@@ -13,6 +14,7 @@ export class RegisterMerchantService {
   constructor(
     private readonly findUserByEmailService: FindUserByEmailService,
     private readonly createUserService: CreateUserService,
+    private readonly createStoreService: CreateStoreService,
     private readonly jwtService: JwtService,
   ) {}
 
@@ -33,6 +35,27 @@ export class RegisterMerchantService {
       role: UserRoleEnum.STORE_OWNER,
       isActive: true,
     });
+
+    const storeName = dto.storeName?.trim();
+    if (storeName) {
+      const slug = (dto.subdomain?.trim() || storeName)
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '') || `store-${Date.now()}`;
+
+      try {
+        await this.createStoreService.execute(savedUser.id, {
+          name: storeName,
+          slug,
+          category: dto.category || 'Fashion & Apparel',
+          phone: dto.phone,
+          address: dto.address,
+        });
+      } catch (storeErr) {
+        // Non-blocking fallback: if slug already exists or store fails, user can complete in onboarding
+      }
+    }
 
     const payload = {
       sub: savedUser.id,
