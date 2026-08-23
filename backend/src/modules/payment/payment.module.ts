@@ -10,7 +10,6 @@ import { OrderEntity } from '../order/entities/order.entity';
 import { TenantModule } from '../tenant/tenant.module';
 import { OrderModule } from '../order/order.module';
 import { StaffModule } from '../staff/staff.module';
-import { SmsModule } from '../sms/sms.module';
 import { InitiateSslCommerzPaymentService } from './services/initiate-sslcommerz-payment.service';
 import { ValidateSslCommerzPaymentService } from './services/validate-sslcommerz-payment.service';
 import { ListMerchantPaymentsService } from './services/list-merchant-payments.service';
@@ -22,10 +21,6 @@ import { ListPaymentGatewaysService } from './services/list-payment-gateways.ser
 import { ExportPaymentTransactionsService } from './services/export-payment-transactions.service';
 import { RecordPaymentEventService } from './services/record-payment-event.service';
 import { SeedPaymentDemoDataService } from './services/seed-payment-demo-data.service';
-import { GetOrderBalanceService } from './services/get-order-balance.service';
-import { GetOrderPaymentHistoryService } from './services/get-order-payment-history.service';
-import { RecordManualPaymentService } from './services/record-manual-payment.service';
-import { CreatePaymentLinkForOrderService } from './services/create-payment-link-for-order.service';
 import { PaymentController } from './payment.controller';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
@@ -51,7 +46,6 @@ import { OrderStatusHistoryEntity } from '../order/entities/order-status-history
     OrderModule,
     // Supplies GetMyPermissionsService, which PermissionsGuard resolves per request.
     StaffModule,
-    SmsModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -80,10 +74,6 @@ import { OrderStatusHistoryEntity } from '../order/entities/order-status-history
     ProcessRefundService,
     FindRefundsByOrderService,
     GetRefundsSummaryService,
-    GetOrderBalanceService,
-    GetOrderPaymentHistoryService,
-    RecordManualPaymentService,
-    CreatePaymentLinkForOrderService,
   ],
   exports: [
     InitiateSslCommerzPaymentService,
@@ -100,10 +90,6 @@ import { OrderStatusHistoryEntity } from '../order/entities/order-status-history
     ProcessRefundService,
     FindRefundsByOrderService,
     GetRefundsSummaryService,
-    GetOrderBalanceService,
-    GetOrderPaymentHistoryService,
-    RecordManualPaymentService,
-    CreatePaymentLinkForOrderService,
     TypeOrmModule,
   ],
 })

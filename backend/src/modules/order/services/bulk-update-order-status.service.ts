@@ -99,17 +99,12 @@ export class BulkUpdateOrderStatusService {
 
       const ordersToUpdate: OrderEntity[] = [];
       for (const order of orders) {
-        try {
-          // Reuses the same reason-required check as the single-order update path —
-          // a bulk backward move (or bulk cancellation) still needs a reason, since
-          // there's no per-order confirmation step in the bulk flow to catch it later.
-          this.orderStateService.assertTransition(order.orderStatus, dto.targetStatus, dto.reason);
-        } catch (err) {
+        if (!this.orderStateService.canTransition(order.orderStatus, dto.targetStatus)) {
           result.failed++;
           result.errors.push({
             orderId: order.id,
             orderNumber: order.orderNumber,
-            reason: err instanceof Error ? err.message : `Invalid order status transition from ${order.orderStatus} to ${dto.targetStatus}`,
+            reason: `Invalid order status transition from ${order.orderStatus} to ${dto.targetStatus}`,
           });
           continue;
         }

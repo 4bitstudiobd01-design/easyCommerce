@@ -34,7 +34,7 @@ export class UpdateOrderStatusService {
     }
 
     // 1. Enforce business rules
-    this.orderStateService.assertTransition(order.orderStatus, dto.orderStatus, dto.reason);
+    this.orderStateService.assertTransition(order.orderStatus, dto.orderStatus);
 
     const previousStatus = order.orderStatus;
     order.orderStatus = dto.orderStatus;
@@ -66,12 +66,9 @@ export class UpdateOrderStatusService {
     // (Inventory)
     if (dto.orderStatus === OrderStatusEnum.CANCELLED) {
       for (const item of order.items) {
-        if (item.isCustomItem) {
-          continue;
-        }
         try {
           await this.adjustStockService.execute(tenantId, {
-            productId: item.productId as string,
+            productId: item.productId,
             quantity: item.quantity,
             action: StockAdjustmentAction.ADD,
           });

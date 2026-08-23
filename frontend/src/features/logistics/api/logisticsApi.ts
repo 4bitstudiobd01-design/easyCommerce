@@ -165,11 +165,6 @@ export interface CourierProviderOption {
   name: string;
 }
 
-export interface ShipmentItemRequest {
-  orderItemId: string;
-  quantity: number;
-}
-
 export interface CreateShipmentRequest {
   orderId: string;
   courierProvider: CourierProvider;
@@ -184,8 +179,6 @@ export interface CreateShipmentRequest {
   specialInstructions?: string;
   /** Makes a retried or double-clicked submit resolve to the same shipment. */
   idempotencyKey?: string;
-  /** Which order items (and quantities) to ship. Omitted ships the whole order. */
-  items?: ShipmentItemRequest[];
 }
 
 export interface SeedShipmentDemoDataResponse {

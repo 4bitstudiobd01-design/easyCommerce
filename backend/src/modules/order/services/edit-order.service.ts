@@ -42,23 +42,14 @@ export class EditOrderService {
       throw new BadRequestException(`Order cannot be edited in its current status: ${order.orderStatus}`);
     }
 
-    // Best-effort match for "does this catalog item already exist on the order"
-    // (price retention below), skipping custom items since they have no productId
-    // — keying by productId directly here (not id) would collide for multiple
-    // custom items, which all carry productId: null.
-    const oldItemsByProductId = new Map(
-      order.items.filter((i) => !i.isCustomItem && i.productId).map((i) => [i.productId as string, i]),
-    );
+    const oldItemsMap = new Map(order.items.map(i => [i.productId, i]));
     const restoredItems: OrderItemEntity[] = [];
 
-    // 1. Rollback old inventory (catalog items only — custom items were never stock-tracked)
+    // 1. Rollback old inventory
     try {
       for (const oldItem of order.items) {
-        if (oldItem.isCustomItem) {
-          continue;
-        }
         await this.adjustStockService.execute(tenantId, {
-          productId: oldItem.productId as string,
+          productId: oldItem.productId,
           quantity: oldItem.quantity,
           action: StockAdjustmentAction.ADD,
         });
@@ -68,7 +59,7 @@ export class EditOrderService {
       // Revert the rollback partially if it fails midway
       for (const item of restoredItems) {
         await this.adjustStockService.execute(tenantId, {
-          productId: item.productId as string,
+          productId: item.productId,
           quantity: item.quantity,
           action: StockAdjustmentAction.REMOVE,
         });
@@ -78,46 +69,25 @@ export class EditOrderService {
 
     const newOrderItems: OrderItemEntity[] = [];
     const deductedItems: { productId: string; quantity: number }[] = [];
-    const calculationInputItems: { unitPrice: number; quantity: number; discountAmount?: number }[] = [];
+    const calculationInputItems = [];
 
     // 2. Validate and reserve new inventory
     try {
       for (const itemDto of dto.items) {
-        const newItem = new OrderItemEntity();
-        newItem.tenantId = tenantId;
-        newItem.quantity = itemDto.quantity;
-        newItem.discountAmount = itemDto.discountAmount ?? 0;
-
-        if (itemDto.isCustomItem) {
-          // Custom/off-catalog line: no product lookup, no stock adjustment,
-          // never persisted to the catalog.
-          const unitPrice = Number(itemDto.customUnitPrice);
-          newItem.productId = null;
-          newItem.isCustomItem = true;
-          newItem.productTitle = itemDto.customTitle as string;
-          newItem.productImageUrl = null;
-          newItem.unitPrice = unitPrice;
-          newItem.totalPrice = unitPrice * itemDto.quantity - newItem.discountAmount;
-
-          newOrderItems.push(newItem);
-          calculationInputItems.push({ unitPrice, quantity: itemDto.quantity, discountAmount: newItem.discountAmount });
-          continue;
-        }
-
         const product = await this.productRepository.findOne({
           where: { id: itemDto.productId, tenantId },
-          relations: ['variants', 'images'],
+          relations: ['variants'],
         });
 
         if (!product) {
           throw new NotFoundException(`Product with ID "${itemDto.productId}" not found.`);
         }
 
-        const oldItem = oldItemsByProductId.get(product.id);
-        // Retain old price if product existed on the order before, otherwise use current catalog price
+        const oldItem = oldItemsMap.get(itemDto.productId);
+        // Retain old price if product existed, otherwise use current catalog price
         const unitPrice = oldItem ? Number(oldItem.unitPrice) : Number(product.basePrice);
+        const totalPrice = unitPrice * itemDto.quantity;
         const sku = oldItem?.sku || product.variants?.[0]?.sku || `SKU-${product.id.slice(0, 6)}`;
-        const primaryImage = product.images?.find((image) => image.isPrimary) ?? product.images?.[0];
 
         // Reserve new stock
         await this.adjustStockService.execute(tenantId, {
@@ -127,16 +97,17 @@ export class EditOrderService {
         });
         deductedItems.push({ productId: product.id, quantity: itemDto.quantity });
 
+        const newItem = new OrderItemEntity();
         newItem.productId = product.id;
-        newItem.isCustomItem = false;
         newItem.productTitle = product.title;
         newItem.sku = sku;
-        newItem.productImageUrl = primaryImage?.url ?? null;
         newItem.unitPrice = unitPrice;
-        newItem.totalPrice = unitPrice * itemDto.quantity - newItem.discountAmount;
-
+        newItem.quantity = itemDto.quantity;
+        newItem.totalPrice = totalPrice;
+        newItem.tenantId = tenantId;
+        
         newOrderItems.push(newItem);
-        calculationInputItems.push({ unitPrice, quantity: itemDto.quantity, discountAmount: newItem.discountAmount });
+        calculationInputItems.push({ unitPrice, quantity: itemDto.quantity });
       }
     } catch (err) {
       // Rollback the newly deducted items
@@ -150,7 +121,7 @@ export class EditOrderService {
       // Re-deduct original items to restore pristine original state
       for (const item of restoredItems) {
         await this.adjustStockService.execute(tenantId, {
-          productId: item.productId as string,
+          productId: item.productId,
           quantity: item.quantity,
           action: StockAdjustmentAction.REMOVE,
         });

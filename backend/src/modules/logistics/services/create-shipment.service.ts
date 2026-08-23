@@ -73,7 +73,6 @@ export class CreateShipmentService {
     //    create a shipment against another merchant's order.
     const order = await this.orderRepository.findOne({
       where: { id: dto.orderId, tenantId },
-      relations: ['items'],
     });
     if (!order) {
       throw new NotFoundException('Order not found.');
@@ -100,11 +99,6 @@ export class CreateShipmentService {
         `A shipment (${activeShipment.shipmentNumber}) already exists for order #${order.orderNumber}.`,
       );
     }
-
-    // 3b. Resolve which items ship in this parcel. Omitted `dto.items` means the
-    //     whole order (unchanged default behavior); when supplied, every id must
-    //     belong to this order and no quantity may exceed what was ordered.
-    const shippedItemsJson = this.resolveShippedItems(order, dto.items);
 
     // 4. Validate the delivery address before involving the courier.
     const deliveryAddress = (dto.deliveryAddress || order.shippingAddress || '').trim();
@@ -200,7 +194,6 @@ export class CreateShipmentService {
           parcelDimensions: dto.parcelDimensions ?? null,
           deliveryNote: dto.deliveryNote ?? null,
           specialInstructions: dto.specialInstructions ?? null,
-          shippedItemsJson,
           status: bookingStatus,
           idempotencyKey: dto.idempotencyKey ?? null,
           tenantId,
@@ -249,38 +242,6 @@ export class CreateShipmentService {
     });
 
     return this.getShipmentDetailsService.execute(shipmentId, tenantId);
-  }
-
-  /**
-   * Validates the merchant's item selection against the order's actual items and
-   * builds the denormalized snapshot to persist. Returns null when `items` was
-   * omitted — the shipment then covers the whole order, unchanged from prior
-   * behavior for callers that don't use this feature.
-   */
-  private resolveShippedItems(
-    order: OrderEntity,
-    requested?: { orderItemId: string; quantity: number }[],
-  ): { orderItemId: string; productTitle: string; quantity: number }[] | null {
-    if (!requested || requested.length === 0) {
-      return null;
-    }
-
-    const itemsById = new Map((order.items ?? []).map((item) => [item.id, item]));
-
-    return requested.map(({ orderItemId, quantity }) => {
-      const orderItem = itemsById.get(orderItemId);
-      if (!orderItem) {
-        throw new BadRequestException(
-          `Item "${orderItemId}" does not belong to order #${order.orderNumber}.`,
-        );
-      }
-      if (quantity > orderItem.quantity) {
-        throw new BadRequestException(
-          `Cannot ship ${quantity} of "${orderItem.productTitle}" — only ${orderItem.quantity} were ordered.`,
-        );
-      }
-      return { orderItemId, productTitle: orderItem.productTitle, quantity };
-    });
   }
 
   /**

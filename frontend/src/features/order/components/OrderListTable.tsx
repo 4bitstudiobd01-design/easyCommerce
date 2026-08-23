@@ -42,8 +42,6 @@ import {
   Package,
 } from 'lucide-react';
 import { TableRowSkeleton } from '@/components/ui/Skeleton';
-import { ChannelBadge } from '../utils/channelBadge';
-import { StatusChangeConfirmModal } from './StatusChangeConfirmModal';
 import { toast } from 'sonner';
 
 interface OrderListTableProps {
@@ -75,7 +73,6 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
   const [selectedThermalOrder, setSelectedThermalOrder] = useState<Order | null>(null);
   const [previewOrderId, setPreviewOrderId] = useState<string | null>(null);
   const [openRowMenuId, setOpenRowMenuId] = useState<string | null>(null);
-  const [pendingStatusChange, setPendingStatusChange] = useState<{ order: Order; targetStatus: OrderStatusType } | null>(null);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
   // Queries
@@ -209,9 +206,9 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
     router.replace(`${pathname}${query}`);
   };
 
-  const handleStatusChange = async (orderId: string, newStatus: any, reason?: string) => {
+  const handleStatusChange = async (orderId: string, newStatus: any) => {
     try {
-      await updateOrderStatus({ id: orderId, orderStatus: newStatus, reason }).unwrap();
+      await updateOrderStatus({ id: orderId, orderStatus: newStatus }).unwrap();
       toast.success(`Order status updated to ${newStatus}`);
     } catch (err: any) {
       toast.error(err?.data?.message || 'Failed to update order status.');
@@ -322,22 +319,7 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
         order={selectedThermalOrder}
       />
 
-      {pendingStatusChange && (
-        <StatusChangeConfirmModal
-          isOpen={true}
-          onClose={() => setPendingStatusChange(null)}
-          order={pendingStatusChange.order}
-          targetStatus={pendingStatusChange.targetStatus}
-          currentStatus={pendingStatusChange.order.orderStatus}
-          isSubmitting={isUpdating}
-          onConfirm={async (status, reason) => {
-            await handleStatusChange(pendingStatusChange.order.id, status, reason);
-            setPendingStatusChange(null);
-          }}
-        />
-      )}
-
-
+      
       {/* BULK ACTION PREVIEW MODAL */}
       {bulkAction && (
         <BulkActionPreviewModal
@@ -726,10 +708,7 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                 <th className="px-6 py-3.5">Date</th>
                 <th className="px-6 py-3.5">Total</th>
                 <th className="px-4 py-3.5">Payment</th>
-                <th className="px-4 py-3.5">Address</th>
-                <th className="px-4 py-3.5">Courier</th>
-                <th className="px-4 py-3.5">Courier Bill</th>
-                <th className="px-4 py-3.5">Source</th>
+                <th className="px-4 py-3.5">Delivery</th>
                 <th className="px-6 py-3.5">Status</th>
                 <th className="px-4 py-3.5 text-right">Actions</th>
               </tr>
@@ -737,15 +716,15 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
             <tbody className="divide-y divide-slate-100 font-medium">
               {isOrdersLoading ? (
                 <>
-                  <TableRowSkeleton columns={13} />
-                  <TableRowSkeleton columns={13} />
-                  <TableRowSkeleton columns={13} />
-                  <TableRowSkeleton columns={13} />
-                  <TableRowSkeleton columns={13} />
+                  <TableRowSkeleton columns={10} />
+                  <TableRowSkeleton columns={10} />
+                  <TableRowSkeleton columns={10} />
+                  <TableRowSkeleton columns={10} />
+                  <TableRowSkeleton columns={10} />
                 </>
               ) : orders?.length === 0 ? (
                 <tr>
-                  <td colSpan={13} className="text-center py-16">
+                  <td colSpan={10} className="text-center py-16">
                     <Package className="w-12 h-12 text-slate-200 mx-auto mb-3" />
                     <h3 className="text-sm font-bold text-slate-700">No orders found</h3>
                     <p className="text-xs text-slate-500 mt-1">Try changing your filters or search criteria.</p>
@@ -807,13 +786,7 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                           </div>
                           <div>
                             <span className="font-bold text-slate-900 block">{order.customerName}</span>
-                            <a
-                              href={`tel:${order.customerPhone}`}
-                              onClick={(e) => e.stopPropagation()}
-                              className="text-[10px] text-slate-400 hover:text-blue-600 hover:underline block"
-                            >
-                              {order.customerPhone}
-                            </a>
+                            <span className="text-[10px] text-slate-400 block">{order.customerPhone}</span>
                           </div>
                         </div>
                       </td>
@@ -825,54 +798,20 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                       <td className="px-4 py-4">
                         <span className={`px-2 py-1 rounded-md text-[10px] font-bold ${
                           order.paymentStatus === 'PAID' ? 'bg-emerald-50 text-emerald-700' :
-                          order.paymentStatus === 'PARTIALLY_PAID' ? 'bg-blue-50 text-blue-700' :
                           order.paymentStatus === 'REFUNDED' ? 'bg-slate-100 text-slate-600' :
                           order.paymentMethod === 'COD' ? 'bg-amber-50 text-amber-700' :
                           'bg-rose-50 text-rose-700'
                         }`}>
-                          {order.paymentStatus === 'UNPAID' && order.paymentMethod === 'COD'
-                            ? 'COD'
-                            : order.paymentStatus === 'PARTIALLY_PAID'
-                            ? 'Partially Paid'
-                            : order.paymentStatus}
+                          {order.paymentStatus === 'UNPAID' && order.paymentMethod === 'COD' ? 'COD' : order.paymentStatus}
                         </span>
                       </td>
 
-                      <td className="px-4 py-4 text-slate-600 max-w-[180px]">
-                        <p className="truncate" title={[order.shippingAddress, order.area, order.thana, order.district, order.city].filter(Boolean).join(', ')}>
-                          {[order.shippingAddress, order.city].filter(Boolean).join(', ') || '-'}
-                        </p>
-                      </td>
-
-                      <td className="px-4 py-4">
-                        {order.consignment ? (
-                          <div>
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700">
-                              {order.consignment.courierProvider}
-                            </span>
-                            <p className="text-[10px] text-slate-400 mt-1">{order.consignment.status.replace(/_/g, ' ')}</p>
-                          </div>
-                        ) : (
-                          <span className="text-[10px] text-slate-400 font-medium">Not shipped</span>
-                        )}
-                      </td>
-
-                      <td className="px-4 py-4 text-slate-600">
-                        {order.consignment ? `৳${Number(order.consignment.deliveryCharge).toLocaleString()}` : '-'}
-                      </td>
-
-                      <td className="px-4 py-4">
-                        <ChannelBadge channel={order.channel} utmSource={order.utmSource} />
-                      </td>
+                      <td className="px-4 py-4 text-slate-600">{order.city || '-'}</td>
 
                       <td className="px-6 py-4">
                         <select
                           value={order.orderStatus}
-                          onChange={(e) => {
-                            const targetStatus = e.target.value as OrderStatusType;
-                            if (targetStatus === order.orderStatus) return;
-                            setPendingStatusChange({ order, targetStatus });
-                          }}
+                          onChange={(e) => handleStatusChange(order.id, e.target.value)}
                           disabled={isUpdating}
                           className={`px-3 py-1 rounded-md font-bold text-[10px] border-0 focus:outline-none cursor-pointer transition-colors appearance-none ${
                             ['DELIVERED', 'COMPLETED'].includes(order.orderStatus) ? 'bg-emerald-50 text-emerald-700' :
@@ -937,7 +876,7 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                                     onClick={() => onDispatchCourierClick(order)}
                                     className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
                                   >
-                                    <Truck className="w-3.5 h-3.5" /> Send Courier
+                                    <Truck className="w-3.5 h-3.5" /> Dispatch
                                   </button>
                                 )}
                               </div>

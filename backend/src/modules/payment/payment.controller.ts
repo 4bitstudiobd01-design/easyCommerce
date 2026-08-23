@@ -11,16 +11,12 @@ import {
   UseGuards,
   BadRequestException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { Request, Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
-import { OrderEntity } from '../order/entities/order.entity';
-import { NotificationDispatcherService } from '../sms/services/notification-dispatcher.service';
 import { InitiateSslCommerzPaymentService } from './services/initiate-sslcommerz-payment.service';
 import { ValidateSslCommerzPaymentService } from './services/validate-sslcommerz-payment.service';
 import { ListMerchantPaymentsService } from './services/list-merchant-payments.service';
@@ -30,10 +26,6 @@ import { GetPaymentDetailsService } from './services/get-payment-details.service
 import { ListPaymentGatewaysService } from './services/list-payment-gateways.service';
 import { ExportPaymentTransactionsService } from './services/export-payment-transactions.service';
 import { SeedPaymentDemoDataService } from './services/seed-payment-demo-data.service';
-import { GetOrderBalanceService } from './services/get-order-balance.service';
-import { GetOrderPaymentHistoryService } from './services/get-order-payment-history.service';
-import { RecordManualPaymentService } from './services/record-manual-payment.service';
-import { CreatePaymentLinkForOrderService } from './services/create-payment-link-for-order.service';
 import { FindStoreByUserService } from '../tenant/services/find-store-by-user.service';
 import { InitiatePaymentDto } from './dto/initiate-payment.dto';
 import { ListPaymentTransactionsQueryDto } from './dto/list-payment-transactions-query.dto';
@@ -44,8 +36,6 @@ import {
 } from './dto/payment-summary-response.dto';
 import { PaymentDetailsResponseDto } from './dto/payment-details-response.dto';
 import { SeedPaymentDemoDataResponseDto } from './dto/seed-payment-demo-data-response.dto';
-import { RecordManualPaymentDto } from './dto/record-manual-payment.dto';
-import { CreatePaymentLinkDto } from './dto/create-payment-link.dto';
 import { ConfigService } from '@nestjs/config';
 
 @ApiTags('Payments & Gateways')
@@ -61,13 +51,6 @@ export class PaymentController {
     private readonly listPaymentGatewaysService: ListPaymentGatewaysService,
     private readonly exportPaymentTransactionsService: ExportPaymentTransactionsService,
     private readonly seedPaymentDemoDataService: SeedPaymentDemoDataService,
-    private readonly getOrderBalanceService: GetOrderBalanceService,
-    private readonly getOrderPaymentHistoryService: GetOrderPaymentHistoryService,
-    private readonly recordManualPaymentService: RecordManualPaymentService,
-    private readonly createPaymentLinkForOrderService: CreatePaymentLinkForOrderService,
-    private readonly notificationDispatcherService: NotificationDispatcherService,
-    @InjectRepository(OrderEntity)
-    private readonly orderRepository: Repository<OrderEntity>,
     private readonly findStoreByUserService: FindStoreByUserService,
     private readonly configService: ConfigService,
   ) {}
@@ -274,82 +257,5 @@ export class PaymentController {
   ): Promise<PaymentDetailsResponseDto> {
     const tenantId = await this.getMerchantTenantId(userId, storeId);
     return this.getPaymentDetailsService.execute(tenantId, id);
-  }
-
-  @Get('orders/:orderId/balance')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @ApiBearerAuth()
-  @RequirePermissions('orders:read')
-  @ApiOperation({ summary: 'Amount paid and balance due for one order' })
-  @ApiResponse({ status: 200, description: 'Order balance' })
-  async getOrderBalance(
-    @CurrentUser('sub') userId: string,
-    @Param('orderId') orderId: string,
-    @Headers('x-store-id') storeId?: string,
-  ) {
-    const tenantId = await this.getMerchantTenantId(userId, storeId);
-    return this.getOrderBalanceService.execute(tenantId, orderId);
-  }
-
-  @Get('orders/:orderId/history')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @ApiBearerAuth()
-  @RequirePermissions('orders:read')
-  @ApiOperation({ summary: 'All payment records for one order, most recent first' })
-  @ApiResponse({ status: 200, description: 'Payment history' })
-  async getOrderPaymentHistory(
-    @CurrentUser('sub') userId: string,
-    @Param('orderId') orderId: string,
-    @Headers('x-store-id') storeId?: string,
-  ) {
-    const tenantId = await this.getMerchantTenantId(userId, storeId);
-    return this.getOrderPaymentHistoryService.execute(tenantId, orderId);
-  }
-
-  @Post('orders/:orderId/manual-payment')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @ApiBearerAuth()
-  @RequirePermissions('orders:manage')
-  @ApiOperation({ summary: 'Record a payment received offline (cash, bKash-in-hand, etc.)' })
-  @ApiResponse({ status: 201, description: 'Manual payment recorded' })
-  @ApiResponse({ status: 400, description: 'Amount exceeds the current balance due' })
-  async recordManualPayment(
-    @CurrentUser('sub') userId: string,
-    @Param('orderId') orderId: string,
-    @Body() dto: RecordManualPaymentDto,
-    @Headers('x-store-id') storeId?: string,
-  ) {
-    const tenantId = await this.getMerchantTenantId(userId, storeId);
-    return this.recordManualPaymentService.execute(tenantId, orderId, dto);
-  }
-
-  @Post('orders/:orderId/payment-link')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @ApiBearerAuth()
-  @RequirePermissions('orders:manage')
-  @ApiOperation({ summary: 'Generate a shareable SSLCommerz payment link for an existing order, optionally SMS it to the customer' })
-  @ApiResponse({ status: 201, description: 'Payment link generated' })
-  @ApiResponse({ status: 400, description: 'No outstanding balance, or amount exceeds balance due' })
-  async createPaymentLink(
-    @CurrentUser('sub') userId: string,
-    @Param('orderId') orderId: string,
-    @Body() dto: CreatePaymentLinkDto,
-    @Headers('x-store-id') storeId?: string,
-  ) {
-    const tenantId = await this.getMerchantTenantId(userId, storeId);
-    const link = await this.createPaymentLinkForOrderService.execute(tenantId, orderId, dto.amount);
-
-    if (dto.sendSms) {
-      const order = await this.orderRepository.findOne({ where: { id: orderId, tenantId } });
-      if (order) {
-        await this.notificationDispatcherService.dispatch({
-          tenantId,
-          recipientPhone: order.customerPhone,
-          smsMessage: `Please complete your payment of ৳${link.amount} for order #${order.orderNumber}: ${link.gatewayUrl}`,
-        });
-      }
-    }
-
-    return link;
   }
 }

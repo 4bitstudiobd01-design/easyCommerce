@@ -4,7 +4,6 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { OrderEntity } from './entities/order.entity';
 import { OrderItemEntity } from './entities/order-item.entity';
-import { OrderNumberSequenceEntity } from './entities/order-number-sequence.entity';
 import { OrderStatusHistoryEntity } from './entities/order-status-history.entity';
 import { ReturnEntity } from './entities/return.entity';
 import { ReturnItemEntity } from './entities/return-item.entity';
@@ -45,14 +44,12 @@ import { ExportOrdersService } from './services/export-orders.service';
 import { OrderNoteController } from './controllers/order-note.controller';
 import { OrderNoteService } from './services/order-note.service';
 import { OrderTimelineService } from './services/order-timeline.service';
-import { GenerateOrderNumberService } from './services/generate-order-number.service';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       OrderEntity,
       OrderItemEntity,
-      OrderNumberSequenceEntity,
       OrderStatusHistoryEntity,
       ReturnEntity,
       ReturnItemEntity,
@@ -100,7 +97,6 @@ import { GenerateOrderNumberService } from './services/generate-order-number.ser
     ExportOrdersService,
     OrderNoteService,
     OrderTimelineService,
-    GenerateOrderNumberService,
   ],
   exports: [
     CreateOrderService,

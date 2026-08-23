@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { OrderEntity, OrderStatusEnum, PaymentStatusEnum, PaymentMethodEnum } from '../entities/order.entity';
 import { OrderItemEntity } from '../entities/order-item.entity';
 import { CreateOrderDto } from '../dto/create-order.dto';
@@ -12,7 +12,6 @@ import { TriggerOrderStatusSmsService } from '../../sms/services/trigger-order-s
 import { ApplyCouponService } from '../../coupon/services/apply-coupon.service';
 import { FindOrCreateCustomerService } from '../../customer/services/find-or-create-customer.service';
 import { normalizeChannel } from '../../../common/utils/normalize-channel.util';
-import { GenerateOrderNumberService } from './generate-order-number.service';
 
 @Injectable()
 export class CreateOrderService {
@@ -23,14 +22,11 @@ export class CreateOrderService {
     private readonly orderItemRepository: Repository<OrderItemEntity>,
     @InjectRepository(ProductEntity)
     private readonly productRepository: Repository<ProductEntity>,
-    @InjectDataSource()
-    private readonly dataSource: DataSource,
     private readonly findStoreBySlugService: FindStoreBySlugService,
     private readonly adjustStockService: AdjustStockService,
     private readonly triggerOrderStatusSmsService: TriggerOrderStatusSmsService,
     private readonly applyCouponService: ApplyCouponService,
     private readonly findOrCreateCustomerService: FindOrCreateCustomerService,
-    private readonly generateOrderNumberService: GenerateOrderNumberService,
   ) {}
 
   async execute(dto: CreateOrderDto): Promise<OrderEntity> {
@@ -54,7 +50,7 @@ export class CreateOrderService {
       for (const itemDto of dto.items) {
         const product = await this.productRepository.findOne({
           where: { id: itemDto.productId, tenantId },
-          relations: ['variants', 'images'],
+          relations: ['variants'],
         });
 
         if (!product) {
@@ -66,13 +62,11 @@ export class CreateOrderService {
         subtotal += totalPrice;
 
         const sku = product.variants?.[0]?.sku || `SKU-${product.id.slice(0, 6)}`;
-        const primaryImage = product.images?.find((image) => image.isPrimary) ?? product.images?.[0];
 
         const orderItem = this.orderItemRepository.create({
           productId: product.id,
           productTitle: product.title,
           sku,
-          productImageUrl: primaryImage?.url ?? null,
           unitPrice,
           quantity: itemDto.quantity,
           totalPrice,
@@ -113,16 +107,7 @@ export class CreateOrderService {
     }
 
     const grandTotal = Math.max(0, subtotal + deliveryFee - discountAmount);
-
-    let orderNumber: string;
-    try {
-      orderNumber = await this.dataSource.transaction((manager) =>
-        this.generateOrderNumberService.execute(manager, tenantId),
-      );
-    } catch (err) {
-      await this.rollbackStock(tenantId, deductedItems);
-      throw err;
-    }
+    const orderNumber = `ORD-${Date.now().toString().slice(-6)}`;
 
     // Link the order to a durable customer record. Matching orders to customers by phone
     // string alone silently detached a customer's history the moment their phone was

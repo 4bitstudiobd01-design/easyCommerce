@@ -3,19 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import {
-  ArrowLeft, Save, Plus, Trash2, AlertCircle, Package, MapPin, User, FileText, Loader2, Tag
+import { 
+  ArrowLeft, Save, Plus, Trash2, AlertCircle, Package, MapPin, User, FileText, Loader2, Search 
 } from 'lucide-react';
-import { useGetOrderByIdQuery, useEditOrderMutation, EditOrderRequest, EditOrderItemRequest, OrderStatusType } from '../api/orderApi';
+import { useGetOrderByIdQuery, useEditOrderMutation, EditOrderRequest, OrderStatusType } from '../api/orderApi';
+import { useGetProductsQuery } from '../../catalog/api/catalogApi';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { AddOrderItemModal, AddedOrderItem } from './AddOrderItemModal';
-
-interface EditableLineItem extends EditOrderItemRequest {
-  title: string;
-  unitPrice: number;
-  productImageUrl?: string | null;
-  sku?: string;
-}
 
 interface EditOrderPageProps {
   orderId: string;
@@ -24,9 +17,11 @@ interface EditOrderPageProps {
 export function EditOrderPage({ orderId }: EditOrderPageProps) {
   const router = useRouter();
   const { data: order, isLoading: isLoadingOrder, error: orderError } = useGetOrderByIdQuery(orderId);
+  const { data: productRes } = useGetProductsQuery();
+  const products = productRes?.data || [];
   const [editOrder, { isLoading: isSaving }] = useEditOrderMutation();
 
-  const [formData, setFormData] = useState<Omit<EditOrderRequest, 'items'>>({
+  const [formData, setFormData] = useState<EditOrderRequest>({
     customerName: '',
     customerPhone: '',
     customerEmail: '',
@@ -40,13 +35,15 @@ export function EditOrderPage({ orderId }: EditOrderPageProps) {
     internalNote: '',
     deliveryFee: 60,
     discountAmount: 0,
+    items: []
   });
-  const [items, setItems] = useState<EditableLineItem[]>([]);
 
-  const [showAddItemModal, setShowAddItemModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showProductSearch, setShowProductSearch] = useState(false);
 
   useEffect(() => {
     if (order) {
+      // Initialize form
       setFormData({
         customerName: order.customerName || '',
         customerPhone: order.customerPhone || '',
@@ -61,21 +58,8 @@ export function EditOrderPage({ orderId }: EditOrderPageProps) {
         internalNote: order.internalNote || '',
         deliveryFee: Number(order.deliveryFee) || 0,
         discountAmount: Number(order.discountAmount) || 0,
+        items: order.items?.map(i => ({ productId: i.productId, quantity: i.quantity })) || []
       });
-      setItems(
-        order.items?.map((i) => ({
-          productId: i.productId ?? undefined,
-          isCustomItem: i.isCustomItem,
-          customTitle: i.isCustomItem ? i.productTitle : undefined,
-          customUnitPrice: i.isCustomItem ? Number(i.unitPrice) : undefined,
-          quantity: i.quantity,
-          discountAmount: Number(i.discountAmount) || 0,
-          title: i.productTitle,
-          unitPrice: Number(i.unitPrice),
-          productImageUrl: i.productImageUrl,
-          sku: i.sku,
-        })) || [],
-      );
     }
   }, [order]);
 
@@ -115,75 +99,64 @@ export function EditOrderPage({ orderId }: EditOrderPageProps) {
 
   const handleItemQuantityChange = (index: number, newQty: number) => {
     if (newQty < 1) return;
-    setItems((prev) => prev.map((item, i) => (i === index ? { ...item, quantity: newQty } : item)));
-  };
-
-  const handleItemDiscountChange = (index: number, newDiscount: number) => {
-    setItems((prev) => prev.map((item, i) => (i === index ? { ...item, discountAmount: Math.max(0, newDiscount) } : item)));
+    const newItems = [...formData.items];
+    newItems[index].quantity = newQty;
+    setFormData(prev => ({ ...prev, items: newItems }));
   };
 
   const handleRemoveItem = (index: number) => {
-    setItems((prev) => prev.filter((_, i) => i !== index));
+    const newItems = formData.items.filter((_, i) => i !== index);
+    setFormData(prev => ({ ...prev, items: newItems }));
   };
 
-  const handleAddItem = (added: AddedOrderItem) => {
-    if (added.productId) {
-      const existsIndex = items.findIndex((i) => i.productId === added.productId);
-      if (existsIndex >= 0) {
-        handleItemQuantityChange(existsIndex, items[existsIndex].quantity + 1);
-        return;
-      }
+  const handleAddProduct = (product: any) => {
+    const existsIndex = formData.items.findIndex(i => i.productId === product.id);
+    if (existsIndex >= 0) {
+      handleItemQuantityChange(existsIndex, formData.items[existsIndex].quantity + 1);
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        items: [...prev.items, { productId: product.id, quantity: 1 }]
+      }));
     }
-    setItems((prev) => [
-      ...prev,
-      {
-        productId: added.productId,
-        isCustomItem: added.isCustomItem,
-        customTitle: added.customTitle,
-        customUnitPrice: added.customUnitPrice,
-        quantity: added.quantity,
-        discountAmount: added.discountAmount ?? 0,
-        title: added.title,
-        unitPrice: added.unitPrice,
-        productImageUrl: added.productImageUrl,
-        sku: added.sku,
-      },
-    ]);
+    setShowProductSearch(false);
+    setSearchQuery('');
   };
 
-  // Preview calculations — mirrors backend OrderCalculationService's per-line discount logic
+  // Preview Calculations
   let previewSubtotal = 0;
-  const hydratedItems = items.map((item) => {
-    const lineDiscount = item.discountAmount ?? 0;
-    const lineTotal = Math.max(0, item.unitPrice * item.quantity - lineDiscount);
+  const hydratedItems = formData.items.map(item => {
+    const ogItem = order.items?.find(i => i.productId === item.productId);
+    const catalogProd = products?.find(p => p.id === item.productId);
+    
+    let title = catalogProd?.title || ogItem?.productTitle || 'Unknown Product';
+    let unitPrice = ogItem ? Number(ogItem.unitPrice) : Number(catalogProd?.basePrice || 0);
+    let sku = catalogProd?.variants?.[0]?.sku || ogItem?.sku || '';
+    
+    let lineTotal = unitPrice * item.quantity;
     previewSubtotal += lineTotal;
-    return { ...item, lineTotal };
+    
+    return { ...item, title, unitPrice, sku, lineTotal };
   });
 
   const previewGrandTotal = Math.max(0, previewSubtotal + formData.deliveryFee - formData.discountAmount);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (items.length === 0) {
-      alert('Order must have at least one item.');
+    if (formData.items.length === 0) {
+      alert("Order must have at least one item.");
       return;
     }
-    const payloadItems: EditOrderItemRequest[] = items.map((item) => ({
-      productId: item.productId,
-      isCustomItem: item.isCustomItem,
-      customTitle: item.customTitle,
-      customUnitPrice: item.customUnitPrice,
-      quantity: item.quantity,
-      discountAmount: item.discountAmount ?? 0,
-    }));
     try {
-      await editOrder({ id: orderId, data: { ...formData, items: payloadItems } }).unwrap();
+      await editOrder({ id: orderId, data: formData }).unwrap();
       router.push(`/dashboard/orders/${orderId}`);
     } catch (err: any) {
       console.error(err);
       alert(err?.data?.message || 'Failed to save changes.');
     }
   };
+
+  const filteredProducts = products?.filter(p => (p.name || p.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || p.id.includes(searchQuery)).slice(0, 10);
 
   return (
     <form onSubmit={handleSubmit} className="max-w-6xl mx-auto space-y-6 pb-12">
@@ -220,54 +193,59 @@ export function EditOrderPage({ orderId }: EditOrderPageProps) {
             </div>
             <div className="p-5 space-y-4">
               {hydratedItems.map((item, index) => (
-                <div key={`${item.productId ?? 'custom'}-${index}`} className="flex items-center gap-4 p-4 rounded-xl border border-slate-100 bg-slate-50/50">
-                  {item.productImageUrl ? (
-                    <img src={item.productImageUrl} alt="" className="w-12 h-12 rounded-lg object-cover border border-slate-100 shrink-0" />
-                  ) : (
-                    <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
-                      <Package className="w-5 h-5 text-slate-300" />
+                <div key={item.productId} className="flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50/50">
+                  <div className="flex-1">
+                    <p className="font-bold text-slate-900">{item.title}</p>
+                    <p className="text-xs text-slate-500">{item.sku ? `SKU: ${item.sku} • ` : ''}৳{item.unitPrice.toLocaleString()}</p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg p-1">
+                      <button type="button" onClick={() => handleItemQuantityChange(index, item.quantity - 1)} className="w-6 h-6 flex items-center justify-center text-slate-500 hover:bg-slate-100 rounded">-</button>
+                      <span className="text-sm font-bold w-6 text-center">{item.quantity}</span>
+                      <button type="button" onClick={() => handleItemQuantityChange(index, item.quantity + 1)} className="w-6 h-6 flex items-center justify-center text-slate-500 hover:bg-slate-100 rounded">+</button>
                     </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-slate-900 truncate">{item.title}</p>
-                    <p className="text-xs text-slate-500 flex items-center gap-1.5">
-                      {item.isCustomItem && (
-                        <span className="inline-flex items-center gap-1 text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded font-bold">
-                          <Tag className="w-3 h-3" /> Custom
-                        </span>
-                      )}
-                      {item.sku ? `SKU: ${item.sku} • ` : ''}৳{item.unitPrice.toLocaleString()}
-                    </p>
+                    <p className="font-bold text-slate-900 w-24 text-right">৳{item.lineTotal.toLocaleString()}</p>
+                    <button type="button" onClick={() => handleRemoveItem(index)} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <label className="text-[10px] font-bold text-slate-400">Discount</label>
-                    <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-2 py-1">
-                      <span className="text-xs text-slate-400">৳</span>
-                      <input
-                        type="number"
-                        min={0}
-                        value={item.discountAmount ?? 0}
-                        onChange={(e) => handleItemDiscountChange(index, Number(e.target.value))}
-                        className="w-14 text-sm font-bold text-slate-900 outline-none"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg p-1">
-                    <button type="button" onClick={() => handleItemQuantityChange(index, item.quantity - 1)} className="w-6 h-6 flex items-center justify-center text-slate-500 hover:bg-slate-100 rounded">-</button>
-                    <span className="text-sm font-bold w-6 text-center">{item.quantity}</span>
-                    <button type="button" onClick={() => handleItemQuantityChange(index, item.quantity + 1)} className="w-6 h-6 flex items-center justify-center text-slate-500 hover:bg-slate-100 rounded">+</button>
-                  </div>
-                  <p className="font-bold text-slate-900 w-24 text-right shrink-0">৳{item.lineTotal.toLocaleString()}</p>
-                  <button type="button" onClick={() => handleRemoveItem(index)} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
                 </div>
               ))}
 
               <div className="pt-2">
-                <button type="button" onClick={() => setShowAddItemModal(true)} className="flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors px-4 py-2 bg-blue-50 hover:bg-blue-100 rounded-lg">
-                  <Plus className="w-4 h-4" /> Add Item
-                </button>
+                {!showProductSearch ? (
+                  <button type="button" onClick={() => setShowProductSearch(true)} className="flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors px-4 py-2 bg-blue-50 hover:bg-blue-100 rounded-lg">
+                    <Plus className="w-4 h-4" /> Add Product
+                  </button>
+                ) : (
+                  <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-lg space-y-3">
+                    <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                      <Search className="w-4 h-4 text-slate-400" />
+                      <input 
+                        type="text" 
+                        autoFocus 
+                        placeholder="Search products..." 
+                        className="bg-transparent text-sm w-full outline-none"
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                      />
+                      <button type="button" onClick={() => { setShowProductSearch(false); setSearchQuery(''); }} className="text-slate-400 hover:text-slate-600"><Trash2 className="w-4 h-4"/></button>
+                    </div>
+                    {searchQuery.length > 1 && (
+                      <div className="max-h-64 overflow-y-auto space-y-1">
+                        {filteredProducts?.map(p => (
+                          <div key={p.id} onClick={() => handleAddProduct(p)} className="p-3 hover:bg-slate-50 cursor-pointer rounded-lg flex items-center justify-between border-b border-slate-50 last:border-0">
+                            <div>
+                              <p className="text-sm font-bold text-slate-900">{p.title}</p>
+                              <p className="text-xs text-slate-500">৳{Number(p.basePrice).toLocaleString()}</p>
+                            </div>
+                            <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">Add</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -373,8 +351,6 @@ export function EditOrderPage({ orderId }: EditOrderPageProps) {
           </div>
         </div>
       </div>
-
-      <AddOrderItemModal isOpen={showAddItemModal} onClose={() => setShowAddItemModal(false)} onAdd={handleAddItem} />
     </form>
   );
 }

@@ -36,21 +36,11 @@ export class InitiateSslCommerzPaymentService {
     return `TXN-${10000 + count + 1}`;
   }
 
-  /**
-   * @param amount Overrides the charged amount (e.g. a partial payment against an
-   * existing order's balance due). Omitted for the normal checkout flow, which
-   * always charges the full order total.
-   */
-  async execute(orderId: string, amount?: number): Promise<SslCommerzInitiateResponse> {
+  async execute(orderId: string): Promise<SslCommerzInitiateResponse> {
     const order = await this.orderRepository.findOne({ where: { id: orderId } });
 
     if (!order) {
       throw new NotFoundException(`Order with ID "${orderId}" not found.`);
-    }
-
-    const chargeAmount = amount ?? Number(order.grandTotal);
-    if (chargeAmount <= 0) {
-      throw new BadRequestException('Payment amount must be greater than 0.');
     }
 
     const storeId =
@@ -76,7 +66,7 @@ export class InitiateSslCommerzPaymentService {
     const postData = {
       store_id: storeId,
       store_passwd: storePass,
-      total_amount: chargeAmount,
+      total_amount: order.grandTotal,
       currency: 'BDT',
       tran_id: tranId,
       success_url: `${backendUrl}/api/v1/payments/sslcommerz/success`,
@@ -116,7 +106,7 @@ export class InitiateSslCommerzPaymentService {
           customerId: order.customerId,
           transactionNumber: await this.generateTransactionNumber(order.tenantId),
           tranId,
-          amount: chargeAmount,
+          amount: Number(order.grandTotal),
           currency: 'BDT',
           gateway: PaymentGatewayEnum.SSLCOMMERZ,
           // The instrument is unknown until the gateway reports card_type back.

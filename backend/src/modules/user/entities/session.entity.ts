@@ -20,11 +20,8 @@ export class SessionEntity {
   @JoinColumn({ name: 'userId' })
   user: UserEntity;
 
-  /** Deprecated: no longer populated. This row's own id (embedded in the JWT as `sid`)
-   *  is the source of truth for refresh-token validity — an unguessable uuid v4, so
-   *  storing the raw token here added no additional security value. */
-  @Column({ type: 'text', nullable: true })
-  refreshToken?: string;
+  @Column({ type: 'text' })
+  refreshToken: string;
 
   @Column({ type: 'varchar', length: 100, nullable: true })
   ipAddress?: string;

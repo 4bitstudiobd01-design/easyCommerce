@@ -50,9 +50,6 @@
 ### Authentication & Tenant
 * `POST /v1/auth/register` - Merchant registration
 * `POST /v1/auth/login` - User login
-* `POST /v1/auth/refresh` - Exchange a refresh token for a new access token
-* `POST /v1/auth/forgot-password` - Request a password reset OTP by email (enumeration-safe: always returns the same generic 200 message whether or not the email exists)
-* `POST /v1/auth/reset-password` - Reset password using the emailed OTP (invalidates existing sessions on success)
 * `GET /v1/tenant/profile` - Tenant details
 
 ### Catalog APIs (Public & Admin)

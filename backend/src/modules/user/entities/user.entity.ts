@@ -50,22 +50,6 @@ export class UserEntity {
   @Column({ type: 'timestamptz', nullable: true })
   termsAcceptedAt?: Date;
 
-  /** Bcrypt hash of the current password-reset OTP. Null when no reset is in progress. */
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  passwordResetOtpHash?: string;
-
-  /** Expiry timestamp for the current OTP. Null when no reset is in progress. */
-  @Column({ type: 'timestamptz', nullable: true })
-  passwordResetOtpExpiresAt?: Date;
-
-  /** Failed verification attempts against the current OTP. Reset to 0 on each new request. */
-  @Column({ type: 'int', default: 0 })
-  passwordResetAttempts: number;
-
-  /** Timestamp of the last forgot-password request, used for the request cooldown. */
-  @Column({ type: 'timestamptz', nullable: true })
-  passwordResetLastRequestedAt?: Date;
-
   @OneToMany(() => SessionEntity, (session) => session.user)
   sessions: SessionEntity[];
 

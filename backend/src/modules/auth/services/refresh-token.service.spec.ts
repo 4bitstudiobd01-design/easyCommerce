@@ -15,36 +15,19 @@ describe('RefreshTokenService', () => {
     isActive: true,
   };
 
-  const validSession = {
-    id: 'session-1',
-    userId: activeUser.id,
-    isValid: true,
-    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-  };
-
-  const build = (
-    user: unknown = activeUser,
-    verifyImpl?: () => unknown,
-    session: unknown = validSession,
-  ) => {
+  const build = (user: unknown = activeUser, verifyImpl?: () => unknown) => {
     const findUserByEmailService = { execute: jest.fn().mockResolvedValue(user) };
     const jwtService = {
       verify: jest.fn().mockImplementation(
-        verifyImpl ??
-          (() => ({ sub: activeUser.id, email: activeUser.email, role: activeUser.role, sid: 'session-1' })),
+        verifyImpl ?? (() => ({ sub: activeUser.id, email: activeUser.email, role: activeUser.role })),
       ),
       sign: jest.fn().mockImplementation((_payload, opts) => `token-${opts?.expiresIn}`),
     };
-    const sessionRepository = {
-      findOne: jest.fn().mockResolvedValue(session),
-      update: jest.fn().mockResolvedValue(undefined),
-    };
 
     return {
-      service: new RefreshTokenService(findUserByEmailService as any, jwtService as any, sessionRepository as any),
+      service: new RefreshTokenService(findUserByEmailService as any, jwtService as any),
       jwtService,
       findUserByEmailService,
-      sessionRepository,
     };
   };
 
@@ -58,12 +41,11 @@ describe('RefreshTokenService', () => {
   });
 
   it('rotates the refresh token so an active session keeps sliding forward', async () => {
-    const { service, sessionRepository } = build();
+    const { service } = build();
 
     const result = await service.execute('valid-refresh-token');
 
     expect(result.refreshToken).toBe('token-7d');
-    expect(sessionRepository.update).toHaveBeenCalledWith('session-1', { expiresAt: expect.any(Date) });
   });
 
   it('rejects a missing refresh token', async () => {
@@ -78,37 +60,6 @@ describe('RefreshTokenService', () => {
     });
 
     await expect(service.execute('expired-token')).rejects.toThrow(UnauthorizedException);
-  });
-
-  it('rejects a token with no session id', async () => {
-    const { service } = build(activeUser, () => ({
-      sub: activeUser.id,
-      email: activeUser.email,
-      role: activeUser.role,
-    }));
-
-    await expect(service.execute('valid-refresh-token')).rejects.toThrow(UnauthorizedException);
-  });
-
-  it('rejects when the session no longer exists', async () => {
-    const { service } = build(activeUser, undefined, null);
-
-    await expect(service.execute('valid-refresh-token')).rejects.toThrow(UnauthorizedException);
-  });
-
-  it('rejects when the session has been invalidated', async () => {
-    const { service } = build(activeUser, undefined, { ...validSession, isValid: false });
-
-    await expect(service.execute('valid-refresh-token')).rejects.toThrow(UnauthorizedException);
-  });
-
-  it('rejects when the session has expired', async () => {
-    const { service } = build(activeUser, undefined, {
-      ...validSession,
-      expiresAt: new Date(Date.now() - 1000),
-    });
-
-    await expect(service.execute('valid-refresh-token')).rejects.toThrow(UnauthorizedException);
   });
 
   it('rejects refresh for an account that no longer exists', async () => {

@@ -235,12 +235,7 @@ export function OrderDetailPanel({
               </span>
               <div className="min-w-0">
                 <p className="text-sm font-bold text-slate-900 truncate">{order.customerName}</p>
-                <a
-                  href={`tel:${order.customerPhone}`}
-                  className="text-xs text-slate-500 hover:text-blue-600 hover:underline truncate block"
-                >
-                  {order.customerPhone}
-                </a>
+                <p className="text-xs text-slate-500 truncate">{order.customerPhone}</p>
               </div>
             </div>
             <div className="text-right shrink-0">

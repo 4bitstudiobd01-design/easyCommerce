@@ -6,8 +6,6 @@ import {
   IsOptional,
   IsString,
   IsNumber,
-  IsArray,
-  ValidateNested,
   Min,
   Max,
   MaxLength,
@@ -15,19 +13,6 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CourierProviderEnum } from '../entities/consignment.entity';
-
-export class ShipmentItemDto {
-  @ApiProperty({ example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11' })
-  @IsUUID()
-  @IsNotEmpty()
-  orderItemId: string;
-
-  @ApiProperty({ example: 1 })
-  @Type(() => Number)
-  @IsNumber()
-  @Min(1)
-  quantity: number;
-}
 
 export class CreateShipmentDto {
   @ApiProperty({ example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11' })
@@ -123,15 +108,4 @@ export class CreateShipmentDto {
   @IsString()
   @MaxLength(100)
   idempotencyKey?: string;
-
-  @ApiPropertyOptional({
-    description:
-      'Which order items (and quantities) to ship in this parcel. Omitted means the whole order ships, matching prior behavior — this is how most bookings still work.',
-    type: [ShipmentItemDto],
-  })
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => ShipmentItemDto)
-  items?: ShipmentItemDto[];
 }
