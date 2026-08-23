@@ -74,5 +74,39 @@ describe('OrderCalculationService', () => {
         }),
       ).toThrow(BadRequestException);
     });
+
+    it('should subtract a per-line discount from that line before summing into subtotal', () => {
+      const result = service.calculateTotals({
+        items: [
+          { unitPrice: 100, quantity: 2, discountAmount: 20 }, // 200 - 20 = 180
+          { unitPrice: 50, quantity: 1 }, // no discountAmount field at all
+        ],
+        deliveryFee: 60,
+        discountAmount: 0,
+      });
+
+      expect(result.subtotal).toBe(230); // 180 + 50
+      expect(result.grandTotal).toBe(290); // 230 + 60
+    });
+
+    it('should throw when a line discount exceeds that line total', () => {
+      expect(() =>
+        service.calculateTotals({
+          items: [{ unitPrice: 10, quantity: 1, discountAmount: 20 }],
+          deliveryFee: 0,
+          discountAmount: 0,
+        }),
+      ).toThrow(BadRequestException);
+    });
+
+    it('should throw for a negative line discount', () => {
+      expect(() =>
+        service.calculateTotals({
+          items: [{ unitPrice: 10, quantity: 1, discountAmount: -5 }],
+          deliveryFee: 0,
+          discountAmount: 0,
+        }),
+      ).toThrow(BadRequestException);
+    });
   });
 });

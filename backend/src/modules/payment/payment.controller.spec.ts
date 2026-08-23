@@ -2,7 +2,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { PaymentController } from './payment.controller';
+import { OrderEntity } from '../order/entities/order.entity';
+import { NotificationDispatcherService } from '../sms/services/notification-dispatcher.service';
 import { GetMyPermissionsService } from '../staff/services/get-my-permissions.service';
 import { InitiateSslCommerzPaymentService } from './services/initiate-sslcommerz-payment.service';
 import { ValidateSslCommerzPaymentService } from './services/validate-sslcommerz-payment.service';
@@ -13,6 +16,10 @@ import { GetPaymentDetailsService } from './services/get-payment-details.service
 import { ListPaymentGatewaysService } from './services/list-payment-gateways.service';
 import { ExportPaymentTransactionsService } from './services/export-payment-transactions.service';
 import { SeedPaymentDemoDataService } from './services/seed-payment-demo-data.service';
+import { GetOrderBalanceService } from './services/get-order-balance.service';
+import { GetOrderPaymentHistoryService } from './services/get-order-payment-history.service';
+import { RecordManualPaymentService } from './services/record-manual-payment.service';
+import { CreatePaymentLinkForOrderService } from './services/create-payment-link-for-order.service';
 import { FindStoreByUserService } from '../tenant/services/find-store-by-user.service';
 
 describe('PaymentController', () => {
@@ -51,6 +58,12 @@ describe('PaymentController', () => {
         { provide: ListPaymentGatewaysService, useValue: { execute: jest.fn().mockResolvedValue([]) } },
         { provide: ExportPaymentTransactionsService, useValue: exportTransactions },
         { provide: SeedPaymentDemoDataService, useValue: { execute: jest.fn() } },
+        { provide: GetOrderBalanceService, useValue: { execute: jest.fn() } },
+        { provide: GetOrderPaymentHistoryService, useValue: { execute: jest.fn() } },
+        { provide: RecordManualPaymentService, useValue: { execute: jest.fn() } },
+        { provide: CreatePaymentLinkForOrderService, useValue: { execute: jest.fn() } },
+        { provide: NotificationDispatcherService, useValue: { dispatch: jest.fn() } },
+        { provide: getRepositoryToken(OrderEntity), useValue: { findOne: jest.fn() } },
         { provide: FindStoreByUserService, useValue: findStore },
         { provide: ConfigService, useValue: { get: jest.fn() } },
         // Guard collaborators — their presence here confirms JwtAuthGuard and

@@ -181,6 +181,16 @@ export class ConsignmentEntity {
   @Column({ type: 'text', nullable: true })
   specialInstructions?: string | null;
 
+  /**
+   * Denormalized snapshot of which order items (and quantities) actually shipped
+   * in this parcel — a merchant can exclude an item or ship a partial quantity.
+   * Null means "the whole order shipped", matching prior behavior for shipments
+   * booked before this field existed. Matches this entity's existing style of
+   * denormalizing rather than joining (recipientName, codAmount, etc.).
+   */
+  @Column({ type: 'jsonb', nullable: true })
+  shippedItemsJson?: { orderItemId: string; productTitle: string; quantity: number }[] | null;
+
   @Column({ type: 'enum', enum: ConsignmentStatusEnum, default: ConsignmentStatusEnum.PENDING })
   status: ConsignmentStatusEnum;
 

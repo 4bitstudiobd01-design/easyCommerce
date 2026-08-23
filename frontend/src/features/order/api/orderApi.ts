@@ -28,13 +28,30 @@ export interface OrderKpiMetrics {
   };
 }
 
+export interface OrderConsignmentSummary {
+  id: string;
+  status: string;
+  courierProvider: string;
+  trackingCode?: string;
+  deliveryCharge: number;
+  /** Populated only on the single-order endpoint, not the list endpoint. */
+  lastSyncAt?: string;
+  events?: any[];
+}
+
 export interface OrderItem {
   id: string;
-  productId: string;
+  productId?: string | null;
   productTitle: string;
   sku?: string;
+  /** Denormalized catalog product image; null/absent for custom items. */
+  productImageUrl?: string | null;
+  /** True for a merchant-entered line with no catalog product behind it. */
+  isCustomItem?: boolean;
   unitPrice: number;
   quantity: number;
+  /** Per-line discount, separate from the order-wide discountAmount. */
+  discountAmount?: number;
   totalPrice: number;
 }
 
@@ -85,16 +102,29 @@ export interface Order {
   couponCode?: string;
   grandTotal: number;
   paymentMethod: 'COD' | 'BKASH' | 'NAGAD' | 'SSLCOMMERZ';
-  paymentStatus: 'UNPAID' | 'PAID' | 'REFUNDED' | 'COD_PENDING' | 'COD_COLLECTED' | 'FAILED';
+  paymentStatus: 'UNPAID' | 'PARTIALLY_PAID' | 'PAID' | 'REFUNDED' | 'COD_PENDING' | 'COD_COLLECTED' | 'FAILED';
   orderStatus: OrderStatusType;
   storeSlug: string;
   tenantId: string;
   items: OrderItem[];
   customerNote?: string;
   internalNote?: string;
-  consignment?: any;
+  consignment?: OrderConsignmentSummary;
   statusHistory?: any[];
+  channel?: string;
+  utmSource?: string;
+  utmMedium?: string;
   createdAt: string;
+}
+
+export interface InvoiceData {
+  order: Order;
+  storeName: string;
+  storePhone: string;
+  storeAddress: string;
+  amountPaid: number;
+  balanceDue: number;
+  generatedAt: string;
 }
 
 export interface AbandonedCart {
@@ -135,6 +165,20 @@ export interface CreateOrderRequest {
   sessionId?: string;
 }
 
+export interface EditOrderItemRequest {
+  /** Required unless isCustomItem is true. */
+  productId?: string;
+  /** True for a merchant-entered line with no catalog product. */
+  isCustomItem?: boolean;
+  /** Required when isCustomItem is true. */
+  customTitle?: string;
+  /** Required when isCustomItem is true. */
+  customUnitPrice?: number;
+  quantity: number;
+  /** Per-line discount, separate from the order-wide discountAmount. */
+  discountAmount?: number;
+}
+
 export interface EditOrderRequest {
   customerName: string;
   customerPhone: string;
@@ -149,7 +193,7 @@ export interface EditOrderRequest {
   internalNote?: string;
   deliveryFee: number;
   discountAmount: number;
-  items: { productId: string; quantity: number }[];
+  items: EditOrderItemRequest[];
 }
 
 export interface UpdateOrderStatusRequest {
@@ -240,6 +284,11 @@ export const orderApi = createApi({
       providesTags: (result, error, id) => [{ type: 'Order', id }],
       transformResponse: (response: { data: Order }) => response.data,
     }),
+    getOrderInvoice: builder.query<InvoiceData, string>({
+      query: (id) => `/${id}/invoice`,
+      providesTags: (result, error, id) => [{ type: 'Order', id }],
+      transformResponse: (response: { data: InvoiceData }) => response.data,
+    }),
     getMerchantOrderKpis: builder.query<OrderKpiMetrics, void>({
       query: () => '/kpi',
       providesTags: ['OrderKpi', 'Order'],
@@ -248,7 +297,7 @@ export const orderApi = createApi({
     editOrder: builder.mutation<Order, { id: string; data: EditOrderRequest }>({
       query: ({ id, data }) => ({
         url: `/${id}`,
-        method: 'PUT',
+        method: 'PATCH',
         body: data,
       }),
       invalidatesTags: (result, error, { id }) => [{ type: 'Order', id }, 'Order'],
@@ -401,6 +450,7 @@ export const {
   useLazyTrackPublicOrderQuery,
   useGetMerchantOrdersQuery,
   useGetOrderByIdQuery,
+  useGetOrderInvoiceQuery,
   useGetMerchantOrderKpisQuery,
   useEditOrderMutation,
   useUpdateOrderStatusMutation,

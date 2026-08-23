@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  Index,
 } from 'typeorm';
 import { OrderItemEntity } from './order-item.entity';
 
@@ -30,6 +31,7 @@ export enum PaymentMethodEnum {
 
 export enum PaymentStatusEnum {
   UNPAID = 'UNPAID',
+  PARTIALLY_PAID = 'PARTIALLY_PAID',
   PAID = 'PAID',
   REFUNDED = 'REFUNDED',
   COD_PENDING = 'COD_PENDING',
@@ -38,11 +40,18 @@ export enum PaymentStatusEnum {
 }
 
 @Entity('orders')
+@Index(['tenantId', 'orderNumber'], { unique: true })
 export class OrderEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'varchar', length: 50, unique: true })
+  /**
+   * Unique per tenant, not globally — orderNumber is generated from a
+   * per-tenant sequence (see GenerateOrderNumberService), so two different
+   * tenants legitimately produce the same padded number (e.g. both start at
+   * ORD-000001). See the composite unique index above.
+   */
+  @Column({ type: 'varchar', length: 50 })
   orderNumber: string;
 
   @Column({ type: 'uuid', nullable: true })

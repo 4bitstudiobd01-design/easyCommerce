@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { OrderStatusEnum } from '../entities/order.entity';
 
 export class UpdateOrderStatusDto {
@@ -9,5 +9,7 @@ export class UpdateOrderStatusDto {
   orderStatus: OrderStatusEnum;
 
   @ApiProperty({ required: false, example: 'Customer requested cancellation' })
+  @IsOptional()
+  @IsString()
   reason?: string;
 }

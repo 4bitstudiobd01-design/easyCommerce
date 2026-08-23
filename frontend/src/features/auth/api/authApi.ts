@@ -30,6 +30,20 @@ export interface AuthResponse {
   user: User;
 }
 
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  email: string;
+  otp: string;
+  newPassword: string;
+}
+
+export interface MessageResponse {
+  message: string;
+}
+
 export const authApi = createApi({
   reducerPath: 'authApi',
   baseQuery: fetchBaseQuery({
@@ -52,7 +66,28 @@ export const authApi = createApi({
       }),
       transformResponse: (response: { data: AuthResponse }) => response.data,
     }),
+    forgotPassword: builder.mutation<MessageResponse, ForgotPasswordRequest>({
+      query: (body) => ({
+        url: '/forgot-password',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response: { data: MessageResponse }) => response.data,
+    }),
+    resetPassword: builder.mutation<MessageResponse, ResetPasswordRequest>({
+      query: (body) => ({
+        url: '/reset-password',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response: { data: MessageResponse }) => response.data,
+    }),
   }),
 });
 
-export const { useRegisterMerchantMutation, useLoginMutation } = authApi;
+export const {
+  useRegisterMerchantMutation,
+  useLoginMutation,
+  useForgotPasswordMutation,
+  useResetPasswordMutation,
+} = authApi;

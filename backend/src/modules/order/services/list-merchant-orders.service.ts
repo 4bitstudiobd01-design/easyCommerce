@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Brackets } from 'typeorm';
+import { In, Repository, Brackets } from 'typeorm';
 import { OrderEntity } from '../entities/order.entity';
+import { ConsignmentEntity } from '../../logistics/entities/consignment.entity';
 import { OrderListDto, PaginatedOrderResponse } from '../dto/order-list.dto';
 
 @Injectable()
@@ -9,6 +10,8 @@ export class ListMerchantOrdersService {
   constructor(
     @InjectRepository(OrderEntity)
     private readonly orderRepository: Repository<OrderEntity>,
+    @InjectRepository(ConsignmentEntity)
+    private readonly consignmentRepository: Repository<ConsignmentEntity>,
   ) {}
 
   async execute(tenantId: string, dto: OrderListDto): Promise<PaginatedOrderResponse> {
@@ -95,6 +98,19 @@ export class ListMerchantOrdersService {
     query.skip(skip).take(limit);
 
     const [data, total] = await query.getManyAndCount();
+
+    // Consignments live in the logistics module, so this is a second batched query
+    // (not a join) keyed on the current page's order ids — one query regardless of
+    // page size, not N+1 per row.
+    if (data.length > 0) {
+      const consignments = await this.consignmentRepository.find({
+        where: { orderId: In(data.map((order) => order.id)), tenantId },
+      });
+      const consignmentByOrderId = new Map(consignments.map((c) => [c.orderId, c]));
+      for (const order of data) {
+        order.consignment = consignmentByOrderId.get(order.id);
+      }
+    }
 
     return {
       data,

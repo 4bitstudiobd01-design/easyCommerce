@@ -292,6 +292,7 @@ describe('Shipment tenant isolation and security', () => {
 
       expect(orderRepo.findOne).toHaveBeenCalledWith({
         where: { id: 'order-owned-by-b', tenantId: TENANT_A },
+        relations: ['items'],
       });
     });
 
