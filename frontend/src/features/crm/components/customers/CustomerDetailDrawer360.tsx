@@ -25,6 +25,8 @@ import {
   CreditCard,
   FileText,
   BadgeCheck,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { formatCrmDate } from '../../utils/formatDate';
 import { toast } from 'sonner';
@@ -45,6 +47,13 @@ export const CustomerDetailDrawer360: React.FC<CustomerDetailDrawer360Props> = (
   const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'timeline' | 'notes' | 'addresses'>('overview');
   const [newNote, setNewNote] = useState('');
   const [notesList, setNotesList] = useState<CustomerNote[]>(customer?.notes || []);
+  const [orderPage, setOrderPage] = useState<number>(1);
+  const orderPageSize = 5;
+
+  React.useEffect(() => {
+    setNotesList(customer?.notes || []);
+    setOrderPage(1);
+  }, [customer?.id]);
 
   if (!isOpen || !customer) return null;
 
@@ -88,6 +97,15 @@ export const CustomerDetailDrawer360: React.FC<CustomerDetailDrawer360Props> = (
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="text-lg font-black tracking-tight">{customer.fullName}</h2>
+                  {customer.status === 'GUEST' ? (
+                    <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-400/30 rounded-md text-[10px] font-extrabold uppercase">
+                      Guest Checkout
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-md text-[10px] font-extrabold uppercase">
+                      Registered Member
+                    </span>
+                  )}
                   {customer.rfmSegment === 'VIP' && (
                     <span className="px-2 py-0.5 bg-purple-500/20 text-purple-300 border border-purple-400/30 rounded-md text-[10px] font-extrabold uppercase">
                       VIP Spender
@@ -272,33 +290,70 @@ export const CustomerDetailDrawer360: React.FC<CustomerDetailDrawer360Props> = (
             {activeTab === 'orders' && (
               <div className="space-y-4">
                 {customer.orders && customer.orders.length > 0 ? (
-                  customer.orders.map((ord) => (
-                    <div
-                      key={ord.id}
-                      className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-2xs hover:border-blue-300 transition-all space-y-3"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="font-extrabold text-blue-600 text-sm">{ord.orderNumber}</span>
-                          <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200/60 rounded-md text-[10px] font-bold">
-                            {ord.orderStatus}
-                          </span>
-                        </div>
-                        <span className="font-black text-slate-900 text-sm">
-                          ৳{ord.totalAmount.toLocaleString()}
+                  <>
+                    <div className="flex items-center justify-between text-xs text-slate-500 font-semibold px-1">
+                      <span>Total {customer.orders.length} orders recorded</span>
+                      {customer.orders.length > orderPageSize && (
+                        <span>
+                          Page {orderPage} of {Math.ceil(customer.orders.length / orderPageSize)}
                         </span>
-                      </div>
-
-                      <p className="text-xs text-slate-600 font-medium">
-                        {ord.itemsSummary || `${ord.itemCount} items in order`}
-                      </p>
-
-                      <div className="flex items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-slate-100">
-                        <span>Payment: {ord.paymentMethod} ({ord.paymentStatus})</span>
-                        <span>{formatCrmDate(ord.createdAt, { showTime: true })}</span>
-                      </div>
+                      )}
                     </div>
-                  ))
+
+                    {customer.orders
+                      .slice((orderPage - 1) * orderPageSize, orderPage * orderPageSize)
+                      .map((ord) => (
+                        <div
+                          key={ord.id}
+                          className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-2xs hover:border-blue-300 transition-all space-y-3"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="font-extrabold text-blue-600 text-sm">{ord.orderNumber}</span>
+                              <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200/60 rounded-md text-[10px] font-bold">
+                                {ord.orderStatus}
+                              </span>
+                            </div>
+                            <span className="font-black text-slate-900 text-sm">
+                              ৳{ord.totalAmount.toLocaleString()}
+                            </span>
+                          </div>
+
+                          <p className="text-xs text-slate-600 font-medium">
+                            {ord.itemsSummary || `${ord.itemCount} items in order`}
+                          </p>
+
+                          <div className="flex items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-slate-100">
+                            <span>Payment: {ord.paymentMethod} ({ord.paymentStatus})</span>
+                            <span>{formatCrmDate(ord.createdAt, { showTime: true })}</span>
+                          </div>
+                        </div>
+                      ))}
+
+                    {customer.orders.length > orderPageSize && (
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                        <button
+                          onClick={() => setOrderPage((p) => Math.max(1, p - 1))}
+                          disabled={orderPage <= 1}
+                          className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40 transition-all flex items-center gap-1"
+                        >
+                          <ChevronLeft className="w-3.5 h-3.5" />
+                          Previous
+                        </button>
+                        <span className="text-xs font-bold text-slate-600">
+                          {orderPage} / {Math.ceil(customer.orders.length / orderPageSize)}
+                        </span>
+                        <button
+                          onClick={() => setOrderPage((p) => Math.min(Math.ceil((customer.orders?.length || 0) / orderPageSize), p + 1))}
+                          disabled={orderPage >= Math.ceil(customer.orders.length / orderPageSize)}
+                          className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40 transition-all flex items-center gap-1"
+                        >
+                          Next
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="text-center py-12 text-slate-400 text-xs">
                     <ShoppingBag className="w-8 h-8 mx-auto mb-2 opacity-50" />

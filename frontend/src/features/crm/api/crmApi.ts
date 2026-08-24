@@ -70,6 +70,34 @@ export const crmApi = createApi({
       },
     }),
 
+    createCrmCustomer: builder.mutation<Customer360, Partial<Customer360> & { firstName: string; lastName: string; phone: string }>({
+      query: (body) => ({
+        url: '',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['CrmCustomer', 'CrmAnalytics'],
+      transformResponse: (response: any) => {
+        const c = response?.data ?? response;
+        return {
+          ...c,
+          fullName: `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.name || 'Valued Customer',
+          totalSpent: Number(c.totalSpent || 0),
+          ordersCount: Number(c.ordersCount || 0),
+          avgOrderValue: Number(c.avgOrderValue || 0),
+        };
+      },
+    }),
+
+    seedCrmCustomers: builder.mutation<Customer360[], void>({
+      query: () => ({
+        url: '/seed',
+        method: 'POST',
+      }),
+      invalidatesTags: ['CrmCustomer', 'CrmAnalytics'],
+      transformResponse: (response: any) => response?.data ?? response,
+    }),
+
     // Leads Pipeline
     getCrmLeads: builder.query<Lead[], { stage?: string; search?: string } | void>({
       query: (params) => ({
@@ -79,9 +107,18 @@ export const crmApi = createApi({
       providesTags: ['CrmLead'],
       transformResponse: (response: any) => {
         const payload = response?.data ?? response;
-        if (Array.isArray(payload) && payload.length > 0) return payload;
-        return mockLeads;
+        if (Array.isArray(payload)) return payload;
+        return [];
       },
+    }),
+
+    seedCrmLeads: builder.mutation<Lead[], void>({
+      query: () => ({
+        url: '/leads/seed',
+        method: 'POST',
+      }),
+      invalidatesTags: ['CrmLead', 'CrmActivity'],
+      transformResponse: (response: any) => response?.data ?? response,
     }),
 
     createCrmLead: builder.mutation<Lead, Partial<Lead>>({
@@ -100,7 +137,36 @@ export const crmApi = createApi({
         method: 'PATCH',
         body,
       }),
+      async onQueryStarted({ id, stage, lostReason }, { dispatch, queryFulfilled }) {
+        const patchResult = dispatch(
+          crmApi.util.updateQueryData('getCrmLeads', undefined, (draft) => {
+            if (Array.isArray(draft)) {
+              const lead = draft.find((l) => l.id === id);
+              if (lead) {
+                lead.stage = stage;
+                if (lostReason) lead.lostReason = lostReason;
+                lead.updatedAt = new Date().toISOString();
+              }
+            }
+          })
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          patchResult.undo();
+        }
+      },
       invalidatesTags: ['CrmLead', 'CrmActivity'],
+      transformResponse: (response: any) => response?.data ?? response,
+    }),
+
+    scheduleLeadFollowUp: builder.mutation<Lead, { id: string; followUpAt: string | null; note?: string }>({
+      query: ({ id, ...body }) => ({
+        url: `/leads/${id}/follow-up`,
+        method: 'PATCH',
+        body,
+      }),
+      invalidatesTags: ['CrmLead'],
       transformResponse: (response: any) => response?.data ?? response,
     }),
 
@@ -181,9 +247,13 @@ export const crmApi = createApi({
 export const {
   useGetCrmCustomersQuery,
   useGetCustomerById360Query,
+  useCreateCrmCustomerMutation,
+  useSeedCrmCustomersMutation,
   useGetCrmLeadsQuery,
+  useSeedCrmLeadsMutation,
   useCreateCrmLeadMutation,
   useUpdateLeadStageMutation,
+  useScheduleLeadFollowUpMutation,
   useConvertLeadToCustomerMutation,
   useGetCrmSegmentsQuery,
   useCreateCrmSegmentMutation,

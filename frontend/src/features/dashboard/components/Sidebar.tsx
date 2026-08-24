@@ -26,15 +26,23 @@ import {
   Target,
   Activity,
   BarChart3,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 
 interface SidebarProps {
   isMobileOpen?: boolean;
   isDesktopCollapsed?: boolean;
   onClose?: () => void;
+  onToggleCollapse?: () => void;
 }
 
-export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onClose }: SidebarProps) => {
+export const Sidebar = ({
+  isMobileOpen = false,
+  isDesktopCollapsed = false,
+  onClose,
+  onToggleCollapse,
+}: SidebarProps) => {
   const pathname = usePathname();
 
   const { data: orderKpis } = useGetMerchantOrderKpisQuery();
@@ -46,7 +54,6 @@ export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onCl
     return false;
   };
 
-
   const [tooltipData, setTooltipData] = useState<{
     show: boolean;
     label: string;
@@ -54,8 +61,6 @@ export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onCl
     top: number;
     left: number;
   }>({ show: false, label: '', top: 0, left: 0 });
-
-
 
   const handleTooltipEnter = (e: React.MouseEvent | React.FocusEvent, label: string, badge?: string) => {
     if (!isDesktopCollapsed) return;
@@ -88,8 +93,6 @@ export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onCl
   const iconClass = isDesktopCollapsed ? "w-5 h-5 shrink-0" : "w-4 h-4 shrink-0";
   const iconStroke = isDesktopCollapsed ? 1.75 : 2;
 
-
-  
   const NavGroupHeader = ({ children }: { children: React.ReactNode }) => {
     if (isDesktopCollapsed) {
       return children === 'Main Menu' ? null : <div className="h-3" />;
@@ -119,14 +122,14 @@ export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onCl
         `}
       >
         {/* Brand Header */}
-        <div className={`p-5 flex items-center ${isDesktopCollapsed ? 'justify-center px-0' : 'justify-between'}`}>
-          <Link href="/" className="flex items-center gap-2.5">
+        <div className={`p-4 flex items-center ${isDesktopCollapsed ? 'justify-center px-0' : 'justify-between'} border-b border-slate-800/60`}>
+          <Link href="/" className="flex items-center gap-2.5 min-w-0">
             <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white shrink-0 shadow-sm shadow-blue-500/20">
               <StoreIcon className="w-4 h-4" />
             </div>
             {!isDesktopCollapsed && (
-              <div>
-                <span className="font-extrabold text-sm text-white tracking-tight block leading-none">
+              <div className="min-w-0 truncate">
+                <span className="font-extrabold text-sm text-white tracking-tight block leading-none truncate">
                   BitCommerce
                 </span>
                 <span className="text-[10px] text-blue-400 font-semibold mt-1 block leading-none">
@@ -135,10 +138,21 @@ export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onCl
               </div>
             )}
           </Link>
+
+          {/* Minimize button in expanded header */}
+          {!isDesktopCollapsed && onToggleCollapse && (
+            <button
+              onClick={onToggleCollapse}
+              className="hidden md:flex p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+              title="Minimize sidebar"
+            >
+              <PanelLeftClose className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         {/* Navigation Links */}
-                        <nav className="flex-1 overflow-y-auto px-3 pb-4 space-y-0.5 text-[13px] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-700/50 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-slate-600/80 overflow-x-hidden">
+        <nav className="flex-1 overflow-y-auto px-3 pb-4 space-y-0.5 text-[13px] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-700/50 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-slate-600/80 overflow-x-hidden">
           
           <NavGroupHeader>Main Menu</NavGroupHeader>
           <Link 
@@ -413,15 +427,28 @@ export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onCl
           </Link>
         </nav>
 
-        {/* Sidebar Footer Store Switcher */}
-        <div className={`p-4 bg-[#0F172A] ${isDesktopCollapsed ? 'hidden' : 'block'}`}>
+        {/* Sidebar Footer Store Switcher & Collapse Button */}
+        <div className={`p-3 bg-[#0F172A] ${isDesktopCollapsed ? 'hidden' : 'block'}`}>
           <StoreSwitcherDropdown />
         </div>
-        {isDesktopCollapsed && (
-          <div className="p-4 bg-[#0F172A] flex justify-center pb-6">
-            <Link href="/dashboard/settings" title="Store Settings">
-              <Settings className="w-5 h-5 text-slate-400 hover:text-slate-200 transition-colors" />
-            </Link>
+
+        {/* Collapse / Expand Footer Action */}
+        {onToggleCollapse && (
+          <div className="p-2 border-t border-slate-800/80 hidden md:block bg-[#0F172A]">
+            <button
+              onClick={onToggleCollapse}
+              className={`w-full flex items-center text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/60 rounded-lg transition-colors ${
+                isDesktopCollapsed ? 'p-2 justify-center' : 'px-3 py-2 justify-between'
+              }`}
+              title={isDesktopCollapsed ? 'Expand sidebar' : 'Minimize sidebar'}
+            >
+              {!isDesktopCollapsed && <span>Collapse Sidebar</span>}
+              {isDesktopCollapsed ? (
+                <PanelLeftOpen className="w-4 h-4 text-slate-400 hover:text-white" />
+              ) : (
+                <PanelLeftClose className="w-4 h-4 text-slate-400 hover:text-white" />
+              )}
+            </button>
           </div>
         )}
       </aside>

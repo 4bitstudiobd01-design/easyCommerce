@@ -133,6 +133,8 @@ export interface CreateOrderRequest {
   utmCampaign?: string;
   referrerHost?: string;
   sessionId?: string;
+  userId?: string;
+  isGuest?: boolean;
 }
 
 export interface EditOrderRequest {

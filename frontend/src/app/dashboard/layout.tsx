@@ -15,6 +15,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const [isMounted, setIsMounted] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false);
 
   const {
     data: store,
@@ -25,6 +27,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     setIsMounted(true);
+    const saved = localStorage.getItem('bitcommerce_sidebar_collapsed');
+    if (saved !== null) {
+      setIsDesktopCollapsed(saved === 'true');
+    }
   }, []);
 
   useEffect(() => {
@@ -42,15 +48,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [user, isStoreSuccess, isStoreLoading, isStoreFetching, store, pathname, router]);
 
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false);
+  const handleToggleDesktopCollapse = () => {
+    setIsDesktopCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem('bitcommerce_sidebar_collapsed', String(next));
+      return next;
+    });
+  };
+
+  const handleMenuClick = () => {
+    if (window.innerWidth < 768) {
+      setIsMobileOpen(true);
+    } else {
+      handleToggleDesktopCollapse();
+    }
+  };
 
   // Prevent hydration mismatch before the client knows the auth state.
   if (!isMounted) return null;
 
-  // Session ended (expired refresh token, or explicit logout). The redirect above is
-  // already running; show a short message instead of a blank page so the screen never
-  // looks like "your store has no data".
+  // Session ended (expired refresh token, or explicit logout).
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
@@ -71,14 +88,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
-  const handleMenuClick = () => {
-    if (window.innerWidth < 768) {
-      setIsMobileOpen(true);
-    } else {
-      setIsDesktopCollapsed(!isDesktopCollapsed);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-white text-slate-900 flex font-sans">
       <Toaster position="top-right" richColors />
@@ -87,19 +96,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <Sidebar 
         isMobileOpen={isMobileOpen} 
         isDesktopCollapsed={isDesktopCollapsed} 
-        onClose={() => setIsMobileOpen(false)} 
+        onClose={() => setIsMobileOpen(false)}
+        onToggleCollapse={handleToggleDesktopCollapse}
       />
 
       {/* 2. Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 transition-all duration-300">
         
         {/* Top Sticky Header */}
-        <DashboardHeader onMenuClick={handleMenuClick} />
+        <DashboardHeader 
+          onMenuClick={handleMenuClick} 
+          isDesktopCollapsed={isDesktopCollapsed}
+        />
 
         <ConnectionStatusBanner />
 
         {/* Dashboard Body Container */}
-        <main className="flex-1 w-full flex flex-col px-5 md:px-10 md:py-10">
+        <main className="flex-1 w-full flex flex-col px-4 sm:px-6 md:px-8 py-6 md:py-8 max-w-[1920px] mx-auto">
           {children}
         </main>
       </div>

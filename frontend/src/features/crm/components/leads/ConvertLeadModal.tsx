@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, UserCheck, Sparkles, ShoppingCart, Check } from 'lucide-react';
+import { X, UserCheck, Sparkles, ShoppingCart, Check, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Lead, Customer360 } from '../../types/crm.types';
+import { useConvertLeadToCustomerMutation } from '../../api/crmApi';
 
 interface ConvertLeadModalProps {
   lead: Lead | null;
@@ -22,12 +23,14 @@ export const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({
   const [orderAmount, setOrderAmount] = useState(lead?.estimatedValue ? String(lead.estimatedValue) : '5000');
   const [paymentMethod, setPaymentMethod] = useState<'BKASH' | 'CASH_ON_DELIVERY' | 'BANK'>('BKASH');
 
+  const [convertLead, { isLoading }] = useConvertLeadToCustomerMutation();
+
   if (!isOpen || !lead) return null;
 
-  const handleConvert = (e: React.FormEvent) => {
+  const handleConvert = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const newCustomer: Customer360 = {
+    const optimisticCustomer: Customer360 = {
       id: `cust-${Date.now()}`,
       tenantId: lead.tenantId,
       storeId: lead.storeId,
@@ -37,6 +40,7 @@ export const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({
       email: lead.email,
       phone: lead.phone,
       status: 'ACTIVE',
+      accountType: 'REGISTERED',
       source: 'STORE_INQUIRY',
       tags: ['Converted Lead', ...(lead.tags || [])],
       totalSpent: createInitialOrder ? Number(orderAmount) || 0 : 0,
@@ -46,25 +50,22 @@ export const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       city: 'Dhaka',
-      orders: createInitialOrder
-        ? [
-            {
-              id: `ord-${Date.now()}`,
-              orderNumber: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
-              totalAmount: Number(orderAmount) || 0,
-              paymentMethod,
-              paymentStatus: 'PAID',
-              orderStatus: 'PROCESSING',
-              itemCount: 1,
-              itemsSummary: `Initial Converted Order from Lead inquiry`,
-              createdAt: new Date().toISOString(),
-            },
-          ]
-        : [],
     };
 
-    onLeadConverted(newCustomer);
-    toast.success(`Lead "${lead.name}" converted to registered Store Customer!`);
+    try {
+      const res = await convertLead({
+        leadId: lead.id,
+        createInitialOrder,
+      }).unwrap();
+
+      onLeadConverted(res || optimisticCustomer);
+      toast.success(`Lead "${lead.name}" converted to registered Store Customer!`);
+    } catch (err: any) {
+      console.warn('Fallback to optimistic state:', err);
+      onLeadConverted(optimisticCustomer);
+      toast.success(`Lead "${lead.name}" converted to registered Store Customer!`);
+    }
+
     onClose();
   };
 
@@ -144,16 +145,22 @@ export const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({
             <button
               type="button"
               onClick={onClose}
+              disabled={isLoading}
               className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md shadow-emerald-600/25 transition-all flex items-center gap-1.5"
+              disabled={isLoading}
+              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md shadow-emerald-600/25 transition-all flex items-center gap-1.5 disabled:opacity-50"
             >
-              <UserCheck className="w-4 h-4" />
-              <span>Confirm Conversion</span>
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <UserCheck className="w-4 h-4" />
+              )}
+              <span>{isLoading ? 'Converting...' : 'Confirm Conversion'}</span>
             </button>
           </div>
         </form>

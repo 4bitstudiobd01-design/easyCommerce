@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Customer360, CustomerStatusType } from '../../types/crm.types';
 import {
   Search,
@@ -24,6 +24,7 @@ import {
   Flame,
   BadgeCheck,
 } from 'lucide-react';
+import { CrmPagination } from '../CrmPagination';
 import { formatCrmDate } from '../../utils/formatDate';
 import { toast } from 'sonner';
 
@@ -47,6 +48,10 @@ export const CustomerDirectoryView: React.FC<CustomerDirectoryViewProps> = ({
   const [rfmFilter, setRfmFilter] = useState<string>('ALL');
   const [sortBy, setSortBy] = useState<'spent' | 'orders' | 'recent' | 'name'>('spent');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
 
   // Filter & Sort Logic
   const filteredCustomers = useMemo(() => {
@@ -76,6 +81,26 @@ export const CustomerDirectoryView: React.FC<CustomerDirectoryViewProps> = ({
         return sortOrder === 'desc' ? -diff : diff;
       });
   }, [customers, search, statusFilter, rfmFilter, sortBy, sortOrder]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredCustomers.length / pageSize));
+
+  // Reset to page 1 whenever search, filter, or sorting changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter, rfmFilter, sortBy, sortOrder]);
+
+  // Adjust page if current page exceeds total pages after filtering
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+
+  // Paginated customers slice for active view
+  const paginatedCustomers = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredCustomers.slice(start, start + pageSize);
+  }, [filteredCustomers, currentPage, pageSize]);
 
   const handleExportCsv = () => {
     const headers = ['Full Name', 'Phone', 'Email', 'City', 'Status', 'Total Orders', 'Total Spent (BDT)', 'Segment'];
@@ -161,7 +186,8 @@ export const CustomerDirectoryView: React.FC<CustomerDirectoryViewProps> = ({
             className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-600/30 transition-all"
           >
             <option value="ALL">All Status</option>
-            <option value="ACTIVE">Active Profiles</option>
+            <option value="ACTIVE">Registered Members</option>
+            <option value="GUEST">Guest Orders</option>
             <option value="INACTIVE">Inactive</option>
             <option value="BLOCKED">Blocked / Flagged</option>
           </select>
@@ -219,7 +245,7 @@ export const CustomerDirectoryView: React.FC<CustomerDirectoryViewProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs">
-              {filteredCustomers.length === 0 ? (
+              {paginatedCustomers.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-16 text-center text-slate-500">
                     <p className="font-semibold text-sm">No customers matching your search</p>
@@ -227,7 +253,7 @@ export const CustomerDirectoryView: React.FC<CustomerDirectoryViewProps> = ({
                   </td>
                 </tr>
               ) : (
-                filteredCustomers.map((customer) => (
+                paginatedCustomers.map((customer) => (
                   <tr
                     key={customer.id}
                     onClick={() => onSelectCustomer(customer)}
@@ -244,8 +270,18 @@ export const CustomerDirectoryView: React.FC<CustomerDirectoryViewProps> = ({
                             <span className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
                               {customer.fullName}
                             </span>
+                            {customer.status === 'GUEST' && (
+                              <span className="px-1.5 py-0.5 bg-amber-50 text-amber-800 border border-amber-200/80 rounded text-[9px] font-extrabold uppercase">
+                                Guest
+                              </span>
+                            )}
+                            {customer.status === 'ACTIVE' && (
+                              <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-200/80 rounded text-[9px] font-extrabold uppercase">
+                                Member
+                              </span>
+                            )}
                             {customer.status === 'BLOCKED' && (
-                              <span className="px-1.5 py-0.2 bg-red-100 text-red-700 rounded text-[9px] font-bold">
+                              <span className="px-1.5 py-0.5 bg-red-100 text-red-700 rounded text-[9px] font-bold">
                                 Blocked
                               </span>
                             )}
@@ -353,17 +389,17 @@ export const CustomerDirectoryView: React.FC<CustomerDirectoryViewProps> = ({
           </table>
         </div>
 
-        {/* Table Footer Stats */}
-        <div className="p-4 bg-slate-50/60 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 font-medium gap-2">
-          <span>
-            Showing <strong className="text-slate-900">{filteredCustomers.length}</strong> of{' '}
-            <strong className="text-slate-900">{customers.length}</strong> total customer profiles
-          </span>
-          <div className="flex items-center gap-1.5">
-            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span>Real-time Tenant Synced</span>
-          </div>
-        </div>
+        {/* Table Footer with Pagination Controls */}
+        <CrmPagination
+          currentPage={currentPage}
+          pageSize={pageSize}
+          totalItems={filteredCustomers.length}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+          pageSizeOptions={[10, 20, 50, 100]}
+          itemLabel="customer profiles"
+        />
       </div>
     </div>
   );

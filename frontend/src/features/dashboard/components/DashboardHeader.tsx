@@ -6,6 +6,8 @@ import {
   Search,
   ExternalLink,
   Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 import { useGetMyStoreQuery } from '@/features/tenant/api/tenantApi';
 import { NotificationBellDrawer } from '@/features/sms/components/NotificationBellDrawer';
@@ -13,21 +15,27 @@ import { UserProfileMenu } from '@/features/auth/components/UserProfileMenu';
 
 interface DashboardHeaderProps {
   onMenuClick?: () => void;
+  isDesktopCollapsed?: boolean;
 }
 
-export const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
+export const DashboardHeader = ({ onMenuClick, isDesktopCollapsed = false }: DashboardHeaderProps) => {
   const { data: store } = useGetMyStoreQuery();
 
   return (
     <header className="h-16 bg-white border-b border-slate-200 px-4 md:px-6 flex items-center justify-between sticky top-0 z-40">
-      {/* Left: Hamburger + Search */}
-      <div className="flex items-center gap-4 flex-1 max-w-md">
+      {/* Left: Hamburger / Collapse Toggle + Search */}
+      <div className="flex items-center gap-3 sm:gap-4 flex-1 max-w-md">
         <button
           onClick={onMenuClick}
-          className="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors md:hidden"
+          className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all flex items-center justify-center"
+          title={isDesktopCollapsed ? 'Expand Sidebar' : 'Minimize Sidebar'}
           aria-label="Toggle Sidebar Menu"
         >
-          <Menu className="w-5 h-5" />
+          {isDesktopCollapsed ? (
+            <PanelLeftOpen className="w-5 h-5" />
+          ) : (
+            <PanelLeftClose className="w-5 h-5" />
+          )}
         </button>
 
         <div className="relative w-full max-w-xs hidden sm:block">

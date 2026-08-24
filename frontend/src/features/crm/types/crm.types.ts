@@ -1,4 +1,4 @@
-export type CustomerStatusType = 'ACTIVE' | 'INACTIVE' | 'BLOCKED';
+export type CustomerStatusType = 'ACTIVE' | 'INACTIVE' | 'BLOCKED' | 'GUEST';
 export type CustomerSourceType = 'ONLINE_STORE' | 'MANUAL' | 'POS' | 'IMPORT' | 'WHATSAPP' | 'FACEBOOK' | 'STORE_INQUIRY';
 
 export interface CustomerAddress {
@@ -45,6 +45,8 @@ export interface Customer360 {
   id: string;
   tenantId: string;
   storeId?: string;
+  userId?: string;
+  accountType?: 'REGISTERED' | 'GUEST';
   firstName: string;
   lastName: string;
   fullName: string;

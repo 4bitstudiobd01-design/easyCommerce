@@ -8,11 +8,10 @@ import { AddCustomerModal } from '@/features/crm/components/customers/AddCustome
 import { QuickContactModal } from '@/features/crm/components/customers/QuickContactModal';
 import { useGetCrmCustomersQuery } from '@/features/crm/api/crmApi';
 import { Customer360 } from '@/features/crm/types/crm.types';
-import { mockCustomers } from '@/features/crm/data/crmMockData';
 
 export default function CrmCustomersPage() {
-  const { data, isLoading } = useGetCrmCustomersQuery();
-  const [localCustomers, setLocalCustomers] = useState<Customer360[]>(mockCustomers);
+  const { data, isLoading, refetch } = useGetCrmCustomersQuery();
+  const [localCustomers, setLocalCustomers] = useState<Customer360[]>([]);
 
   const customersList = data?.data && data.data.length > 0 ? data.data : localCustomers;
 
@@ -36,6 +35,7 @@ export default function CrmCustomersPage() {
 
   const handleCustomerAdded = (newCustomer: Customer360) => {
     setLocalCustomers([newCustomer, ...localCustomers]);
+    refetch();
   };
 
   return (

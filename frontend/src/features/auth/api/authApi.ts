@@ -21,10 +21,18 @@ export interface LoginRequest {
   rememberMe?: boolean;
 }
 
+export interface StorePayload {
+  id: string;
+  name: string;
+  slug: string;
+  tenantId: string;
+}
+
 export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
   user: User;
+  store?: StorePayload;
 }
 
 const API_ROOT = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1')

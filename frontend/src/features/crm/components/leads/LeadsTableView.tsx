@@ -15,6 +15,7 @@ import {
   ArrowUpDown,
   Filter,
   Clock,
+  X,
 } from 'lucide-react';
 import { formatCrmDate } from '../../utils/formatDate';
 import { LeadStageDropdown } from './LeadStageDropdown';
@@ -25,6 +26,8 @@ interface LeadsTableViewProps {
   onOpenConvertModal: (lead: Lead) => void;
   onOpenQuickContact: (lead: Lead, channel: 'WHATSAPP' | 'CALL') => void;
   onOpenScheduleFollowUp: (lead: Lead) => void;
+  onClearFollowUp?: (leadId: string) => void;
+  onSelectLead?: (lead: Lead) => void;
 }
 
 export const LeadsTableView: React.FC<LeadsTableViewProps> = ({
@@ -33,6 +36,8 @@ export const LeadsTableView: React.FC<LeadsTableViewProps> = ({
   onOpenConvertModal,
   onOpenQuickContact,
   onOpenScheduleFollowUp,
+  onClearFollowUp,
+  onSelectLead,
 }) => {
   const [search, setSearch] = useState('');
   const [stageFilter, setStageFilter] = useState<string>('ALL');
@@ -120,12 +125,41 @@ export const LeadsTableView: React.FC<LeadsTableViewProps> = ({
               ) : (
                 filteredLeads.map((lead) => (
                   <tr key={lead.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="py-3.5 px-5">
-                      <div className="font-bold text-slate-900">{lead.name}</div>
+                    <td
+                      className="py-3.5 px-5 cursor-pointer group"
+                      onClick={() => onSelectLead && onSelectLead(lead)}
+                    >
+                      <div className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors flex items-center gap-1.5">
+                        <span>{lead.name}</span>
+                        {lead.leadScore ? (
+                          <span className="px-1.5 py-0.2 bg-blue-50 text-blue-700 rounded text-[9px] font-black">
+                            {lead.leadScore}
+                          </span>
+                        ) : null}
+                      </div>
                       <div className="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
                         <span>{lead.phone}</span>
                         {lead.companyName && <span>• {lead.companyName}</span>}
                       </div>
+                      {lead.nextFollowUpAt && (
+                        <div className="mt-1.5 flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                          <span
+                            onClick={() => onOpenScheduleFollowUp(lead)}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-900 border border-amber-200/80 rounded-md text-[10px] font-bold cursor-pointer hover:bg-amber-100 transition-colors"
+                          >
+                            <Clock className="w-3 h-3 text-amber-600" />
+                            <span>{formatCrmDate(lead.nextFollowUpAt, { showTime: true })}</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => onClearFollowUp && onClearFollowUp(lead.id)}
+                            className="p-0.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                            title="সময় রিসেট / মুছে ফেলুন (Remove Time)"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      )}
                     </td>
 
                     <td className="py-3.5 px-4">

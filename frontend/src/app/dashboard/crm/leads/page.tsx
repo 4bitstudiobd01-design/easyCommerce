@@ -1,36 +1,48 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CrmNavigationHeader } from '@/features/crm/components/CrmNavigationHeader';
 import { LeadsKanbanBoard } from '@/features/crm/components/leads/LeadsKanbanBoard';
 import { LeadsTableView } from '@/features/crm/components/leads/LeadsTableView';
 import { AddLeadModal } from '@/features/crm/components/leads/AddLeadModal';
 import { ConvertLeadModal } from '@/features/crm/components/leads/ConvertLeadModal';
 import { ScheduleFollowUpModal } from '@/features/crm/components/leads/ScheduleFollowUpModal';
+import { LeadDetailModal } from '@/features/crm/components/leads/LeadDetailModal';
 import { QuickContactModal } from '@/features/crm/components/customers/QuickContactModal';
-import { useGetCrmLeadsQuery } from '@/features/crm/api/crmApi';
+import {
+  useGetCrmLeadsQuery,
+  useUpdateLeadStageMutation,
+  useScheduleLeadFollowUpMutation,
+} from '@/features/crm/api/crmApi';
 import { Lead, LeadStageType, Customer360 } from '@/features/crm/types/crm.types';
-import { mockLeads } from '@/features/crm/data/crmMockData';
 import { formatCrmDate } from '@/features/crm/utils/formatDate';
 import {
   LayoutGrid,
   List,
-  Plus,
-  Clock,
   Bell,
   PhoneCall,
   MessageCircle,
-  AlertCircle,
-  Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function CrmLeadsPage() {
-  const { data: serverLeads } = useGetCrmLeadsQuery();
-  const [localLeads, setLocalLeads] = useState<Lead[]>(mockLeads);
+  const { data: serverLeads, refetch } = useGetCrmLeadsQuery();
+  const [updateLeadStage] = useUpdateLeadStageMutation();
+
+  const [localLeads, setLocalLeads] = useState<Lead[]>([]);
   const [viewMode, setViewMode] = useState<'KANBAN' | 'TABLE'>('KANBAN');
 
-  const leadsList = serverLeads && serverLeads.length > 0 ? serverLeads : localLeads;
+  // Synchronize server data into local state when available
+  useEffect(() => {
+    if (serverLeads !== undefined) {
+      setLocalLeads(serverLeads);
+    }
+  }, [serverLeads]);
+
+  const activeLeadsList = localLeads;
+
+  // Lead Details Modal state
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [convertTarget, setConvertTarget] = useState<Lead | null>(null);
@@ -44,15 +56,79 @@ export default function CrmLeadsPage() {
   const [quickContactChannel, setQuickContactChannel] = useState<'WHATSAPP' | 'CALL' | 'SMS'>('WHATSAPP');
   const [isQuickContactOpen, setIsQuickContactOpen] = useState(false);
 
-  const handleStageChange = (leadId: string, newStage: LeadStageType) => {
-    setLocalLeads((prev) =>
-      prev.map((l) => (l.id === leadId ? { ...l, stage: newStage, updatedAt: new Date().toISOString() } : l))
-    );
-    toast.success(`Lead moved to "${newStage}" stage`);
+  const [scheduleFollowUpMutation] = useScheduleLeadFollowUpMutation();
+
+  const handleStageChange = async (leadId: string, newStage: LeadStageType) => {
+    const isContactedOrClosed = newStage === 'CONTACTED' || newStage === 'WON' || newStage === 'LOST';
+
+    // 1. Instant optimistic UI update
+    setLocalLeads((prev) => {
+      const base = prev.length > 0 ? prev : (serverLeads || []);
+      return base.map((l) =>
+        l.id === leadId
+          ? {
+              ...l,
+              stage: newStage,
+              nextFollowUpAt: isContactedOrClosed ? null : l.nextFollowUpAt,
+              followUpNote: isContactedOrClosed ? undefined : l.followUpNote,
+              followUpStatus: isContactedOrClosed ? 'COMPLETED' : l.followUpStatus,
+              updatedAt: new Date().toISOString(),
+            }
+          : l
+      );
+    });
+
+    if (selectedLead && selectedLead.id === leadId) {
+      setSelectedLead((prev) =>
+        prev
+          ? {
+              ...prev,
+              stage: newStage,
+              nextFollowUpAt: isContactedOrClosed ? null : prev.nextFollowUpAt,
+              followUpNote: isContactedOrClosed ? undefined : prev.followUpNote,
+              followUpStatus: isContactedOrClosed ? 'COMPLETED' : prev.followUpStatus,
+              updatedAt: new Date().toISOString(),
+            }
+          : null
+      );
+    }
+
+    if (isContactedOrClosed) {
+      toast.success(`Lead moved to "${newStage.replace('_', ' ')}" (Follow-up auto-completed)`);
+    } else {
+      toast.success(`Lead moved to "${newStage.replace('_', ' ')}" stage`);
+    }
+
+    // 2. Persist to backend database
+    try {
+      await updateLeadStage({ id: leadId, stage: newStage }).unwrap();
+    } catch (err: any) {
+      console.warn('Lead stage backend update sync:', err?.message || err);
+    }
+  };
+
+  const handleClearFollowUp = async (leadId: string) => {
+    handleFollowUpSaved(leadId, null, '');
+    try {
+      await scheduleFollowUpMutation({ id: leadId, followUpAt: null, note: '' }).unwrap();
+    } catch (err: any) {
+      console.warn('Clear follow-up backend sync:', err?.message || err);
+    }
+    toast.success('কথা বলার সময় রিসেট / রিমুভ করা হয়েছে (Scheduled time removed)');
   };
 
   const handleLeadAdded = (newLead: Lead) => {
-    setLocalLeads([newLead, ...localLeads]);
+    setLocalLeads((prev) => [newLead, ...(prev.length > 0 ? prev : (serverLeads || []))]);
+    refetch();
+  };
+
+  const handleLeadUpdated = (updatedLead: Lead) => {
+    setLocalLeads((prev) => {
+      const base = prev.length > 0 ? prev : (serverLeads || []);
+      return base.map((l) => (l.id === updatedLead.id ? updatedLead : l));
+    });
+    setSelectedLead(updatedLead);
+    refetch();
   };
 
   const handleLeadConverted = (customer: Customer360) => {
@@ -73,8 +149,9 @@ export default function CrmLeadsPage() {
   };
 
   const handleFollowUpSaved = (leadId: string, followUpAt: string | null, note: string) => {
-    setLocalLeads((prev) =>
-      prev.map((l) =>
+    setLocalLeads((prev) => {
+      const base = prev.length > 0 ? prev : (serverLeads || []);
+      return base.map((l) =>
         l.id === leadId
           ? {
               ...l,
@@ -84,12 +161,27 @@ export default function CrmLeadsPage() {
               updatedAt: new Date().toISOString(),
             }
           : l
-      )
-    );
+      );
+    });
+
+    if (selectedLead && selectedLead.id === leadId) {
+      setSelectedLead((prev) =>
+        prev
+          ? {
+              ...prev,
+              nextFollowUpAt: followUpAt,
+              followUpNote: note,
+              followUpStatus: followUpAt ? 'PENDING' : undefined,
+              updatedAt: new Date().toISOString(),
+            }
+          : null
+      );
+    }
+    refetch();
   };
 
   // Calculate upcoming / due follow-ups
-  const dueFollowUps = leadsList.filter((l) => Boolean(l.nextFollowUpAt));
+  const dueFollowUps = activeLeadsList.filter((l) => Boolean(l.nextFollowUpAt));
 
   return (
     <div className="space-y-6">
@@ -97,7 +189,7 @@ export default function CrmLeadsPage() {
       <CrmNavigationHeader
         title="Sales Leads & Deals Pipeline"
         subtitle="Track incoming prospective buyer inquiries, scheduled follow-ups, and conversion stages"
-        activeCount={leadsList.length}
+        activeCount={activeLeadsList.length}
         addLabel="New Lead"
         onAddClick={() => setIsAddModalOpen(true)}
         secondaryAction={
@@ -157,11 +249,14 @@ export default function CrmLeadsPage() {
             {dueFollowUps.map((lead) => (
               <div
                 key={lead.id}
-                className="bg-white p-3 rounded-2xl border border-amber-200 shadow-2xs flex items-center justify-between gap-2 hover:border-amber-400 transition-all"
+                onClick={() => setSelectedLead(lead)}
+                className="bg-white p-3 rounded-2xl border border-amber-200 shadow-2xs flex items-center justify-between gap-2 hover:border-amber-400 transition-all cursor-pointer group"
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="font-bold text-xs text-slate-900 truncate">{lead.name}</span>
+                    <span className="font-bold text-xs text-slate-900 group-hover:text-blue-600 transition-colors truncate">
+                      {lead.name}
+                    </span>
                     <span className="text-[10px] text-amber-700 bg-amber-50 px-1.5 py-0.2 rounded font-extrabold shrink-0">
                       {formatCrmDate(lead.nextFollowUpAt, { showTime: true })}
                     </span>
@@ -171,7 +266,7 @@ export default function CrmLeadsPage() {
                   )}
                 </div>
 
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                   <button
                     onClick={() => handleOpenQuickContact(lead, 'WHATSAPP')}
                     className="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg transition-all"
@@ -186,6 +281,13 @@ export default function CrmLeadsPage() {
                   >
                     <PhoneCall className="w-3.5 h-3.5" />
                   </button>
+                  <button
+                    onClick={() => handleClearFollowUp(lead.id)}
+                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                    title="রিমাইন্ডার মুছে ফেলুন (Remove Reminder)"
+                  >
+                    <span className="text-xs font-bold leading-none">✕</span>
+                  </button>
                 </div>
               </div>
             ))}
@@ -196,22 +298,38 @@ export default function CrmLeadsPage() {
       {/* Main View: Kanban or Table */}
       {viewMode === 'KANBAN' ? (
         <LeadsKanbanBoard
-          leads={leadsList}
+          leads={activeLeadsList}
           onStageChange={handleStageChange}
           onOpenAddModal={() => setIsAddModalOpen(true)}
           onOpenConvertModal={(lead) => setConvertTarget(lead)}
           onOpenQuickContact={handleOpenQuickContact}
           onOpenScheduleFollowUp={handleOpenScheduleFollowUp}
+          onClearFollowUp={handleClearFollowUp}
+          onSelectLead={(lead) => setSelectedLead(lead)}
         />
       ) : (
         <LeadsTableView
-          leads={leadsList}
+          leads={activeLeadsList}
           onStageChange={handleStageChange}
           onOpenConvertModal={(lead) => setConvertTarget(lead)}
           onOpenQuickContact={handleOpenQuickContact}
           onOpenScheduleFollowUp={handleOpenScheduleFollowUp}
+          onClearFollowUp={handleClearFollowUp}
+          onSelectLead={(lead) => setSelectedLead(lead)}
         />
       )}
+
+      {/* Lead Details Modal */}
+      <LeadDetailModal
+        lead={selectedLead}
+        isOpen={Boolean(selectedLead)}
+        onClose={() => setSelectedLead(null)}
+        onStageChange={handleStageChange}
+        onOpenConvertModal={(lead) => setConvertTarget(lead)}
+        onOpenQuickContact={handleOpenQuickContact}
+        onOpenScheduleFollowUp={handleOpenScheduleFollowUp}
+        onLeadUpdated={handleLeadUpdated}
+      />
 
       {/* Add Lead Modal */}
       <AddLeadModal
