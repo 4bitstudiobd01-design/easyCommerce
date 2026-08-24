@@ -150,21 +150,27 @@ export class AdjustStockService {
           movementType = MovementType.IN;
           break;
 
-        case StockAdjustmentAction.REMOVE:
-          if (!allowBackorder && beforeOnHand - qty < beforeReserved) {
-            throw new BadRequestException(
-              `Cannot remove ${qty} units. Only ${Math.max(0, beforeOnHand - beforeReserved)} units are available to remove (${beforeReserved} units are reserved for pending orders).`,
-            );
+        case StockAdjustmentAction.REMOVE: {
+          const availableToSell = Math.max(0, beforeOnHand - beforeReserved);
+          if (!allowBackorder && qty > availableToSell) {
+            const productLabel = product ? `"${product.title}"` : 'This product';
+            const message =
+              availableToSell === 0
+                ? `${productLabel} is out of stock.`
+                : `${productLabel} only has ${availableToSell} unit(s) in stock — requested ${qty}.`;
+            throw new BadRequestException(message);
           }
           newOnHand = allowBackorder ? beforeOnHand - qty : Math.max(0, beforeOnHand - qty);
           delta = -qty;
           movementType = MovementType.OUT;
           break;
+        }
 
         case StockAdjustmentAction.SET:
           if (!allowBackorder && qty < beforeReserved) {
+            const productLabel = product ? `"${product.title}"` : 'this product';
             throw new BadRequestException(
-              `Cannot set stock to ${qty} units because ${beforeReserved} units are already reserved for pending orders. Minimum allowed stock count is ${beforeReserved}.`,
+              `Cannot set stock of ${productLabel} to ${qty} unit(s) because ${beforeReserved} unit(s) are already reserved for pending orders. Minimum allowed stock count is ${beforeReserved}.`,
             );
           }
           newOnHand = qty;

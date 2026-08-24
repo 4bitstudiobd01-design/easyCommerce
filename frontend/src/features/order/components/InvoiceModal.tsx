@@ -4,6 +4,7 @@ import React from 'react';
 import { Order } from '../api/orderApi';
 import { useGetOrderInvoiceQuery } from '../api/orderApi';
 import { X, Printer, Loader2, Phone } from 'lucide-react';
+import { getPaymentMethodLabel, getPaymentStatusLabel } from '../utils/paymentMethod';
 
 interface InvoiceModalProps {
   isOpen: boolean;
@@ -129,9 +130,9 @@ export function InvoiceModal({ isOpen, onClose, order }: InvoiceModalProps) {
               </div>
               <div className="grid grid-cols-4 bg-emerald-50 text-xs font-bold text-slate-800">
                 <div className="p-3">{new Date(displayOrder.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
-                <div className="p-3">{displayOrder.paymentMethod === 'COD' ? 'Cash on Delivery' : displayOrder.paymentMethod}</div>
+                <div className="p-3">{getPaymentMethodLabel(displayOrder.paymentMethod)}</div>
                 <div className="p-3">{displayOrder.orderStatus.replace(/_/g, ' ')}</div>
-                <div className="p-3">{displayOrder.paymentStatus.replace(/_/g, ' ')}</div>
+                <div className="p-3">{getPaymentStatusLabel(displayOrder.paymentStatus, displayOrder.paymentMethod)}</div>
               </div>
             </div>
 

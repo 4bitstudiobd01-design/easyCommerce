@@ -81,14 +81,25 @@ describe('BulkUpdateOrderStatusService', () => {
     );
 
   it('rejects illegal transitions instead of applying them', async () => {
-    orders = [buildOrder('a', OrderStatusEnum.PENDING)];
+    // RETURNED is fully terminal — it never transitions anywhere, unlike a forward
+    // skip (e.g. PENDING to DELIVERED), which is a legal jump ahead in the sequence.
+    orders = [buildOrder('a', OrderStatusEnum.RETURNED)];
 
-    const result = await run(OrderStatusEnum.DELIVERED);
+    const result = await run(OrderStatusEnum.PROCESSING);
 
     expect(result.successful).toBe(0);
     expect(result.failed).toBe(1);
     expect(result.errors[0].reason).toContain('Invalid order status transition');
     expect(updateSpy).not.toHaveBeenCalled();
+  });
+
+  it('allows skipping fulfilment stages forward without a reason', async () => {
+    orders = [buildOrder('a', OrderStatusEnum.PENDING)];
+
+    const result = await run(OrderStatusEnum.DELIVERED);
+
+    expect(result.successful).toBe(1);
+    expect(result.failed).toBe(0);
   });
 
   it('rejects transitions out of terminal states', async () => {
@@ -132,8 +143,8 @@ describe('BulkUpdateOrderStatusService', () => {
     expect(result.errors[0].orderNumber).toBe('ORD-bad');
   });
 
-  it('marks payment as PAID when bulk-transitioning to DELIVERED', async () => {
-    orders = [buildOrder('a', OrderStatusEnum.SHIPPED)];
+  it('marks payment as PAID when bulk-transitioning an UNPAID (online) order to DELIVERED', async () => {
+    orders = [{ ...buildOrder('a', OrderStatusEnum.SHIPPED), paymentStatus: PaymentStatusEnum.UNPAID }];
 
     await run(OrderStatusEnum.DELIVERED);
 
@@ -144,6 +155,23 @@ describe('BulkUpdateOrderStatusService', () => {
         orderStatus: OrderStatusEnum.DELIVERED,
         paymentStatus: PaymentStatusEnum.PAID,
       }),
+    );
+  });
+
+  it('does not force COD_PENDING to PAID when bulk-transitioning to DELIVERED — cash still needs collecting', async () => {
+    orders = [buildOrder('a', OrderStatusEnum.SHIPPED)]; // COD_PENDING by default
+
+    await run(OrderStatusEnum.DELIVERED);
+
+    expect(updateSpy).toHaveBeenCalledWith(
+      OrderEntity,
+      expect.anything(),
+      expect.objectContaining({ orderStatus: OrderStatusEnum.DELIVERED }),
+    );
+    expect(updateSpy).not.toHaveBeenCalledWith(
+      OrderEntity,
+      expect.anything(),
+      expect.objectContaining({ paymentStatus: PaymentStatusEnum.PAID }),
     );
   });
 

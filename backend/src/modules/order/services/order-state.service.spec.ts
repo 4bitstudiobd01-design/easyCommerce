@@ -55,20 +55,20 @@ describe('OrderStateService', () => {
       expect(service.canTransition(OrderStatusEnum.RETURNED, OrderStatusEnum.SHIPPED)).toBe(false);
     });
 
-    it('should reject skipping fulfilment stages (PENDING to SHIPPED)', () => {
-      expect(service.canTransition(OrderStatusEnum.PENDING, OrderStatusEnum.SHIPPED)).toBe(false);
+    it('should allow skipping fulfilment stages forward (PENDING to SHIPPED)', () => {
+      expect(service.canTransition(OrderStatusEnum.PENDING, OrderStatusEnum.SHIPPED)).toBe(true);
     });
 
-    it('should reject skipping fulfilment stages (PENDING to DELIVERED)', () => {
-      expect(service.canTransition(OrderStatusEnum.PENDING, OrderStatusEnum.DELIVERED)).toBe(false);
+    it('should allow skipping fulfilment stages forward (PENDING to DELIVERED)', () => {
+      expect(service.canTransition(OrderStatusEnum.PENDING, OrderStatusEnum.DELIVERED)).toBe(true);
     });
 
     it('should allow DELIVERED to COMPLETED', () => {
       expect(service.canTransition(OrderStatusEnum.DELIVERED, OrderStatusEnum.COMPLETED)).toBe(true);
     });
 
-    it('should only allow COMPLETED to be reached from DELIVERED (forward) — backward moves from COMPLETED are handled separately', () => {
-      const reachableGoingForwardOnly = [
+    it('should allow COMPLETED to be reached directly from any earlier forward-sequence stage (ON_HOLD is a side-branch, not part of the sequence)', () => {
+      const reachableGoingForward = [
         OrderStatusEnum.PENDING,
         OrderStatusEnum.ON_HOLD,
         OrderStatusEnum.CONFIRMED,
@@ -77,9 +77,20 @@ describe('OrderStateService', () => {
         OrderStatusEnum.SHIPPED,
       ].filter((from) => service.canTransition(from, OrderStatusEnum.COMPLETED));
 
-      // None of the earlier stages can jump straight to COMPLETED — only DELIVERED can.
-      expect(reachableGoingForwardOnly).toEqual([]);
+      expect(reachableGoingForward).toEqual([
+        OrderStatusEnum.PENDING,
+        OrderStatusEnum.CONFIRMED,
+        OrderStatusEnum.PROCESSING,
+        OrderStatusEnum.READY_TO_SHIP,
+        OrderStatusEnum.SHIPPED,
+      ]);
       expect(service.canTransition(OrderStatusEnum.DELIVERED, OrderStatusEnum.COMPLETED)).toBe(true);
+    });
+
+    it('should not require a reason when skipping fulfilment stages forward', () => {
+      expect(() =>
+        service.assertTransition(OrderStatusEnum.PENDING, OrderStatusEnum.SHIPPED),
+      ).not.toThrow();
     });
 
     it('should treat RETURNED as fully terminal (no transitions out, including into CANCELLED)', () => {

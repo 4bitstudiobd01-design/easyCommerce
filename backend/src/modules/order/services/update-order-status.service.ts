@@ -39,7 +39,12 @@ export class UpdateOrderStatusService {
     const previousStatus = order.orderStatus;
     order.orderStatus = dto.orderStatus;
 
-    if (dto.orderStatus === OrderStatusEnum.DELIVERED) {
+    // Delivery only implies payment for orders that were already paid online —
+    // a COD order isn't PAID just because it was delivered; the cash still has
+    // to be collected separately via CollectCodService, which sets COD_COLLECTED.
+    // Forcing PAID here regardless of method used to silently mark undelivered
+    // COD orders as paid with no corresponding payment record behind them.
+    if (dto.orderStatus === OrderStatusEnum.DELIVERED && order.paymentStatus === PaymentStatusEnum.UNPAID) {
       order.paymentStatus = PaymentStatusEnum.PAID;
     }
 

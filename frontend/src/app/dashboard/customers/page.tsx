@@ -105,6 +105,17 @@ export default function CustomersPage() {
   const customers = customersResponse?.data || [];
   const meta = customersResponse?.meta || { page: 1, limit: 20, total: 0, totalPages: 0, statusCounts: { ALL: 0, ACTIVE: 0, INACTIVE: 0, BLOCKED: 0 } };
 
+  // Coming from an order's "View profile" link (?search=phone&autoOpen=1): once the
+  // filtered list resolves, open the matching customer's drawer directly instead of
+  // making the merchant click the row themselves, then drop the flag from the URL.
+  useEffect(() => {
+    if (searchParams.get('autoOpen') !== '1' || isCustomersLoading || isFetching) return;
+    if (customers.length > 0) {
+      setSelectedDrawerCustomerId(customers[0].id);
+    }
+    updateUrlParams({ autoOpen: null });
+  }, [searchParams, isCustomersLoading, isFetching, customers]);
+
   // Out-of-range page guard
   useEffect(() => {
     if (meta.totalPages > 0 && page > meta.totalPages) {

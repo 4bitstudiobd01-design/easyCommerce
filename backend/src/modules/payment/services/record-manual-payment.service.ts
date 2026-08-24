@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { PaymentEntity, PaymentTransactionStatusEnum } from '../entities/payment.entity';
-import { OrderEntity, PaymentStatusEnum } from '../../order/entities/order.entity';
+import { OrderEntity, PaymentStatusEnum, PaymentMethodEnum } from '../../order/entities/order.entity';
 import { PaymentGatewayEnum } from '../enums/payment-gateway.enum';
 import { PaymentMethodTypeEnum } from '../enums/payment-method.enum';
 import { PaymentEventTypeEnum } from '../enums/payment-event-type.enum';
@@ -73,10 +73,15 @@ export class RecordManualPaymentService {
       const savedPayment = await manager.save(created);
 
       const totalPaidSoFar = Number(order.grandTotal) - balanceDue + dto.amount;
-      const nextPaymentStatus =
-        totalPaidSoFar >= Number(order.grandTotal)
-          ? PaymentStatusEnum.PAID
-          : PaymentStatusEnum.PARTIALLY_PAID;
+      const isFullyPaid = totalPaidSoFar >= Number(order.grandTotal);
+      // A COD order settles as COD_COLLECTED, not PAID — PAID implies an online
+      // payment, and COD_COLLECTED is what the rest of the order flow (delivery
+      // auto-transition, the collect/undo-collect actions) checks for.
+      const nextPaymentStatus = isFullyPaid
+        ? order.paymentMethod === PaymentMethodEnum.COD
+          ? PaymentStatusEnum.COD_COLLECTED
+          : PaymentStatusEnum.PAID
+        : PaymentStatusEnum.PARTIALLY_PAID;
 
       await manager.update(OrderEntity, { id: order.id }, { paymentStatus: nextPaymentStatus });
 

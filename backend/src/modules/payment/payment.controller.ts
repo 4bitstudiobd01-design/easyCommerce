@@ -33,6 +33,7 @@ import { SeedPaymentDemoDataService } from './services/seed-payment-demo-data.se
 import { GetOrderBalanceService } from './services/get-order-balance.service';
 import { GetOrderPaymentHistoryService } from './services/get-order-payment-history.service';
 import { RecordManualPaymentService } from './services/record-manual-payment.service';
+import { VoidManualPaymentService } from './services/void-manual-payment.service';
 import { CreatePaymentLinkForOrderService } from './services/create-payment-link-for-order.service';
 import { FindStoreByUserService } from '../tenant/services/find-store-by-user.service';
 import { InitiatePaymentDto } from './dto/initiate-payment.dto';
@@ -45,6 +46,7 @@ import {
 import { PaymentDetailsResponseDto } from './dto/payment-details-response.dto';
 import { SeedPaymentDemoDataResponseDto } from './dto/seed-payment-demo-data-response.dto';
 import { RecordManualPaymentDto } from './dto/record-manual-payment.dto';
+import { VoidPaymentDto } from './dto/void-payment.dto';
 import { CreatePaymentLinkDto } from './dto/create-payment-link.dto';
 import { ConfigService } from '@nestjs/config';
 
@@ -64,6 +66,7 @@ export class PaymentController {
     private readonly getOrderBalanceService: GetOrderBalanceService,
     private readonly getOrderPaymentHistoryService: GetOrderPaymentHistoryService,
     private readonly recordManualPaymentService: RecordManualPaymentService,
+    private readonly voidManualPaymentService: VoidManualPaymentService,
     private readonly createPaymentLinkForOrderService: CreatePaymentLinkForOrderService,
     private readonly notificationDispatcherService: NotificationDispatcherService,
     @InjectRepository(OrderEntity)
@@ -321,6 +324,23 @@ export class PaymentController {
   ) {
     const tenantId = await this.getMerchantTenantId(userId, storeId);
     return this.recordManualPaymentService.execute(tenantId, orderId, dto);
+  }
+
+  @Post(':paymentId/void')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('orders:manage')
+  @ApiOperation({ summary: 'Void a recorded payment (COD collection, manual, or online) — reverses its effect on the order balance' })
+  @ApiResponse({ status: 200, description: 'Payment voided, order paymentStatus recomputed' })
+  @ApiResponse({ status: 400, description: 'Payment is not in a voidable state' })
+  async voidPayment(
+    @CurrentUser('sub') userId: string,
+    @Param('paymentId') paymentId: string,
+    @Body() dto: VoidPaymentDto,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
+    return this.voidManualPaymentService.execute(paymentId, tenantId, userId, dto.reason);
   }
 
   @Post('orders/:orderId/payment-link')

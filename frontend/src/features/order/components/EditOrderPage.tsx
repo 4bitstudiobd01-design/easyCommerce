@@ -9,6 +9,7 @@ import {
 import { useGetOrderByIdQuery, useEditOrderMutation, EditOrderRequest, EditOrderItemRequest, OrderStatusType } from '../api/orderApi';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { AddOrderItemModal, AddedOrderItem } from './AddOrderItemModal';
+import { toast } from 'sonner';
 
 interface EditableLineItem extends EditOrderItemRequest {
   title: string;
@@ -165,7 +166,7 @@ export function EditOrderPage({ orderId }: EditOrderPageProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (items.length === 0) {
-      alert('Order must have at least one item.');
+      toast.error('Order must have at least one item.');
       return;
     }
     const payloadItems: EditOrderItemRequest[] = items.map((item) => ({
@@ -181,7 +182,7 @@ export function EditOrderPage({ orderId }: EditOrderPageProps) {
       router.push(`/dashboard/orders/${orderId}`);
     } catch (err: any) {
       console.error(err);
-      alert(err?.data?.message || 'Failed to save changes.');
+      toast.error(err?.data?.message || 'Failed to save changes.');
     }
   };
 

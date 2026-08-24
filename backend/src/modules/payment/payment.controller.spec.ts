@@ -19,6 +19,7 @@ import { SeedPaymentDemoDataService } from './services/seed-payment-demo-data.se
 import { GetOrderBalanceService } from './services/get-order-balance.service';
 import { GetOrderPaymentHistoryService } from './services/get-order-payment-history.service';
 import { RecordManualPaymentService } from './services/record-manual-payment.service';
+import { VoidManualPaymentService } from './services/void-manual-payment.service';
 import { CreatePaymentLinkForOrderService } from './services/create-payment-link-for-order.service';
 import { FindStoreByUserService } from '../tenant/services/find-store-by-user.service';
 
@@ -61,6 +62,7 @@ describe('PaymentController', () => {
         { provide: GetOrderBalanceService, useValue: { execute: jest.fn() } },
         { provide: GetOrderPaymentHistoryService, useValue: { execute: jest.fn() } },
         { provide: RecordManualPaymentService, useValue: { execute: jest.fn() } },
+        { provide: VoidManualPaymentService, useValue: { execute: jest.fn() } },
         { provide: CreatePaymentLinkForOrderService, useValue: { execute: jest.fn() } },
         { provide: NotificationDispatcherService, useValue: { dispatch: jest.fn() } },
         { provide: getRepositoryToken(OrderEntity), useValue: { findOne: jest.fn() } },

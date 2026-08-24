@@ -37,11 +37,13 @@ export class OrderStateService {
   /**
    * Validates if a transition from currentStatus to newStatus is allowed based on domain rules.
    *
-   * Forward moves through FORWARD_SEQUENCE are allowed one step at a time. Backward
-   * moves (to any earlier state in the same sequence) are also allowed, per the
-   * decision that a merchant can correct a fulfilment mistake — every backward move
-   * is expected to carry a reason, enforced by `assertTransition`. ON_HOLD is a
-   * side-branch off PENDING, not part of the forward sequence, handled separately.
+   * Forward moves through FORWARD_SEQUENCE are allowed to any later stage, including
+   * skipping intermediate ones (e.g. PENDING straight to SHIPPED) — no reason
+   * required. Backward moves (to any earlier state in the same sequence) are also
+   * allowed, per the decision that a merchant can correct a fulfilment mistake —
+   * every backward move is expected to carry a reason, enforced by
+   * `assertTransition`. ON_HOLD is a side-branch off PENDING, not part of the
+   * forward sequence, handled separately.
    */
   canTransition(currentStatus: OrderStatusEnum, newStatus: OrderStatusEnum): boolean {
     if (currentStatus === newStatus) return true;
@@ -80,8 +82,10 @@ export class OrderStateService {
     // enum is closed, but fail closed rather than silently allowing an unknown state).
     if (currentIndex === -1 || newIndex === -1) return false;
 
-    // Forward: only one step at a time (no skipping fulfilment stages).
-    if (newIndex === currentIndex + 1) return true;
+    // Forward: any later stage is reachable directly — a merchant can skip
+    // intermediate fulfilment stages (e.g. PENDING straight to SHIPPED) without
+    // stepping through each one, and doesn't need a reason for it.
+    if (newIndex > currentIndex) return true;
 
     // Backward: any earlier state in the sequence is reachable, to let a merchant
     // correct a mistaken transition. Reason is enforced by assertTransition.

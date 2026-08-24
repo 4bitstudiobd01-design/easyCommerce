@@ -49,110 +49,105 @@ export class EditOrderService {
     const oldItemsByProductId = new Map(
       order.items.filter((i) => !i.isCustomItem && i.productId).map((i) => [i.productId as string, i]),
     );
-    const restoredItems: OrderItemEntity[] = [];
 
-    // 1. Rollback old inventory (catalog items only — custom items were never stock-tracked)
-    try {
-      for (const oldItem of order.items) {
-        if (oldItem.isCustomItem) {
-          continue;
-        }
-        await this.adjustStockService.execute(tenantId, {
-          productId: oldItem.productId as string,
-          quantity: oldItem.quantity,
-          action: StockAdjustmentAction.ADD,
-        });
-        restoredItems.push(oldItem);
-      }
-    } catch (err) {
-      // Revert the rollback partially if it fails midway
-      for (const item of restoredItems) {
-        await this.adjustStockService.execute(tenantId, {
-          productId: item.productId as string,
-          quantity: item.quantity,
-          action: StockAdjustmentAction.REMOVE,
-        });
-      }
-      throw new BadRequestException('Failed to release old inventory during edit.');
+    // Sum quantities per product on the incoming list first, so a product that
+    // appears more than once (or a duplicate of an existing line) is diffed as one
+    // net change rather than as separate add/remove calls that could conflict.
+    const newQuantityByProductId = new Map<string, number>();
+    for (const itemDto of dto.items) {
+      if (itemDto.isCustomItem || !itemDto.productId) continue;
+      newQuantityByProductId.set(
+        itemDto.productId,
+        (newQuantityByProductId.get(itemDto.productId) ?? 0) + itemDto.quantity,
+      );
     }
 
     const newOrderItems: OrderItemEntity[] = [];
-    const deductedItems: { productId: string; quantity: number }[] = [];
     const calculationInputItems: { unitPrice: number; quantity: number; discountAmount?: number }[] = [];
 
-    // 2. Validate and reserve new inventory
-    try {
-      for (const itemDto of dto.items) {
-        const newItem = new OrderItemEntity();
-        newItem.tenantId = tenantId;
-        newItem.quantity = itemDto.quantity;
-        newItem.discountAmount = itemDto.discountAmount ?? 0;
+    // 1. Build the new item entities (pricing/title/SKU) and validate every
+    // referenced product exists BEFORE touching any stock, so an invalid
+    // productId never leaves stock adjustments applied with nothing to roll them
+    // back (a NotFoundException thrown after stock was already touched would).
+    for (const itemDto of dto.items) {
+      const newItem = new OrderItemEntity();
+      newItem.tenantId = tenantId;
+      newItem.quantity = itemDto.quantity;
+      newItem.discountAmount = itemDto.discountAmount ?? 0;
 
-        if (itemDto.isCustomItem) {
-          // Custom/off-catalog line: no product lookup, no stock adjustment,
-          // never persisted to the catalog.
-          const unitPrice = Number(itemDto.customUnitPrice);
-          newItem.productId = null;
-          newItem.isCustomItem = true;
-          newItem.productTitle = itemDto.customTitle as string;
-          newItem.productImageUrl = null;
-          newItem.unitPrice = unitPrice;
-          newItem.totalPrice = unitPrice * itemDto.quantity - newItem.discountAmount;
-
-          newOrderItems.push(newItem);
-          calculationInputItems.push({ unitPrice, quantity: itemDto.quantity, discountAmount: newItem.discountAmount });
-          continue;
-        }
-
-        const product = await this.productRepository.findOne({
-          where: { id: itemDto.productId, tenantId },
-          relations: ['variants', 'images'],
-        });
-
-        if (!product) {
-          throw new NotFoundException(`Product with ID "${itemDto.productId}" not found.`);
-        }
-
-        const oldItem = oldItemsByProductId.get(product.id);
-        // Retain old price if product existed on the order before, otherwise use current catalog price
-        const unitPrice = oldItem ? Number(oldItem.unitPrice) : Number(product.basePrice);
-        const sku = oldItem?.sku || product.variants?.[0]?.sku || `SKU-${product.id.slice(0, 6)}`;
-        const primaryImage = product.images?.find((image) => image.isPrimary) ?? product.images?.[0];
-
-        // Reserve new stock
-        await this.adjustStockService.execute(tenantId, {
-          productId: product.id,
-          quantity: itemDto.quantity,
-          action: StockAdjustmentAction.REMOVE,
-        });
-        deductedItems.push({ productId: product.id, quantity: itemDto.quantity });
-
-        newItem.productId = product.id;
-        newItem.isCustomItem = false;
-        newItem.productTitle = product.title;
-        newItem.sku = sku;
-        newItem.productImageUrl = primaryImage?.url ?? null;
+      if (itemDto.isCustomItem) {
+        // Custom/off-catalog line: no product lookup, no stock adjustment,
+        // never persisted to the catalog.
+        const unitPrice = Number(itemDto.customUnitPrice);
+        newItem.productId = null;
+        newItem.isCustomItem = true;
+        newItem.productTitle = itemDto.customTitle as string;
+        newItem.productImageUrl = null;
         newItem.unitPrice = unitPrice;
         newItem.totalPrice = unitPrice * itemDto.quantity - newItem.discountAmount;
 
         newOrderItems.push(newItem);
         calculationInputItems.push({ unitPrice, quantity: itemDto.quantity, discountAmount: newItem.discountAmount });
+        continue;
+      }
+
+      const product = await this.productRepository.findOne({
+        where: { id: itemDto.productId, tenantId },
+        relations: ['variants', 'images'],
+      });
+
+      if (!product) {
+        throw new NotFoundException(`Product with ID "${itemDto.productId}" not found.`);
+      }
+
+      const oldItem = oldItemsByProductId.get(product.id);
+      // Retain old price if product existed on the order before, otherwise use current catalog price
+      const unitPrice = oldItem ? Number(oldItem.unitPrice) : Number(product.basePrice);
+      const sku = oldItem?.sku || product.variants?.[0]?.sku || `SKU-${product.id.slice(0, 6)}`;
+      const primaryImage = product.images?.find((image) => image.isPrimary) ?? product.images?.[0];
+
+      newItem.productId = product.id;
+      newItem.isCustomItem = false;
+      newItem.productTitle = product.title;
+      newItem.sku = sku;
+      newItem.productImageUrl = primaryImage?.url ?? null;
+      newItem.unitPrice = unitPrice;
+      newItem.totalPrice = unitPrice * itemDto.quantity - newItem.discountAmount;
+
+      newOrderItems.push(newItem);
+      calculationInputItems.push({ unitPrice, quantity: itemDto.quantity, discountAmount: newItem.discountAmount });
+    }
+
+    // 2. Now that every item is validated, only touch stock for products whose
+    // quantity actually changed between the old and new item lists (net delta),
+    // instead of rolling back every old item and re-deducting every new one —
+    // that used to fail an edit that didn't even touch a given product if its
+    // stock happened to be tight at that instant.
+    const appliedDeltas: { productId: string; delta: number }[] = [];
+    try {
+      const touchedProductIds = new Set([...oldItemsByProductId.keys(), ...newQuantityByProductId.keys()]);
+      for (const productId of touchedProductIds) {
+        const oldQty = oldItemsByProductId.get(productId)?.quantity ?? 0;
+        const newQty = newQuantityByProductId.get(productId) ?? 0;
+        const delta = newQty - oldQty;
+        if (delta === 0) continue;
+
+        await this.adjustStockService.execute(tenantId, {
+          productId,
+          quantity: Math.abs(delta),
+          // Needing more units than before deducts stock; needing fewer releases it.
+          action: delta > 0 ? StockAdjustmentAction.REMOVE : StockAdjustmentAction.ADD,
+        });
+        appliedDeltas.push({ productId, delta });
       }
     } catch (err) {
-      // Rollback the newly deducted items
-      for (const deducted of deductedItems) {
+      // Undo whichever deltas already succeeded before the failing one, restoring
+      // the pristine pre-edit stock levels.
+      for (const applied of appliedDeltas) {
         await this.adjustStockService.execute(tenantId, {
-          productId: deducted.productId,
-          quantity: deducted.quantity,
-          action: StockAdjustmentAction.ADD,
-        });
-      }
-      // Re-deduct original items to restore pristine original state
-      for (const item of restoredItems) {
-        await this.adjustStockService.execute(tenantId, {
-          productId: item.productId as string,
-          quantity: item.quantity,
-          action: StockAdjustmentAction.REMOVE,
+          productId: applied.productId,
+          quantity: Math.abs(applied.delta),
+          action: applied.delta > 0 ? StockAdjustmentAction.ADD : StockAdjustmentAction.REMOVE,
         });
       }
       throw err;

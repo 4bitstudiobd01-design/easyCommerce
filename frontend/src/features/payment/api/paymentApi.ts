@@ -382,6 +382,18 @@ export const paymentApi = createApi({
       transformResponse: (response: unknown) => unwrap<OrderPaymentEntry>(response),
     }),
 
+    voidPayment: builder.mutation<void, { paymentId: string; orderId: string; reason: string }>({
+      query: ({ paymentId, reason }) => ({
+        url: `/payments/${paymentId}/void`,
+        method: 'POST',
+        body: { reason },
+      }),
+      invalidatesTags: (_result, _error, { orderId }) => [
+        { type: 'OrderBalance', id: orderId },
+        { type: 'OrderPaymentHistory', id: orderId },
+      ],
+    }),
+
     createPaymentLink: builder.mutation<PaymentLinkResult, CreatePaymentLinkParams>({
       query: ({ orderId, ...body }) => ({
         url: `/payments/orders/${orderId}/payment-link`,
@@ -404,5 +416,6 @@ export const {
   useGetOrderBalanceQuery,
   useGetOrderPaymentHistoryQuery,
   useRecordManualPaymentMutation,
+  useVoidPaymentMutation,
   useCreatePaymentLinkMutation,
 } = paymentApi;

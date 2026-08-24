@@ -95,10 +95,11 @@ export class ProcessRefundService {
 
         const totalRefunded = existingRefunds.reduce((sum, r) => sum + Number(r.amount), 0);
 
-        if (totalRefunded >= Number(order.grandTotal)) {
-          order.paymentStatus = PaymentStatusEnum.REFUNDED;
-          await this.orderRepository.save(order);
-        }
+        order.paymentStatus =
+          totalRefunded >= Number(order.grandTotal)
+            ? PaymentStatusEnum.REFUNDED
+            : PaymentStatusEnum.PARTIALLY_REFUNDED;
+        await this.orderRepository.save(order);
       }
     } else {
       refund.status = RefundStatusEnum.FAILED;

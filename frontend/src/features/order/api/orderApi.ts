@@ -102,7 +102,7 @@ export interface Order {
   couponCode?: string;
   grandTotal: number;
   paymentMethod: 'COD' | 'BKASH' | 'NAGAD' | 'SSLCOMMERZ';
-  paymentStatus: 'UNPAID' | 'PARTIALLY_PAID' | 'PAID' | 'REFUNDED' | 'COD_PENDING' | 'COD_COLLECTED' | 'FAILED';
+  paymentStatus: 'UNPAID' | 'PARTIALLY_PAID' | 'PAID' | 'PARTIALLY_REFUNDED' | 'REFUNDED' | 'COD_PENDING' | 'COD_COLLECTED' | 'FAILED';
   orderStatus: OrderStatusType;
   storeSlug: string;
   tenantId: string;

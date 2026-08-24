@@ -43,6 +43,8 @@ import {
 } from 'lucide-react';
 import { TableRowSkeleton } from '@/components/ui/Skeleton';
 import { ChannelBadge } from '../utils/channelBadge';
+import { requiresReason } from '../utils/statusTransition';
+import { getPaymentStatusLabel, getPaymentStatusColorClasses } from '../utils/paymentMethod';
 import { StatusChangeConfirmModal } from './StatusChangeConfirmModal';
 import { toast } from 'sonner';
 
@@ -222,7 +224,8 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
   // refreshed list data (and closes on its own if the order leaves the active filter).
   const previewOrder = orders.find((o) => o.id === previewOrderId) ?? null;
 
-  const handlePanelConfirm = (order: Order) => handleStatusChange(order.id, 'CONFIRMED');
+  const handlePanelStatusChangeRequest = (order: Order, targetStatus: OrderStatusType) =>
+    setPendingStatusChange({ order, targetStatus });
 
   const dateRangeLabels: Record<string, string> = {
     '7': 'Last 7 days',
@@ -553,6 +556,7 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
             <option value="ALL">Payment: All</option>
             <option value="UNPAID">Payment: Unpaid (COD)</option>
             <option value="PAID">Payment: Paid</option>
+            <option value="PARTIALLY_REFUNDED">Payment: Partially Refunded</option>
             <option value="REFUNDED">Payment: Refunded</option>
           </select>
           <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-2.5 pointer-events-none" />
@@ -824,22 +828,12 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                       <td className="px-6 py-4 font-black text-slate-900">৳{Number(order.grandTotal).toLocaleString()}</td>
 
                       <td className="px-4 py-4">
-                        <span className={`px-2 py-1 rounded-md text-[10px] font-bold ${
-                          order.paymentStatus === 'PAID' ? 'bg-emerald-50 text-emerald-700' :
-                          order.paymentStatus === 'PARTIALLY_PAID' ? 'bg-blue-50 text-blue-700' :
-                          order.paymentStatus === 'REFUNDED' ? 'bg-slate-100 text-slate-600' :
-                          order.paymentMethod === 'COD' ? 'bg-amber-50 text-amber-700' :
-                          'bg-rose-50 text-rose-700'
-                        }`}>
-                          {order.paymentStatus === 'UNPAID' && order.paymentMethod === 'COD'
-                            ? 'COD'
-                            : order.paymentStatus === 'PARTIALLY_PAID'
-                            ? 'Partially Paid'
-                            : order.paymentStatus}
+                        <span className={`px-2 py-1 rounded-md text-[10px] font-bold ${getPaymentStatusColorClasses(order.paymentStatus)}`}>
+                          {getPaymentStatusLabel(order.paymentStatus, order.paymentMethod)}
                         </span>
                       </td>
 
-                      <td className="px-4 py-4">
+                      <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
                         {order.consignment ? (
                           <div>
                             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700">
@@ -847,6 +841,14 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                             </span>
                             <p className="text-[10px] text-slate-400 mt-1">{order.consignment.status.replace(/_/g, ' ')}</p>
                           </div>
+                        ) : onDispatchCourierClick ? (
+                          <button
+                            type="button"
+                            onClick={() => onDispatchCourierClick(order)}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+                          >
+                            <Truck className="w-3 h-3" /> Send Courier
+                          </button>
                         ) : (
                           <span className="text-[10px] text-slate-400 font-medium">Not shipped</span>
                         )}
@@ -863,7 +865,11 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                             onChange={(e) => {
                               const targetStatus = e.target.value as OrderStatusType;
                               if (targetStatus === order.orderStatus) return;
-                              setPendingStatusChange({ order, targetStatus });
+                              if (requiresReason(order.orderStatus, targetStatus)) {
+                                setPendingStatusChange({ order, targetStatus });
+                              } else {
+                                handleStatusChange(order.id, targetStatus);
+                              }
                             }}
                             disabled={isUpdating}
                             className={`pl-3 pr-6 py-1 rounded-md font-bold text-[10px] border-0 focus:outline-none cursor-pointer transition-colors appearance-none ${
@@ -983,9 +989,10 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
       <OrderDetailPanel
         order={previewOrder}
         onClose={() => setPreviewOrderId(null)}
-        onConfirm={handlePanelConfirm}
         onBookCourier={onDispatchCourierClick}
-        isConfirming={isUpdating}
+        onStatusChangeRequest={handlePanelStatusChangeRequest}
+        onDirectStatusChange={(order, targetStatus) => handleStatusChange(order.id, targetStatus)}
+        isUpdatingStatus={isUpdating}
       />
     </div>
   );

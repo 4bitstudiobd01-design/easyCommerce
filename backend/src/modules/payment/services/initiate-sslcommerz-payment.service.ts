@@ -104,6 +104,10 @@ export class InitiateSslCommerzPaymentService {
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
           },
+          // Without a timeout, an unreachable/slow gateway leaves the request (and
+          // the merchant's "Generate Link" button) hanging indefinitely instead of
+          // failing with a visible error.
+          timeout: 15000,
         },
       );
 

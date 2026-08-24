@@ -124,16 +124,36 @@ export class BulkUpdateOrderStatusService {
 
       try {
         await this.dataSource.transaction(async (manager) => {
-          const updateFields: Partial<OrderEntity> = { orderStatus: dto.targetStatus };
+          // Delivery only implies payment for orders that were already paid online —
+          // a COD order isn't PAID just because it was delivered; the cash still has
+          // to be collected separately via CollectCodService. Forcing PAID here
+          // regardless of method would silently mark undelivered COD orders as paid
+          // with no corresponding payment record behind them.
           if (dto.targetStatus === OrderStatusEnum.DELIVERED) {
-            updateFields.paymentStatus = PaymentStatusEnum.PAID;
-          }
+            const unpaidIds = ordersToUpdate
+              .filter((o) => o.paymentStatus === PaymentStatusEnum.UNPAID)
+              .map((o) => o.id);
+            const otherIds = ordersToUpdate
+              .filter((o) => o.paymentStatus !== PaymentStatusEnum.UNPAID)
+              .map((o) => o.id);
 
-          await manager.update(
-            OrderEntity,
-            { id: In(ordersToUpdate.map((o) => o.id)) },
-            updateFields,
-          );
+            if (unpaidIds.length > 0) {
+              await manager.update(
+                OrderEntity,
+                { id: In(unpaidIds) },
+                { orderStatus: dto.targetStatus, paymentStatus: PaymentStatusEnum.PAID },
+              );
+            }
+            if (otherIds.length > 0) {
+              await manager.update(OrderEntity, { id: In(otherIds) }, { orderStatus: dto.targetStatus });
+            }
+          } else {
+            await manager.update(
+              OrderEntity,
+              { id: In(ordersToUpdate.map((o) => o.id)) },
+              { orderStatus: dto.targetStatus },
+            );
+          }
 
           const histories = ordersToUpdate.map((order) =>
             manager.create(OrderStatusHistoryEntity, {

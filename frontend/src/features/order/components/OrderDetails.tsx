@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
@@ -19,16 +19,16 @@ import {
   Loader2,
   DollarSign
 } from 'lucide-react';
-import { useGetOrderByIdQuery, useUpdateOrderStatusMutation, useCollectCodPaymentMutation, useUndoCollectCodPaymentMutation, OrderStatusType, useGetReturnsByOrderQuery, useGetRefundsByOrderQuery, useProcessRefundMutation, useUpdateReturnStatusMutation } from '../api/orderApi';
+import { useGetOrderByIdQuery, useUpdateOrderStatusMutation, OrderStatusType, useGetReturnsByOrderQuery, useGetRefundsByOrderQuery, useProcessRefundMutation, useUpdateReturnStatusMutation } from '../api/orderApi';
 import { useSyncConsignmentMutation } from '../../logistics/api/logisticsApi';
-import { useGetOrderBalanceQuery, useGetOrderPaymentHistoryQuery } from '../../payment/api/paymentApi';
+import { useGetOrderBalanceQuery, useGetOrderPaymentHistoryQuery, useVoidPaymentMutation } from '../../payment/api/paymentApi';
 import { SendCourierModal } from './SendCourierModal';
-import { CreateReturnModal } from './CreateReturnModal';
-import { RefundModal } from './RefundModal';
 import { RecordManualPaymentModal } from './RecordManualPaymentModal';
 import { SendPaymentLinkModal } from './SendPaymentLinkModal';
 import { StatusChangeConfirmModal } from './StatusChangeConfirmModal';
 import { OrderActivityFeed } from './OrderActivityFeed';
+import { getPaymentMethodLabel, getPaymentStatusLabel, getPaymentStatusColorClasses } from '../utils/paymentMethod';
+import { requiresReason } from '../utils/statusTransition';
 import { RefreshCw, IndianRupee, Phone, Copy, Tag } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { toast } from 'sonner';
@@ -43,44 +43,29 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
 
   const [updateStatus, { isLoading: isUpdating }] = useUpdateOrderStatusMutation();
   const [syncConsignment, { isLoading: isSyncing }] = useSyncConsignmentMutation();
-  const [collectCodPayment, { isLoading: isCollectingCod }] = useCollectCodPaymentMutation();
-  const [undoCollectCodPayment, { isLoading: isUndoingCod }] = useUndoCollectCodPaymentMutation();
   const { data: returns } = useGetReturnsByOrderQuery(orderId, { skip: !orderId });
   const { data: refunds } = useGetRefundsByOrderQuery(orderId, { skip: !orderId });
   const [processRefund, { isLoading: isProcessingRefund }] = useProcessRefundMutation();
   const [updateReturnStatus, { isLoading: isUpdatingReturn }] = useUpdateReturnStatusMutation();
   const { data: balance } = useGetOrderBalanceQuery(orderId, { skip: !orderId });
   const { data: paymentHistory } = useGetOrderPaymentHistoryQuery(orderId, { skip: !orderId });
+  const [voidPayment, { isLoading: isVoiding }] = useVoidPaymentMutation();
 
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; targetStatus?: OrderStatusType }>({ isOpen: false });
-  const [codModal, setCodModal] = useState(false);
-  const [undoCodModal, setUndoCodModal] = useState(false);
-  const [undoCodReason, setUndoCodReason] = useState('');
-  const [returnModal, setReturnModal] = useState(false);
-  const [refundModal, setRefundModal] = useState(false);
   const [courierModalOpen, setCourierModalOpen] = useState(false);
   const [manualPaymentModal, setManualPaymentModal] = useState(false);
   const [paymentLinkModal, setPaymentLinkModal] = useState(false);
-  const [showMoreMenu, setShowMoreMenu] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setShowMoreMenu(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  const [voidPaymentTarget, setVoidPaymentTarget] = useState<{ id: string; amount: number } | null>(null);
+  const [voidReason, setVoidReason] = useState('');
 
   const handleUpdateStatus = async (status: OrderStatusType, reason?: string) => {
     try {
       await updateStatus({ id: orderId, orderStatus: status, reason }).unwrap();
       setConfirmModal({ isOpen: false });
+      toast.success(`Order status updated to ${status.replace(/_/g, ' ')}`);
     } catch (err: any) {
       console.error('Failed to update status', err);
-      alert(err?.data?.message || 'Failed to update order status');
+      toast.error(err?.data?.message || 'Failed to update order status');
     }
   };
 
@@ -88,32 +73,23 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
     if (!order?.id) return;
     try {
       await syncConsignment(order.id).unwrap();
+      toast.success('Tracking status refreshed');
     } catch (err: any) {
       console.error('Failed to sync consignment', err);
-      alert(err?.data?.message || 'Failed to refresh tracking status');
+      toast.error(err?.data?.message || 'Failed to refresh tracking status');
     }
   };
 
-  const handleCollectCod = async () => {
-    if (!order?.id) return;
+  const handleVoidPayment = async () => {
+    if (!order?.id || !voidPaymentTarget || !voidReason.trim()) return;
     try {
-      await collectCodPayment(order.id).unwrap();
-      setCodModal(false);
+      await voidPayment({ paymentId: voidPaymentTarget.id, orderId: order.id, reason: voidReason.trim() }).unwrap();
+      setVoidPaymentTarget(null);
+      setVoidReason('');
+      toast.success('Payment voided');
     } catch (err: any) {
-      console.error('Failed to collect COD', err);
-      alert(err?.data?.message || 'Failed to collect COD');
-    }
-  };
-
-  const handleUndoCollectCod = async () => {
-    if (!order?.id || !undoCodReason.trim()) return;
-    try {
-      await undoCollectCodPayment({ id: order.id, reason: undoCodReason.trim() }).unwrap();
-      setUndoCodModal(false);
-      setUndoCodReason('');
-    } catch (err: any) {
-      console.error('Failed to undo COD collection', err);
-      alert(err?.data?.message || 'Failed to undo COD collection');
+      console.error('Failed to void payment', err);
+      toast.error(err?.data?.message || 'Failed to void payment');
     }
   };
 
@@ -203,73 +179,41 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
             </Link>
           )}
 
-          {order.orderStatus === 'PENDING' && (
-            <button 
-              onClick={() => setConfirmModal({ isOpen: true, targetStatus: 'CONFIRMED' })}
-              className="px-4 py-2 bg-slate-900 text-white text-sm font-bold rounded-lg shadow-sm hover:bg-slate-800 transition-colors"
+          <div className="relative">
+            <select
+              value={order.orderStatus}
+              onChange={(e) => {
+                const targetStatus = e.target.value as OrderStatusType;
+                if (targetStatus === order.orderStatus) return;
+                if (requiresReason(order.orderStatus, targetStatus)) {
+                  setConfirmModal({ isOpen: true, targetStatus });
+                } else {
+                  handleUpdateStatus(targetStatus);
+                }
+              }}
+              className="appearance-none pl-4 pr-9 py-2 bg-slate-900 text-white text-sm font-bold rounded-lg shadow-sm hover:bg-slate-800 transition-colors cursor-pointer focus:outline-none"
             >
-              Confirm Order
-            </button>
-          )}
-          {order.orderStatus === 'CONFIRMED' && (
-            <button 
-              onClick={() => setConfirmModal({ isOpen: true, targetStatus: 'PROCESSING' })}
-              className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg shadow-sm hover:bg-blue-700 transition-colors"
-            >
-              Start Processing
-            </button>
-          )}
-          {order.orderStatus === 'PROCESSING' && (
-            <button 
-              onClick={() => setConfirmModal({ isOpen: true, targetStatus: 'READY_TO_SHIP' })}
-              className="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg shadow-sm hover:bg-indigo-700 transition-colors"
-            >
-              Mark Ready to Ship
-            </button>
-          )}
+              <option value="PENDING">New (Pending)</option>
+              <option value="ON_HOLD">On Hold</option>
+              <option value="CONFIRMED">Confirmed</option>
+              <option value="PROCESSING">Processing</option>
+              <option value="READY_TO_SHIP">Ready to Ship</option>
+              <option value="SHIPPED">Shipped</option>
+              <option value="DELIVERED">Delivered</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="CANCELLED">Cancelled</option>
+              <option value="RETURNED">Returned</option>
+            </select>
+            <ChevronDown className="w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-white" />
+          </div>
           
-          {balance && balance.balanceDue > 0 && order.paymentMethod !== 'COD' && (
-            <button
-              onClick={() => setPaymentLinkModal(true)}
-              className="px-4 py-2 bg-white text-slate-700 text-sm font-bold rounded-lg shadow-sm border border-slate-200 hover:bg-slate-50 transition-colors"
-            >
-              Send Payment Link
-            </button>
-          )}
+          <button
+            onClick={() => setPaymentLinkModal(true)}
+            className="px-4 py-2 bg-white text-slate-700 text-sm font-bold rounded-lg shadow-sm border border-slate-200 hover:bg-slate-50 transition-colors"
+          >
+            Send Payment Link
+          </button>
 
-          {['PENDING', 'CONFIRMED', 'PROCESSING', 'READY_TO_SHIP', 'ON_HOLD'].includes(order.orderStatus) && (
-            <div className="relative" ref={menuRef}>
-              <button 
-                onClick={() => setShowMoreMenu(!showMoreMenu)}
-                className="px-3 py-2 bg-white text-slate-700 text-sm font-bold rounded-lg shadow-sm border border-slate-200 hover:bg-slate-50 transition-colors flex items-center gap-1"
-              >
-                More <ChevronDown className="w-4 h-4" />
-              </button>
-              
-              {showMoreMenu && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden z-20">
-                                    <button
-                    onClick={() => { setShowMoreMenu(false); setReturnModal(true); }}
-                    className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors border-b border-slate-100"
-                  >
-                    Create Return
-                  </button>
-                  <button
-                    onClick={() => { setShowMoreMenu(false); setRefundModal(true); }}
-                    className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors border-b border-slate-100"
-                  >
-                    Issue Refund
-                  </button>
-                  <button
-                    onClick={() => { setShowMoreMenu(false); setConfirmModal({ isOpen: true, targetStatus: 'CANCELLED' }); }}
-                    className="w-full text-left px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 transition-colors"
-                  >
-                    Cancel Order
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
 
@@ -283,10 +227,10 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
           <div>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Payment</p>
             <p className="text-sm font-bold text-slate-900 mb-0.5">
-              {order.paymentMethod === 'COD' ? 'Cash on Delivery' : 'Online Payment'}
+              {getPaymentMethodLabel(order.paymentMethod)}
             </p>
-            <p className={`text-xs font-bold inline-flex items-center ${order.paymentStatus === 'PAID' ? 'text-emerald-600' : 'text-amber-600'}`}>
-              {order.paymentStatus === 'UNPAID' && order.paymentMethod === 'COD' ? 'COD Pending' : order.paymentStatus}
+            <p className={`text-xs font-bold inline-flex items-center ${order.paymentStatus === 'PAID' || order.paymentStatus === 'COD_COLLECTED' ? 'text-emerald-600' : 'text-amber-600'}`}>
+              {getPaymentStatusLabel(order.paymentStatus, order.paymentMethod)}
             </p>
           </div>
         </div>
@@ -336,12 +280,13 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
               <>
                 <p className="text-sm font-bold text-slate-900 mb-0.5">Not Booked</p>
                 <p className="text-xs font-medium text-slate-500 mb-3">Awaiting courier dispatch</p>
-                {order.orderStatus === 'READY_TO_SHIP' && (
-                  <button 
+                {!['DELIVERED', 'COMPLETED', 'CANCELLED', 'RETURNED'].includes(order.orderStatus) && (
+                  <button
                     onClick={() => setCourierModalOpen(true)}
-                    className="px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors text-xs font-bold rounded-lg border border-blue-200 w-full"
+                    className="px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors text-xs font-bold rounded-lg border border-blue-200 w-full flex items-center justify-center gap-2"
                   >
-                    Book Courier
+                    <Truck className="w-3 h-3" />
+                    Send Courier
                   </button>
                 )}
               </>
@@ -507,20 +452,12 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <p className="text-sm font-bold text-slate-900">
-                    {order.paymentMethod === 'COD' ? 'Cash on Delivery' : 'Online Payment'}
+                    {getPaymentMethodLabel(order.paymentMethod)}
                   </p>
                   <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Method</p>
                 </div>
-                <div className={`px-2.5 py-1 rounded-md text-[10px] font-bold ${
-                  order.paymentStatus === 'PAID' || order.paymentStatus === 'COD_COLLECTED'
-                    ? 'bg-emerald-50 text-emerald-700'
-                    : order.paymentStatus === 'PARTIALLY_PAID'
-                    ? 'bg-blue-50 text-blue-700'
-                    : order.paymentStatus === 'FAILED'
-                    ? 'bg-red-50 text-red-700'
-                    : 'bg-amber-50 text-amber-700'
-                }`}>
-                  {order.paymentStatus === 'PARTIALLY_PAID' ? 'PARTIALLY PAID' : order.paymentStatus.replace(/_/g, ' ')}
+                <div className={`px-2.5 py-1 rounded-md text-[10px] font-bold ${getPaymentStatusColorClasses(order.paymentStatus)}`}>
+                  {getPaymentStatusLabel(order.paymentStatus, order.paymentMethod).toUpperCase()}
                 </div>
               </div>
 
@@ -567,42 +504,36 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
                       <div>
                         <span className="font-bold text-slate-700">{p.paymentMethod.replace(/_/g, ' ')}</span>
                         <span className="text-slate-400 ml-1.5">{new Date(p.createdAt).toLocaleDateString()}</span>
+                        {p.status !== 'COMPLETED' && (
+                          <span className="text-slate-400 ml-1.5">({p.status.replace(/_/g, ' ').toLowerCase()})</span>
+                        )}
                       </div>
-                      <span className="font-bold text-slate-900">৳{Number(p.amount).toLocaleString()}</span>
+                      <div className="flex items-center gap-2">
+                        <span className={`font-bold ${p.status === 'COMPLETED' ? 'text-slate-900' : 'text-slate-400 line-through'}`}>
+                          ৳{Number(p.amount).toLocaleString()}
+                        </span>
+                        {p.status === 'COMPLETED' && (
+                          <button
+                            type="button"
+                            onClick={() => setVoidPaymentTarget({ id: p.id, amount: Number(p.amount) })}
+                            title="Void this payment"
+                            className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                          >
+                            <RefreshCw className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
               )}
 
-              {order.paymentMethod === 'COD' && order.paymentStatus === 'COD_PENDING' && (
-                <div className="mt-4 pt-4 border-t border-slate-100">
-                  <button
-                    onClick={() => setCodModal(true)}
-                    className="w-full py-2 bg-slate-900 text-white hover:bg-slate-800 transition-colors text-xs font-bold rounded-lg flex items-center justify-center gap-2"
-                  >
-                    <DollarSign className="w-3.5 h-3.5" />
-                    Mark Collected
-                  </button>
-                </div>
-              )}
-
-              {order.paymentMethod === 'COD' && order.paymentStatus === 'COD_COLLECTED' && (
-                <div className="mt-4 pt-4 border-t border-slate-100">
-                  <button
-                    onClick={() => setUndoCodModal(true)}
-                    className="w-full py-2 bg-white text-red-600 border border-red-200 hover:bg-red-50 transition-colors text-xs font-bold rounded-lg flex items-center justify-center gap-2"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" />
-                    Undo Collection
-                  </button>
-                </div>
-              )}
-
-              {balance && balance.balanceDue > 0 && order.paymentMethod !== 'COD' && (
+              {((order.paymentMethod === 'COD' && order.paymentStatus === 'COD_PENDING') ||
+                (order.paymentMethod !== 'COD' && balance && balance.balanceDue > 0)) && (
                 <div className="mt-4 pt-4 border-t border-slate-100">
                   <button
                     onClick={() => setManualPaymentModal(true)}
-                    className="w-full py-2 bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 transition-colors text-xs font-bold rounded-lg flex items-center justify-center gap-2"
+                    className="w-full py-2 bg-slate-900 text-white hover:bg-slate-800 transition-colors text-xs font-bold rounded-lg flex items-center justify-center gap-2"
                   >
                     <DollarSign className="w-3.5 h-3.5" />
                     Record Manual Payment
@@ -759,63 +690,23 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
         onConfirm={(status, reason) => handleUpdateStatus(status, reason)}
       />
 
-      {/* Collect COD Modal */}
-      {codModal && (
+      {/* Void Payment Modal */}
+      {voidPaymentTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
             <div className="p-6">
-              <h3 className="text-xl font-bold">Mark COD as Collected</h3>
-              <p className="text-sm text-slate-500 mt-2">
-                Order <span className="font-bold text-slate-900">{order.orderNumber}</span>
-              </p>
-              
-              <div className="mt-6 bg-amber-50 border border-amber-100 rounded-xl p-4">
-                <p className="text-[10px] uppercase font-bold text-amber-600 tracking-wider">COD Amount</p>
-                <p className="text-2xl font-black text-amber-900 mt-1">৳{order.grandTotal}</p>
-              </div>
-
-              <p className="text-sm text-slate-600 font-medium mt-6">
-                Confirm that this amount has been collected from the customer or courier. This action is recorded in the audit log.
-              </p>
-            </div>
-            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
-              <button
-                onClick={() => setCodModal(false)}
-                disabled={isCollectingCod}
-                className="px-4 py-2 text-sm font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCollectCod}
-                disabled={isCollectingCod}
-                className="px-5 py-2 text-sm font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-sm flex items-center gap-2"
-              >
-                {isCollectingCod && <Loader2 className="w-4 h-4 animate-spin" />}
-                Confirm Collection
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Undo COD Collection Modal */}
-      {undoCodModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
-            <div className="p-6">
-              <h3 className="text-xl font-bold">Undo COD Collection</h3>
+              <h3 className="text-xl font-bold">Void Payment</h3>
               <p className="text-sm text-slate-500 mt-2">
                 Order <span className="font-bold text-slate-900">{order.orderNumber}</span>
               </p>
 
               <div className="mt-6 bg-red-50 border border-red-100 rounded-xl p-4">
                 <p className="text-[10px] uppercase font-bold text-red-600 tracking-wider">Amount</p>
-                <p className="text-2xl font-black text-red-900 mt-1">৳{order.grandTotal}</p>
+                <p className="text-2xl font-black text-red-900 mt-1">৳{voidPaymentTarget.amount.toLocaleString()}</p>
               </div>
 
               <p className="text-sm text-slate-600 font-medium mt-6">
-                This reverts the payment status back to pending and voids the collection record. This action is recorded in the audit log.
+                This reverses the payment and recomputes the order&apos;s payment status. This action is recorded in the audit log.
               </p>
 
               <div className="mt-4">
@@ -823,9 +714,9 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
                   Reason (required)
                 </label>
                 <textarea
-                  value={undoCodReason}
-                  onChange={(e) => setUndoCodReason(e.target.value)}
-                  placeholder="e.g. Marked as collected by mistake"
+                  value={voidReason}
+                  onChange={(e) => setVoidReason(e.target.value)}
+                  placeholder="e.g. Recorded by mistake"
                   className="w-full p-3 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 bg-white min-h-[70px]"
                 />
               </div>
@@ -833,21 +724,21 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
             <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
               <button
                 onClick={() => {
-                  setUndoCodModal(false);
-                  setUndoCodReason('');
+                  setVoidPaymentTarget(null);
+                  setVoidReason('');
                 }}
-                disabled={isUndoingCod}
+                disabled={isVoiding}
                 className="px-4 py-2 text-sm font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
               >
                 Cancel
               </button>
               <button
-                onClick={handleUndoCollectCod}
-                disabled={isUndoingCod || !undoCodReason.trim()}
+                onClick={handleVoidPayment}
+                disabled={isVoiding || !voidReason.trim()}
                 className="px-5 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 rounded-lg shadow-sm flex items-center gap-2"
               >
-                {isUndoingCod && <Loader2 className="w-4 h-4 animate-spin" />}
-                Confirm Undo
+                {isVoiding && <Loader2 className="w-4 h-4 animate-spin" />}
+                Confirm Void
               </button>
             </div>
           </div>

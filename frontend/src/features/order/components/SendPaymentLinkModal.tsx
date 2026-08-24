@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Link2, Loader2, Copy, Send } from 'lucide-react';
+import { Link2, Loader2, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { Modal } from '@/components/ui/Modal';
 import { useCreatePaymentLinkMutation, useGetOrderBalanceQuery, PaymentLinkResult } from '@/features/payment/api/paymentApi';
@@ -28,7 +28,7 @@ export function SendPaymentLinkModal({ isOpen, onClose, orderId, orderNumber }: 
     onClose();
   };
 
-  const handleGenerate = async (sendSms: boolean) => {
+  const handleGenerate = async () => {
     setErrorMsg('');
     const parsedAmount = amount ? Number(amount) : undefined;
 
@@ -42,9 +42,8 @@ export function SendPaymentLinkModal({ isOpen, onClose, orderId, orderNumber }: 
     }
 
     try {
-      const link = await createPaymentLink({ orderId, amount: parsedAmount, sendSms }).unwrap();
+      const link = await createPaymentLink({ orderId, amount: parsedAmount }).unwrap();
       setResult(link);
-      if (sendSms) toast.success('Payment link sent via SMS.');
     } catch (err: any) {
       const message = err?.data?.message || 'Failed to generate payment link.';
       setErrorMsg(Array.isArray(message) ? message[0] : message);
@@ -64,6 +63,7 @@ export function SendPaymentLinkModal({ isOpen, onClose, orderId, orderNumber }: 
       title="Send Payment Link"
       subtitle={`Order #${orderNumber}`}
       icon={<Link2 className="w-5 h-5" />}
+      size="lg"
       footer={
         result ? (
           <button
@@ -86,25 +86,15 @@ export function SendPaymentLinkModal({ isOpen, onClose, orderId, orderNumber }: 
             <button
               type="button"
               disabled={isLoading}
-              onClick={() => handleGenerate(false)}
-              className="px-4 py-2.5 bg-white text-slate-900 text-sm font-bold rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors flex items-center gap-2"
-            >
-              Generate Link
-            </button>
-            <button
-              type="button"
-              disabled={isLoading}
-              onClick={() => handleGenerate(true)}
+              onClick={() => handleGenerate()}
               className="px-6 py-2.5 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-800 transition-colors flex items-center gap-2 shadow-sm"
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" /> Sending...
+                  <Loader2 className="w-4 h-4 animate-spin" /> Generating...
                 </>
               ) : (
-                <>
-                  <Send className="w-4 h-4" /> Generate & Send SMS
-                </>
+                'Generate Link'
               )}
             </button>
           </>

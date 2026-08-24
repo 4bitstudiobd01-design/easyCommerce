@@ -3,24 +3,40 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
-import { Order } from '../api/orderApi';
+import { Order, OrderStatusType } from '../api/orderApi';
+import { getPaymentMethodLabel, getPaymentStatusLabel, getPaymentStatusColorClasses } from '../utils/paymentMethod';
+import { requiresReason } from '../utils/statusTransition';
 import {
   X,
   MapPin,
   Copy,
-  CheckCircle2,
   Pencil,
-  MoreHorizontal,
   Truck,
+  ChevronDown,
+  Eye,
 } from 'lucide-react';
 
 interface OrderDetailPanelProps {
   order: Order | null;
   onClose: () => void;
-  onConfirm?: (order: Order) => void;
   onBookCourier?: (order: Order) => void;
-  isConfirming?: boolean;
+  onStatusChangeRequest?: (order: Order, targetStatus: OrderStatusType) => void;
+  onDirectStatusChange?: (order: Order, targetStatus: OrderStatusType) => void;
+  isUpdatingStatus?: boolean;
 }
+
+const STATUS_OPTIONS: { value: OrderStatusType; label: string }[] = [
+  { value: 'PENDING', label: 'New (Pending)' },
+  { value: 'ON_HOLD', label: 'On Hold' },
+  { value: 'CONFIRMED', label: 'Confirmed' },
+  { value: 'PROCESSING', label: 'Processing' },
+  { value: 'READY_TO_SHIP', label: 'Ready to Ship' },
+  { value: 'SHIPPED', label: 'Shipped' },
+  { value: 'DELIVERED', label: 'Delivered' },
+  { value: 'COMPLETED', label: 'Completed' },
+  { value: 'CANCELLED', label: 'Cancelled' },
+  { value: 'RETURNED', label: 'Returned' },
+];
 
 // Money arrives as numeric strings from Postgres decimal columns.
 function formatMoney(value: number | string | null | undefined): string {
@@ -62,9 +78,10 @@ function initialsOf(name: string): string {
 export function OrderDetailPanel({
   order,
   onClose,
-  onConfirm,
   onBookCourier,
-  isConfirming,
+  onStatusChangeRequest,
+  onDirectStatusChange,
+  isUpdatingStatus,
 }: OrderDetailPanelProps) {
   const isOpen = Boolean(order);
 
@@ -115,7 +132,6 @@ export function OrderDetailPanel({
 
   const consignment = order.consignment;
   const itemCount = order.items?.length ?? 0;
-  const canConfirm = order.orderStatus === 'PENDING';
 
   // Once an order has left the fulfilment pipeline there is nothing left to edit
   // or ship, so those actions are hidden rather than shown and rejected server-side.
@@ -129,7 +145,9 @@ export function OrderDetailPanel({
     const address = [order.shippingAddress, order.area, order.city, order.district]
       .filter(Boolean)
       .join(', ');
-    navigator.clipboard?.writeText(address);
+    navigator.clipboard?.writeText(
+      [`Order #${order.orderNumber}`, order.customerName, order.customerPhone, address].join('\n'),
+    );
   };
 
   return createPortal(
@@ -183,17 +201,29 @@ export function OrderDetailPanel({
 
       {/* Actions */}
       <div className="flex items-center gap-2 px-5 pb-4 border-b border-slate-100">
-        {canConfirm && (
-          <button
-            type="button"
-            disabled={isConfirming}
-            onClick={() => onConfirm?.(order)}
-            className="flex-1 px-3 py-2 bg-blue-600 border border-blue-600 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        <div className="relative flex-1">
+          <select
+            value={order.orderStatus}
+            disabled={isUpdatingStatus}
+            onChange={(e) => {
+              const targetStatus = e.target.value as OrderStatusType;
+              if (targetStatus === order.orderStatus) return;
+              if (requiresReason(order.orderStatus, targetStatus)) {
+                onStatusChangeRequest?.(order, targetStatus);
+              } else {
+                onDirectStatusChange?.(order, targetStatus);
+              }
+            }}
+            className="w-full appearance-none pl-3 pr-8 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-50 transition-colors disabled:opacity-50 cursor-pointer"
           >
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            {isConfirming ? 'Confirming…' : 'Confirm'}
-          </button>
-        )}
+            {STATUS_OPTIONS.map(({ value, label }) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
+        </div>
         {canEdit && (
           <Link
             href={`/dashboard/orders/${order.id}/edit`}
@@ -205,12 +235,10 @@ export function OrderDetailPanel({
         )}
         <Link
           href={`/dashboard/orders/${order.id}`}
-          className={`px-3 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-slate-50 transition-colors ${
-            canConfirm || canEdit ? '' : 'flex-1'
-          }`}
+          className="flex-1 px-3 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-slate-50 transition-colors"
         >
-          <MoreHorizontal className="w-3.5 h-3.5" />
-          {canConfirm || canEdit ? 'More' : 'View full order'}
+          <Eye className="w-3.5 h-3.5" />
+          View Details
         </Link>
       </div>
 
@@ -221,7 +249,7 @@ export function OrderDetailPanel({
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-xs font-black text-slate-900 uppercase tracking-wide">Customer</h4>
             <Link
-              href={`/dashboard/customers?search=${encodeURIComponent(order.customerPhone)}`}
+              href={`/dashboard/customers?search=${encodeURIComponent(order.customerPhone)}&autoOpen=1`}
               className="text-[11px] font-bold text-blue-600 hover:text-blue-700"
             >
               View profile
@@ -346,14 +374,14 @@ export function OrderDetailPanel({
             <div className="flex justify-between pt-2">
               <dt className="text-slate-500">Payment Method</dt>
               <dd className="font-bold text-slate-900">
-                {order.paymentMethod === 'COD' ? 'Cash on Delivery' : order.paymentMethod}
+                {getPaymentMethodLabel(order.paymentMethod)}
               </dd>
             </div>
             <div className="flex justify-between items-center">
               <dt className="text-slate-500">Payment Status</dt>
               <dd>
-                <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[10px] font-bold">
-                  {order.paymentStatus.replace(/_/g, ' ')}
+                <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${getPaymentStatusColorClasses(order.paymentStatus)}`}>
+                  {getPaymentStatusLabel(order.paymentStatus, order.paymentMethod)}
                 </span>
               </dd>
             </div>
@@ -379,7 +407,10 @@ export function OrderDetailPanel({
                 {canBookCourier && onBookCourier && (
                   <button
                     type="button"
-                    onClick={() => onBookCourier(order)}
+                    onClick={() => {
+                      onBookCourier(order);
+                      onClose();
+                    }}
                     className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors"
                   >
                     <Truck className="w-3 h-3" />

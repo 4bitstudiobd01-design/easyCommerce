@@ -25,6 +25,7 @@ import { SeedPaymentDemoDataService } from './services/seed-payment-demo-data.se
 import { GetOrderBalanceService } from './services/get-order-balance.service';
 import { GetOrderPaymentHistoryService } from './services/get-order-payment-history.service';
 import { RecordManualPaymentService } from './services/record-manual-payment.service';
+import { VoidManualPaymentService } from './services/void-manual-payment.service';
 import { CreatePaymentLinkForOrderService } from './services/create-payment-link-for-order.service';
 import { PaymentController } from './payment.controller';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -83,6 +84,7 @@ import { OrderStatusHistoryEntity } from '../order/entities/order-status-history
     GetOrderBalanceService,
     GetOrderPaymentHistoryService,
     RecordManualPaymentService,
+    VoidManualPaymentService,
     CreatePaymentLinkForOrderService,
   ],
   exports: [
