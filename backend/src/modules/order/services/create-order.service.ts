@@ -11,6 +11,7 @@ import { StockAdjustmentAction } from '../../inventory/dto/adjust-stock.dto';
 import { TriggerOrderStatusSmsService } from '../../sms/services/trigger-order-status-sms.service';
 import { ApplyCouponService } from '../../coupon/services/apply-coupon.service';
 import { FindOrCreateCustomerService } from '../../customer/services/find-or-create-customer.service';
+import { RecordCustomerActivityService } from '../../customer/services/record-customer-activity.service';
 import { normalizeChannel } from '../../../common/utils/normalize-channel.util';
 
 @Injectable()
@@ -27,6 +28,7 @@ export class CreateOrderService {
     private readonly triggerOrderStatusSmsService: TriggerOrderStatusSmsService,
     private readonly applyCouponService: ApplyCouponService,
     private readonly findOrCreateCustomerService: FindOrCreateCustomerService,
+    private readonly recordCustomerActivityService: RecordCustomerActivityService,
   ) {}
 
   async execute(dto: CreateOrderDto): Promise<OrderEntity> {
@@ -109,15 +111,22 @@ export class CreateOrderService {
     const grandTotal = Math.max(0, subtotal + deliveryFee - discountAmount);
     const orderNumber = `ORD-${Date.now().toString().slice(-6)}`;
 
-    // Link the order to a durable customer record. Matching orders to customers by phone
-    // string alone silently detached a customer's history the moment their phone was
-    // edited; customerId survives that. Returns null on failure so checkout still
-    // completes — the order keeps its own denormalised name/phone either way.
+    // Link the order to a durable customer record. Keyed on (tenantId, customerPhone).
+    // Automatically tags as GUEST if checkout without login, or ACTIVE / REGISTERED if logged in.
+    const isGuest = dto.isGuest ?? (dto.userId ? false : true);
     const customer = await this.findOrCreateCustomerService.execute(tenantId, {
       phone: dto.customerPhone,
       name: dto.customerName,
       email: dto.customerEmail,
       storeId: store.id,
+      userId: dto.userId,
+      isGuest,
+      address: {
+        recipientName: dto.customerName,
+        phone: dto.customerPhone,
+        addressLine1: dto.shippingAddress,
+        city: dto.city,
+      },
     });
 
     const order = this.orderRepository.create({
@@ -153,6 +162,32 @@ export class CreateOrderService {
     });
 
     const savedOrder = await this.orderRepository.save(order);
+
+    // Record Customer 360 Activity
+    if (customer?.id) {
+      try {
+        await this.recordCustomerActivityService.execute({
+          tenantId,
+          storeId: store.id,
+          customerId: customer.id,
+          eventType: 'ORDER_PLACED',
+          title: `Placed Order #${savedOrder.orderNumber}`,
+          description: `Order for ৳${Number(savedOrder.grandTotal).toLocaleString()} placed via ${savedOrder.paymentMethod}${isGuest ? ' (Guest Checkout)' : ''}`,
+          actorName: dto.customerName || 'Customer',
+          metadata: {
+            orderId: savedOrder.id,
+            orderNumber: savedOrder.orderNumber,
+            grandTotal: Number(savedOrder.grandTotal),
+            itemCount: savedOrder.items?.length || 1,
+            paymentMethod: savedOrder.paymentMethod,
+            paymentStatus: savedOrder.paymentStatus,
+            isGuest,
+          },
+        });
+      } catch (err) {
+        // Non-blocking activity record
+      }
+    }
 
     // Trigger Order Placement SMS
     try {

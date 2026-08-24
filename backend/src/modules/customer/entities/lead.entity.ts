@@ -89,6 +89,15 @@ export class LeadEntity {
   @Column({ name: 'lost_reason', length: 255, nullable: true })
   lostReason?: string;
 
+  @Column({ name: 'next_follow_up_at', type: 'timestamptz', nullable: true })
+  nextFollowUpAt?: Date | null;
+
+  @Column({ name: 'follow_up_note', type: 'text', nullable: true })
+  followUpNote?: string;
+
+  @Column({ name: 'follow_up_status', length: 50, nullable: true })
+  followUpStatus?: string;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 

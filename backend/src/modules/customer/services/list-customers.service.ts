@@ -6,6 +6,8 @@ import { CustomerSegmentEntity } from '../entities/customer-segment.entity';
 import { CustomerListDto, ALLOWED_CUSTOMER_SORT_FIELDS } from '../dto/customer-list.dto';
 import { roundMoney } from '../utils/money.util';
 
+import { SeedCustomersService } from './seed-customers.service';
+
 export interface CustomerListItem extends CustomerEntity {
   ordersCount: number;
   totalSpent: number;
@@ -20,9 +22,16 @@ export class ListCustomersService {
     @InjectRepository(CustomerSegmentEntity)
     private readonly segmentRepository: Repository<CustomerSegmentEntity>,
     private readonly dataSource: DataSource,
+    private readonly seedCustomersService: SeedCustomersService,
   ) {}
 
   async execute(tenantId: string, dto: CustomerListDto) {
+    // Auto-seed starter customers for tenant if none exist
+    const count = await this.customerRepository.count({ where: { tenantId } });
+    if (count === 0) {
+      await this.seedCustomersService.execute(tenantId);
+    }
+
     const page = Math.max(1, dto.page || 1);
     const limit = Math.min(100, Math.max(1, dto.limit || 20));
     const skip = (page - 1) * limit;
@@ -144,6 +153,7 @@ export class ListCustomersService {
       ACTIVE: 0,
       INACTIVE: 0,
       BLOCKED: 0,
+      GUEST: 0,
     };
 
     for (const row of statusCountsRaw) {
@@ -153,9 +163,11 @@ export class ListCustomersService {
         statusCounts.INACTIVE = Number(row.count || 0);
       } else if (row.status === CustomerStatusEnum.BLOCKED) {
         statusCounts.BLOCKED = Number(row.count || 0);
+      } else if (row.status === CustomerStatusEnum.GUEST) {
+        statusCounts.GUEST = Number(row.count || 0);
       }
     }
-    statusCounts.ALL = statusCounts.ACTIVE + statusCounts.INACTIVE + statusCounts.BLOCKED;
+    statusCounts.ALL = statusCounts.ACTIVE + statusCounts.INACTIVE + statusCounts.BLOCKED + statusCounts.GUEST;
 
     // Sorting & Order Stats aggregation
     const sortOrder = dto.sortOrder === 'ASC' ? 'ASC' : 'DESC';

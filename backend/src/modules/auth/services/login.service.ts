@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { FindUserByIdentifierService } from '../../user/services/find-user-by-identifier.service';
+import { FindStoreByUserService } from '../../tenant/services/find-store-by-user.service';
 import { LoginDto } from '../dto/login.dto';
 import { AuthResponseDto } from '../dto/auth-response.dto';
 
@@ -13,6 +14,7 @@ const REMEMBERED_REFRESH_EXPIRY = '30d';
 export class LoginService {
   constructor(
     private readonly findUserByIdentifierService: FindUserByIdentifierService,
+    private readonly findStoreByUserService: FindStoreByUserService,
     private readonly jwtService: JwtService,
   ) {}
 
@@ -44,6 +46,21 @@ export class LoginService {
       expiresIn: dto.rememberMe ? REMEMBERED_REFRESH_EXPIRY : SESSION_REFRESH_EXPIRY,
     });
 
+    let storePayload = undefined;
+    try {
+      const store = await this.findStoreByUserService.execute(user.id);
+      if (store) {
+        storePayload = {
+          id: store.id,
+          name: store.name,
+          slug: store.slug,
+          tenantId: store.tenantId,
+        };
+      }
+    } catch {
+      // Non-blocking fallback
+    }
+
     return {
       accessToken,
       refreshToken,
@@ -53,6 +70,7 @@ export class LoginService {
         fullName: user.fullName,
         role: user.role,
       },
+      store: storePayload,
     };
   }
 }
