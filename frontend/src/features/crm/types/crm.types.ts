@@ -116,11 +116,25 @@ export interface CustomerSegment {
   createdAt: string;
 }
 
-export type ActivityType = 'CALL' | 'WHATSAPP' | 'SMS' | 'NOTE' | 'ORDER' | 'STAGE_CHANGE' | 'STATUS_UPDATE' | 'MEETING';
+export type ActivityType =
+  | 'CALL'
+  | 'WHATSAPP'
+  | 'SMS'
+  | 'NOTE'
+  | 'NOTE_ADDED'
+  | 'ORDER'
+  | 'ORDER_PLACED'
+  | 'ORDER_DELIVERED'
+  | 'STAGE_CHANGE'
+  | 'LEAD_STAGE_CHANGED'
+  | 'STATUS_UPDATE'
+  | 'MEETING'
+  | 'LEAD_CREATED'
+  | 'CUSTOMER_CREATED';
 
 export interface CrmActivity {
   id: string;
-  tenantId: string;
+  tenantId?: string;
   customerId?: string;
   customerName?: string;
   customerPhone?: string;
@@ -129,7 +143,8 @@ export interface CrmActivity {
   type: ActivityType;
   title: string;
   description: string;
-  authorName: string;
+  authorName?: string;
+  actorName?: string;  // backend alias for authorName
   authorRole?: string;
   outcome?: string;
   metadata?: Record<string, any>;
@@ -139,12 +154,16 @@ export interface CrmActivity {
 export interface CrmAnalyticsMetrics {
   totalCustomers: number;
   activeCustomers: number;
+  newCustomers: number;
+  repeatCustomers: number;
+  avgCustomerLtv: number;
+  repeatPurchaseRate: number;
+  totalRevenue: number;
+  avgOrderValue: number;
+  churnRate: number;
   totalLeads: number;
   convertedLeads: number;
   leadConversionRate: number;
-  avgCustomerLtv: number;
-  repeatPurchaseRate: number;
-  churnRate: number;
   pipelineValue: number;
   rfmBreakdown: {
     vip: number;

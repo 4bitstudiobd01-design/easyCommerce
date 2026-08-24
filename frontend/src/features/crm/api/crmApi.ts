@@ -186,8 +186,18 @@ export const crmApi = createApi({
       providesTags: ['CrmSegment'],
       transformResponse: (response: any) => {
         const payload = response?.data ?? response;
-        if (Array.isArray(payload) && payload.length > 0) return payload;
-        return mockSegments;
+        if (Array.isArray(payload)) return payload;
+        return [];
+      },
+    }),
+
+    getSegmentCustomers: builder.query<Customer360[], string>({
+      query: (segmentId) => `/segments/${segmentId}/customers`,
+      providesTags: (result, error, id) => [{ type: 'CrmSegment', id }],
+      transformResponse: (response: any) => {
+        const payload = response?.data ?? response;
+        if (Array.isArray(payload)) return payload;
+        return [];
       },
     }),
 
@@ -201,17 +211,28 @@ export const crmApi = createApi({
       transformResponse: (response: any) => response?.data ?? response,
     }),
 
-    // Omnichannel Activities
-    getCrmActivities: builder.query<CrmActivity[], { customerId?: string; type?: string; limit?: number } | void>({
+    // Omnichannel Activities (store-wide real feed)
+    getCrmActivities: builder.query<CrmActivity[], { type?: string; search?: string; limit?: number } | void>({
       query: (params) => ({
         url: '/activities/all',
-        params: params || {},
+        params: params
+          ? {
+              ...(params.type && params.type !== 'ALL' ? { type: params.type } : {}),
+              ...(params.search ? { search: params.search } : {}),
+              ...(params.limit ? { limit: params.limit } : {}),
+            }
+          : {},
       }),
       providesTags: ['CrmActivity'],
       transformResponse: (response: any) => {
-        const payload = response?.data ?? response;
-        if (Array.isArray(payload) && payload.length > 0) return payload;
-        return mockActivities;
+        // Handle double-wrapped response: {success, data: {success, data: []}}
+        const payload = response?.data?.data ?? response?.data ?? response;
+        if (!Array.isArray(payload)) return [];
+        return payload.map((item: any) => ({
+          ...item,
+          authorName: item.actorName || item.authorName || 'System',
+          type: item.type as any,
+        }));
       },
     }),
 
@@ -225,20 +246,38 @@ export const crmApi = createApi({
       transformResponse: (response: any) => response?.data ?? response,
     }),
 
-    // CRM Analytics
+    // CRM Analytics — Full real-data analytics
     getCrmAnalytics: builder.query<CrmAnalyticsMetrics, void>({
-      query: () => '/analytics/overview',
+      query: () => '/analytics/full',
       providesTags: ['CrmAnalytics'],
       transformResponse: (response: any) => {
-        const payload = response?.data ?? response;
-        if (payload && payload.totalCustomers) {
-          return {
-            ...mockCrmAnalytics,
-            totalCustomers: payload.totalCustomers || mockCrmAnalytics.totalCustomers,
-            activeCustomers: payload.activeCustomers || mockCrmAnalytics.activeCustomers,
-          };
-        }
-        return mockCrmAnalytics;
+        // Double-wrapped: {success, data: {success, data: {...}}}
+        const d = response?.data?.data ?? response?.data ?? response;
+        if (!d || !('totalCustomers' in d)) return {} as CrmAnalyticsMetrics;
+        return {
+          totalCustomers: Number(d.totalCustomers || 0),
+          activeCustomers: Number(d.activeCustomers || 0),
+          newCustomers: Number(d.newCustomers || 0),
+          repeatCustomers: Number(d.repeatCustomers || 0),
+          avgCustomerLtv: Number(d.avgCustomerLtv || 0),
+          repeatPurchaseRate: Number(d.repeatPurchaseRate || 0),
+          totalRevenue: Number(d.totalRevenue || 0),
+          avgOrderValue: Number(d.avgOrderValue || 0),
+          churnRate: Number(d.churnRate || 0),
+          totalLeads: Number(d.totalLeads || 0),
+          convertedLeads: Number(d.convertedLeads || 0),
+          leadConversionRate: Number(d.leadConversionRate || 0),
+          pipelineValue: Number(d.pipelineValue || 0),
+          rfmBreakdown: {
+            vip: Number(d.rfmBreakdown?.vip || 0),
+            loyal: Number(d.rfmBreakdown?.loyal || 0),
+            promising: Number(d.rfmBreakdown?.promising || 0),
+            atRisk: Number(d.rfmBreakdown?.atRisk || 0),
+            dormant: Number(d.rfmBreakdown?.dormant || 0),
+          },
+          acquisitionChannels: Array.isArray(d.acquisitionChannels) ? d.acquisitionChannels : [],
+          topSpenders: Array.isArray(d.topSpenders) ? d.topSpenders : [],
+        };
       },
     }),
   }),
@@ -256,6 +295,7 @@ export const {
   useScheduleLeadFollowUpMutation,
   useConvertLeadToCustomerMutation,
   useGetCrmSegmentsQuery,
+  useGetSegmentCustomersQuery,
   useCreateCrmSegmentMutation,
   useGetCrmActivitiesQuery,
   useLogCrmActivityMutation,

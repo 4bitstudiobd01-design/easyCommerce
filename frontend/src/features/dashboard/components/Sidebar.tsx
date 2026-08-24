@@ -26,6 +26,8 @@ import {
   Target,
   Activity,
   BarChart3,
+  MessageSquare,
+  KeyRound,
   PanelLeftClose,
   PanelLeftOpen,
 } from 'lucide-react';
@@ -47,6 +49,11 @@ export const Sidebar = ({
 
   const { data: orderKpis } = useGetMerchantOrderKpisQuery();
   const pendingOrdersCount = orderKpis?.pendingConfirmation ?? (orderKpis?.statusCounts?.PENDING ?? 0);
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const isActive = (path: string) => {
     if (path === '/dashboard' && pathname === '/dashboard') return true;
@@ -218,6 +225,32 @@ export const Sidebar = ({
             <div className="flex items-center gap-2.5">
               <Target className={iconClass} strokeWidth={iconStroke} />
               {!isDesktopCollapsed && <span>Leads Pipeline</span>}
+            </div>
+          </Link>
+          <Link 
+            href="/dashboard/crm/chat" 
+            className={navItemClass('/dashboard/crm/chat')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Omnichannel Chat")}
+            onFocus={(e) => handleTooltipEnter(e, "Omnichannel Chat")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <MessageSquare className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Omnichannel Chat</span>}
+            </div>
+          </Link>
+          <Link 
+            href="/dashboard/crm/channels" 
+            className={navItemClass('/dashboard/crm/channels')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Channel Integrations")}
+            onFocus={(e) => handleTooltipEnter(e, "Channel Integrations")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <KeyRound className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Channel Credentials</span>}
             </div>
           </Link>
           <Link 
@@ -454,7 +487,7 @@ export const Sidebar = ({
       </aside>
 
       {/* Portal Tooltip */}
-      {typeof window !== 'undefined' && createPortal(
+      {mounted && tooltipData.show && typeof document !== 'undefined' && createPortal(
         <div
           className={`fixed px-2.5 py-1.5 bg-slate-800 text-white text-[12px] font-medium rounded-md shadow-lg z-[9999] whitespace-nowrap flex items-center gap-1.5 pointer-events-none before:content-[''] before:absolute before:right-full before:top-1/2 before:-translate-y-1/2 before:border-[4px] before:border-transparent before:border-r-slate-800 transition-opacity duration-150 ${tooltipData.show ? 'opacity-100' : 'opacity-0'}`}
           style={{

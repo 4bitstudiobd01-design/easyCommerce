@@ -49,6 +49,7 @@ import { ConvertLeadToCustomerService } from './services/convert-lead-to-custome
 import { SeedLeadsService } from './services/seed-leads.service';
 import { SeedCustomersService } from './services/seed-customers.service';
 import { CustomerSeederBootstrapService } from './services/customer-seeder-bootstrap.service';
+import { ListStoreActivitiesService } from './services/list-store-activities.service';
 
 @Module({
   imports: [
@@ -104,6 +105,7 @@ import { CustomerSeederBootstrapService } from './services/customer-seeder-boots
     SeedLeadsService,
     SeedCustomersService,
     CustomerSeederBootstrapService,
+    ListStoreActivitiesService,
   ],
   exports: [
     CreateCustomerService,
@@ -137,6 +139,7 @@ import { CustomerSeederBootstrapService } from './services/customer-seeder-boots
     SeedLeadsService,
     SeedCustomersService,
     TypeOrmModule,
+    ListStoreActivitiesService,
   ],
 })
 export class CustomerModule {}

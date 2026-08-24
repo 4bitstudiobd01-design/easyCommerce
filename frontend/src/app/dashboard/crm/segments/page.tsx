@@ -4,14 +4,15 @@ import React, { useState } from 'react';
 import { CrmNavigationHeader } from '@/features/crm/components/CrmNavigationHeader';
 import { SegmentsOverview } from '@/features/crm/components/segments/SegmentsOverview';
 import { CreateSegmentModal } from '@/features/crm/components/segments/CreateSegmentModal';
+import { SegmentCustomersModal } from '@/features/crm/components/segments/SegmentCustomersModal';
 import { useGetCrmSegmentsQuery } from '@/features/crm/api/crmApi';
 import { CustomerSegment } from '@/features/crm/types/crm.types';
-import { mockSegments } from '@/features/crm/data/crmMockData';
 
 export default function CrmSegmentsPage() {
   const { data: serverSegments } = useGetCrmSegmentsQuery();
-  const [localSegments, setLocalSegments] = useState<CustomerSegment[]>(mockSegments);
+  const [localSegments, setLocalSegments] = useState<CustomerSegment[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [selectedSegment, setSelectedSegment] = useState<CustomerSegment | null>(null);
 
   const segmentsList = serverSegments && serverSegments.length > 0 ? serverSegments : localSegments;
 
@@ -34,6 +35,7 @@ export default function CrmSegmentsPage() {
       <SegmentsOverview
         segments={segmentsList}
         onOpenCreateModal={() => setIsCreateModalOpen(true)}
+        onSelectSegment={(segment) => setSelectedSegment(segment)}
       />
 
       {/* Create Segment Modal */}
@@ -42,6 +44,14 @@ export default function CrmSegmentsPage() {
         onClose={() => setIsCreateModalOpen(false)}
         onSegmentCreated={handleSegmentCreated}
       />
+
+      {/* View Segment Real Customers Modal */}
+      <SegmentCustomersModal
+        segment={selectedSegment}
+        isOpen={Boolean(selectedSegment)}
+        onClose={() => setSelectedSegment(null)}
+      />
     </div>
   );
 }
+

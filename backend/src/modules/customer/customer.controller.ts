@@ -51,6 +51,8 @@ import { ScheduleLeadFollowUpService } from './services/schedule-lead-follow-up.
 import { ConvertLeadToCustomerService } from './services/convert-lead-to-customer.service';
 import { SeedLeadsService } from './services/seed-leads.service';
 import { SeedCustomersService } from './services/seed-customers.service';
+import { ListStoreActivitiesService } from './services/list-store-activities.service';
+import { RecordCustomerActivityService } from './services/record-customer-activity.service';
 
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
@@ -103,6 +105,8 @@ export class CustomerController {
     private readonly convertLeadToCustomerService: ConvertLeadToCustomerService,
     private readonly seedLeadsService: SeedLeadsService,
     private readonly seedCustomersService: SeedCustomersService,
+    private readonly listStoreActivitiesService: ListStoreActivitiesService,
+    private readonly recordCustomerActivityService: RecordCustomerActivityService,
   ) {}
 
   private async getMerchantTenantContext(userId: string, storeId?: string): Promise<{ tenantId: string; storeId?: string }> {
@@ -112,6 +116,31 @@ export class CustomerController {
     }
     return { tenantId: store.tenantId, storeId: store.id };
   }
+
+  // --- STORE-WIDE ACTIVITY FEED ENDPOINT ---
+
+  @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
+  @Get('activities/all')
+  @ApiOperation({ summary: 'Get store-wide activity feed (leads, customers, orders, notes)' })
+  async listStoreActivities(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') storeId?: string,
+    @Query('type') type?: string,
+    @Query('search') search?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const ctx = await this.getMerchantTenantContext(userId, storeId);
+    const items = await this.listStoreActivitiesService.execute(
+      ctx.tenantId,
+      ctx.storeId,
+      limit ? Math.min(parseInt(limit, 10), 100) : 50,
+      type,
+      search,
+    );
+    return { success: true, data: items };
+  }
+
+  // --- CUSTOMER LISTING ---
 
   @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
   @Get()
@@ -150,6 +179,19 @@ export class CustomerController {
   ) {
     const ctx = await this.getMerchantTenantContext(userId, storeId);
     return this.getCustomerAnalyticsService.getOverview(ctx.tenantId, dto);
+  }
+
+  @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
+  @Get('analytics/full')
+  @ApiOperation({ summary: 'Get full CRM analytics (KPIs, RFM, channels, top spenders, leads pipeline) in one request' })
+  async getFullAnalytics(
+    @CurrentUser('sub') userId: string,
+    @Query() dto: CustomerAnalyticsQueryDto,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const ctx = await this.getMerchantTenantContext(userId, storeId);
+    const data = await this.getCustomerAnalyticsService.getFullAnalytics(ctx.tenantId, dto);
+    return { success: true, data };
   }
 
   @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
@@ -236,6 +278,19 @@ export class CustomerController {
     const ctx = await this.getMerchantTenantContext(userId, storeId);
     return this.manageCustomerSegmentService.findById(id, ctx.tenantId);
   }
+
+  @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
+  @Get('segments/:id/customers')
+  @ApiOperation({ summary: 'Get list of real customers matching this segment' })
+  async getSegmentCustomers(
+    @CurrentUser('sub') userId: string,
+    @Param('id') id: string,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const ctx = await this.getMerchantTenantContext(userId, storeId);
+    return this.manageCustomerSegmentService.findSegmentCustomers(id, ctx.tenantId);
+  }
+
 
   @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
   @Patch('segments/:id')

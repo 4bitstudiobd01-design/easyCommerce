@@ -500,6 +500,10 @@ export const mockActivities: CrmActivity[] = [
 export const mockCrmAnalytics: CrmAnalyticsMetrics = {
   totalCustomers: 155,
   activeCustomers: 128,
+  newCustomers: 18,
+  repeatCustomers: 53,
+  totalRevenue: 1275000,
+  avgOrderValue: 8230,
   totalLeads: 48,
   convertedLeads: 29,
   leadConversionRate: 60.4,

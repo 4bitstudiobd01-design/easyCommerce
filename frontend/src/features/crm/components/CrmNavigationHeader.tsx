@@ -12,9 +12,9 @@ import {
   Plus,
   Sparkles,
   Search,
-  PhoneCall,
-  UserPlus,
-  Filter,
+  MessageSquare,
+  KeyRound,
+  Radio,
 } from 'lucide-react';
 
 interface CrmNavigationHeaderProps {
@@ -56,6 +56,19 @@ export const CrmNavigationHeader: React.FC<CrmNavigationHeaderProps> = ({
       href: '/dashboard/crm/leads',
       icon: Target,
       badge: 'Kanban',
+    },
+    {
+      id: 'chat',
+      label: 'Omnichannel Chat',
+      href: '/dashboard/crm/chat',
+      icon: MessageSquare,
+      badge: 'Live',
+    },
+    {
+      id: 'channels',
+      label: 'Channel Credentials',
+      href: '/dashboard/crm/channels',
+      icon: KeyRound,
     },
     {
       id: 'segments',
