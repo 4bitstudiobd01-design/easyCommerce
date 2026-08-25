@@ -92,6 +92,11 @@ import { GetTaxSlabsService } from './services/get-tax-slabs.service';
 import { SetTaxSlabsService } from './services/set-tax-slabs.service';
 import { EstimateTaxService } from './services/estimate-tax.service';
 import { SetTaxSlabsDto, GetTaxSlabsQueryDto, EstimateTaxQueryDto } from './dto/tax.dto';
+import { CreateNoticeService } from './services/create-notice.service';
+import { ListNoticesService } from './services/list-notices.service';
+import { UpdateNoticeService } from './services/update-notice.service';
+import { DeleteNoticeService } from './services/delete-notice.service';
+import { CreateNoticeDto, UpdateNoticeDto, ListNoticesQueryDto } from './dto/notice.dto';
 
 @ApiTags('HR — Employees & Departments')
 @Controller('hr')
@@ -149,6 +154,10 @@ export class HrmController {
     private readonly getTaxSlabsService: GetTaxSlabsService,
     private readonly setTaxSlabsService: SetTaxSlabsService,
     private readonly estimateTaxService: EstimateTaxService,
+    private readonly createNoticeService: CreateNoticeService,
+    private readonly listNoticesService: ListNoticesService,
+    private readonly updateNoticeService: UpdateNoticeService,
+    private readonly deleteNoticeService: DeleteNoticeService,
   ) {}
 
   private async getStoreContext(userId: string, storeIdHeader?: string) {
@@ -984,5 +993,68 @@ export class HrmController {
   ) {
     const store = await this.getStoreContext(userId, headerStoreId);
     return this.estimateTaxService.execute(store.id, query);
+  }
+
+  // ─── Notice Board ───────────────────────────────────────────────
+
+  @Get('notices')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List active notices — visible to every authenticated dashboard user, no specific permission required' })
+  @ApiResponse({ status: 200, description: 'List of notices' })
+  async listNotices(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Query() query: ListNoticesQueryDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.listNoticesService.execute(store.id, query);
+  }
+
+  @Post('notices')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:notices:manage')
+  @ApiOperation({ summary: 'Post a notice to the company notice board' })
+  @ApiResponse({ status: 201, description: 'Notice created' })
+  async createNotice(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Body() dto: CreateNoticeDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.createNoticeService.execute(store.tenantId, store.id, userId, dto);
+  }
+
+  @Patch('notices/:id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:notices:manage')
+  @ApiOperation({ summary: 'Update a notice' })
+  @ApiResponse({ status: 200, description: 'Notice updated' })
+  async updateNotice(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') noticeId: string,
+    @Body() dto: UpdateNoticeDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.updateNoticeService.execute(store.id, noticeId, dto);
+  }
+
+  @Delete('notices/:id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:notices:manage')
+  @ApiOperation({ summary: 'Delete a notice' })
+  @ApiResponse({ status: 200, description: 'Notice deleted' })
+  async deleteNotice(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') noticeId: string,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    await this.deleteNoticeService.execute(store.id, noticeId);
+    return { success: true, message: 'Notice deleted successfully.' };
   }
 }

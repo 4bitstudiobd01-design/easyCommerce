@@ -454,6 +454,39 @@ export interface TaxComputationResult {
   breakdown: TaxSlabBreakdown[];
 }
 
+export type NoticePriority = 'NORMAL' | 'IMPORTANT' | 'URGENT';
+
+export interface Notice {
+  id: string;
+  tenantId: string;
+  storeId: string;
+  title: string;
+  body: string;
+  priority: NoticePriority;
+  isPinned: boolean;
+  expiresAt?: string;
+  createdByUserId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateNoticeRequest {
+  title: string;
+  body: string;
+  priority?: NoticePriority;
+  isPinned?: boolean;
+  expiresAt?: string;
+}
+
+export interface UpdateNoticeRequest {
+  id: string;
+  title?: string;
+  body?: string;
+  priority?: NoticePriority;
+  isPinned?: boolean;
+  expiresAt?: string | null;
+}
+
 export interface ListEmployeesParams {
   search?: string;
   departmentId?: string;
@@ -470,7 +503,7 @@ export const hrmApi = createApi({
   baseQuery: createBaseQueryWithReauth(
     process.env.NEXT_PUBLIC_API_URL?.replace('/orders', '') || 'http://localhost:5001/api/v1',
   ),
-  tagTypes: ['Department', 'Employee', 'Attendance', 'Holiday', 'LeavePolicy', 'LeaveRequest', 'LeaveBalance', 'Shift', 'Roster', 'Expense', 'SalaryStructure', 'PayrollRun', 'TaxSlab'],
+  tagTypes: ['Department', 'Employee', 'Attendance', 'Holiday', 'LeavePolicy', 'LeaveRequest', 'LeaveBalance', 'Shift', 'Roster', 'Expense', 'SalaryStructure', 'PayrollRun', 'TaxSlab', 'Notice'],
   endpoints: (builder) => ({
     getDepartments: builder.query<Department[], void>({
       query: () => '/hr/departments',
@@ -736,6 +769,27 @@ export const hrmApi = createApi({
       query: (params) => ({ url: '/hr/tax/estimate', params }),
       transformResponse: unwrap<TaxComputationResult>,
     }),
+
+    getNotices: builder.query<Notice[], { includeExpired?: boolean } | void>({
+      query: (params) => ({ url: '/hr/notices', params: params || undefined }),
+      providesTags: ['Notice'],
+      transformResponse: unwrap<Notice[]>,
+    }),
+    createNotice: builder.mutation<Notice, CreateNoticeRequest>({
+      query: (body) => ({ url: '/hr/notices', method: 'POST', body }),
+      invalidatesTags: ['Notice'],
+      transformResponse: unwrap<Notice>,
+    }),
+    updateNotice: builder.mutation<Notice, UpdateNoticeRequest>({
+      query: ({ id, ...body }) => ({ url: `/hr/notices/${id}`, method: 'PATCH', body }),
+      invalidatesTags: ['Notice'],
+      transformResponse: unwrap<Notice>,
+    }),
+    deleteNotice: builder.mutation<{ success: boolean; message: string }, string>({
+      query: (id) => ({ url: `/hr/notices/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['Notice'],
+      transformResponse: unwrap<{ success: boolean; message: string }>,
+    }),
   }),
 });
 
@@ -789,6 +843,10 @@ export const {
   useGetTaxSlabsQuery,
   useSetTaxSlabsMutation,
   useLazyEstimateTaxQuery,
+  useGetNoticesQuery,
+  useCreateNoticeMutation,
+  useUpdateNoticeMutation,
+  useDeleteNoticeMutation,
 } = hrmApi;
 
 /** Streams the authenticated document endpoint and opens it in a new tab. RTK Query's

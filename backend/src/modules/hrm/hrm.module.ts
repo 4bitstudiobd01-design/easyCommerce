@@ -15,6 +15,7 @@ import { SalaryStructureEntity } from './entities/salary-structure.entity';
 import { PayrollRunEntity } from './entities/payroll-run.entity';
 import { PayslipEntity } from './entities/payslip.entity';
 import { TaxSlabEntity } from './entities/tax-slab.entity';
+import { NoticeEntity } from './entities/notice.entity';
 import { TenantModule } from '../tenant/tenant.module';
 import { StaffModule } from '../staff/staff.module';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
@@ -72,6 +73,10 @@ import { GetTaxSlabsService } from './services/get-tax-slabs.service';
 import { SetTaxSlabsService } from './services/set-tax-slabs.service';
 import { ComputeTaxService } from './services/compute-tax.service';
 import { EstimateTaxService } from './services/estimate-tax.service';
+import { CreateNoticeService } from './services/create-notice.service';
+import { ListNoticesService } from './services/list-notices.service';
+import { UpdateNoticeService } from './services/update-notice.service';
+import { DeleteNoticeService } from './services/delete-notice.service';
 
 @Module({
   imports: [
@@ -89,6 +94,7 @@ import { EstimateTaxService } from './services/estimate-tax.service';
       PayrollRunEntity,
       PayslipEntity,
       TaxSlabEntity,
+      NoticeEntity,
     ]),
     TenantModule,
     // Provides GetMyPermissionsService, the source of truth PermissionsGuard uses to
@@ -157,6 +163,10 @@ import { EstimateTaxService } from './services/estimate-tax.service';
     SetTaxSlabsService,
     ComputeTaxService,
     EstimateTaxService,
+    CreateNoticeService,
+    ListNoticesService,
+    UpdateNoticeService,
+    DeleteNoticeService,
     JwtAuthGuard,
     PermissionsGuard,
   ],

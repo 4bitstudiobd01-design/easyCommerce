@@ -425,6 +425,19 @@ export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onCl
               {!isDesktopCollapsed && <span>Payroll</span>}
             </div>
           </Link>
+          <Link
+            href="/dashboard/hr/notices"
+            className={navItemClass('/dashboard/hr/notices')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Notice Board")}
+            onFocus={(e) => handleTooltipEnter(e, "Notice Board")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <Megaphone className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Notice Board</span>}
+            </div>
+          </Link>
 
           <NavGroupHeader>Store</NavGroupHeader>
           <Link
