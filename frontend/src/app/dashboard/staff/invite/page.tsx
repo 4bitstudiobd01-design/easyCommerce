@@ -113,6 +113,20 @@ const PERMISSION_GROUPS: {
       { key: 'staff:manage', label: 'Manage Staff', desc: 'অন্যান্য স্টাফদের ইনভাইট ও পারমিশন কন্ট্রোল' },
     ],
   },
+  {
+    category: '👥 Human Resources',
+    items: [
+      { key: 'hr:employees:read', label: 'View Employees', desc: 'এমপ্লয়ি ডিরেক্টরি দেখতে পারবে' },
+      { key: 'hr:employees:manage', label: 'Manage Employees', desc: 'এমপ্লয়ি ও ডিপার্টমেন্ট যোগ, এডিট ও টার্মিনেট করতে পারবে' },
+      { key: 'hr:attendance:manage', label: 'Manage Attendance', desc: 'এমপ্লয়ি অ্যাটেন্ডেন্স ট্র্যাক ও এডিট' },
+      { key: 'hr:leave:manage', label: 'Approve Leave', desc: 'অন্যান্য এমপ্লয়ির ছুটির আবেদন এপ্রুভ বা রিজেক্ট' },
+      { key: 'hr:leave:self', label: 'Self-Service Leave', desc: 'নিজের ছুটির আবেদন ও ব্যালেন্স দেখতে পারবে' },
+      { key: 'hr:shifts:manage', label: 'Manage Shifts', desc: 'শিফট রোস্টার তৈরি ও নির্ধারণ' },
+      { key: 'hr:expenses:manage', label: 'Manage Expenses', desc: 'ব্যবসায়িক খরচ রেকর্ড ও ট্র্যাক' },
+      { key: 'hr:payroll:manage', label: 'Manage Payroll', desc: 'পে-রোল প্রসেসিং ও ট্যাক্স হিসাব' },
+      { key: 'hr:notices:manage', label: 'Manage Notice Board', desc: 'এমপ্লয়িদের জন্য নোটিশ পোস্ট করতে পারবে' },
+    ],
+  },
 ];
 
 export default function InviteStaffPage() {

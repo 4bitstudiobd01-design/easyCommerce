@@ -22,7 +22,9 @@ import {
   BarChart2,
   MonitorSmartphone,
   FileText,
-  ShoppingBag
+  ShoppingBag,
+  UserCog,
+  Building2
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -312,9 +314,37 @@ export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onCl
             </div>
           </Link>
 
+          <NavGroupHeader>Human Resources</NavGroupHeader>
+          <Link
+            href="/dashboard/hr/employees"
+            className={navItemClass('/dashboard/hr/employees')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Employees")}
+            onFocus={(e) => handleTooltipEnter(e, "Employees")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <UserCog className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Employees</span>}
+            </div>
+          </Link>
+          <Link
+            href="/dashboard/hr/departments"
+            className={navItemClass('/dashboard/hr/departments')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Departments")}
+            onFocus={(e) => handleTooltipEnter(e, "Departments")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <Building2 className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Departments</span>}
+            </div>
+          </Link>
+
           <NavGroupHeader>Store</NavGroupHeader>
-          <Link 
-            href="/dashboard/themes" 
+          <Link
+            href="/dashboard/themes"
             className={navItemClass('/dashboard/themes')}
             onMouseEnter={(e) => handleTooltipEnter(e, "Storefront")}
             onFocus={(e) => handleTooltipEnter(e, "Storefront")}
