@@ -3,11 +3,14 @@ import {
   Logger,
   ForbiddenException,
   BadRequestException,
+  forwardRef,
+  Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { OmnichannelCredentialsService } from './omnichannel-credentials.service';
 import { OmnichannelMessageEntity } from '../entities/omnichannel-message.entity';
+import { OmnichannelAiAutoReplyService } from './omnichannel-ai-auto-reply.service';
 
 @Injectable()
 export class WhatsAppChannelService {
@@ -17,6 +20,8 @@ export class WhatsAppChannelService {
     private readonly credentialsService: OmnichannelCredentialsService,
     @InjectRepository(OmnichannelMessageEntity)
     private readonly messageRepo: Repository<OmnichannelMessageEntity>,
+    @Inject(forwardRef(() => OmnichannelAiAutoReplyService))
+    private readonly aiAutoReplyService: OmnichannelAiAutoReplyService,
   ) {}
 
   private async getCredentials(
@@ -165,6 +170,22 @@ export class WhatsAppChannelService {
 
                 await this.messageRepo.save(record);
                 this.logger.log(`[WhatsApp INBOUND] From ${senderName} (+${fromNumber}): "${record.text}"`);
+
+                // Trigger AI Auto-Reply in background
+                this.aiAutoReplyService
+                  .handleInboundMessage({
+                    tenantId,
+                    storeId,
+                    platform: 'whatsapp',
+                    conversationId: `wa-${fromNumber}`,
+                    senderId: fromNumber,
+                    senderName,
+                    text: messageText,
+                    recipientId: metadata.phone_number_id || 'business',
+                  })
+                  .catch((err) =>
+                    this.logger.error(`AI Auto-Reply error for WhatsApp: ${err.message}`),
+                  );
               }
             }
           }

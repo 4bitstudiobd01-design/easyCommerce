@@ -12,11 +12,8 @@ export type OmnichannelPlatformType =
   | 'whatsapp'
   | 'facebook'
   | 'instagram'
-  | 'linkedin'
   | 'x'
-  | 'shopify'
   | 'slack'
-  | 'hubspot'
   | 'custom';
 
 export type OmnichannelCredentialStatus =

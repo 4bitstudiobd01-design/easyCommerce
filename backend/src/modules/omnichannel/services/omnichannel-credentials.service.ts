@@ -114,8 +114,6 @@ export class OmnichannelCredentialsService {
         defaultHandle = `Phone ID: ${dto.credentials.phoneNumberId}`;
       } else if (dto.platform === 'facebook' && dto.credentials.pageId) {
         defaultHandle = `Page ID: ${dto.credentials.pageId}`;
-      } else if (dto.platform === 'shopify' && dto.credentials.shopDomain) {
-        defaultHandle = dto.credentials.shopDomain;
       } else if (dto.platform === 'slack' && dto.credentials.defaultChannel) {
         defaultHandle = `#${dto.credentials.defaultChannel}`;
       }

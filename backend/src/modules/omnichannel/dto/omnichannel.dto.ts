@@ -18,11 +18,8 @@ export class UpsertCredentialDto {
       'whatsapp',
       'facebook',
       'instagram',
-      'linkedin',
       'x',
-      'shopify',
       'slack',
-      'hubspot',
       'custom',
     ],
   })
@@ -33,11 +30,8 @@ export class UpsertCredentialDto {
     'whatsapp',
     'facebook',
     'instagram',
-    'linkedin',
     'x',
-    'shopify',
     'slack',
-    'hubspot',
     'custom',
   ])
   platform: OmnichannelPlatformType;

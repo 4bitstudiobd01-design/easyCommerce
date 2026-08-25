@@ -5,6 +5,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 
 import { OmnichannelCredentialEntity } from './entities/omnichannel-credential.entity';
 import { OmnichannelMessageEntity } from './entities/omnichannel-message.entity';
+import { OmnichannelAiConfigEntity } from './entities/omnichannel-ai-config.entity';
+import { OmnichannelConversationStateEntity } from './entities/omnichannel-conversation-state.entity';
+import { OmnichannelAiLogEntity } from './entities/omnichannel-ai-log.entity';
 import { CustomerEntity } from '../customer/entities/customer.entity';
 import { TenantModule } from '../tenant/tenant.module';
 import { OmnichannelCredentialsService } from './services/omnichannel-credentials.service';
@@ -12,15 +15,24 @@ import { TelegramChannelService } from './services/telegram-channel.service';
 import { WhatsAppChannelService } from './services/whatsapp-channel.service';
 import { FacebookChannelService } from './services/facebook-channel.service';
 import { OmnichannelChatService } from './services/omnichannel-chat.service';
+import { OmnichannelAiCryptoService } from './services/omnichannel-ai-crypto.service';
+import { GeminiAiProvider } from './services/ai-providers/gemini-ai.provider';
+import { OpenAiProvider } from './services/ai-providers/openai-ai.provider';
+import { OmnichannelAiConfigService } from './services/omnichannel-ai-config.service';
+import { OmnichannelAiAutoReplyService } from './services/omnichannel-ai-auto-reply.service';
 import { OmnichannelCredentialsController } from './controllers/omnichannel-credentials.controller';
 import { OmnichannelChatController } from './controllers/omnichannel-chat.controller';
 import { OmnichannelWebhookController } from './controllers/omnichannel-webhook.controller';
+import { OmnichannelAiController } from './controllers/omnichannel-ai.controller';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       OmnichannelCredentialEntity,
       OmnichannelMessageEntity,
+      OmnichannelAiConfigEntity,
+      OmnichannelConversationStateEntity,
+      OmnichannelAiLogEntity,
       CustomerEntity,
     ]),
     TenantModule,
@@ -37,6 +49,7 @@ import { OmnichannelWebhookController } from './controllers/omnichannel-webhook.
     OmnichannelCredentialsController,
     OmnichannelChatController,
     OmnichannelWebhookController,
+    OmnichannelAiController,
   ],
   providers: [
     OmnichannelCredentialsService,
@@ -44,6 +57,11 @@ import { OmnichannelWebhookController } from './controllers/omnichannel-webhook.
     WhatsAppChannelService,
     FacebookChannelService,
     OmnichannelChatService,
+    OmnichannelAiCryptoService,
+    GeminiAiProvider,
+    OpenAiProvider,
+    OmnichannelAiConfigService,
+    OmnichannelAiAutoReplyService,
   ],
   exports: [
     OmnichannelCredentialsService,
@@ -51,6 +69,8 @@ import { OmnichannelWebhookController } from './controllers/omnichannel-webhook.
     WhatsAppChannelService,
     FacebookChannelService,
     OmnichannelChatService,
+    OmnichannelAiAutoReplyService,
+    OmnichannelAiConfigService,
     TypeOrmModule,
   ],
 })

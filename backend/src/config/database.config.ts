@@ -6,9 +6,16 @@ export const typeOrmConfig = (
   configService: ConfigService,
 ): TypeOrmModuleOptions => {
   const databaseUrl = configService.get<string>('DATABASE_URL');
+  const isLocal =
+    !databaseUrl ||
+    databaseUrl.includes('localhost') ||
+    databaseUrl.includes('127.0.0.1') ||
+    configService.get<string>('DB_HOST') === 'localhost' ||
+    configService.get<string>('DB_HOST') === '127.0.0.1';
+
   const enableSsl =
     configService.get<string>('DB_SSL') === 'true' ||
-    (!!databaseUrl && configService.get<string>('DB_SSL') !== 'false');
+    (!!databaseUrl && !isLocal && configService.get<string>('DB_SSL') !== 'false');
 
   return {
     type: 'postgres',

@@ -3,11 +3,14 @@ import {
   Logger,
   ForbiddenException,
   BadRequestException,
+  forwardRef,
+  Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { OmnichannelCredentialsService } from './omnichannel-credentials.service';
 import { OmnichannelMessageEntity } from '../entities/omnichannel-message.entity';
+import { OmnichannelAiAutoReplyService } from './omnichannel-ai-auto-reply.service';
 
 @Injectable()
 export class FacebookChannelService {
@@ -17,6 +20,8 @@ export class FacebookChannelService {
     private readonly credentialsService: OmnichannelCredentialsService,
     @InjectRepository(OmnichannelMessageEntity)
     private readonly messageRepo: Repository<OmnichannelMessageEntity>,
+    @Inject(forwardRef(() => OmnichannelAiAutoReplyService))
+    private readonly aiAutoReplyService: OmnichannelAiAutoReplyService,
   ) {}
 
   private async getPageAccessToken(tenantId: string): Promise<string> {
@@ -159,6 +164,22 @@ export class FacebookChannelService {
 
               await this.messageRepo.save(record);
               this.logger.log(`[Facebook INBOUND] From ${senderName} (${senderId}): "${record.text}"`);
+
+              // Trigger AI Auto-Reply
+              this.aiAutoReplyService
+                .handleInboundMessage({
+                  tenantId,
+                  storeId,
+                  platform: 'facebook',
+                  conversationId: `fb-${senderId}`,
+                  senderId: String(senderId),
+                  senderName,
+                  text: record.text,
+                  recipientId: String(pageId),
+                })
+                .catch((err) =>
+                  this.logger.error(`AI Auto-Reply error for Facebook: ${err.message}`),
+                );
             }
           }
         }

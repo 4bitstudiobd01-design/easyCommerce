@@ -4,11 +4,14 @@ import {
   BadRequestException,
   OnModuleInit,
   OnModuleDestroy,
+  forwardRef,
+  Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { OmnichannelCredentialsService } from './omnichannel-credentials.service';
 import { OmnichannelMessageEntity } from '../entities/omnichannel-message.entity';
+import { OmnichannelAiAutoReplyService } from './omnichannel-ai-auto-reply.service';
 
 export interface TelegramIncomingMessage {
   id: string;
@@ -34,6 +37,8 @@ export class TelegramChannelService implements OnModuleInit, OnModuleDestroy {
     private readonly credentialsService: OmnichannelCredentialsService,
     @InjectRepository(OmnichannelMessageEntity)
     private readonly messageRepo: Repository<OmnichannelMessageEntity>,
+    @Inject(forwardRef(() => OmnichannelAiAutoReplyService))
+    private readonly aiAutoReplyService: OmnichannelAiAutoReplyService,
   ) {}
 
   onModuleInit() {
@@ -138,6 +143,22 @@ export class TelegramChannelService implements OnModuleInit, OnModuleDestroy {
 
               await this.messageRepo.save(record);
               this.logger.log(`[Telegram INBOUND] From ${senderName} (${msg.chat.id}): "${record.text}"`);
+
+              // Trigger AI Auto-Reply
+              this.aiAutoReplyService
+                .handleInboundMessage({
+                  tenantId,
+                  storeId: cred.storeId,
+                  platform: 'telegram',
+                  conversationId: `tg-${msg.chat.id}`,
+                  senderId: String(msg.chat.id),
+                  senderName,
+                  text: record.text,
+                  recipientId: 'bot',
+                })
+                .catch((err) =>
+                  this.logger.error(`AI Auto-Reply error for Telegram: ${err.message}`),
+                );
             }
           }
         }
@@ -248,6 +269,22 @@ export class TelegramChannelService implements OnModuleInit, OnModuleDestroy {
         });
 
         await this.messageRepo.save(record);
+
+        // Trigger AI Auto-Reply
+        this.aiAutoReplyService
+          .handleInboundMessage({
+            tenantId,
+            storeId,
+            platform: 'telegram',
+            conversationId: `tg-${msg.chat.id}`,
+            senderId: String(msg.chat.id),
+            senderName,
+            text: record.text,
+            recipientId: 'bot',
+          })
+          .catch((err) =>
+            this.logger.error(`AI Auto-Reply error for Telegram: ${err.message}`),
+          );
       }
     }
 

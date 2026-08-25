@@ -3,14 +3,18 @@ import {
   Logger,
   BadRequestException,
   NotFoundException,
+  forwardRef,
+  Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { OmnichannelMessageEntity } from '../entities/omnichannel-message.entity';
 import { OmnichannelPlatformType } from '../entities/omnichannel-credential.entity';
+import { OmnichannelConversationStateEntity } from '../entities/omnichannel-conversation-state.entity';
 import { TelegramChannelService } from './telegram-channel.service';
 import { WhatsAppChannelService } from './whatsapp-channel.service';
 import { FacebookChannelService } from './facebook-channel.service';
+import { OmnichannelAiAutoReplyService } from './omnichannel-ai-auto-reply.service';
 import { CustomerEntity } from '../../customer/entities/customer.entity';
 
 export interface UnifiedConversationItem {
@@ -27,6 +31,8 @@ export interface UnifiedConversationItem {
   tags: string[];
   status: 'all' | 'unread' | 'resolved';
   customerId?: string;
+  isAiPaused?: boolean;
+  pausedReason?: string;
 }
 
 export interface ConversationMessageItem {
@@ -39,6 +45,9 @@ export interface ConversationMessageItem {
   platform: OmnichannelPlatformType;
   status: 'sent' | 'delivered' | 'read' | 'received';
   type: string;
+  senderType?: 'customer' | 'agent' | 'ai' | 'system';
+  isAiGenerated?: boolean;
+  aiMetadata?: Record<string, any>;
 }
 
 @Injectable()
@@ -48,11 +57,15 @@ export class OmnichannelChatService {
   constructor(
     @InjectRepository(OmnichannelMessageEntity)
     private readonly messageRepo: Repository<OmnichannelMessageEntity>,
+    @InjectRepository(OmnichannelConversationStateEntity)
+    private readonly stateRepo: Repository<OmnichannelConversationStateEntity>,
     @InjectRepository(CustomerEntity)
     private readonly customerRepo: Repository<CustomerEntity>,
     private readonly telegramService: TelegramChannelService,
     private readonly whatsappService: WhatsAppChannelService,
     private readonly facebookService: FacebookChannelService,
+    @Inject(forwardRef(() => OmnichannelAiAutoReplyService))
+    private readonly aiAutoReplyService: OmnichannelAiAutoReplyService,
   ) {}
 
   async getConversations(
@@ -72,6 +85,13 @@ export class OmnichannelChatService {
     const messages = await qb
       .orderBy('m.createdAt', 'DESC')
       .getMany();
+
+    // Fetch conversation AI states
+    const states = await this.stateRepo.find({ where: { tenantId } });
+    const stateMap = new Map<string, OmnichannelConversationStateEntity>();
+    for (const s of states) {
+      stateMap.set(s.conversationId, s);
+    }
 
     const conversationMap = new Map<string, OmnichannelMessageEntity[]>();
     for (const msg of messages) {
@@ -127,6 +147,8 @@ export class OmnichannelChatService {
         slack: ['Internal'],
       };
 
+      const convState = stateMap.get(convId);
+
       conversations.push({
         id: convId,
         customerName,
@@ -143,6 +165,8 @@ export class OmnichannelChatService {
         tags: tagMap[latestMsg.platform] || [latestMsg.platform],
         status: unreadCount > 0 ? 'unread' : 'all',
         customerId,
+        isAiPaused: convState?.isAiPaused ?? false,
+        pausedReason: convState?.pausedReason,
       });
     }
 
@@ -170,17 +194,23 @@ export class OmnichannelChatService {
       order: { createdAt: 'ASC' },
     });
 
-    return records.map((r) => ({
-      id: r.id,
-      sender: r.direction === 'OUTBOUND' ? 'agent' : 'customer',
-      senderName: r.senderName,
-      senderAvatar: r.senderAvatar,
-      text: r.text,
-      timestamp: this.formatTimeAgo(r.createdAt),
-      platform: r.platform,
-      status: r.status.toLowerCase() as any,
-      type: r.type,
-    }));
+    return records.map((r) => {
+      const isAi = Boolean(r.rawMetadata?.isAiGenerated || r.rawMetadata?.senderType === 'ai');
+      return {
+        id: r.id,
+        sender: r.direction === 'OUTBOUND' ? 'agent' : 'customer',
+        senderName: r.senderName,
+        senderAvatar: r.senderAvatar,
+        text: r.text,
+        timestamp: this.formatTimeAgo(r.createdAt),
+        platform: r.platform,
+        status: r.status.toLowerCase() as any,
+        type: r.type,
+        senderType: isAi ? 'ai' : (r.direction === 'OUTBOUND' ? 'agent' : 'customer'),
+        isAiGenerated: isAi,
+        aiMetadata: isAi ? r.rawMetadata : undefined,
+      };
+    });
   }
 
   async sendMessage(
@@ -194,6 +224,23 @@ export class OmnichannelChatService {
       throw new BadRequestException('platform, recipientId, and text are required');
     }
 
+    // Determine conversation ID based on platform convention
+    let convId = `${platform}-${recipientId}`;
+    if (platform === 'whatsapp') {
+      convId = `wa-${recipientId}`;
+    } else if (platform === 'telegram') {
+      convId = `tg-${recipientId}`;
+    } else if (platform === 'facebook' || platform === 'instagram') {
+      convId = `fb-${recipientId}`;
+    }
+
+    // Automatically pause AI auto-reply for this conversation (human agent takeover)
+    try {
+      await this.aiAutoReplyService.onHumanAgentMessage(tenantId, convId, 'dashboard_agent');
+    } catch (err: any) {
+      this.logger.warn(`Failed to auto-pause AI for conversation ${convId}: ${err.message}`);
+    }
+
     switch (platform) {
       case 'telegram':
         return this.telegramService.sendMessage(tenantId, recipientId, text, storeId);
@@ -203,7 +250,6 @@ export class OmnichannelChatService {
         return this.facebookService.sendMessage(tenantId, recipientId, text, storeId);
       default: {
         // Generic fallback for custom/other platforms: save to DB directly
-        const convId = `${platform}-${recipientId}`;
         const record = this.messageRepo.create({
           tenantId,
           storeId,
