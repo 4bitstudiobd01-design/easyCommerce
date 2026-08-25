@@ -8,14 +8,21 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 const server: Express = express();
 let isInitialized = false;
+let initPromise: Promise<void> | null = null;
 
 async function createNestServer(expressInstance: Express): Promise<void> {
   const app = await NestFactory.create(
     AppModule,
     new ExpressAdapter(expressInstance),
+    {
+      logger: ['error', 'warn', 'log'],
+    },
   );
 
-  app.enableCors();
+  app.enableCors({
+    origin: '*',
+    credentials: true,
+  });
   app.setGlobalPrefix('api/v1');
 
   app.useGlobalPipes(
@@ -42,9 +49,25 @@ async function createNestServer(expressInstance: Express): Promise<void> {
 }
 
 export default async function handler(req: Request, res: Response) {
-  if (!isInitialized) {
-    await createNestServer(server);
-    isInitialized = true;
+  try {
+    if (!isInitialized) {
+      if (!initPromise) {
+        initPromise = createNestServer(server);
+      }
+      await initPromise;
+      isInitialized = true;
+    }
+    return server(req, res);
+  } catch (error: any) {
+    console.error('NestJS Serverless Boot Error:', error);
+    initPromise = null;
+    isInitialized = false;
+    return res.status(500).json({
+      statusCode: 500,
+      message: 'Serverless Application Bootstrap Failed',
+      error: error?.message || String(error),
+      details: error?.stack || null,
+      tip: 'Check your Vercel Environment Variables (DATABASE_URL, JWT_SECRET, etc.) and database connection.',
+    });
   }
-  return server(req, res);
 }

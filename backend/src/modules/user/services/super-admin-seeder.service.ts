@@ -16,7 +16,11 @@ export class SuperAdminSeederService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    await this.seedSuperAdmin();
+    try {
+      await this.seedSuperAdmin();
+    } catch (err: any) {
+      this.logger.warn(`Super Admin seeder note: ${err?.message}`);
+    }
   }
 
   async seedSuperAdmin() {
