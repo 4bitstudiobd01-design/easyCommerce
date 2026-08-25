@@ -10,8 +10,12 @@ export class CancelLeaveRequestService {
     private readonly leaveRequestRepository: Repository<LeaveRequestEntity>,
   ) {}
 
-  async execute(storeId: string, requestId: string): Promise<LeaveRequestEntity> {
-    const request = await this.leaveRequestRepository.findOne({ where: { id: requestId, storeId } });
+  /** restrictToEmployeeId scopes the lookup to one employee's own requests — used by the
+   *  self-service endpoints so an hr:leave:self holder can only ever touch their own row. */
+  async execute(storeId: string, requestId: string, restrictToEmployeeId?: string): Promise<LeaveRequestEntity> {
+    const request = await this.leaveRequestRepository.findOne({
+      where: { id: requestId, storeId, ...(restrictToEmployeeId ? { employeeId: restrictToEmployeeId } : {}) },
+    });
     if (!request) {
       throw new NotFoundException('Leave request not found.');
     }

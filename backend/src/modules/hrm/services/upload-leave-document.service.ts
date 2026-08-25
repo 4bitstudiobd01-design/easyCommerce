@@ -13,12 +13,22 @@ export class UploadLeaveDocumentService {
     private readonly fileService: FileService,
   ) {}
 
-  async execute(tenantId: string, storeId: string, requestId: string, file: Express.Multer.File): Promise<LeaveRequestEntity> {
+  /** restrictToEmployeeId scopes the lookup to one employee's own requests — used by the
+   *  self-service endpoints so an hr:leave:self holder can only ever touch their own row. */
+  async execute(
+    tenantId: string,
+    storeId: string,
+    requestId: string,
+    file: Express.Multer.File,
+    restrictToEmployeeId?: string,
+  ): Promise<LeaveRequestEntity> {
     if (!file) {
       throw new BadRequestException('No file provided.');
     }
 
-    const request = await this.leaveRequestRepository.findOne({ where: { id: requestId, storeId } });
+    const request = await this.leaveRequestRepository.findOne({
+      where: { id: requestId, storeId, ...(restrictToEmployeeId ? { employeeId: restrictToEmployeeId } : {}) },
+    });
     if (!request) {
       throw new NotFoundException('Leave request not found.');
     }

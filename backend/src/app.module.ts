@@ -45,6 +45,11 @@ import { APP_FILTER } from '@nestjs/core';
         connection: {
           host: config.get<string>('REDIS_HOST', 'localhost'),
           port: config.get<number>('REDIS_PORT', 6379),
+          // Local dev without Redis running: fail fast instead of retrying forever,
+          // so boot doesn't hang. Queue-backed features (email/SMS) just won't fire.
+          retryStrategy: () => null,
+          enableReadyCheck: false,
+          maxRetriesPerRequest: 1,
         },
         defaultJobOptions: {
           attempts: 3,

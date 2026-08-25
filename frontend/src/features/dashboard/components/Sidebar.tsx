@@ -31,7 +31,9 @@ import {
   Clock3,
   Receipt,
   Wallet,
-  BarChart3
+  BarChart3,
+  ChevronDown,
+  UserCircle2
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -51,6 +53,11 @@ export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onCl
     if (path !== '/dashboard' && pathname.startsWith(path)) return true;
     return false;
   };
+
+  const [isHrOpen, setIsHrOpen] = useState(() => pathname.startsWith('/dashboard/hr'));
+  useEffect(() => {
+    if (pathname.startsWith('/dashboard/hr')) setIsHrOpen(true);
+  }, [pathname]);
 
 
   const [tooltipData, setTooltipData] = useState<{
@@ -321,7 +328,33 @@ export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onCl
             </div>
           </Link>
 
-          <NavGroupHeader>Human Resources</NavGroupHeader>
+          {isDesktopCollapsed ? (
+            <NavGroupHeader>Human Resources</NavGroupHeader>
+          ) : (
+            <button
+              onClick={() => setIsHrOpen((open) => !open)}
+              className="w-full flex items-center justify-between px-3 pb-1 pt-5 text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-slate-300 transition"
+              aria-expanded={isHrOpen}
+            >
+              <span>HRM</span>
+              <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isHrOpen ? 'rotate-180' : ''}`} />
+            </button>
+          )}
+          {(isDesktopCollapsed || isHrOpen) && (
+          <>
+          <Link
+            href="/dashboard/hr/my-leave"
+            className={navItemClass('/dashboard/hr/my-leave')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "My Leave")}
+            onFocus={(e) => handleTooltipEnter(e, "My Leave")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <UserCircle2 className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>My Leave</span>}
+            </div>
+          </Link>
           <Link
             href="/dashboard/hr/employees"
             className={navItemClass('/dashboard/hr/employees')}
@@ -452,6 +485,8 @@ export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onCl
               {!isDesktopCollapsed && <span>HR Reports</span>}
             </div>
           </Link>
+          </>
+          )}
 
           <NavGroupHeader>Store</NavGroupHeader>
           <Link

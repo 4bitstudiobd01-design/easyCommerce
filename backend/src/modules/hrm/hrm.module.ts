@@ -16,6 +16,7 @@ import { PayrollRunEntity } from './entities/payroll-run.entity';
 import { PayslipEntity } from './entities/payslip.entity';
 import { TaxSlabEntity } from './entities/tax-slab.entity';
 import { NoticeEntity } from './entities/notice.entity';
+import { UserEntity } from '../user/entities/user.entity';
 import { TenantModule } from '../tenant/tenant.module';
 import { StaffModule } from '../staff/staff.module';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
@@ -78,6 +79,8 @@ import { ListNoticesService } from './services/list-notices.service';
 import { UpdateNoticeService } from './services/update-notice.service';
 import { DeleteNoticeService } from './services/delete-notice.service';
 import { GetHrOverviewReportService } from './services/get-hr-overview-report.service';
+import { GetMyEmployeeService } from './services/get-my-employee.service';
+import { InviteEmployeeSelfServiceService } from './services/invite-employee-self-service.service';
 
 @Module({
   imports: [
@@ -96,6 +99,7 @@ import { GetHrOverviewReportService } from './services/get-hr-overview-report.se
       PayslipEntity,
       TaxSlabEntity,
       NoticeEntity,
+      UserEntity,
     ]),
     TenantModule,
     // Provides GetMyPermissionsService, the source of truth PermissionsGuard uses to
@@ -169,6 +173,8 @@ import { GetHrOverviewReportService } from './services/get-hr-overview-report.se
     UpdateNoticeService,
     DeleteNoticeService,
     GetHrOverviewReportService,
+    GetMyEmployeeService,
+    InviteEmployeeSelfServiceService,
     JwtAuthGuard,
     PermissionsGuard,
   ],

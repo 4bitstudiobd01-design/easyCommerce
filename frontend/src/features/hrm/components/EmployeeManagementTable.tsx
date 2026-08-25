@@ -13,6 +13,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Briefcase,
+  KeyRound,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { TableRowSkeleton } from '@/components/ui/Skeleton';
@@ -22,6 +25,7 @@ import {
   useGetEmployeesQuery,
   useGetDepartmentsQuery,
   useTerminateEmployeeMutation,
+  useInviteEmployeeSelfServiceMutation,
 } from '../api/hrmApi';
 import { EmployeeFormModal } from './EmployeeFormModal';
 
@@ -47,12 +51,31 @@ export function EmployeeManagementTable() {
     limit: 20,
   });
   const [terminateEmployee, { isLoading: isTerminating }] = useTerminateEmployeeMutation();
+  const [inviteSelfService, { isLoading: isInviting }] = useInviteEmployeeSelfServiceMutation();
 
   const [formState, setFormState] = useState<{ open: boolean; employee: Employee | null }>({
     open: false,
     employee: null,
   });
   const [terminatingEmployee, setTerminatingEmployee] = useState<Employee | null>(null);
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  const handleInviteSelfService = async (employee: Employee) => {
+    try {
+      const result = await inviteSelfService(employee.id).unwrap();
+      setLinkCopied(false);
+      setInviteLink(`${window.location.origin}/staff-invite?token=${result.inviteToken}`);
+    } catch (err: any) {
+      toast.error(err?.data?.message || 'Failed to create self-service invite.');
+    }
+  };
+
+  const handleCopyLink = async () => {
+    if (!inviteLink) return;
+    await navigator.clipboard.writeText(inviteLink);
+    setLinkCopied(true);
+  };
 
   const employees = data?.items ?? [];
   const total = data?.total ?? 0;
@@ -229,6 +252,24 @@ export function EmployeeManagementTable() {
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
+                      {emp.employmentStatus !== 'TERMINATED' && !emp.linkedUserId && emp.email && (
+                        <button
+                          onClick={() => handleInviteSelfService(emp)}
+                          disabled={isInviting}
+                          className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition disabled:opacity-50"
+                          title="Invite to self-service"
+                        >
+                          <KeyRound className="w-4 h-4" />
+                        </button>
+                      )}
+                      {emp.linkedUserId && (
+                        <span
+                          className="inline-flex items-center p-2 text-emerald-500"
+                          title="Self-service login linked"
+                        >
+                          <KeyRound className="w-4 h-4" />
+                        </span>
+                      )}
                       {emp.employmentStatus !== 'TERMINATED' && (
                         <button
                           onClick={() => setTerminatingEmployee(emp)}
@@ -307,6 +348,41 @@ export function EmployeeManagementTable() {
         <div className="p-6 text-sm text-slate-600">
           Are you sure you want to terminate <strong>{terminatingEmployee?.fullName}</strong>? Their record is
           kept for historical attendance and payroll, but they'll no longer count as an active employee.
+        </div>
+      </Modal>
+
+      {/* Self-Service Invite Link */}
+      <Modal
+        isOpen={!!inviteLink}
+        onClose={() => setInviteLink(null)}
+        title="Self-Service Invite Created"
+        icon={<KeyRound className="w-5 h-5" />}
+        size="sm"
+        footer={
+          <button
+            onClick={() => setInviteLink(null)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition"
+          >
+            Done
+          </button>
+        }
+      >
+        <div className="p-6 space-y-3">
+          <p className="text-sm text-slate-600">
+            Share this link with the employee. They'll set a password, log in, and see only their own leave
+            requests and balance under "My Leave".
+          </p>
+          <div className="flex items-center gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+            <code className="flex-1 text-xs text-slate-700 break-all">{inviteLink}</code>
+            <button
+              onClick={handleCopyLink}
+              className="p-2 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition shrink-0"
+              title="Copy link"
+            >
+              {linkCopied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+            </button>
+          </div>
+          <p className="text-[10.5px] text-slate-400">This link expires in 7 days.</p>
         </div>
       </Modal>
     </div>

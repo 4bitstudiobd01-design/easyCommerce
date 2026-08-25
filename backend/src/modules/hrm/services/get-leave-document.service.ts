@@ -30,8 +30,12 @@ export class GetLeaveDocumentService {
    * path for S3 yet. Flagging rather than silently ignoring — a store running with
    * STORAGE_DRIVER=s3 needs that added before this feature is safe to rely on there.
    */
-  async execute(storeId: string, requestId: string): Promise<LeaveDocumentStream> {
-    const request = await this.leaveRequestRepository.findOne({ where: { id: requestId, storeId } });
+  /** restrictToEmployeeId scopes the lookup to one employee's own requests — used by the
+   *  self-service endpoints so an hr:leave:self holder can only ever touch their own row. */
+  async execute(storeId: string, requestId: string, restrictToEmployeeId?: string): Promise<LeaveDocumentStream> {
+    const request = await this.leaveRequestRepository.findOne({
+      where: { id: requestId, storeId, ...(restrictToEmployeeId ? { employeeId: restrictToEmployeeId } : {}) },
+    });
     if (!request || !request.documentFileId) {
       throw new NotFoundException('No document attached to this leave request.');
     }

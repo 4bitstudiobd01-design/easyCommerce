@@ -22,6 +22,7 @@ export interface Employee {
   storeId: string;
   departmentId?: string;
   department?: Department;
+  linkedUserId?: string;
   employeeCode: string;
   fullName: string;
   email?: string;
@@ -219,6 +220,13 @@ export interface ListLeaveRequestsParams {
   leaveType?: LeaveType;
   page?: number;
   limit?: number;
+}
+
+export interface CreateMyLeaveRequestRequest {
+  leaveType: LeaveType;
+  startDate: string;
+  endDate: string;
+  reason?: string;
 }
 
 export interface Shift {
@@ -527,7 +535,7 @@ export const hrmApi = createApi({
   baseQuery: createBaseQueryWithReauth(
     process.env.NEXT_PUBLIC_API_URL?.replace('/orders', '') || 'http://localhost:5001/api/v1',
   ),
-  tagTypes: ['Department', 'Employee', 'Attendance', 'Holiday', 'LeavePolicy', 'LeaveRequest', 'LeaveBalance', 'Shift', 'Roster', 'Expense', 'SalaryStructure', 'PayrollRun', 'TaxSlab', 'Notice'],
+  tagTypes: ['Department', 'Employee', 'Attendance', 'Holiday', 'LeavePolicy', 'LeaveRequest', 'LeaveBalance', 'Shift', 'Roster', 'Expense', 'SalaryStructure', 'PayrollRun', 'TaxSlab', 'Notice', 'MyEmployee', 'MyLeaveRequest', 'MyLeaveBalance'],
   endpoints: (builder) => ({
     getDepartments: builder.query<Department[], void>({
       query: () => '/hr/departments',
@@ -574,6 +582,11 @@ export const hrmApi = createApi({
       query: (id) => ({ url: `/hr/employees/${id}`, method: 'DELETE' }),
       invalidatesTags: ['Employee'],
       transformResponse: unwrap<Employee>,
+    }),
+    inviteEmployeeSelfService: builder.mutation<{ inviteToken: string }, string>({
+      query: (id) => ({ url: `/hr/employees/${id}/invite-self-service`, method: 'POST' }),
+      invalidatesTags: ['Employee'],
+      transformResponse: unwrap<{ inviteToken: string }>,
     }),
 
     getAttendance: builder.query<AttendanceRosterRow[], ListAttendanceParams | void>({
@@ -662,6 +675,41 @@ export const hrmApi = createApi({
         return { url: `/hr/leave-requests/${id}/document`, method: 'POST', body: formData };
       },
       invalidatesTags: ['LeaveRequest'],
+      transformResponse: unwrap<LeaveRequest>,
+    }),
+
+    getMyEmployee: builder.query<Employee, void>({
+      query: () => '/hr/me/employee',
+      providesTags: ['MyEmployee'],
+      transformResponse: unwrap<Employee>,
+    }),
+    getMyLeaveBalance: builder.query<LeaveBalanceLine[], { year?: number } | void>({
+      query: (params) => ({ url: '/hr/me/leave-balance', params: params || undefined }),
+      providesTags: ['MyLeaveBalance'],
+      transformResponse: unwrap<LeaveBalanceLine[]>,
+    }),
+    getMyLeaveRequests: builder.query<PaginatedLeaveRequests, { status?: LeaveStatus; page?: number; limit?: number } | void>({
+      query: (params) => ({ url: '/hr/me/leave-requests', params: params || undefined }),
+      providesTags: ['MyLeaveRequest'],
+      transformResponse: unwrap<PaginatedLeaveRequests>,
+    }),
+    createMyLeaveRequest: builder.mutation<LeaveRequest, CreateMyLeaveRequestRequest>({
+      query: (body) => ({ url: '/hr/me/leave-requests', method: 'POST', body }),
+      invalidatesTags: ['MyLeaveRequest', 'MyLeaveBalance'],
+      transformResponse: unwrap<LeaveRequest>,
+    }),
+    cancelMyLeaveRequest: builder.mutation<LeaveRequest, string>({
+      query: (id) => ({ url: `/hr/me/leave-requests/${id}/cancel`, method: 'POST' }),
+      invalidatesTags: ['MyLeaveRequest', 'MyLeaveBalance'],
+      transformResponse: unwrap<LeaveRequest>,
+    }),
+    uploadMyLeaveDocument: builder.mutation<LeaveRequest, { id: string; file: File }>({
+      query: ({ id, file }) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return { url: `/hr/me/leave-requests/${id}/document`, method: 'POST', body: formData };
+      },
+      invalidatesTags: ['MyLeaveRequest'],
       transformResponse: unwrap<LeaveRequest>,
     }),
 
@@ -848,6 +896,13 @@ export const {
   useReviewLeaveRequestMutation,
   useCancelLeaveRequestMutation,
   useUploadLeaveDocumentMutation,
+  useInviteEmployeeSelfServiceMutation,
+  useGetMyEmployeeQuery,
+  useGetMyLeaveBalanceQuery,
+  useGetMyLeaveRequestsQuery,
+  useCreateMyLeaveRequestMutation,
+  useCancelMyLeaveRequestMutation,
+  useUploadMyLeaveDocumentMutation,
   useGetShiftsQuery,
   useCreateShiftMutation,
   useUpdateShiftMutation,
@@ -888,6 +943,29 @@ export async function openLeaveDocument(requestId: string): Promise<void> {
   const storeId = localStorage.getItem('bitcommerce_active_store_id');
 
   const response = await fetch(`${baseUrl}/hr/leave-requests/${requestId}/document`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(storeId ? { 'x-store-id': storeId } : {}),
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Could not load the attached document.');
+  }
+
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  window.open(url, '_blank');
+  setTimeout(() => window.URL.revokeObjectURL(url), 60_000);
+}
+
+/** Same authenticated blob-URL approach as openLeaveDocument, for my own leave documents. */
+export async function openMyLeaveDocument(requestId: string): Promise<void> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/orders', '') || 'http://localhost:5001/api/v1';
+  const token = localStorage.getItem('bitcommerce_token');
+  const storeId = localStorage.getItem('bitcommerce_active_store_id');
+
+  const response = await fetch(`${baseUrl}/hr/me/leave-requests/${requestId}/document`, {
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(storeId ? { 'x-store-id': storeId } : {}),

@@ -98,6 +98,9 @@ import { UpdateNoticeService } from './services/update-notice.service';
 import { DeleteNoticeService } from './services/delete-notice.service';
 import { CreateNoticeDto, UpdateNoticeDto, ListNoticesQueryDto } from './dto/notice.dto';
 import { GetHrOverviewReportService } from './services/get-hr-overview-report.service';
+import { GetMyEmployeeService } from './services/get-my-employee.service';
+import { InviteEmployeeSelfServiceService } from './services/invite-employee-self-service.service';
+import { CreateMyLeaveRequestDto } from './dto/self-service.dto';
 
 @ApiTags('HR — Employees & Departments')
 @Controller('hr')
@@ -160,6 +163,8 @@ export class HrmController {
     private readonly updateNoticeService: UpdateNoticeService,
     private readonly deleteNoticeService: DeleteNoticeService,
     private readonly getHrOverviewReportService: GetHrOverviewReportService,
+    private readonly getMyEmployeeService: GetMyEmployeeService,
+    private readonly inviteEmployeeSelfServiceService: InviteEmployeeSelfServiceService,
   ) {}
 
   private async getStoreContext(userId: string, storeIdHeader?: string) {
@@ -309,6 +314,21 @@ export class HrmController {
   ) {
     const store = await this.getStoreContext(userId, headerStoreId);
     return this.terminateEmployeeService.execute(store.id, employeeId);
+  }
+
+  @Post('employees/:id/invite-self-service')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:employees:manage')
+  @ApiOperation({ summary: "Invite an employee to self-service (creates a staff invite with hr:leave:self, reusing the existing staff invitation system)" })
+  @ApiResponse({ status: 201, description: 'Self-service invite created' })
+  async inviteEmployeeSelfService(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') employeeId: string,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.inviteEmployeeSelfServiceService.execute(store.tenantId, store.id, userId, employeeId);
   }
 
   // ─── Attendance ─────────────────────────────────────────────────
@@ -473,7 +493,7 @@ export class HrmController {
   @Get('employees/:id/leave-balance')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
-  @RequirePermissions('hr:leave:manage', 'hr:leave:self')
+  @RequirePermissions('hr:leave:manage')
   @ApiOperation({ summary: 'Get an employee\'s Earned/Casual/Sick leave balance for a year' })
   @ApiResponse({ status: 200, description: 'Leave balance by type' })
   async getLeaveBalance(
@@ -489,8 +509,8 @@ export class HrmController {
   @Post('leave-requests')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
-  @RequirePermissions('hr:leave:manage', 'hr:leave:self')
-  @ApiOperation({ summary: 'File a leave request' })
+  @RequirePermissions('hr:leave:manage')
+  @ApiOperation({ summary: 'File a leave request on behalf of an employee (HR/manager use — see /hr/me/leave-requests for self-service)' })
   @ApiResponse({ status: 201, description: 'Leave request created' })
   async createLeaveRequest(
     @CurrentUser('sub') userId: string,
@@ -504,8 +524,8 @@ export class HrmController {
   @Get('leave-requests')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
-  @RequirePermissions('hr:leave:manage', 'hr:leave:self')
-  @ApiOperation({ summary: 'List leave requests (filterable by employee/status/type)' })
+  @RequirePermissions('hr:leave:manage')
+  @ApiOperation({ summary: 'List leave requests (filterable by employee/status/type) — HR/manager use' })
   @ApiResponse({ status: 200, description: 'Paginated leave requests' })
   async listLeaveRequests(
     @CurrentUser('sub') userId: string,
@@ -535,8 +555,8 @@ export class HrmController {
   @Post('leave-requests/:id/cancel')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
-  @RequirePermissions('hr:leave:manage', 'hr:leave:self')
-  @ApiOperation({ summary: 'Cancel a pending leave request' })
+  @RequirePermissions('hr:leave:manage')
+  @ApiOperation({ summary: 'Cancel a pending leave request — HR/manager use' })
   @ApiResponse({ status: 200, description: 'Leave request cancelled' })
   async cancelLeaveRequest(
     @CurrentUser('sub') userId: string,
@@ -550,7 +570,7 @@ export class HrmController {
   @Post('leave-requests/:id/document')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
-  @RequirePermissions('hr:leave:manage', 'hr:leave:self')
+  @RequirePermissions('hr:leave:manage')
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -579,8 +599,8 @@ export class HrmController {
   @Get('leave-requests/:id/document')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
-  @RequirePermissions('hr:leave:manage', 'hr:leave:self')
-  @ApiOperation({ summary: 'Download a leave request\'s attached document (authenticated — never a public URL)' })
+  @RequirePermissions('hr:leave:manage')
+  @ApiOperation({ summary: 'Download a leave request\'s attached document (authenticated — never a public URL) — HR/manager use' })
   @ApiResponse({ status: 200, description: 'File stream' })
   async downloadLeaveDocument(
     @CurrentUser('sub') userId: string,
@@ -1078,5 +1098,135 @@ export class HrmController {
   async getHrOverviewReport(@CurrentUser('sub') userId: string, @Headers('x-store-id') headerStoreId: string) {
     const store = await this.getStoreContext(userId, headerStoreId);
     return this.getHrOverviewReportService.execute(store.id);
+  }
+
+  // ─── Self-Service ("My ...") ──────────────────────────────────────
+  // Every endpoint here resolves the acting employee from the logged-in user's own
+  // session (GetMyEmployeeService) — never from a client-supplied employeeId — so an
+  // hr:leave:self holder can only ever see or touch their own data.
+
+  @Get('me/employee')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:leave:self', 'hr:leave:manage')
+  @ApiOperation({ summary: 'Get the HR employee record linked to the logged-in self-service user' })
+  @ApiResponse({ status: 200, description: 'My employee record' })
+  async getMyEmployee(@CurrentUser('sub') userId: string, @Headers('x-store-id') headerStoreId: string) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.getMyEmployeeService.execute(store.id, userId);
+  }
+
+  @Get('me/leave-balance')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:leave:self', 'hr:leave:manage')
+  @ApiOperation({ summary: 'Get my own Earned/Casual/Sick leave balance for a year' })
+  @ApiResponse({ status: 200, description: 'My leave balance by type' })
+  async getMyLeaveBalance(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Query('year') year?: string,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    const me = await this.getMyEmployeeService.execute(store.id, userId);
+    return this.getLeaveBalanceService.execute(store.tenantId, store.id, me.id, year ? Number(year) : undefined);
+  }
+
+  @Post('me/leave-requests')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:leave:self', 'hr:leave:manage')
+  @ApiOperation({ summary: 'File a leave request for myself' })
+  @ApiResponse({ status: 201, description: 'Leave request created' })
+  async createMyLeaveRequest(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Body() dto: CreateMyLeaveRequestDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    const me = await this.getMyEmployeeService.execute(store.id, userId);
+    return this.createLeaveRequestService.execute(store.tenantId, store.id, userId, { ...dto, employeeId: me.id });
+  }
+
+  @Get('me/leave-requests')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:leave:self', 'hr:leave:manage')
+  @ApiOperation({ summary: 'List my own leave requests' })
+  @ApiResponse({ status: 200, description: 'My paginated leave requests' })
+  async listMyLeaveRequests(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Query() query: ListLeaveRequestsQueryDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    const me = await this.getMyEmployeeService.execute(store.id, userId);
+    return this.listLeaveRequestsService.execute(store.id, { ...query, employeeId: me.id });
+  }
+
+  @Post('me/leave-requests/:id/cancel')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:leave:self', 'hr:leave:manage')
+  @ApiOperation({ summary: 'Cancel one of my own pending leave requests' })
+  @ApiResponse({ status: 200, description: 'Leave request cancelled' })
+  async cancelMyLeaveRequest(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') requestId: string,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    const me = await this.getMyEmployeeService.execute(store.id, userId);
+    return this.cancelLeaveRequestService.execute(store.id, requestId, me.id);
+  }
+
+  @Post('me/leave-requests/:id/document')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:leave:self', 'hr:leave:manage')
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: 10 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        if (!/\/(jpg|jpeg|png|webp|pdf)$/i.test(file.mimetype)) {
+          return cb(new BadRequestException('Only JPG, PNG, WEBP, or PDF files are accepted.'), false);
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  @ApiOperation({ summary: 'Attach a supporting document to one of my own sick leave requests' })
+  @ApiResponse({ status: 201, description: 'Document attached' })
+  async uploadMyLeaveDocument(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') requestId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    const me = await this.getMyEmployeeService.execute(store.id, userId);
+    return this.uploadLeaveDocumentService.execute(store.tenantId, store.id, requestId, file, me.id);
+  }
+
+  @Get('me/leave-requests/:id/document')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:leave:self', 'hr:leave:manage')
+  @ApiOperation({ summary: "Download the document attached to one of my own leave requests" })
+  @ApiResponse({ status: 200, description: 'File stream' })
+  async downloadMyLeaveDocument(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') requestId: string,
+    @Res() res: Response,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    const me = await this.getMyEmployeeService.execute(store.id, userId);
+    const { stream, fileName, mimeType } = await this.getLeaveDocumentService.execute(store.id, requestId, me.id);
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
+    stream.pipe(res);
   }
 }
