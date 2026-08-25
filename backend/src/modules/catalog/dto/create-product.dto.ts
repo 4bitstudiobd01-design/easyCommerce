@@ -5,6 +5,7 @@ import { ProductType } from '../enums/product-type.enum';
 import { ProductStatus } from '../enums/product-status.enum';
 import { TaxCategory } from '../enums/tax-category.enum';
 import { ProductDiscountType } from '../enums/product-discount-type.enum';
+import { HomepageSection } from '../enums/homepage-section.enum';
 import {
   WeightUnit,
   DimensionUnit,
@@ -158,6 +159,17 @@ export class CreateProductDto {
   @IsArray()
   @IsUUID('4', { each: true })
   collectionIds?: string[];
+
+  @ApiProperty({ example: true, description: 'Show this product on the storefront (independent of status)', required: false })
+  @IsOptional()
+  @IsBoolean()
+  isVisible?: boolean;
+
+  @ApiProperty({ enum: HomepageSection, isArray: true, description: 'Which homepage sections feature this product', required: false })
+  @IsOptional()
+  @IsArray()
+  @IsEnum(HomepageSection, { each: true })
+  homepageSections?: HomepageSection[];
 
   // Optional legacy image URL
   @IsOptional()

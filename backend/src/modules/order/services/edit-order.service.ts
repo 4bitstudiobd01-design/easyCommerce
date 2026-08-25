@@ -44,22 +44,25 @@ export class EditOrderService {
 
     // Best-effort match for "does this catalog item already exist on the order"
     // (price retention below), skipping custom items since they have no productId
-    // — keying by productId directly here (not id) would collide for multiple
-    // custom items, which all carry productId: null.
+    // — keyed by `productId::variantId` (not just id, and not just productId) so
+    // multiple custom items (all productId: null) never collide, and two lines for
+    // the same product but different variants are tracked as separate stock lines.
+    const stockKey = (productId: string, variantId?: string | null) => `${productId}::${variantId ?? ''}`;
+
     const oldItemsByProductId = new Map(
-      order.items.filter((i) => !i.isCustomItem && i.productId).map((i) => [i.productId as string, i]),
+      order.items
+        .filter((i) => !i.isCustomItem && i.productId)
+        .map((i) => [stockKey(i.productId as string, i.variantId), i]),
     );
 
-    // Sum quantities per product on the incoming list first, so a product that
+    // Sum quantities per product+variant on the incoming list first, so a line that
     // appears more than once (or a duplicate of an existing line) is diffed as one
     // net change rather than as separate add/remove calls that could conflict.
     const newQuantityByProductId = new Map<string, number>();
     for (const itemDto of dto.items) {
       if (itemDto.isCustomItem || !itemDto.productId) continue;
-      newQuantityByProductId.set(
-        itemDto.productId,
-        (newQuantityByProductId.get(itemDto.productId) ?? 0) + itemDto.quantity,
-      );
+      const key = stockKey(itemDto.productId, itemDto.variantId);
+      newQuantityByProductId.set(key, (newQuantityByProductId.get(key) ?? 0) + itemDto.quantity);
     }
 
     const newOrderItems: OrderItemEntity[] = [];
@@ -100,17 +103,36 @@ export class EditOrderService {
         throw new NotFoundException(`Product with ID "${itemDto.productId}" not found.`);
       }
 
-      const oldItem = oldItemsByProductId.get(product.id);
-      // Retain old price if product existed on the order before, otherwise use current catalog price
-      const unitPrice = oldItem ? Number(oldItem.unitPrice) : Number(product.basePrice);
-      const sku = oldItem?.sku || product.variants?.[0]?.sku || `SKU-${product.id.slice(0, 6)}`;
+      // Resolve and validate the selected variant, when provided — falls back to
+      // today's product-level pricing/SKU when no variantId is sent.
+      let variant: (typeof product.variants)[number] | undefined;
+      if (itemDto.variantId) {
+        variant = product.variants?.find((v) => v.id === itemDto.variantId);
+        if (!variant) {
+          throw new NotFoundException(
+            `Variant with ID "${itemDto.variantId}" not found on product "${product.id}".`,
+          );
+        }
+      }
+
+      const oldItem = oldItemsByProductId.get(stockKey(product.id, itemDto.variantId));
+      // Retain old price if this exact product+variant existed on the order before,
+      // otherwise price from the selected variant (or the product default).
+      const unitPrice = oldItem
+        ? Number(oldItem.unitPrice)
+        : variant
+          ? Number(variant.price ?? product.basePrice)
+          : Number(product.basePrice);
+      const sku = oldItem?.sku || variant?.sku || product.variants?.[0]?.sku || `SKU-${product.id.slice(0, 6)}`;
       const primaryImage = product.images?.find((image) => image.isPrimary) ?? product.images?.[0];
 
       newItem.productId = product.id;
+      newItem.variantId = variant?.id;
+      newItem.variantTitle = variant?.title;
       newItem.isCustomItem = false;
       newItem.productTitle = product.title;
       newItem.sku = sku;
-      newItem.productImageUrl = primaryImage?.url ?? null;
+      newItem.productImageUrl = variant?.image?.url ?? primaryImage?.url ?? null;
       newItem.unitPrice = unitPrice;
       newItem.totalPrice = unitPrice * itemDto.quantity - newItem.discountAmount;
 
@@ -123,22 +145,26 @@ export class EditOrderService {
     // instead of rolling back every old item and re-deducting every new one —
     // that used to fail an edit that didn't even touch a given product if its
     // stock happened to be tight at that instant.
-    const appliedDeltas: { productId: string; delta: number }[] = [];
+    const appliedDeltas: { productId: string; variantId?: string; delta: number }[] = [];
     try {
-      const touchedProductIds = new Set([...oldItemsByProductId.keys(), ...newQuantityByProductId.keys()]);
-      for (const productId of touchedProductIds) {
-        const oldQty = oldItemsByProductId.get(productId)?.quantity ?? 0;
-        const newQty = newQuantityByProductId.get(productId) ?? 0;
+      const touchedKeys = new Set([...oldItemsByProductId.keys(), ...newQuantityByProductId.keys()]);
+      for (const key of touchedKeys) {
+        const oldQty = oldItemsByProductId.get(key)?.quantity ?? 0;
+        const newQty = newQuantityByProductId.get(key) ?? 0;
         const delta = newQty - oldQty;
         if (delta === 0) continue;
 
+        const [productId, variantIdPart] = key.split('::');
+        const variantId = variantIdPart || undefined;
+
         await this.adjustStockService.execute(tenantId, {
           productId,
+          variantId,
           quantity: Math.abs(delta),
           // Needing more units than before deducts stock; needing fewer releases it.
           action: delta > 0 ? StockAdjustmentAction.REMOVE : StockAdjustmentAction.ADD,
         });
-        appliedDeltas.push({ productId, delta });
+        appliedDeltas.push({ productId, variantId, delta });
       }
     } catch (err) {
       // Undo whichever deltas already succeeded before the failing one, restoring
@@ -146,6 +172,7 @@ export class EditOrderService {
       for (const applied of appliedDeltas) {
         await this.adjustStockService.execute(tenantId, {
           productId: applied.productId,
+          variantId: applied.variantId,
           quantity: Math.abs(applied.delta),
           action: applied.delta > 0 ? StockAdjustmentAction.ADD : StockAdjustmentAction.REMOVE,
         });
@@ -249,11 +276,11 @@ export class EditOrderService {
     const oldItemCount = order.items.reduce((sum, i) => sum + i.quantity, 0);
     const newItemCount = newItems.reduce((sum, i) => sum + i.quantity, 0);
     const oldItemKeys = order.items
-      .map((i) => `${i.productId ?? i.productTitle}:${i.quantity}`)
+      .map((i) => `${i.productId ?? i.productTitle}:${i.variantId ?? ''}:${i.quantity}`)
       .sort()
       .join(',');
     const newItemKeys = newItems
-      .map((i) => `${i.productId ?? i.productTitle}:${i.quantity}`)
+      .map((i) => `${i.productId ?? i.productTitle}:${i.variantId ?? ''}:${i.quantity}`)
       .sort()
       .join(',');
 

@@ -14,6 +14,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CreateOrderService } from './services/create-order.service';
+import { CreateManualOrderService } from './services/create-manual-order.service';
 import { ListMerchantOrdersService } from './services/list-merchant-orders.service';
 import { OrderKpiService } from './services/order-kpi.service';
 import { FindOrderByIdService } from './services/find-order-by-id.service';
@@ -25,6 +26,7 @@ import { FindStoreByUserService } from '../tenant/services/find-store-by-user.se
 import { CollectCodService } from './services/collect-cod.service';
 import { UndoCollectCodService } from './services/undo-collect-cod.service';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { CreateManualOrderDto } from './dto/create-manual-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { EditOrderDto } from './dto/edit-order.dto';
 import { OrderListDto } from './dto/order-list.dto';
@@ -36,6 +38,7 @@ import { EditOrderService } from './services/edit-order.service';
 export class OrderController {
   constructor(
     private readonly createOrderService: CreateOrderService,
+    private readonly createManualOrderService: CreateManualOrderService,
     private readonly listMerchantOrdersService: ListMerchantOrdersService,
     private readonly orderKpiService: OrderKpiService,
     private readonly findOrderByIdService: FindOrderByIdService,
@@ -80,6 +83,23 @@ export class OrderController {
   }
 
   // --- PROTECTED MERCHANT DASHBOARD ROUTES ---
+
+  @Post()
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Manually create an order for a customer (phone order, walk-in, etc.)' })
+  @ApiResponse({ status: 201, description: 'Order created successfully' })
+  async createManualOrder(
+    @CurrentUser('sub') userId: string,
+    @Body() dto: CreateManualOrderDto,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const store = await this.findStoreByUserService.execute(userId, storeId);
+    if (!store) {
+      throw new BadRequestException('Merchant must create a store before managing orders.');
+    }
+    return this.createManualOrderService.execute(store.tenantId, userId, store, dto);
+  }
 
   @Get()
   @UseGuards(JwtAuthGuard)

@@ -47,7 +47,7 @@ export class CreateOrderService {
 
     let subtotal = 0;
     const orderItems: OrderItemEntity[] = [];
-    const deductedItems: { productId: string; quantity: number }[] = [];
+    const deductedItems: { productId: string; quantity: number; variantId?: string }[] = [];
 
     // Process order items
     try {
@@ -61,18 +61,33 @@ export class CreateOrderService {
           throw new NotFoundException(`Product with ID "${itemDto.productId}" not found.`);
         }
 
-        const unitPrice = Number(product.basePrice);
+        // When a variantId is provided, resolve and validate it belongs to this
+        // product, then price/SKU from the variant instead of the product default.
+        // Falls back to today's product-level behavior when no variantId is sent.
+        let variant: (typeof product.variants)[number] | undefined;
+        if (itemDto.variantId) {
+          variant = product.variants?.find((v) => v.id === itemDto.variantId);
+          if (!variant) {
+            throw new NotFoundException(
+              `Variant with ID "${itemDto.variantId}" not found on product "${product.id}".`,
+            );
+          }
+        }
+
+        const unitPrice = variant ? Number(variant.price ?? product.basePrice) : Number(product.basePrice);
         const totalPrice = unitPrice * itemDto.quantity;
         subtotal += totalPrice;
 
-        const sku = product.variants?.[0]?.sku || `SKU-${product.id.slice(0, 6)}`;
+        const sku = variant?.sku || product.variants?.[0]?.sku || `SKU-${product.id.slice(0, 6)}`;
         const primaryImage = product.images?.find((image) => image.isPrimary) ?? product.images?.[0];
 
         const orderItem = this.orderItemRepository.create({
           productId: product.id,
           productTitle: product.title,
+          variantId: variant?.id,
+          variantTitle: variant?.title,
           sku,
-          productImageUrl: primaryImage?.url ?? null,
+          productImageUrl: variant?.image?.url ?? primaryImage?.url ?? null,
           unitPrice,
           quantity: itemDto.quantity,
           totalPrice,
@@ -86,10 +101,11 @@ export class CreateOrderService {
         // roll back any deductions already made for earlier items in this order.
         await this.adjustStockService.execute(tenantId, {
           productId: product.id,
+          variantId: variant?.id,
           quantity: itemDto.quantity,
           action: StockAdjustmentAction.REMOVE,
         });
-        deductedItems.push({ productId: product.id, quantity: itemDto.quantity });
+        deductedItems.push({ productId: product.id, quantity: itemDto.quantity, variantId: variant?.id });
       }
     } catch (err) {
       await this.rollbackStock(tenantId, deductedItems);
@@ -189,12 +205,13 @@ export class CreateOrderService {
 
   private async rollbackStock(
     tenantId: string,
-    deductedItems: { productId: string; quantity: number }[],
+    deductedItems: { productId: string; quantity: number; variantId?: string }[],
   ): Promise<void> {
     for (const deducted of deductedItems) {
       try {
         await this.adjustStockService.execute(tenantId, {
           productId: deducted.productId,
+          variantId: deducted.variantId,
           quantity: deducted.quantity,
           action: StockAdjustmentAction.ADD,
         });

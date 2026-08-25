@@ -5,18 +5,21 @@ import {
   IsOptional,
   IsNumber,
   IsBoolean,
+  IsEnum,
   Min,
   IsArray,
   ValidateNested,
   ValidateIf,
   IsNotEmpty,
+  ArrayMinSize,
 } from 'class-validator';
+import { PaymentMethodEnum } from '../entities/order.entity';
 
-export class EditOrderItemDto {
+export class CreateManualOrderItemDto {
   /**
    * Present for a catalog-linked item; omitted for a custom/off-catalog item
-   * (isCustomItem: true). Validated conditionally rather than as two separate DTO
-   * classes so the items array stays homogeneous.
+   * (isCustomItem: true) — same conditional-validation shape as EditOrderItemDto,
+   * kept identical so the two DTOs can share frontend item-picker logic.
    */
   @ApiPropertyOptional({ description: 'Required unless isCustomItem is true' })
   @ValidateIf((dto) => !dto.isCustomItem)
@@ -58,7 +61,7 @@ export class EditOrderItemDto {
   discountAmount?: number;
 }
 
-export class EditOrderDto {
+export class CreateManualOrderDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
@@ -114,6 +117,15 @@ export class EditOrderDto {
   @IsString()
   internalNote?: string;
 
+  @ApiProperty({ enum: PaymentMethodEnum })
+  @IsEnum(PaymentMethodEnum)
+  paymentMethod: PaymentMethodEnum;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  couponCode?: string;
+
   @ApiProperty()
   @IsNumber()
   @Min(0)
@@ -124,9 +136,10 @@ export class EditOrderDto {
   @Min(0)
   discountAmount: number;
 
-  @ApiProperty({ type: [EditOrderItemDto] })
+  @ApiProperty({ type: [CreateManualOrderItemDto] })
   @IsArray()
+  @ArrayMinSize(1)
   @ValidateNested({ each: true })
-  @Type(() => EditOrderItemDto)
-  items: EditOrderItemDto[];
+  @Type(() => CreateManualOrderItemDto)
+  items: CreateManualOrderItemDto[];
 }

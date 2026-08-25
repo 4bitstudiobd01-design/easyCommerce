@@ -20,7 +20,13 @@ export type CodStatus =
   | 'SETTLED'
   | 'RETURNED';
 
-export type CourierProvider = 'STEADFAST' | 'PATHAO' | 'PAPERFLY' | 'REDX';
+export type CourierProvider =
+  | 'STEADFAST'
+  | 'PATHAO'
+  | 'PAPERFLY'
+  | 'REDX'
+  | 'PARCELDEX'
+  | 'CARRYBEE';
 
 export type ShipmentDateRangePreset =
   | 'today'

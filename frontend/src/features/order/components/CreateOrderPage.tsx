@@ -1,33 +1,34 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ArrowLeft, Save, Plus, Trash2, AlertCircle, Package, MapPin, User, FileText, Loader2, Tag
+  ArrowLeft, Save, Plus, Trash2, Package, MapPin, User, FileText, Loader2, Tag, CreditCard, Ticket
 } from 'lucide-react';
-import { useGetOrderByIdQuery, useEditOrderMutation, EditOrderRequest, EditOrderItemRequest, OrderStatusType } from '../api/orderApi';
-import { Skeleton } from '@/components/ui/Skeleton';
+import { useCreateManualOrderMutation, CreateManualOrderRequest, CreateManualOrderItemRequest } from '../api/orderApi';
 import { AddOrderItemModal, AddedOrderItem } from './AddOrderItemModal';
 import { toast } from 'sonner';
 
-interface EditableLineItem extends EditOrderItemRequest {
+interface EditableLineItem extends CreateManualOrderItemRequest {
   title: string;
   unitPrice: number;
   productImageUrl?: string | null;
   sku?: string;
 }
 
-interface EditOrderPageProps {
-  orderId: string;
-}
+const PAYMENT_METHODS: { value: CreateManualOrderRequest['paymentMethod']; label: string }[] = [
+  { value: 'COD', label: 'Cash on Delivery' },
+  { value: 'BKASH', label: 'bKash' },
+  { value: 'NAGAD', label: 'Nagad' },
+  { value: 'SSLCOMMERZ', label: 'Card / SSLCommerz' },
+];
 
-export function EditOrderPage({ orderId }: EditOrderPageProps) {
+export function CreateOrderPage() {
   const router = useRouter();
-  const { data: order, isLoading: isLoadingOrder, error: orderError } = useGetOrderByIdQuery(orderId);
-  const [editOrder, { isLoading: isSaving }] = useEditOrderMutation();
+  const [createManualOrder, { isLoading: isSaving }] = useCreateManualOrderMutation();
 
-  const [formData, setFormData] = useState<Omit<EditOrderRequest, 'items'>>({
+  const [formData, setFormData] = useState<Omit<CreateManualOrderRequest, 'items'>>({
     customerName: '',
     customerPhone: '',
     customerEmail: '',
@@ -39,80 +40,22 @@ export function EditOrderPage({ orderId }: EditOrderPageProps) {
     division: '',
     customerNote: '',
     internalNote: '',
+    paymentMethod: 'COD',
+    couponCode: '',
     deliveryFee: 60,
     discountAmount: 0,
   });
   const [items, setItems] = useState<EditableLineItem[]>([]);
-
   const [showAddItemModal, setShowAddItemModal] = useState(false);
 
-  useEffect(() => {
-    if (order) {
-      setFormData({
-        customerName: order.customerName || '',
-        customerPhone: order.customerPhone || '',
-        customerEmail: order.customerEmail || '',
-        shippingAddress: order.shippingAddress || '',
-        city: order.city || 'Dhaka',
-        area: order.area || '',
-        thana: order.thana || '',
-        district: order.district || '',
-        division: order.division || '',
-        customerNote: order.customerNote || '',
-        internalNote: order.internalNote || '',
-        deliveryFee: Number(order.deliveryFee) || 0,
-        discountAmount: Number(order.discountAmount) || 0,
-      });
-      setItems(
-        order.items?.map((i) => ({
-          productId: i.productId ?? undefined,
-          variantId: i.variantId,
-          isCustomItem: i.isCustomItem,
-          customTitle: i.isCustomItem ? i.productTitle : undefined,
-          customUnitPrice: i.isCustomItem ? Number(i.unitPrice) : undefined,
-          quantity: i.quantity,
-          discountAmount: Number(i.discountAmount) || 0,
-          title: i.productTitle,
-          unitPrice: Number(i.unitPrice),
-          productImageUrl: i.productImageUrl,
-          sku: i.sku,
-        })) || [],
-      );
-    }
-  }, [order]);
-
-  if (isLoadingOrder) {
-    return <div className="p-8"><Skeleton className="h-12 w-64 mb-6" /><Skeleton className="h-96 w-full" /></div>;
-  }
-
-  if (orderError || !order) {
-    return <div className="p-8 text-center text-red-500 font-bold">Failed to load order.</div>;
-  }
-
-  const isEditable = ['PENDING', 'ON_HOLD', 'CONFIRMED', 'PROCESSING'].includes(order.orderStatus);
-  if (!isEditable) {
-    return (
-      <div className="max-w-2xl mx-auto mt-12 bg-white rounded-2xl border border-red-200 p-8 text-center shadow-sm">
-        <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-        <h2 className="text-xl font-bold text-slate-900 mb-2">Order Not Editable</h2>
-        <p className="text-sm text-slate-500 mb-6">
-          This order is in a state ({order.orderStatus.replace(/_/g, ' ')}) that cannot be edited.
-        </p>
-        <button onClick={() => router.push(`/dashboard/orders/${orderId}`)} className="px-5 py-2.5 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-800 transition-colors">
-          Back to Order
-        </button>
-      </div>
-    );
-  }
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: Math.max(0, Number(value)) }));
+    setFormData((prev) => ({ ...prev, [name]: Math.max(0, Number(value)) }));
   };
 
   const handleItemQuantityChange = (index: number, newQty: number) => {
@@ -175,7 +118,12 @@ export function EditOrderPage({ orderId }: EditOrderPageProps) {
       toast.error('Order must have at least one item.');
       return;
     }
-    const payloadItems: EditOrderItemRequest[] = items.map((item) => ({
+    if (!formData.customerName.trim() || !formData.customerPhone.trim() || !formData.shippingAddress.trim()) {
+      toast.error('Customer name, phone and shipping address are required.');
+      return;
+    }
+
+    const payloadItems: CreateManualOrderItemRequest[] = items.map((item) => ({
       productId: item.productId,
       variantId: item.variantId,
       isCustomItem: item.isCustomItem,
@@ -184,12 +132,17 @@ export function EditOrderPage({ orderId }: EditOrderPageProps) {
       quantity: item.quantity,
       discountAmount: item.discountAmount ?? 0,
     }));
+
     try {
-      await editOrder({ id: orderId, data: { ...formData, items: payloadItems } }).unwrap();
-      router.push(`/dashboard/orders/${orderId}`);
+      const order = await createManualOrder({
+        ...formData,
+        couponCode: formData.couponCode?.trim() || undefined,
+        items: payloadItems,
+      }).unwrap();
+      toast.success(`Order #${order.orderNumber} created.`);
+      router.push(`/dashboard/orders/${order.id}`);
     } catch (err: any) {
-      console.error(err);
-      toast.error(err?.data?.message || 'Failed to save changes.');
+      toast.error(err?.data?.message || 'Failed to create order.');
     }
   };
 
@@ -197,22 +150,18 @@ export function EditOrderPage({ orderId }: EditOrderPageProps) {
     <form onSubmit={handleSubmit} className="max-w-6xl mx-auto space-y-6 pb-12">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <Link href={`/dashboard/orders/${orderId}`} className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors mb-2">
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to Order Details
+          <Link href="/dashboard/orders" className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors mb-2">
+            <ArrowLeft className="w-3.5 h-3.5" /> Back to Orders
           </Link>
-          <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-              Edit Order #{order.orderNumber}
-            </h2>
-          </div>
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight">Create Order</h2>
         </div>
         <div className="flex items-center gap-2">
-          <Link href={`/dashboard/orders/${orderId}`} className="px-4 py-2 bg-white text-slate-700 text-sm font-bold rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">
+          <Link href="/dashboard/orders" className="px-4 py-2 bg-white text-slate-700 text-sm font-bold rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">
             Cancel
           </Link>
           <button type="submit" disabled={isSaving} className="px-4 py-2 bg-slate-900 text-white text-sm font-bold rounded-lg hover:bg-slate-800 transition-colors flex items-center gap-2">
             {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            Save Changes
+            Create Order
           </button>
         </div>
       </div>
@@ -227,6 +176,9 @@ export function EditOrderPage({ orderId }: EditOrderPageProps) {
               </h3>
             </div>
             <div className="p-5 space-y-4">
+              {hydratedItems.length === 0 && (
+                <p className="text-sm text-slate-400 text-center py-6">No items added yet. Click "Add Item" below to get started.</p>
+              )}
               {hydratedItems.map((item, index) => (
                 <div key={`${item.productId ?? 'custom'}-${index}`} className="flex items-center gap-4 p-4 rounded-xl border border-slate-100 bg-slate-50/50">
                   {item.productImageUrl ? (
@@ -303,6 +255,9 @@ export function EditOrderPage({ orderId }: EditOrderPageProps) {
                 <span className="font-bold text-slate-900">Grand Total</span>
                 <span className="text-2xl font-black text-slate-900">৳{previewGrandTotal.toLocaleString()}</span>
               </div>
+              <p className="text-[11px] text-slate-400">
+                A coupon code, if entered, is validated and applied server-side and may adjust the final total shown here.
+              </p>
             </div>
           </div>
         </div>
@@ -317,15 +272,38 @@ export function EditOrderPage({ orderId }: EditOrderPageProps) {
             <div className="p-5 space-y-4 text-sm">
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">Name</label>
-                <input required type="text" name="customerName" value={formData.customerName} onChange={handleChange} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 outline-none" />
+                <input required type="text" name="customerName" value={formData.customerName} onChange={handleChange} placeholder="e.g. Rahim Uddin" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 outline-none" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">Phone</label>
-                <input required type="text" name="customerPhone" value={formData.customerPhone} onChange={handleChange} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 outline-none" />
+                <input required type="text" name="customerPhone" value={formData.customerPhone} onChange={handleChange} placeholder="01700000000" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 outline-none" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">Email (Optional)</label>
                 <input type="email" name="customerEmail" value={formData.customerEmail} onChange={handleChange} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 outline-none" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
+              <CreditCard className="w-4 h-4 text-slate-400" />
+              <h3 className="text-sm font-bold text-slate-900">Payment</h3>
+            </div>
+            <div className="p-5 space-y-4 text-sm">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Payment Method</label>
+                <select name="paymentMethod" value={formData.paymentMethod} onChange={handleChange} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 outline-none bg-white">
+                  {PAYMENT_METHODS.map((m) => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1 flex items-center gap-1">
+                  <Ticket className="w-3 h-3" /> Coupon Code (Optional)
+                </label>
+                <input type="text" name="couponCode" value={formData.couponCode} onChange={handleChange} placeholder="e.g. SAVE10" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 outline-none uppercase" />
               </div>
             </div>
           </div>
@@ -374,7 +352,7 @@ export function EditOrderPage({ orderId }: EditOrderPageProps) {
                 <textarea name="customerNote" value={formData.customerNote} onChange={handleChange} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 outline-none min-h-[60px]" />
               </div>
               <div>
-                <label className="block text-xs font-bold text-amber-600 mb-1 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> Internal Note</label>
+                <label className="block text-xs font-bold text-amber-600 mb-1 flex items-center gap-1"><Tag className="w-3 h-3"/> Internal Note</label>
                 <textarea name="internalNote" value={formData.internalNote} onChange={handleChange} className="w-full px-3 py-2 border border-amber-200 bg-amber-50 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none min-h-[60px]" />
               </div>
             </div>

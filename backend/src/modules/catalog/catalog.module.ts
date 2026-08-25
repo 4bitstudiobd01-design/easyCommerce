@@ -84,6 +84,7 @@ import { UploadProductMediaService } from './services/upload-product-media.servi
 import { ListProductsService } from './services/list-products.service';
 import { FindProductByIdService } from './services/find-product-by-id.service';
 import { FindPublicStoreProductsService } from './services/find-public-store-products.service';
+import { FindPublicStoreProductBySlugService } from './services/find-public-store-product-by-slug.service';
 import { ProductSlugService } from './services/product-slug.service';
 import { ProductFeedService } from './services/product-feed.service';
 import { CreateReviewService } from './services/create-review.service';
@@ -92,6 +93,7 @@ import { ModerateReviewService } from './services/moderate-review.service';
 import { AddProductMediaService } from './services/add-product-media.service';
 import { SetPrimaryProductMediaService } from './services/set-primary-product-media.service';
 import { ReorderProductMediaService } from './services/reorder-product-media.service';
+import { ReorderProductsService } from './services/reorder-products.service';
 import { DeleteProductMediaService } from './services/delete-product-media.service';
 import { ListProductMediaService } from './services/list-product-media.service';
 
@@ -189,6 +191,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     ListProductsService,
     FindProductByIdService,
     FindPublicStoreProductsService,
+    FindPublicStoreProductBySlugService,
     ProductSlugService,
     ProductFeedService,
     CreateReviewService,
@@ -197,6 +200,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     AddProductMediaService,
     SetPrimaryProductMediaService,
     ReorderProductMediaService,
+    ReorderProductsService,
     DeleteProductMediaService,
     ListProductMediaService,
     JwtAuthGuard,
@@ -253,6 +257,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     ListProductsService,
     FindProductByIdService,
     FindPublicStoreProductsService,
+    FindPublicStoreProductBySlugService,
     ProductSlugService,
     ProductFeedService,
     CreateReviewService,

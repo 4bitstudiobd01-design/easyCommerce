@@ -17,6 +17,8 @@ const PROVIDER_LABELS: Record<CourierProvider, string> = {
   PATHAO: 'Pathao',
   PAPERFLY: 'Paperfly',
   REDX: 'RedX',
+  PARCELDEX: 'Parceldex',
+  CARRYBEE: 'Carrybee',
 };
 
 export function SendCourierModal({ order, onClose }: SendCourierModalProps) {

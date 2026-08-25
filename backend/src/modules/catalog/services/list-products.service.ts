@@ -78,6 +78,13 @@ export class ListProductsService {
       query.andWhere('collections.id = :collectionId', { collectionId: params.collectionId });
     }
 
+    // Homepage-section filter — used by the merchant reorder panel to scope drag-reorder
+    // to a bounded curated set (Hero/Featured, New Arrivals, Best Sellers) rather than
+    // the full paginated catalog.
+    if (params.section) {
+      query.andWhere(':section = ANY(p.homepageSections)', { section: params.section });
+    }
+
     // Stock status filter. Resolved in SQL against aggregated warehouse stock so that
     // `total`, `totalPages` and pagination stay consistent with the returned rows —
     // filtering the already-paginated page in memory would report wrong counts.

@@ -9,6 +9,7 @@ export type AttributeType = 'TEXT' | 'NUMBER' | 'BOOLEAN' | 'SELECT' | 'MULTI_SE
 export type TaxCategory = 'STANDARD_VAT' | 'REDUCED' | 'ZERO_RATED' | 'EXEMPT';
 export type ProductDiscountType = 'NONE' | 'PERCENTAGE' | 'FIXED';
 export type StockStatus = 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK' | 'NOT_TRACKED';
+export type HomepageSection = 'HERO_FEATURED' | 'NEW_ARRIVALS' | 'BEST_SELLERS';
 
 export type WeightUnit = 'KG' | 'G' | 'LB' | 'OZ';
 export type DimensionUnit = 'CM' | 'M' | 'IN';
@@ -180,6 +181,10 @@ export interface ReorderCategoryRequest {
   newParentId?: string | null;
   newSortOrder?: number;
   targetSiblingIds?: string[];
+}
+
+export interface ReorderProductsRequest {
+  productIds: string[];
 }
 
 export interface CategoryListResponse {
@@ -387,6 +392,11 @@ export interface Product {
   isSearchEngineIndexed?: boolean;
   isPublished?: boolean;
   publishedAt?: string;
+  isVisible?: boolean;
+  sortOrder?: number;
+  homepageSections?: HomepageSection[];
+  /** Public-safe availability flag from the storefront endpoints — never the raw stock count. */
+  inStock?: boolean;
   categoryId?: string;
   category?: Category;
   brandId?: string;
@@ -410,6 +420,7 @@ export interface ProductListParams {
   categoryId?: string;
   brandId?: string;
   collectionId?: string;
+  section?: HomepageSection;
   sortBy?: string;
   sortOrder?: 'ASC' | 'DESC';
 }
@@ -489,6 +500,8 @@ export interface CreateProductRequest {
   metaDescription?: string;
   canonicalUrl?: string;
   isSearchEngineIndexed?: boolean;
+  isVisible?: boolean;
+  homepageSections?: HomepageSection[];
 }
 
 export interface UpdateProductRequest {
@@ -500,6 +513,8 @@ export interface UpdateProductRequest {
   status?: ProductStatus;
   slug?: string;
   hasVariants?: boolean;
+  isVisible?: boolean;
+  homepageSections?: HomepageSection[];
   sku?: string;
   barcode?: string;
   trackInventory?: boolean;
@@ -716,6 +731,7 @@ export const catalogApi = createApi({
         if (params?.categoryId) queryParams.set('categoryId', params.categoryId);
         if (params?.brandId) queryParams.set('brandId', params.brandId);
         if (params?.collectionId) queryParams.set('collectionId', params.collectionId);
+        if (params?.section) queryParams.set('section', params.section);
         if (params?.sortBy) queryParams.set('sortBy', params.sortBy);
         if (params?.sortOrder) queryParams.set('sortOrder', params.sortOrder);
 
@@ -1153,6 +1169,14 @@ export const catalogApi = createApi({
       invalidatesTags: (_result, _err, { id }) => [{ type: 'Product', id }, 'Product', 'Inventory', 'Variant'],
       transformResponse: (response: { data: Product }) => response.data,
     }),
+    reorderProducts: builder.mutation<{ message: string }, ReorderProductsRequest>({
+      query: (body) => ({
+        url: '/products/reorder',
+        method: 'PATCH',
+        body,
+      }),
+      invalidatesTags: ['Product'],
+    }),
     deleteProduct: builder.mutation<{ message: string; archived: boolean }, string>({
       query: (id) => ({
         url: `/products/${id}`,
@@ -1344,6 +1368,7 @@ export const {
   useSetProductAttributesMutation,
   useCreateProductMutation,
   useUpdateProductMutation,
+  useReorderProductsMutation,
   useDeleteProductMutation,
   useGenerateVariantsMutation,
   useUpdateVariantMutation,

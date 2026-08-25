@@ -9,8 +9,9 @@ import { FindStoreBySlugService } from '../../tenant/services/find-store-by-slug
 describe('FindPublicStoreProductsService', () => {
   const build = (store: any, products: any[]) => {
     const productRepository = { find: jest.fn().mockResolvedValue(products) };
+    const inventoryStockRepository = { find: jest.fn().mockResolvedValue([]) };
     const findStoreBySlugService = { execute: jest.fn().mockResolvedValue(store) } as unknown as FindStoreBySlugService;
-    return new FindPublicStoreProductsService(productRepository as any, findStoreBySlugService);
+    return new FindPublicStoreProductsService(productRepository as any, inventoryStockRepository as any, findStoreBySlugService);
   };
 
   it('strips merchant-private store credentials from the response', async () => {

@@ -1,10 +1,15 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { Store } from '@/features/tenant/api/tenantApi';
-import { Product } from '@/features/catalog/api/catalogApi';
+import { Product, HomepageSection } from '@/features/catalog/api/catalogApi';
 
 export interface PublicStorefrontResponse {
   store: Store;
   products: Product[];
+}
+
+export interface PublicStoreProductResponse {
+  store: Store;
+  product: Product;
 }
 
 export const storefrontApi = createApi({
@@ -14,12 +19,17 @@ export const storefrontApi = createApi({
   }),
   tagTypes: ['PublicStorefront'],
   endpoints: (builder) => ({
-    getPublicStoreProducts: builder.query<PublicStorefrontResponse, string>({
-      query: (slug) => `/store/${slug}/products`,
+    getPublicStoreProducts: builder.query<PublicStorefrontResponse, { slug: string; section?: HomepageSection }>({
+      query: ({ slug, section }) => `/store/${slug}/products${section ? `?section=${section}` : ''}`,
       providesTags: ['PublicStorefront'],
       transformResponse: (response: { data: PublicStorefrontResponse }) => response.data,
+    }),
+    getPublicStoreProductBySlug: builder.query<PublicStoreProductResponse, { storeSlug: string; productSlug: string }>({
+      query: ({ storeSlug, productSlug }) => `/store/${storeSlug}/products/${productSlug}`,
+      providesTags: (result, error, arg) => [{ type: 'PublicStorefront', id: arg.productSlug }],
+      transformResponse: (response: { data: PublicStoreProductResponse }) => response.data,
     }),
   }),
 });
 
-export const { useGetPublicStoreProductsQuery } = storefrontApi;
+export const { useGetPublicStoreProductsQuery, useGetPublicStoreProductBySlugQuery } = storefrontApi;

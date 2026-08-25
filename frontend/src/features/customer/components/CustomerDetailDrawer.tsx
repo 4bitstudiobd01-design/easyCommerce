@@ -18,7 +18,8 @@ import {
   CustomerStatusType,
 } from '../api/customerApi';
 import { getOriginLabel } from '../utils/origin';
-import { FraudRiskBadge } from './FraudRiskBadge';
+import { FraudCheckPanel } from './FraudRiskBadge';
+import { useLazyGetFraudCheckForCustomerQuery } from '../api/customerApi';
 import {
   X,
   Phone,
@@ -66,7 +67,7 @@ export function CustomerDetailDrawer({
   onToggleStatus,
 }: CustomerDetailDrawerProps) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'addresses' | 'notes' | 'activity'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'addresses' | 'notes' | 'activity' | 'fraudCheck'>('overview');
 
   // Address modal state
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
@@ -124,6 +125,15 @@ export function CustomerDetailDrawer({
 
   const customerOrders = ordersResponse?.data || [];
   const ordersMeta = ordersResponse?.meta || { page: 1, limit: 10, total: 0, totalPages: 0 };
+
+  const [triggerFraudCheck, { data: fraudCheckData, isFetching: isFraudCheckFetching, isError: isFraudCheckError, error: fraudCheckError }] =
+    useLazyGetFraudCheckForCustomerQuery();
+
+  React.useEffect(() => {
+    if (activeTab === 'fraudCheck' && customerId && !fraudCheckData) {
+      triggerFraudCheck({ customerId });
+    }
+  }, [activeTab, customerId]);
 
   // Mutations
   const [setDefaultAddress, { isLoading: isSettingDefault }] = useSetDefaultCustomerAddressMutation();
@@ -547,6 +557,17 @@ export function CustomerDetailDrawer({
               >
                 Activity
               </button>
+
+              <button
+                onClick={() => setActiveTab('fraudCheck')}
+                className={`py-2 px-1 border-b-2 text-xs font-bold transition-all whitespace-nowrap ${
+                  activeTab === 'fraudCheck'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                Fraud Check
+              </button>
             </div>
 
             {/* 4. Tab Panels */}
@@ -615,22 +636,6 @@ export function CustomerDetailDrawer({
                       )}
                     </div>
                   )}
-                </div>
-
-                {/* Fraud Check Card */}
-                <div className="bg-white rounded-2xl border border-slate-200/80 p-4 space-y-3 shadow-2xs">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-extrabold text-xs text-slate-400 uppercase tracking-wider">
-                      Courier Fraud Check
-                    </h4>
-                    <FraudRiskBadge
-                      customerId={customer.id}
-                      customerLabel={`${customer.firstName} ${customer.lastName} · ${customer.phone}`}
-                    />
-                  </div>
-                  <p className="text-[11px] text-slate-500 leading-relaxed">
-                    Cross-courier delivery and cancellation history from FraudBD, keyed by this customer's phone number.
-                  </p>
                 </div>
 
                 {/* Statistics Card */}
@@ -1143,6 +1148,26 @@ export function CustomerDetailDrawer({
                     ))}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Fraud Check Tab Content */}
+            {activeTab === 'fraudCheck' && (
+              <div className="text-xs">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-extrabold text-xs text-slate-900">Courier Fraud Check</h4>
+                  <span className="text-[11px] text-slate-400 font-medium">via FraudBD</span>
+                </div>
+                <p className="text-[11px] text-slate-500 leading-relaxed mb-4">
+                  Cross-courier delivery and cancellation history for this customer's phone number.
+                </p>
+                <FraudCheckPanel
+                  data={fraudCheckData}
+                  isFetching={isFraudCheckFetching}
+                  isError={isFraudCheckError}
+                  errorMessage={(fraudCheckError as any)?.data?.message}
+                  onRefresh={() => customerId && triggerFraudCheck({ customerId, refresh: true })}
+                />
               </div>
             )}
           </div>

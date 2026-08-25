@@ -7,6 +7,7 @@ import { useGetProductsQuery } from '../../catalog/api/catalogApi';
 
 export interface AddedOrderItem {
   productId?: string;
+  variantId?: string;
   isCustomItem?: boolean;
   customTitle?: string;
   customUnitPrice?: number;
@@ -35,6 +36,9 @@ export function AddOrderItemModal({ isOpen, onClose, onAdd }: AddOrderItemModalP
   const [customPrice, setCustomPrice] = useState('');
   const [customQuantity, setCustomQuantity] = useState(1);
   const [customDiscount, setCustomDiscount] = useState('');
+  // Selected variant id per productId, so choosing a variant on one product in the
+  // search results doesn't affect another.
+  const [selectedVariantByProduct, setSelectedVariantByProduct] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchInput), 300);
@@ -50,6 +54,7 @@ export function AddOrderItemModal({ isOpen, onClose, onAdd }: AddOrderItemModalP
       setCustomPrice('');
       setCustomQuantity(1);
       setCustomDiscount('');
+      setSelectedVariantByProduct({});
     }
   }, [isOpen]);
 
@@ -61,13 +66,18 @@ export function AddOrderItemModal({ isOpen, onClose, onAdd }: AddOrderItemModalP
 
   const handleAddCatalogItem = (product: any) => {
     const primaryImage = product.images?.find((img: any) => img.isPrimary) ?? product.images?.[0];
+    const variants = (product.variants || []).filter((v: any) => v.isEnabled !== false);
+    const selectedVariantId = selectedVariantByProduct[product.id];
+    const variant = selectedVariantId ? variants.find((v: any) => v.id === selectedVariantId) : undefined;
+
     onAdd({
       productId: product.id,
+      variantId: variant?.id,
       quantity: 1,
-      title: product.title || product.name || 'Untitled product',
-      unitPrice: Number(product.basePrice || 0),
-      productImageUrl: primaryImage?.url ?? null,
-      sku: product.variants?.[0]?.sku,
+      title: variant?.title ? `${product.title || product.name} (${variant.title})` : product.title || product.name || 'Untitled product',
+      unitPrice: Number(variant?.price ?? product.basePrice ?? 0),
+      productImageUrl: variant?.image?.url ?? primaryImage?.url ?? null,
+      sku: variant?.sku ?? product.variants?.[0]?.sku,
     });
   };
 
@@ -138,12 +148,14 @@ export function AddOrderItemModal({ isOpen, onClose, onAdd }: AddOrderItemModalP
             {!isFetching &&
               products.map((p: any) => {
                 const primaryImage = p.images?.find((img: any) => img.isPrimary) ?? p.images?.[0];
+                const variants = (p.variants || []).filter((v: any) => v.isEnabled !== false);
+                const hasVariants = variants.length > 0;
+                const selectedVariantId = selectedVariantByProduct[p.id] ?? '';
+
                 return (
-                  <button
-                    type="button"
+                  <div
                     key={p.id}
-                    onClick={() => handleAddCatalogItem(p)}
-                    className="w-full flex items-center gap-3 p-2.5 rounded-lg border border-slate-100 hover:border-blue-200 hover:bg-blue-50/50 transition-colors text-left"
+                    className="w-full flex items-center gap-3 p-2.5 rounded-lg border border-slate-100 hover:border-blue-200 hover:bg-blue-50/50 transition-colors"
                   >
                     {primaryImage?.url ? (
                       <img src={primaryImage.url} alt="" className="w-10 h-10 rounded-md object-cover border border-slate-100 shrink-0" />
@@ -155,9 +167,33 @@ export function AddOrderItemModal({ isOpen, onClose, onAdd }: AddOrderItemModalP
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-slate-900 truncate">{p.title || p.name}</p>
                       <p className="text-xs text-slate-500">৳{Number(p.basePrice || 0).toLocaleString()}</p>
+                      {hasVariants && (
+                        <select
+                          value={selectedVariantId}
+                          onChange={(e) =>
+                            setSelectedVariantByProduct((prev) => ({ ...prev, [p.id]: e.target.value }))
+                          }
+                          onClick={(e) => e.stopPropagation()}
+                          className="mt-1.5 w-full text-xs border border-slate-200 rounded-md px-2 py-1 bg-white outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">Select variant…</option>
+                          {variants.map((v: any) => (
+                            <option key={v.id} value={v.id}>
+                              {v.title || v.sku || v.id} {v.price != null ? `— ৳${Number(v.price).toLocaleString()}` : ''}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                     </div>
-                    <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full shrink-0">Add</span>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAddCatalogItem(p)}
+                      disabled={hasVariants && !selectedVariantId}
+                      className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full shrink-0 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-100 transition-colors"
+                    >
+                      Add
+                    </button>
+                  </div>
                 );
               })}
           </div>

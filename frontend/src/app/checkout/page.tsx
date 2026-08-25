@@ -140,6 +140,7 @@ export default function CheckoutPage() {
         items: activeCartItems.map((i) => ({
           productId: i.productId,
           quantity: i.quantity,
+          variantId: i.variantId,
         })),
         channel: attribution?.channel,
         utmSource: attribution?.utmSource,

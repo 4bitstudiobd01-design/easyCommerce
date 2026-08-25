@@ -68,6 +68,8 @@ const TRACKING_PREFIXES: Record<CourierProviderEnum, string> = {
   [CourierProviderEnum.PATHAO]: 'PTH',
   [CourierProviderEnum.REDX]: 'REDX',
   [CourierProviderEnum.PAPERFLY]: 'PF',
+  [CourierProviderEnum.PARCELDEX]: 'PDX',
+  [CourierProviderEnum.CARRYBEE]: 'CRB',
 };
 
 const COD_AMOUNTS = [2500, 1200, 1850, 3200, 2650, 2750, 4050, 1320, 1950, 2300, 5600, 980];

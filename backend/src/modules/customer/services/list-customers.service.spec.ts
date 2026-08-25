@@ -19,6 +19,8 @@ describe('ListCustomersService', () => {
       where: jest.fn().mockReturnThis(),
       andWhere: jest.fn().mockReturnThis(),
       leftJoin: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
       addOrderBy: jest.fn().mockReturnThis(),
       skip: jest.fn().mockReturnThis(),
@@ -133,7 +135,13 @@ describe('ListCustomersService', () => {
     await service.execute(mockTenantId, { page: 1, limit: 20, sortBy: 'ordersCount', sortOrder: 'DESC' });
 
     expect(queryBuilder.leftJoin).toHaveBeenCalled();
-    expect(queryBuilder.addOrderBy).toHaveBeenCalledWith('COALESCE(ostats.orders_count, 0)', 'DESC');
+    // The sort expression is routed through addSelect(...) + a plain-alias
+    // addOrderBy rather than a raw "COALESCE(ostats.orders_count, 0)" string
+    // passed straight to addOrderBy — TypeORM's orderBy/addOrderBy parses
+    // string arguments for "alias.column" patterns to auto-escape them, and
+    // a raw expression containing "ostats.orders_count" trips that parser.
+    expect(queryBuilder.addSelect).toHaveBeenCalledWith('COALESCE(ostats.orders_count, 0)', 'sort_val');
+    expect(queryBuilder.addOrderBy).toHaveBeenCalledWith('sort_val', 'DESC');
     expect(queryBuilder.addOrderBy).toHaveBeenCalledWith('c.id', 'ASC');
   });
 

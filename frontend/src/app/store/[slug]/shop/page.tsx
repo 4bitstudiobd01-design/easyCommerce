@@ -21,7 +21,7 @@ export default function ShopPage() {
   const slug = (params.slug as string) || '';
   const dispatch = useDispatch();
 
-  const { data, isLoading, isError } = useGetPublicStoreProductsQuery(slug, {
+  const { data, isLoading, isError } = useGetPublicStoreProductsQuery({ slug }, {
     skip: !slug,
   });
 

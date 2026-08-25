@@ -20,6 +20,7 @@ import { InventoryModule } from '../inventory/inventory.module';
 import { SmsModule } from '../sms/sms.module';
 import { CouponModule } from '../coupon/coupon.module';
 import { CreateOrderService } from './services/create-order.service';
+import { CreateManualOrderService } from './services/create-manual-order.service';
 import { ListMerchantOrdersService } from './services/list-merchant-orders.service';
 import { OrderKpiService } from './services/order-kpi.service';
 import { FindOrderByIdService } from './services/find-order-by-id.service';
@@ -83,6 +84,7 @@ import { GenerateOrderNumberService } from './services/generate-order-number.ser
   controllers: [OrderController, AbandonedCartController, ReturnController, BulkOrderController, OrderNoteController],
   providers: [
     CreateOrderService,
+    CreateManualOrderService,
     ListMerchantOrdersService,
     OrderKpiService,
     FindOrderByIdService,

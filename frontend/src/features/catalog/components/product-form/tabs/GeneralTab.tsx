@@ -17,6 +17,8 @@ export function GeneralTab({ form }: GeneralTabProps) {
     setDescription,
     status,
     setStatus,
+    isVisible,
+    setIsVisible,
     customSlug,
     setCustomSlug,
     slugPreview,
@@ -102,6 +104,21 @@ export function GeneralTab({ form }: GeneralTabProps) {
               {status === 'DRAFT'
                 ? 'Draft products are saved to your merchant catalog but hidden from public customers.'
                 : 'Active products are publicly visible on your store catalog.'}
+            </p>
+
+            <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer mt-3">
+              <input
+                type="checkbox"
+                checked={isVisible}
+                onChange={(e) => setIsVisible(e.target.checked)}
+                className="rounded text-blue-600 focus:ring-blue-500"
+              />
+              <span>Show this product on the storefront</span>
+            </label>
+            <p className="text-[11px] text-slate-400 mt-1">
+              {isVisible
+                ? 'Visible to customers when Active.'
+                : "Hidden from storefront even if Active — useful for pausing a product without changing its status."}
             </p>
           </div>
 

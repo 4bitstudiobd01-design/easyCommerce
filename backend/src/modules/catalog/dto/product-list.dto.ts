@@ -4,6 +4,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { ProductStatus } from '../enums/product-status.enum';
 import { ProductType } from '../enums/product-type.enum';
 import { StockStatus } from '../enums/stock-status.enum';
+import { HomepageSection } from '../enums/homepage-section.enum';
 
 export const ALLOWED_PRODUCT_SORT_FIELDS = [
   'createdAt',
@@ -65,6 +66,14 @@ export class ProductListDto {
   @IsOptional()
   @IsUUID()
   collectionId?: string;
+
+  @ApiPropertyOptional({
+    enum: HomepageSection,
+    description: 'Filter to products curated into a given homepage section (used by the merchant reorder panel)',
+  })
+  @IsOptional()
+  @IsEnum(HomepageSection)
+  section?: HomepageSection;
 
   @ApiPropertyOptional({ description: 'Sort field', default: 'createdAt', enum: ALLOWED_PRODUCT_SORT_FIELDS })
   @IsOptional()

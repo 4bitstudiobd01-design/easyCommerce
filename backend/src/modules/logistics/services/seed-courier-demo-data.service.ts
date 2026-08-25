@@ -79,6 +79,30 @@ const DEMO_INTEGRATIONS: DemoIntegration[] = [
     lastWebhookMinutesAgo: null,
     credentials: {},
   },
+  {
+    provider: CourierProviderEnum.PARCELDEX,
+    isEnabled: false,
+    isDefault: false,
+    apiCallsTotal: 0,
+    apiCallsFailed: 0,
+    autoCreateShipment: false,
+    autoUpdateTracking: true,
+    lastApiSyncMinutesAgo: null,
+    lastWebhookMinutesAgo: null,
+    credentials: {},
+  },
+  {
+    provider: CourierProviderEnum.CARRYBEE,
+    isEnabled: false,
+    isDefault: false,
+    apiCallsTotal: 0,
+    apiCallsFailed: 0,
+    autoCreateShipment: false,
+    autoUpdateTracking: true,
+    lastApiSyncMinutesAgo: null,
+    lastWebhookMinutesAgo: null,
+    credentials: {},
+  },
 ];
 
 /**

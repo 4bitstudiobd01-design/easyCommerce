@@ -22,6 +22,7 @@ import { ProductType } from '../enums/product-type.enum';
 import { ProductStatus } from '../enums/product-status.enum';
 import { TaxCategory } from '../enums/tax-category.enum';
 import { ProductDiscountType } from '../enums/product-discount-type.enum';
+import { HomepageSection } from '../enums/homepage-section.enum';
 import {
   WeightUnit,
   DimensionUnit,
@@ -36,6 +37,8 @@ import {
 @Index('IDX_products_tenant_type', ['tenantId', 'productType'])
 @Index('IDX_products_tenant_category', ['tenantId', 'categoryId'])
 @Index('IDX_products_tenant_brand', ['tenantId', 'brandId'])
+@Index('IDX_products_tenant_sortOrder', ['tenantId', 'sortOrder'])
+@Index('IDX_products_tenant_isVisible', ['tenantId', 'isVisible'])
 export class ProductEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -114,6 +117,23 @@ export class ProductEntity {
   // page can show when it actually went live rather than reusing updatedAt.
   @Column({ type: 'timestamptz', nullable: true })
   publishedAt?: Date;
+
+  /**
+   * Independent of `status`/`isPublished` — lets a merchant pause a product's
+   * storefront visibility (e.g. temporarily out of stock, seasonal) without
+   * changing its lifecycle status. The public storefront query requires BOTH
+   * isPublished AND isVisible to be true.
+   */
+  @Column({ type: 'boolean', default: true })
+  isVisible: boolean;
+
+  /** Global per-tenant display order, set only via the reorder endpoint — never via create/update DTOs. */
+  @Column({ type: 'int', default: 0 })
+  sortOrder: number;
+
+  /** Which homepage sections (Hero/Featured, New Arrivals, Best Sellers) this product is curated into. */
+  @Column({ type: 'enum', enum: HomepageSection, array: true, default: [] })
+  homepageSections: HomepageSection[];
 
   // --- SHIPPING & FULFILLMENT CONFIGURATION (CHUNK 10) ---
   @Column({ type: 'boolean', default: true })

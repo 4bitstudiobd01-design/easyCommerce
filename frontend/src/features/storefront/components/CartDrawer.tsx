@@ -78,7 +78,7 @@ export function CartDrawer() {
             ) : (
               items.map((item) => (
                 <div
-                  key={item.productId}
+                  key={item.id}
                   className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl flex items-center gap-3"
                 >
                   <div className="w-14 h-14 bg-white border border-slate-200 rounded-xl overflow-hidden shrink-0 flex items-center justify-center">
@@ -91,6 +91,14 @@ export function CartDrawer() {
 
                   <div className="flex-1 min-w-0">
                     <h4 className="font-bold text-xs text-slate-900 truncate">{item.title}</h4>
+                    {(item.variantTitle || item.selectedOptions) && (
+                      <p className="text-[11px] text-slate-500 font-medium truncate">
+                        {item.variantTitle ||
+                          Object.entries(item.selectedOptions || {})
+                            .map(([, value]) => value)
+                            .join(' / ')}
+                      </p>
+                    )}
                     <p className="text-xs font-extrabold text-blue-600 mt-0.5">৳{item.price.toLocaleString()}</p>
 
                     <div className="flex items-center gap-2 mt-2">
@@ -100,6 +108,7 @@ export function CartDrawer() {
                             dispatch(
                               updateQuantity({
                                 productId: item.productId,
+                                variantId: item.variantId,
                                 quantity: item.quantity - 1,
                               })
                             )
@@ -114,6 +123,7 @@ export function CartDrawer() {
                             dispatch(
                               updateQuantity({
                                 productId: item.productId,
+                                variantId: item.variantId,
                                 quantity: item.quantity + 1,
                               })
                             )
@@ -127,7 +137,7 @@ export function CartDrawer() {
                   </div>
 
                   <button
-                    onClick={() => dispatch(removeFromCart(item.productId))}
+                    onClick={() => dispatch(removeFromCart({ productId: item.productId, variantId: item.variantId }))}
                     className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />

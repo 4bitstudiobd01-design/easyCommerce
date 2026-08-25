@@ -196,12 +196,21 @@ export class ListCustomersService {
         'c.id::text = ostats.cid OR c.phone = ostats.cphone',
       );
 
+      // TypeORM's orderBy/addOrderBy parses string arguments for "alias.column"
+      // patterns to auto-escape them — passing a raw expression like
+      // "COALESCE(ostats.orders_count, 0)" trips that parser and throws
+      // '"COALESCE(ostats" alias was not found'. Routing the expression through
+      // addSelect(...) with a plain alias, then ordering by that alias name,
+      // sidesteps the parser entirely.
       if (sortByParam === 'ordersCount') {
-        query.addOrderBy('COALESCE(ostats.orders_count, 0)', sortOrder);
+        query.addSelect('COALESCE(ostats.orders_count, 0)', 'sort_val');
+        query.addOrderBy('sort_val', sortOrder);
       } else if (sortByParam === 'totalSpent') {
-        query.addOrderBy('COALESCE(ostats.total_spent, 0)', sortOrder);
+        query.addSelect('COALESCE(ostats.total_spent, 0)', 'sort_val');
+        query.addOrderBy('sort_val', sortOrder);
       } else if (sortByParam === 'lastOrderAt') {
-        query.addOrderBy('ostats.last_order_at', sortOrder, 'NULLS LAST');
+        query.addSelect('ostats.last_order_at', 'sort_val');
+        query.addOrderBy('sort_val', sortOrder, 'NULLS LAST');
       }
     } else {
       // Direct Customer table field sorting

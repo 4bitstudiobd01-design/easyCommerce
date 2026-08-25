@@ -62,6 +62,14 @@ export class UpdateProductService {
       }
     }
 
+    if (dto.isVisible !== undefined) {
+      product.isVisible = dto.isVisible;
+    }
+
+    if (dto.homepageSections !== undefined) {
+      product.homepageSections = dto.homepageSections;
+    }
+
     // SKU uniqueness validation
     if (dto.sku !== undefined) {
       const trimmedSku = dto.sku ? dto.sku.trim() : undefined;

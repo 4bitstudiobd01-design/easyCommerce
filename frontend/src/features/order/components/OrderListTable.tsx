@@ -447,11 +447,11 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
           </button>
           <button
             type="button"
-            onClick={onCreateOrderClick || (() => toast('Manual order creation coming soon.'))}
+            onClick={() => (onCreateOrderClick ? onCreateOrderClick() : router.push('/dashboard/orders/create'))}
             className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-600/30 flex items-center gap-2 transition-all active:scale-95"
           >
             <Plus className="w-4 h-4" />
-            <span>Create Order ▾</span>
+            <span>Create Order</span>
           </button>
         </div>
       </div>

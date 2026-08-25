@@ -24,6 +24,11 @@ export class CreateOrderItemDto {
   @IsNumber()
   @Min(1)
   quantity: number;
+
+  @ApiProperty({ required: false, description: 'Selected ProductVariant UUID, when the product has variants' })
+  @IsOptional()
+  @IsUUID()
+  variantId?: string;
 }
 
 export class CreateOrderDto {

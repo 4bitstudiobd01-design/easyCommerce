@@ -22,6 +22,7 @@ import {
   DigitalDeliveryType,
   ServiceDeliveryType,
   ServiceDurationUnit,
+  HomepageSection,
 } from '@/features/catalog/api/catalogApi';
 import { useGetMyStoreQuery } from '@/features/tenant/api/tenantApi';
 import { toast } from 'sonner';
@@ -69,10 +70,14 @@ export function useProductForm() {
   const [description, setDescription] = useState('');
   const [productType, setProductType] = useState<ProductType>('PHYSICAL');
   const [status, setStatus] = useState<ProductStatus>('DRAFT');
+  // Independent of `status` — lets a merchant pause storefront visibility without
+  // changing the product's lifecycle status. Defaults to visible for new products.
+  const [isVisible, setIsVisible] = useState<boolean>(true);
   const [customSlug, setCustomSlug] = useState('');
   const [categoryId, setCategoryId] = useState(searchParams.get('categoryId') || '');
   const [brandId, setBrandId] = useState('');
   const [selectedCollectionIds, setSelectedCollectionIds] = useState<string[]>([]);
+  const [homepageSections, setHomepageSections] = useState<HomepageSection[]>([]);
   const [localImages, setLocalImages] = useState<{ url: string; altText?: string; isPrimary?: boolean }[]>([]);
 
   // Inventory & Stock State
@@ -145,6 +150,7 @@ export function useProductForm() {
     setProductType(sourceProduct.productType || 'PHYSICAL');
     // A duplicate always starts as a draft so a half-finished copy cannot go live.
     setStatus(isDuplicateMode ? 'DRAFT' : sourceProduct.status || 'DRAFT');
+    setIsVisible(sourceProduct.isVisible ?? true);
     // Slug and SKU are unique per tenant, so a copy must not reuse the originals.
     setCustomSlug(isDuplicateMode ? '' : sourceProduct.slug || '');
     setSku(isDuplicateMode ? '' : sourceProduct.sku || '');
@@ -153,6 +159,7 @@ export function useProductForm() {
     setCategoryId(sourceProduct.categoryId || '');
     setBrandId(sourceProduct.brandId || '');
     setSelectedCollectionIds((sourceProduct.collections || []).map((c) => c.id));
+    setHomepageSections(sourceProduct.homepageSections || []);
     setLocalImages(
       (sourceProduct.images || []).map((img) => ({
         url: img.url,
@@ -262,6 +269,12 @@ export function useProductForm() {
     );
   };
 
+  const toggleHomepageSection = (section: HomepageSection) => {
+    setHomepageSections((prev) =>
+      prev.includes(section) ? prev.filter((item) => item !== section) : [...prev, section],
+    );
+  };
+
   const handleAttributeChange = (attributeId: string, value: any) => {
     setAttributeValues((prev) => ({
       ...prev,
@@ -289,6 +302,7 @@ export function useProductForm() {
         description: description.trim() || undefined,
         productType,
         status: targetStatus,
+        isVisible,
         slug: customSlug.trim() || undefined,
         sku: sku.trim() || undefined,
         barcode: barcode.trim() || undefined,
@@ -309,6 +323,7 @@ export function useProductForm() {
         categoryId: categoryId || undefined,
         brandId: brandId || undefined,
         collectionIds: selectedCollectionIds.length > 0 ? selectedCollectionIds : undefined,
+        homepageSections: homepageSections.length > 0 ? homepageSections : undefined,
         images: localImages.length > 0 ? localImages : undefined,
         shippingRequired,
         weight: weight !== '' ? Number(weight) : undefined,
@@ -426,6 +441,7 @@ export function useProductForm() {
     description, setDescription,
     productType, setProductType,
     status, setStatus,
+    isVisible, setIsVisible,
     customSlug, setCustomSlug,
     slugPreview,
 
@@ -437,6 +453,8 @@ export function useProductForm() {
     brandId, setBrandId,
     selectedCollectionIds, setSelectedCollectionIds,
     toggleCollectionSelect,
+    homepageSections, setHomepageSections,
+    toggleHomepageSection,
     categories,
     brands,
     collections,

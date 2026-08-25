@@ -134,6 +134,8 @@ export class CreateProductService {
       status,
       isPublished: status === ProductStatus.ACTIVE,
       publishedAt: status === ProductStatus.ACTIVE ? new Date() : undefined,
+      isVisible: dto.isVisible !== undefined ? dto.isVisible : true,
+      homepageSections: dto.homepageSections ?? [],
       sku: trimmedSku,
       barcode: trimmedBarcode,
       trackInventory: dto.trackInventory !== undefined ? dto.trackInventory : true,

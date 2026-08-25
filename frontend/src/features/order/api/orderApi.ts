@@ -43,6 +43,8 @@ export interface OrderItem {
   id: string;
   productId?: string | null;
   productTitle: string;
+  variantId?: string;
+  variantTitle?: string;
   sku?: string;
   /** Denormalized catalog product image; null/absent for custom items. */
   productImageUrl?: string | null;
@@ -163,6 +165,7 @@ export interface AbandonedCart {
 export interface CreateOrderItemRequest {
   productId: string;
   quantity: number;
+  variantId?: string;
 }
 
 export interface CreateOrderRequest {
@@ -186,6 +189,8 @@ export interface CreateOrderRequest {
 export interface EditOrderItemRequest {
   /** Required unless isCustomItem is true. */
   productId?: string;
+  /** Optional catalog variant selected for this line, when the product has variants. */
+  variantId?: string;
   /** True for a merchant-entered line with no catalog product. */
   isCustomItem?: boolean;
   /** Required when isCustomItem is true. */
@@ -212,6 +217,28 @@ export interface EditOrderRequest {
   deliveryFee: number;
   discountAmount: number;
   items: EditOrderItemRequest[];
+}
+
+/** Same item shape as EditOrderItemRequest — kept as a separate alias so the two request bodies can diverge later without a shared-type coupling surprise. */
+export type CreateManualOrderItemRequest = EditOrderItemRequest;
+
+export interface CreateManualOrderRequest {
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string;
+  shippingAddress: string;
+  city: string;
+  area?: string;
+  thana?: string;
+  district?: string;
+  division?: string;
+  customerNote?: string;
+  internalNote?: string;
+  paymentMethod: 'COD' | 'BKASH' | 'NAGAD' | 'SSLCOMMERZ';
+  couponCode?: string;
+  deliveryFee: number;
+  discountAmount: number;
+  items: CreateManualOrderItemRequest[];
 }
 
 export interface UpdateOrderStatusRequest {
@@ -311,6 +338,15 @@ export const orderApi = createApi({
       query: () => '/kpi',
       providesTags: ['OrderKpi', 'Order'],
       transformResponse: (response: { data: any }) => response.data,
+    }),
+    createManualOrder: builder.mutation<Order, CreateManualOrderRequest>({
+      query: (data) => ({
+        url: '',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Order', 'OrderKpi'],
+      transformResponse: (response: { data: Order }) => response.data,
     }),
     editOrder: builder.mutation<Order, { id: string; data: EditOrderRequest }>({
       query: ({ id, data }) => ({
@@ -481,6 +517,7 @@ export const {
   useGetOrderByIdQuery,
   useGetOrderInvoiceQuery,
   useGetMerchantOrderKpisQuery,
+  useCreateManualOrderMutation,
   useEditOrderMutation,
   useUpdateOrderStatusMutation,
   useUpdateOrderPaymentStatusMutation,

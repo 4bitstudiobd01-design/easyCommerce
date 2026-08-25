@@ -100,8 +100,9 @@ describe('Product Variants Services (Chunk 9)', () => {
       const findStoreBySlugService = {
         execute: jest.fn().mockResolvedValue({ id: 'store-1', tenantId: 'tenant-1', slug: 'my-store' }),
       };
+      const inventoryStockRepo = { find: jest.fn().mockResolvedValue([]) };
 
-      const service = new FindPublicStoreProductsService(productRepo as any, findStoreBySlugService as any);
+      const service = new FindPublicStoreProductsService(productRepo as any, inventoryStockRepo as any, findStoreBySlugService as any);
       const response = await service.execute('my-store');
 
       expect((response.products[0] as any).costPrice).toBeUndefined();

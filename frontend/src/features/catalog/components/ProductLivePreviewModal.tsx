@@ -16,6 +16,7 @@ import {
   Heart,
   Tag,
   Info,
+  AlertTriangle,
 } from 'lucide-react';
 import { ProductFormState } from '@/features/catalog/hooks/useProductForm';
 
@@ -54,6 +55,7 @@ export function ProductLivePreviewModal({ form, isOpen, onClose }: ProductLivePr
     weightUnit,
     categoryAttributes,
     attributeValues,
+    isVisible,
   } = form;
 
   const categoryName = categories.find((c) => c.id === categoryId)?.name || 'General';
@@ -151,6 +153,15 @@ export function ProductLivePreviewModal({ form, isOpen, onClose }: ProductLivePr
               deviceMode === 'mobile' ? 'w-full max-w-[420px] my-auto' : 'w-full max-w-4xl'
             }`}
           >
+            {!isVisible && (
+              <div className="px-4 py-2.5 bg-amber-50 text-amber-700 border-b border-amber-200 flex items-center gap-2 text-[11px] font-semibold">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                <span>
+                  Hidden from storefront — this product won&apos;t appear on your storefront until &quot;Show on storefront&quot; is enabled.
+                </span>
+              </div>
+            )}
+
             {/* Store Top Banner Mock */}
             <div className="bg-slate-900 text-white px-4 py-2 text-[11px] flex items-center justify-between border-b border-slate-800">
               <span className="font-extrabold tracking-tight text-blue-400">

@@ -21,12 +21,19 @@ import {
   useCreateAttributeMutation,
   useAssignCategoryAttributesMutation,
   AttributeType,
+  HomepageSection,
 } from '@/features/catalog/api/catalogApi';
 import { toast } from 'sonner';
 
 interface OrganizationTabProps {
   form: ProductFormState;
 }
+
+const HOMEPAGE_SECTION_OPTIONS: { value: HomepageSection; label: string }[] = [
+  { value: 'HERO_FEATURED', label: 'Hero / Featured' },
+  { value: 'NEW_ARRIVALS', label: 'New Arrivals' },
+  { value: 'BEST_SELLERS', label: 'Best Sellers' },
+];
 
 // 1-Click quick presets for custom specifications
 const PRESET_SPEC_ATTRIBUTES = [
@@ -90,6 +97,8 @@ export function OrganizationTab({ form }: OrganizationTabProps) {
     collections,
     selectedCollectionIds,
     toggleCollectionSelect,
+    homepageSections,
+    toggleHomepageSection,
     showAddCollection, setShowAddCollection,
     newCollectionName, setNewCollectionName,
     handleAddCollectionInline,
@@ -311,6 +320,35 @@ export function OrganizationTab({ form }: OrganizationTabProps) {
               })}
             </div>
           )}
+        </div>
+
+        {/* Homepage Placement */}
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+            Homepage Placement
+          </label>
+          <p className="text-[11px] text-slate-400 mb-2">Choose which homepage sections should feature this product.</p>
+          <div className="space-y-1.5">
+            {HOMEPAGE_SECTION_OPTIONS.map((opt) => {
+              const isChecked = homepageSections.includes(opt.value);
+              return (
+                <label
+                  key={opt.value}
+                  className={`flex items-center gap-2 p-2 border rounded-xl cursor-pointer text-xs transition-all ${
+                    isChecked ? 'bg-blue-50/60 border-blue-300 font-bold text-blue-900' : 'bg-slate-50/50 border-slate-200 text-slate-700'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => toggleHomepageSection(opt.value)}
+                    className="rounded text-blue-600 focus:ring-blue-500"
+                  />
+                  <span>{opt.label}</span>
+                </label>
+              );
+            })}
+          </div>
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useGetPublicStoreProductsQuery } from '@/features/storefront/api/storefrontApi';
 import { StorefrontNavbar } from '@/features/storefront/components/StorefrontNavbar';
 import { ProductCard } from '@/features/storefront/components/ProductCard';
@@ -26,10 +26,11 @@ import { ProductCardSkeleton, Skeleton } from '@/components/ui/Skeleton';
 
 export default function StorefrontPage() {
   const params = useParams();
+  const router = useRouter();
   const slug = (params.slug as string) || '';
   const dispatch = useDispatch();
 
-  const { data, isLoading, isError } = useGetPublicStoreProductsQuery(slug, {
+  const { data, isLoading, isError } = useGetPublicStoreProductsQuery({ slug }, {
     skip: !slug,
   });
 
@@ -230,11 +231,6 @@ export default function StorefrontPage() {
         googleTagManagerId={(store as any).googleTagManagerId}
       />
       <CartDrawer />
-      <ProductDetailModal
-        product={selectedProduct}
-        storeSlug={slug}
-        onClose={() => setSelectedProduct(null)}
-      />
       <DefaultStorefrontTheme
         storeName={store.name}
         slug={store.slug}
@@ -247,7 +243,7 @@ export default function StorefrontPage() {
         heroBanners={store.heroBanners}
         products={filteredProducts}
         categories={categories}
-        onSelectProduct={(p) => setSelectedProduct(p)}
+        onSelectProduct={(p) => router.push(`/store/${slug}/product/${p.slug}`)}
         onAddToCart={handleThemeAddToCart}
       />
     </>

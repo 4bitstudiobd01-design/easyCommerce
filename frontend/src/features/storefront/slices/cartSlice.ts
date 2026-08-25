@@ -1,5 +1,20 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+/**
+ * Minimal shape of a resolved ProductVariantEntity needed to add a specific
+ * variant to the cart. Callers (product cards, PDP, detail modal) pass this
+ * only when the customer actually selected a variant combination — omitting
+ * it keeps today's product-level add-to-cart behavior fully unchanged.
+ */
+export interface CartVariantInput {
+  id: string;
+  title?: string;
+  price?: number;
+  sku?: string;
+  options?: Array<{ attributeName: string; optionLabel: string }>;
+  imageUrl?: string;
+}
+
 export interface CartItem {
   id: string;
   productId: string;
@@ -9,6 +24,11 @@ export interface CartItem {
   quantity: number;
   sku?: string;
   storeSlug: string;
+  variantId?: string;
+  /** Human-readable label for the selected variant, e.g. "Black / Large". */
+  variantTitle?: string;
+  /** attributeName -> optionLabel, e.g. { Color: 'Black', Size: 'Large' }. */
+  selectedOptions?: Record<string, string>;
 }
 
 interface CartState {
@@ -31,12 +51,19 @@ const initialState: CartState = {
   isDrawerOpen: false,
 };
 
+// Same cart line iff same product AND same variant (both undefined counts as a match).
+const isSameLine = (item: CartItem, productId: string, variantId?: string) =>
+  item.productId === productId && item.variantId === variantId;
+
 export const cartSlice = createSlice({
   name: 'cart',
   initialState,
   reducers: {
-    addToCart: (state, action: PayloadAction<{ product: any; quantity?: number; storeSlug: string }>) => {
-      const { product, quantity = 1, storeSlug } = action.payload;
+    addToCart: (
+      state,
+      action: PayloadAction<{ product: any; quantity?: number; storeSlug: string; variant?: CartVariantInput }>,
+    ) => {
+      const { product, quantity = 1, storeSlug, variant } = action.payload;
       const primaryImg = product.images?.find((img: any) => img.isPrimary)?.url || product.images?.[0]?.url;
 
       // A cart can only contain items from one store at a time — adding from a
@@ -45,20 +72,28 @@ export const cartSlice = createSlice({
         state.items = [];
       }
 
-      const existingIndex = state.items.findIndex((item) => item.productId === product.id);
+      const existingIndex = state.items.findIndex((item) => isSameLine(item, product.id, variant?.id));
 
       if (existingIndex > -1) {
         state.items[existingIndex].quantity += quantity;
       } else {
+        const selectedOptions = variant?.options?.reduce<Record<string, string>>((acc, opt) => {
+          acc[opt.attributeName] = opt.optionLabel;
+          return acc;
+        }, {});
+
         state.items.push({
-          id: `cart-${product.id}`,
+          id: variant ? `cart-${product.id}-${variant.id}` : `cart-${product.id}`,
           productId: product.id,
           title: product.title,
-          price: Number(product.basePrice),
-          imageUrl: primaryImg,
+          price: variant ? Number(variant.price ?? product.basePrice) : Number(product.basePrice),
+          imageUrl: variant ? variant.imageUrl ?? primaryImg : primaryImg,
           quantity,
-          sku: product.variants?.[0]?.sku,
+          sku: variant ? variant.sku ?? product.variants?.[0]?.sku : product.variants?.[0]?.sku,
           storeSlug,
+          variantId: variant?.id,
+          variantTitle: variant?.title,
+          selectedOptions: selectedOptions && Object.keys(selectedOptions).length > 0 ? selectedOptions : undefined,
         });
       }
 
@@ -69,19 +104,23 @@ export const cartSlice = createSlice({
       }
     },
 
-    removeFromCart: (state, action: PayloadAction<string>) => {
-      state.items = state.items.filter((item) => item.productId !== action.payload);
+    removeFromCart: (state, action: PayloadAction<string | { productId: string; variantId?: string }>) => {
+      const target = typeof action.payload === 'string' ? { productId: action.payload, variantId: undefined } : action.payload;
+      state.items = state.items.filter((item) => !isSameLine(item, target.productId, target.variantId));
       if (typeof window !== 'undefined') {
         localStorage.setItem('bitcommerce_cart', JSON.stringify(state.items));
       }
     },
 
-    updateQuantity: (state, action: PayloadAction<{ productId: string; quantity: number }>) => {
-      const { productId, quantity } = action.payload;
-      const item = state.items.find((i) => i.productId === productId);
+    updateQuantity: (
+      state,
+      action: PayloadAction<{ productId: string; quantity: number; variantId?: string }>,
+    ) => {
+      const { productId, quantity, variantId } = action.payload;
+      const item = state.items.find((i) => isSameLine(i, productId, variantId));
       if (item) {
         if (quantity <= 0) {
-          state.items = state.items.filter((i) => i.productId !== productId);
+          state.items = state.items.filter((i) => !isSameLine(i, productId, variantId));
         } else {
           item.quantity = quantity;
         }

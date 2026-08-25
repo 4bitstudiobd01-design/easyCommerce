@@ -1,0 +1,5 @@
+export enum HomepageSection {
+  HERO_FEATURED = 'HERO_FEATURED',
+  NEW_ARRIVALS = 'NEW_ARRIVALS',
+  BEST_SELLERS = 'BEST_SELLERS',
+}

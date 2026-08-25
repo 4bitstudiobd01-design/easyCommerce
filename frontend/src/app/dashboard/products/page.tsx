@@ -8,7 +8,9 @@ import { ProductListTable } from '@/features/catalog/components/ProductListTable
 import { ProductFilterBar } from '@/features/catalog/components/ProductFilterBar';
 import { ProductStatsCards } from '@/features/catalog/components/ProductStatsCards';
 import { ProductImportModal } from '@/features/catalog/components/ProductImportModal';
-import { Plus, Upload, Download, ChevronRight } from 'lucide-react';
+import { ProductReorderPanel } from '@/features/catalog/components/ProductReorderPanel';
+import { Modal } from '@/components/ui/Modal';
+import { Plus, Upload, Download, ChevronRight, ListOrdered } from 'lucide-react';
 
 export default function ProductsPage() {
   const router = useRouter();
@@ -28,6 +30,7 @@ export default function ProductsPage() {
   // Local state for smooth debounced search input
   const [localSearch, setLocalSearch] = useState(searchQuery);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isReorderModalOpen, setIsReorderModalOpen] = useState(false);
 
   // Export lives on the page header (matching the agreed layout) but must still honour
   // the active filters, so the current query state is forwarded to the export endpoint.
@@ -196,6 +199,15 @@ export default function ProductsPage() {
           </button>
 
           <button
+            type="button"
+            onClick={() => setIsReorderModalOpen(true)}
+            className="px-3.5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 shadow-sm flex items-center gap-1.5 transition-colors"
+          >
+            <ListOrdered className="w-3.5 h-3.5" />
+            <span>Reorder Products</span>
+          </button>
+
+          <button
             onClick={() => router.push('/dashboard/products/create')}
             className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-600/30 flex items-center gap-2 transition-all"
           >
@@ -250,6 +262,17 @@ export default function ProductsPage() {
         isOpen={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
       />
+
+      <Modal
+        isOpen={isReorderModalOpen}
+        onClose={() => setIsReorderModalOpen(false)}
+        title="Reorder Products"
+        subtitle="Drag products to control their display order within a homepage section"
+        icon={<ListOrdered className="w-5 h-5" />}
+        size="xl"
+      >
+        <ProductReorderPanel onClose={() => setIsReorderModalOpen(false)} />
+      </Modal>
     </div>
   );
 }

@@ -94,6 +94,8 @@ import {
 import { ListProductsService } from './services/list-products.service';
 import { FindProductByIdService } from './services/find-product-by-id.service';
 import { FindPublicStoreProductsService, PublicStoreProductsResponse } from './services/find-public-store-products.service';
+import { FindPublicStoreProductBySlugService, PublicStoreProductResponse } from './services/find-public-store-product-by-slug.service';
+import { HomepageSection } from './enums/homepage-section.enum';
 import { FindStoreByUserService } from '../tenant/services/find-store-by-user.service';
 import { CreateReviewService } from './services/create-review.service';
 import { ListProductReviewsService } from './services/list-product-reviews.service';
@@ -127,6 +129,8 @@ import { ProductListResult } from './services/list-products.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { AddProductMediaDto } from './dto/add-product-media.dto';
 import { ReorderProductMediaDto } from './dto/reorder-product-media.dto';
+import { ReorderProductsDto } from './dto/reorder-products.dto';
+import { ReorderProductsService } from './services/reorder-products.service';
 
 import { CategoryEntity } from './entities/category.entity';
 import { BrandEntity } from './entities/brand.entity';
@@ -196,6 +200,7 @@ export class CatalogController {
     private readonly listProductsService: ListProductsService,
     private readonly findProductByIdService: FindProductByIdService,
     private readonly findPublicStoreProductsService: FindPublicStoreProductsService,
+    private readonly findPublicStoreProductBySlugService: FindPublicStoreProductBySlugService,
     private readonly findStoreByUserService: FindStoreByUserService,
     private readonly createReviewService: CreateReviewService,
     private readonly listProductReviewsService: ListProductReviewsService,
@@ -205,6 +210,7 @@ export class CatalogController {
     private readonly reorderProductMediaService: ReorderProductMediaService,
     private readonly deleteProductMediaService: DeleteProductMediaService,
     private readonly listProductMediaService: ListProductMediaService,
+    private readonly reorderProductsService: ReorderProductsService,
   ) {}
 
   private async getMerchantTenantId(userId: string, storeId?: string): Promise<string> {
@@ -221,8 +227,22 @@ export class CatalogController {
   @ApiOperation({ summary: 'Get public storefront details & products by store slug' })
   @ApiResponse({ status: 200, description: 'Storefront details and published catalog products' })
   @ApiResponse({ status: 404, description: 'Store not found' })
-  async getPublicStoreProducts(@Param('slug') slug: string): Promise<PublicStoreProductsResponse> {
-    return this.findPublicStoreProductsService.execute(slug);
+  async getPublicStoreProducts(
+    @Param('slug') slug: string,
+    @Query('section') section?: HomepageSection,
+  ): Promise<PublicStoreProductsResponse> {
+    return this.findPublicStoreProductsService.execute(slug, section);
+  }
+
+  @Get('public/store/:slug/products/:productSlug')
+  @ApiOperation({ summary: 'Get a single public product by slug for storefront PDP' })
+  @ApiResponse({ status: 200, description: 'Store details and the requested product' })
+  @ApiResponse({ status: 404, description: 'Store or product not found, unpublished, or hidden' })
+  async getPublicStoreProductBySlug(
+    @Param('slug') slug: string,
+    @Param('productSlug') productSlug: string,
+  ): Promise<PublicStoreProductResponse> {
+    return this.findPublicStoreProductBySlugService.execute(slug, productSlug);
   }
 
   @Post('products/:id/reviews')
@@ -1014,6 +1034,21 @@ export class CatalogController {
   ): Promise<ProductEntity> {
     const tenantId = await this.getMerchantTenantId(userId, storeId);
     return this.createProductService.execute(tenantId, dto);
+  }
+
+  @Patch('products/reorder')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Set display order for a set of products (e.g. within a homepage section)' })
+  @RequirePermissions('products:write')
+  async reorderProducts(
+    @CurrentUser('sub') userId: string,
+    @Body() dto: ReorderProductsDto,
+    @Headers('x-store-id') storeId?: string,
+  ): Promise<{ message: string }> {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
+    await this.reorderProductsService.execute(tenantId, dto);
+    return { message: 'Product order updated' };
   }
 
   @Patch('products/:id')

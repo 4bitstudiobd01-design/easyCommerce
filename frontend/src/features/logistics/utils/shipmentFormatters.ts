@@ -92,6 +92,8 @@ export const COURIER_BRAND_STYLES: Record<CourierProvider, string> = {
   PATHAO: 'bg-[#E2136E]/10 text-[#E2136E]',
   REDX: 'bg-red-500/10 text-red-600',
   PAPERFLY: 'bg-violet-500/10 text-violet-600',
+  PARCELDEX: 'bg-sky-500/10 text-sky-600',
+  CARRYBEE: 'bg-amber-500/10 text-amber-600',
 };
 
 export const getCourierBrandStyle = (provider: CourierProvider): string =>
