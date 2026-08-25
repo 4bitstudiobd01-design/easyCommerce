@@ -44,6 +44,19 @@ export interface MessageResponse {
   message: string;
 }
 
+export interface DevMerchantStore {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+export interface DevMerchant {
+  userId: string;
+  fullName: string;
+  email: string;
+  stores: DevMerchantStore[];
+}
+
 export const authApi = createApi({
   reducerPath: 'authApi',
   baseQuery: fetchBaseQuery({
@@ -82,6 +95,20 @@ export const authApi = createApi({
       }),
       transformResponse: (response: { data: MessageResponse }) => response.data,
     }),
+    /** Dev-only: the backend hard-disables this outside non-production environments. */
+    getDevMerchants: builder.query<DevMerchant[], void>({
+      query: () => '/dev/merchants',
+      transformResponse: (response: { data: DevMerchant[] }) => response.data,
+    }),
+    /** Dev-only: logs in as the chosen merchant without a password. */
+    devLoginAs: builder.mutation<AuthResponse, { userId: string }>({
+      query: (body) => ({
+        url: '/dev/login-as',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response: { data: AuthResponse }) => response.data,
+    }),
   }),
 });
 
@@ -90,4 +117,6 @@ export const {
   useLoginMutation,
   useForgotPasswordMutation,
   useResetPasswordMutation,
+  useGetDevMerchantsQuery,
+  useDevLoginAsMutation,
 } = authApi;
