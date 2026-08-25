@@ -279,6 +279,61 @@ export interface RemoveShiftAssignmentRequest {
   date: string;
 }
 
+export type ExpenseCategory = 'TRAVEL' | 'MEALS' | 'ACCOMMODATION' | 'OFFICE_SUPPLIES' | 'UTILITIES' | 'MEDICAL' | 'OTHER';
+export type ExpenseStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'REIMBURSED';
+
+export interface Expense {
+  id: string;
+  tenantId: string;
+  storeId: string;
+  employeeId: string;
+  employee?: Employee;
+  category: ExpenseCategory;
+  amount: string;
+  currency: string;
+  expenseDate: string;
+  description?: string;
+  receiptFileId?: string;
+  status: ExpenseStatus;
+  reviewedByUserId?: string;
+  reviewedAt?: string;
+  reviewNote?: string;
+  reimbursedAt?: string;
+  createdByUserId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaginatedExpenses {
+  items: Expense[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface CreateExpenseRequest {
+  employeeId: string;
+  category: ExpenseCategory;
+  amount: string;
+  currency?: string;
+  expenseDate: string;
+  description?: string;
+}
+
+export interface ReviewExpenseRequest {
+  id: string;
+  status: 'APPROVED' | 'REJECTED';
+  reviewNote?: string;
+}
+
+export interface ListExpensesParams {
+  employeeId?: string;
+  status?: ExpenseStatus;
+  category?: ExpenseCategory;
+  page?: number;
+  limit?: number;
+}
+
 export interface ListEmployeesParams {
   search?: string;
   departmentId?: string;
@@ -295,7 +350,7 @@ export const hrmApi = createApi({
   baseQuery: createBaseQueryWithReauth(
     process.env.NEXT_PUBLIC_API_URL?.replace('/orders', '') || 'http://localhost:5001/api/v1',
   ),
-  tagTypes: ['Department', 'Employee', 'Attendance', 'Holiday', 'LeavePolicy', 'LeaveRequest', 'LeaveBalance', 'Shift', 'Roster'],
+  tagTypes: ['Department', 'Employee', 'Attendance', 'Holiday', 'LeavePolicy', 'LeaveRequest', 'LeaveBalance', 'Shift', 'Roster', 'Expense'],
   endpoints: (builder) => ({
     getDepartments: builder.query<Department[], void>({
       query: () => '/hr/departments',
@@ -469,6 +524,41 @@ export const hrmApi = createApi({
       invalidatesTags: ['Roster'],
       transformResponse: unwrap<{ success: boolean; message: string }>,
     }),
+
+    getExpenses: builder.query<PaginatedExpenses, ListExpensesParams | void>({
+      query: (params) => ({ url: '/hr/expenses', params: params || undefined }),
+      providesTags: ['Expense'],
+      transformResponse: unwrap<PaginatedExpenses>,
+    }),
+    createExpense: builder.mutation<Expense, CreateExpenseRequest>({
+      query: (body) => ({ url: '/hr/expenses', method: 'POST', body }),
+      invalidatesTags: ['Expense'],
+      transformResponse: unwrap<Expense>,
+    }),
+    reviewExpense: builder.mutation<Expense, ReviewExpenseRequest>({
+      query: ({ id, ...body }) => ({ url: `/hr/expenses/${id}/review`, method: 'PATCH', body }),
+      invalidatesTags: ['Expense'],
+      transformResponse: unwrap<Expense>,
+    }),
+    reimburseExpense: builder.mutation<Expense, string>({
+      query: (id) => ({ url: `/hr/expenses/${id}/reimburse`, method: 'POST' }),
+      invalidatesTags: ['Expense'],
+      transformResponse: unwrap<Expense>,
+    }),
+    deleteExpense: builder.mutation<{ success: boolean; message: string }, string>({
+      query: (id) => ({ url: `/hr/expenses/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['Expense'],
+      transformResponse: unwrap<{ success: boolean; message: string }>,
+    }),
+    uploadExpenseReceipt: builder.mutation<Expense, { id: string; file: File }>({
+      query: ({ id, file }) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return { url: `/hr/expenses/${id}/receipt`, method: 'POST', body: formData };
+      },
+      invalidatesTags: ['Expense'],
+      transformResponse: unwrap<Expense>,
+    }),
   }),
 });
 
@@ -505,6 +595,12 @@ export const {
   useGetRosterQuery,
   useAssignShiftMutation,
   useRemoveShiftAssignmentMutation,
+  useGetExpensesQuery,
+  useCreateExpenseMutation,
+  useReviewExpenseMutation,
+  useReimburseExpenseMutation,
+  useDeleteExpenseMutation,
+  useUploadExpenseReceiptMutation,
 } = hrmApi;
 
 /** Streams the authenticated document endpoint and opens it in a new tab. RTK Query's
@@ -524,6 +620,29 @@ export async function openLeaveDocument(requestId: string): Promise<void> {
 
   if (!response.ok) {
     throw new Error('Could not load the attached document.');
+  }
+
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  window.open(url, '_blank');
+  setTimeout(() => window.URL.revokeObjectURL(url), 60_000);
+}
+
+/** Same authenticated blob-URL approach as openLeaveDocument, for expense receipts. */
+export async function openExpenseReceipt(expenseId: string): Promise<void> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/orders', '') || 'http://localhost:5001/api/v1';
+  const token = localStorage.getItem('bitcommerce_token');
+  const storeId = localStorage.getItem('bitcommerce_active_store_id');
+
+  const response = await fetch(`${baseUrl}/hr/expenses/${expenseId}/receipt`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(storeId ? { 'x-store-id': storeId } : {}),
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Could not load the attached receipt.');
   }
 
   const blob = await response.blob();

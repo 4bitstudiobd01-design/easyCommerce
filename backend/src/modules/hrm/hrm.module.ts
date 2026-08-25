@@ -10,6 +10,7 @@ import { LeavePolicyEntity } from './entities/leave-policy.entity';
 import { LeaveRequestEntity } from './entities/leave-request.entity';
 import { ShiftEntity } from './entities/shift.entity';
 import { ShiftAssignmentEntity } from './entities/shift-assignment.entity';
+import { ExpenseEntity } from './entities/expense.entity';
 import { TenantModule } from '../tenant/tenant.module';
 import { StaffModule } from '../staff/staff.module';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
@@ -48,6 +49,13 @@ import { DeleteShiftService } from './services/delete-shift.service';
 import { AssignShiftService } from './services/assign-shift.service';
 import { RemoveShiftAssignmentService } from './services/remove-shift-assignment.service';
 import { ListRosterService } from './services/list-roster.service';
+import { CreateExpenseService } from './services/create-expense.service';
+import { ListExpensesService } from './services/list-expenses.service';
+import { ReviewExpenseService } from './services/review-expense.service';
+import { MarkExpenseReimbursedService } from './services/mark-expense-reimbursed.service';
+import { DeleteExpenseService } from './services/delete-expense.service';
+import { UploadExpenseReceiptService } from './services/upload-expense-receipt.service';
+import { GetExpenseReceiptService } from './services/get-expense-receipt.service';
 
 @Module({
   imports: [
@@ -60,6 +68,7 @@ import { ListRosterService } from './services/list-roster.service';
       LeaveRequestEntity,
       ShiftEntity,
       ShiftAssignmentEntity,
+      ExpenseEntity,
     ]),
     TenantModule,
     // Provides GetMyPermissionsService, the source of truth PermissionsGuard uses to
@@ -109,6 +118,13 @@ import { ListRosterService } from './services/list-roster.service';
     AssignShiftService,
     RemoveShiftAssignmentService,
     ListRosterService,
+    CreateExpenseService,
+    ListExpensesService,
+    ReviewExpenseService,
+    MarkExpenseReimbursedService,
+    DeleteExpenseService,
+    UploadExpenseReceiptService,
+    GetExpenseReceiptService,
     JwtAuthGuard,
     PermissionsGuard,
   ],

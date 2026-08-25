@@ -70,6 +70,14 @@ import { RemoveShiftAssignmentService } from './services/remove-shift-assignment
 import { ListRosterService } from './services/list-roster.service';
 import { CreateShiftDto, UpdateShiftDto } from './dto/shift.dto';
 import { ListRosterQueryDto, AssignShiftDto, RemoveShiftAssignmentQueryDto } from './dto/roster.dto';
+import { CreateExpenseService } from './services/create-expense.service';
+import { ListExpensesService } from './services/list-expenses.service';
+import { ReviewExpenseService } from './services/review-expense.service';
+import { MarkExpenseReimbursedService } from './services/mark-expense-reimbursed.service';
+import { DeleteExpenseService } from './services/delete-expense.service';
+import { UploadExpenseReceiptService } from './services/upload-expense-receipt.service';
+import { GetExpenseReceiptService } from './services/get-expense-receipt.service';
+import { CreateExpenseDto, ReviewExpenseDto, ListExpensesQueryDto } from './dto/expense.dto';
 
 @ApiTags('HR — Employees & Departments')
 @Controller('hr')
@@ -109,6 +117,13 @@ export class HrmController {
     private readonly assignShiftService: AssignShiftService,
     private readonly removeShiftAssignmentService: RemoveShiftAssignmentService,
     private readonly listRosterService: ListRosterService,
+    private readonly createExpenseService: CreateExpenseService,
+    private readonly listExpensesService: ListExpensesService,
+    private readonly reviewExpenseService: ReviewExpenseService,
+    private readonly markExpenseReimbursedService: MarkExpenseReimbursedService,
+    private readonly deleteExpenseService: DeleteExpenseService,
+    private readonly uploadExpenseReceiptService: UploadExpenseReceiptService,
+    private readonly getExpenseReceiptService: GetExpenseReceiptService,
   ) {}
 
   private async getStoreContext(userId: string, storeIdHeader?: string) {
@@ -650,5 +665,132 @@ export class HrmController {
     const store = await this.getStoreContext(userId, headerStoreId);
     await this.removeShiftAssignmentService.execute(store.id, query.employeeId, query.date);
     return { success: true, message: 'Roster assignment cleared.' };
+  }
+
+  // ─── Expenses ───────────────────────────────────────────────────
+
+  @Post('expenses')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:expenses:manage')
+  @ApiOperation({ summary: 'File an expense claim for an employee' })
+  @ApiResponse({ status: 201, description: 'Expense created' })
+  async createExpense(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Body() dto: CreateExpenseDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.createExpenseService.execute(store.tenantId, store.id, userId, dto);
+  }
+
+  @Get('expenses')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:expenses:manage')
+  @ApiOperation({ summary: 'List expense claims (filterable by employee/status/category)' })
+  @ApiResponse({ status: 200, description: 'Paginated expense claims' })
+  async listExpenses(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Query() query: ListExpensesQueryDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.listExpensesService.execute(store.id, query);
+  }
+
+  @Patch('expenses/:id/review')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:expenses:manage')
+  @ApiOperation({ summary: 'Approve or reject a pending expense claim' })
+  @ApiResponse({ status: 200, description: 'Expense reviewed' })
+  async reviewExpense(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') expenseId: string,
+    @Body() dto: ReviewExpenseDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.reviewExpenseService.execute(store.id, expenseId, userId, dto);
+  }
+
+  @Post('expenses/:id/reimburse')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:expenses:manage')
+  @ApiOperation({ summary: 'Mark an approved expense claim as reimbursed' })
+  @ApiResponse({ status: 200, description: 'Expense marked reimbursed' })
+  async reimburseExpense(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') expenseId: string,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.markExpenseReimbursedService.execute(store.id, expenseId);
+  }
+
+  @Delete('expenses/:id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:expenses:manage')
+  @ApiOperation({ summary: 'Delete a pending expense claim' })
+  @ApiResponse({ status: 200, description: 'Expense deleted' })
+  async deleteExpense(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') expenseId: string,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    await this.deleteExpenseService.execute(store.id, expenseId);
+    return { success: true, message: 'Expense deleted successfully.' };
+  }
+
+  @Post('expenses/:id/receipt')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:expenses:manage')
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: 10 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        if (!/\/(jpg|jpeg|png|webp|pdf)$/i.test(file.mimetype)) {
+          return cb(new BadRequestException('Only JPG, PNG, WEBP, or PDF files are accepted.'), false);
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  @ApiOperation({ summary: 'Attach a receipt to an expense claim' })
+  @ApiResponse({ status: 201, description: 'Receipt attached' })
+  async uploadExpenseReceipt(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') expenseId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.uploadExpenseReceiptService.execute(store.tenantId, store.id, expenseId, file);
+  }
+
+  @Get('expenses/:id/receipt')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:expenses:manage')
+  @ApiOperation({ summary: "Download an expense claim's attached receipt (authenticated — never a public URL)" })
+  @ApiResponse({ status: 200, description: 'File stream' })
+  async downloadExpenseReceipt(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') expenseId: string,
+    @Res() res: Response,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    const { stream, fileName, mimeType } = await this.getExpenseReceiptService.execute(store.id, expenseId);
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
+    stream.pipe(res);
   }
 }
