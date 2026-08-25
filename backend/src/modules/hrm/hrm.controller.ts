@@ -61,6 +61,15 @@ import {
   ReviewLeaveRequestDto,
   ListLeaveRequestsQueryDto,
 } from './dto/leave-request.dto';
+import { CreateShiftService } from './services/create-shift.service';
+import { ListShiftsService } from './services/list-shifts.service';
+import { UpdateShiftService } from './services/update-shift.service';
+import { DeleteShiftService } from './services/delete-shift.service';
+import { AssignShiftService } from './services/assign-shift.service';
+import { RemoveShiftAssignmentService } from './services/remove-shift-assignment.service';
+import { ListRosterService } from './services/list-roster.service';
+import { CreateShiftDto, UpdateShiftDto } from './dto/shift.dto';
+import { ListRosterQueryDto, AssignShiftDto, RemoveShiftAssignmentQueryDto } from './dto/roster.dto';
 
 @ApiTags('HR — Employees & Departments')
 @Controller('hr')
@@ -93,6 +102,13 @@ export class HrmController {
     private readonly cancelLeaveRequestService: CancelLeaveRequestService,
     private readonly uploadLeaveDocumentService: UploadLeaveDocumentService,
     private readonly getLeaveDocumentService: GetLeaveDocumentService,
+    private readonly createShiftService: CreateShiftService,
+    private readonly listShiftsService: ListShiftsService,
+    private readonly updateShiftService: UpdateShiftService,
+    private readonly deleteShiftService: DeleteShiftService,
+    private readonly assignShiftService: AssignShiftService,
+    private readonly removeShiftAssignmentService: RemoveShiftAssignmentService,
+    private readonly listRosterService: ListRosterService,
   ) {}
 
   private async getStoreContext(userId: string, storeIdHeader?: string) {
@@ -526,5 +542,113 @@ export class HrmController {
     res.setHeader('Content-Type', mimeType);
     res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
     stream.pipe(res);
+  }
+
+  // ─── Shifts ─────────────────────────────────────────────────────
+
+  @Post('shifts')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:shifts:manage')
+  @ApiOperation({ summary: 'Create a shift definition' })
+  @ApiResponse({ status: 201, description: 'Shift created' })
+  async createShift(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Body() dto: CreateShiftDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.createShiftService.execute(store.tenantId, store.id, dto);
+  }
+
+  @Get('shifts')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:shifts:manage')
+  @ApiOperation({ summary: 'List shift definitions for the active store' })
+  @ApiResponse({ status: 200, description: 'List of shifts' })
+  async listShifts(@CurrentUser('sub') userId: string, @Headers('x-store-id') headerStoreId: string) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.listShiftsService.execute(store.id);
+  }
+
+  @Patch('shifts/:id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:shifts:manage')
+  @ApiOperation({ summary: 'Update a shift definition' })
+  @ApiResponse({ status: 200, description: 'Shift updated' })
+  async updateShift(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') shiftId: string,
+    @Body() dto: UpdateShiftDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.updateShiftService.execute(store.id, shiftId, dto);
+  }
+
+  @Delete('shifts/:id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:shifts:manage')
+  @ApiOperation({ summary: 'Delete a shift definition (blocked while it is used on the roster)' })
+  @ApiResponse({ status: 200, description: 'Shift deleted' })
+  async deleteShift(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') shiftId: string,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    await this.deleteShiftService.execute(store.id, shiftId);
+    return { success: true, message: 'Shift deleted successfully.' };
+  }
+
+  // ─── Roster ─────────────────────────────────────────────────────
+
+  @Get('roster')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:shifts:manage')
+  @ApiOperation({ summary: 'Get the shift roster grid (employees x shifts) for a date range' })
+  @ApiResponse({ status: 200, description: 'Roster employees, shifts, and assignments' })
+  async listRoster(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Query() query: ListRosterQueryDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.listRosterService.execute(store.id, query);
+  }
+
+  @Post('roster/assign')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:shifts:manage')
+  @ApiOperation({ summary: 'Assign (or reassign) a shift to an employee for a date' })
+  @ApiResponse({ status: 201, description: 'Shift assigned' })
+  async assignShift(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Body() dto: AssignShiftDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.assignShiftService.execute(store.tenantId, store.id, userId, dto);
+  }
+
+  @Delete('roster/assign')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:shifts:manage')
+  @ApiOperation({ summary: "Clear an employee's roster assignment for a date" })
+  @ApiResponse({ status: 200, description: 'Shift assignment removed' })
+  async removeShiftAssignment(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Query() query: RemoveShiftAssignmentQueryDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    await this.removeShiftAssignmentService.execute(store.id, query.employeeId, query.date);
+    return { success: true, message: 'Roster assignment cleared.' };
   }
 }

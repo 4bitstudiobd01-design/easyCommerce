@@ -27,7 +27,8 @@ import {
   Building2,
   CalendarCheck,
   CalendarRange,
-  PartyPopper
+  PartyPopper,
+  Clock3
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -381,6 +382,19 @@ export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onCl
             <div className="flex items-center gap-2.5">
               <PartyPopper className={iconClass} strokeWidth={iconStroke} />
               {!isDesktopCollapsed && <span>Holidays</span>}
+            </div>
+          </Link>
+          <Link
+            href="/dashboard/hr/shifts"
+            className={navItemClass('/dashboard/hr/shifts')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Shifts & Roster")}
+            onFocus={(e) => handleTooltipEnter(e, "Shifts & Roster")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <Clock3 className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Shifts & Roster</span>}
             </div>
           </Link>
 

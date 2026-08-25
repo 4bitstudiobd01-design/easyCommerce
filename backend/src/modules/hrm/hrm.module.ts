@@ -8,6 +8,8 @@ import { AttendanceEntity } from './entities/attendance.entity';
 import { HolidayEntity } from './entities/holiday.entity';
 import { LeavePolicyEntity } from './entities/leave-policy.entity';
 import { LeaveRequestEntity } from './entities/leave-request.entity';
+import { ShiftEntity } from './entities/shift.entity';
+import { ShiftAssignmentEntity } from './entities/shift-assignment.entity';
 import { TenantModule } from '../tenant/tenant.module';
 import { StaffModule } from '../staff/staff.module';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
@@ -39,6 +41,13 @@ import { ReviewLeaveRequestService } from './services/review-leave-request.servi
 import { CancelLeaveRequestService } from './services/cancel-leave-request.service';
 import { UploadLeaveDocumentService } from './services/upload-leave-document.service';
 import { GetLeaveDocumentService } from './services/get-leave-document.service';
+import { CreateShiftService } from './services/create-shift.service';
+import { ListShiftsService } from './services/list-shifts.service';
+import { UpdateShiftService } from './services/update-shift.service';
+import { DeleteShiftService } from './services/delete-shift.service';
+import { AssignShiftService } from './services/assign-shift.service';
+import { RemoveShiftAssignmentService } from './services/remove-shift-assignment.service';
+import { ListRosterService } from './services/list-roster.service';
 
 @Module({
   imports: [
@@ -49,6 +58,8 @@ import { GetLeaveDocumentService } from './services/get-leave-document.service';
       HolidayEntity,
       LeavePolicyEntity,
       LeaveRequestEntity,
+      ShiftEntity,
+      ShiftAssignmentEntity,
     ]),
     TenantModule,
     // Provides GetMyPermissionsService, the source of truth PermissionsGuard uses to
@@ -91,6 +102,13 @@ import { GetLeaveDocumentService } from './services/get-leave-document.service';
     CancelLeaveRequestService,
     UploadLeaveDocumentService,
     GetLeaveDocumentService,
+    CreateShiftService,
+    ListShiftsService,
+    UpdateShiftService,
+    DeleteShiftService,
+    AssignShiftService,
+    RemoveShiftAssignmentService,
+    ListRosterService,
     JwtAuthGuard,
     PermissionsGuard,
   ],

@@ -221,6 +221,64 @@ export interface ListLeaveRequestsParams {
   limit?: number;
 }
 
+export interface Shift {
+  id: string;
+  tenantId: string;
+  storeId: string;
+  name: string;
+  startTime: string;
+  endTime: string;
+  colorTag: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateShiftRequest {
+  name: string;
+  startTime: string;
+  endTime: string;
+  colorTag?: string;
+}
+
+export interface UpdateShiftRequest {
+  id: string;
+  name?: string;
+  startTime?: string;
+  endTime?: string;
+  colorTag?: string;
+  isActive?: boolean;
+}
+
+export interface ShiftAssignment {
+  employeeId: string;
+  date: string;
+  shiftId: string;
+}
+
+export interface Roster {
+  employees: Employee[];
+  shifts: Shift[];
+  assignments: ShiftAssignment[];
+}
+
+export interface ListRosterParams {
+  startDate: string;
+  endDate: string;
+  departmentId?: string;
+}
+
+export interface AssignShiftRequest {
+  employeeId: string;
+  shiftId: string;
+  date: string;
+}
+
+export interface RemoveShiftAssignmentRequest {
+  employeeId: string;
+  date: string;
+}
+
 export interface ListEmployeesParams {
   search?: string;
   departmentId?: string;
@@ -237,7 +295,7 @@ export const hrmApi = createApi({
   baseQuery: createBaseQueryWithReauth(
     process.env.NEXT_PUBLIC_API_URL?.replace('/orders', '') || 'http://localhost:5001/api/v1',
   ),
-  tagTypes: ['Department', 'Employee', 'Attendance', 'Holiday', 'LeavePolicy', 'LeaveRequest', 'LeaveBalance'],
+  tagTypes: ['Department', 'Employee', 'Attendance', 'Holiday', 'LeavePolicy', 'LeaveRequest', 'LeaveBalance', 'Shift', 'Roster'],
   endpoints: (builder) => ({
     getDepartments: builder.query<Department[], void>({
       query: () => '/hr/departments',
@@ -374,6 +432,43 @@ export const hrmApi = createApi({
       invalidatesTags: ['LeaveRequest'],
       transformResponse: unwrap<LeaveRequest>,
     }),
+
+    getShifts: builder.query<Shift[], void>({
+      query: () => '/hr/shifts',
+      providesTags: ['Shift'],
+      transformResponse: unwrap<Shift[]>,
+    }),
+    createShift: builder.mutation<Shift, CreateShiftRequest>({
+      query: (body) => ({ url: '/hr/shifts', method: 'POST', body }),
+      invalidatesTags: ['Shift'],
+      transformResponse: unwrap<Shift>,
+    }),
+    updateShift: builder.mutation<Shift, UpdateShiftRequest>({
+      query: ({ id, ...body }) => ({ url: `/hr/shifts/${id}`, method: 'PATCH', body }),
+      invalidatesTags: ['Shift', 'Roster'],
+      transformResponse: unwrap<Shift>,
+    }),
+    deleteShift: builder.mutation<{ success: boolean; message: string }, string>({
+      query: (id) => ({ url: `/hr/shifts/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['Shift'],
+      transformResponse: unwrap<{ success: boolean; message: string }>,
+    }),
+
+    getRoster: builder.query<Roster, ListRosterParams>({
+      query: (params) => ({ url: '/hr/roster', params }),
+      providesTags: ['Roster'],
+      transformResponse: unwrap<Roster>,
+    }),
+    assignShift: builder.mutation<ShiftAssignment, AssignShiftRequest>({
+      query: (body) => ({ url: '/hr/roster/assign', method: 'POST', body }),
+      invalidatesTags: ['Roster'],
+      transformResponse: unwrap<ShiftAssignment>,
+    }),
+    removeShiftAssignment: builder.mutation<{ success: boolean; message: string }, RemoveShiftAssignmentRequest>({
+      query: (params) => ({ url: '/hr/roster/assign', method: 'DELETE', params }),
+      invalidatesTags: ['Roster'],
+      transformResponse: unwrap<{ success: boolean; message: string }>,
+    }),
   }),
 });
 
@@ -403,6 +498,13 @@ export const {
   useReviewLeaveRequestMutation,
   useCancelLeaveRequestMutation,
   useUploadLeaveDocumentMutation,
+  useGetShiftsQuery,
+  useCreateShiftMutation,
+  useUpdateShiftMutation,
+  useDeleteShiftMutation,
+  useGetRosterQuery,
+  useAssignShiftMutation,
+  useRemoveShiftAssignmentMutation,
 } = hrmApi;
 
 /** Streams the authenticated document endpoint and opens it in a new tab. RTK Query's
