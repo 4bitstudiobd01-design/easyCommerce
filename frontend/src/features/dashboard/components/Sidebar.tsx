@@ -25,7 +25,9 @@ import {
   ShoppingBag,
   UserCog,
   Building2,
-  CalendarCheck
+  CalendarCheck,
+  CalendarRange,
+  PartyPopper
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -353,6 +355,32 @@ export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onCl
             <div className="flex items-center gap-2.5">
               <CalendarCheck className={iconClass} strokeWidth={iconStroke} />
               {!isDesktopCollapsed && <span>Attendance</span>}
+            </div>
+          </Link>
+          <Link
+            href="/dashboard/hr/leave"
+            className={navItemClass('/dashboard/hr/leave')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Leave Requests")}
+            onFocus={(e) => handleTooltipEnter(e, "Leave Requests")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <CalendarRange className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Leave Requests</span>}
+            </div>
+          </Link>
+          <Link
+            href="/dashboard/hr/holidays"
+            className={navItemClass('/dashboard/hr/holidays')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Holidays")}
+            onFocus={(e) => handleTooltipEnter(e, "Holidays")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <PartyPopper className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Holidays</span>}
             </div>
           </Link>
 

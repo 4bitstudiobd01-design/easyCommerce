@@ -81,6 +81,8 @@ export interface UpdateEmployeeRequest extends Omit<Partial<CreateEmployeeReques
 }
 
 export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'HALF_DAY' | 'ON_LEAVE';
+export type LeaveType = 'EARNED' | 'CASUAL' | 'SICK';
+export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
 
 export interface Attendance {
   id: string;
@@ -124,6 +126,101 @@ export interface MarkAttendanceStatusRequest {
   notes?: string;
 }
 
+export interface Holiday {
+  id: string;
+  tenantId: string;
+  storeId: string;
+  name: string;
+  date: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateHolidayRequest {
+  name: string;
+  date: string;
+}
+
+export interface UpdateHolidayRequest {
+  id: string;
+  name?: string;
+  date?: string;
+}
+
+export interface LeavePolicy {
+  id: string;
+  tenantId: string;
+  storeId: string;
+  earnedDaysPerYear: number;
+  casualDaysPerYear: number;
+  sickDaysPerYear: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateLeavePolicyRequest {
+  earnedDaysPerYear?: number;
+  casualDaysPerYear?: number;
+  sickDaysPerYear?: number;
+}
+
+export interface LeaveBalanceLine {
+  leaveType: LeaveType;
+  allocated: number;
+  used: number;
+  remaining: number;
+}
+
+export interface LeaveRequest {
+  id: string;
+  tenantId: string;
+  storeId: string;
+  employeeId: string;
+  employee?: Employee;
+  leaveType: LeaveType;
+  startDate: string;
+  endDate: string;
+  totalDays: number;
+  reason?: string;
+  status: LeaveStatus;
+  documentFileId?: string;
+  reviewedByUserId?: string;
+  reviewedAt?: string;
+  reviewNote?: string;
+  createdByUserId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaginatedLeaveRequests {
+  items: LeaveRequest[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface CreateLeaveRequestRequest {
+  employeeId: string;
+  leaveType: LeaveType;
+  startDate: string;
+  endDate: string;
+  reason?: string;
+}
+
+export interface ReviewLeaveRequestRequest {
+  id: string;
+  status: 'APPROVED' | 'REJECTED';
+  reviewNote?: string;
+}
+
+export interface ListLeaveRequestsParams {
+  employeeId?: string;
+  status?: LeaveStatus;
+  leaveType?: LeaveType;
+  page?: number;
+  limit?: number;
+}
+
 export interface ListEmployeesParams {
   search?: string;
   departmentId?: string;
@@ -140,7 +237,7 @@ export const hrmApi = createApi({
   baseQuery: createBaseQueryWithReauth(
     process.env.NEXT_PUBLIC_API_URL?.replace('/orders', '') || 'http://localhost:5001/api/v1',
   ),
-  tagTypes: ['Department', 'Employee', 'Attendance'],
+  tagTypes: ['Department', 'Employee', 'Attendance', 'Holiday', 'LeavePolicy', 'LeaveRequest', 'LeaveBalance'],
   endpoints: (builder) => ({
     getDepartments: builder.query<Department[], void>({
       query: () => '/hr/departments',
@@ -209,6 +306,74 @@ export const hrmApi = createApi({
       invalidatesTags: ['Attendance'],
       transformResponse: unwrap<Attendance>,
     }),
+
+    getHolidays: builder.query<Holiday[], { year?: number } | void>({
+      query: (params) => ({ url: '/hr/holidays', params: params || undefined }),
+      providesTags: ['Holiday'],
+      transformResponse: unwrap<Holiday[]>,
+    }),
+    createHoliday: builder.mutation<Holiday, CreateHolidayRequest>({
+      query: (body) => ({ url: '/hr/holidays', method: 'POST', body }),
+      invalidatesTags: ['Holiday'],
+      transformResponse: unwrap<Holiday>,
+    }),
+    updateHoliday: builder.mutation<Holiday, UpdateHolidayRequest>({
+      query: ({ id, ...body }) => ({ url: `/hr/holidays/${id}`, method: 'PATCH', body }),
+      invalidatesTags: ['Holiday'],
+      transformResponse: unwrap<Holiday>,
+    }),
+    deleteHoliday: builder.mutation<{ success: boolean; message: string }, string>({
+      query: (id) => ({ url: `/hr/holidays/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['Holiday'],
+      transformResponse: unwrap<{ success: boolean; message: string }>,
+    }),
+
+    getLeavePolicy: builder.query<LeavePolicy, void>({
+      query: () => '/hr/leave/policy',
+      providesTags: ['LeavePolicy'],
+      transformResponse: unwrap<LeavePolicy>,
+    }),
+    updateLeavePolicy: builder.mutation<LeavePolicy, UpdateLeavePolicyRequest>({
+      query: (body) => ({ url: '/hr/leave/policy', method: 'PATCH', body }),
+      invalidatesTags: ['LeavePolicy', 'LeaveBalance'],
+      transformResponse: unwrap<LeavePolicy>,
+    }),
+
+    getLeaveBalance: builder.query<LeaveBalanceLine[], { employeeId: string; year?: number }>({
+      query: ({ employeeId, year }) => ({ url: `/hr/employees/${employeeId}/leave-balance`, params: year ? { year } : undefined }),
+      providesTags: ['LeaveBalance'],
+      transformResponse: unwrap<LeaveBalanceLine[]>,
+    }),
+
+    getLeaveRequests: builder.query<PaginatedLeaveRequests, ListLeaveRequestsParams | void>({
+      query: (params) => ({ url: '/hr/leave-requests', params: params || undefined }),
+      providesTags: ['LeaveRequest'],
+      transformResponse: unwrap<PaginatedLeaveRequests>,
+    }),
+    createLeaveRequest: builder.mutation<LeaveRequest, CreateLeaveRequestRequest>({
+      query: (body) => ({ url: '/hr/leave-requests', method: 'POST', body }),
+      invalidatesTags: ['LeaveRequest', 'LeaveBalance'],
+      transformResponse: unwrap<LeaveRequest>,
+    }),
+    reviewLeaveRequest: builder.mutation<LeaveRequest, ReviewLeaveRequestRequest>({
+      query: ({ id, ...body }) => ({ url: `/hr/leave-requests/${id}/review`, method: 'PATCH', body }),
+      invalidatesTags: ['LeaveRequest', 'LeaveBalance'],
+      transformResponse: unwrap<LeaveRequest>,
+    }),
+    cancelLeaveRequest: builder.mutation<LeaveRequest, string>({
+      query: (id) => ({ url: `/hr/leave-requests/${id}/cancel`, method: 'POST' }),
+      invalidatesTags: ['LeaveRequest', 'LeaveBalance'],
+      transformResponse: unwrap<LeaveRequest>,
+    }),
+    uploadLeaveDocument: builder.mutation<LeaveRequest, { id: string; file: File }>({
+      query: ({ id, file }) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return { url: `/hr/leave-requests/${id}/document`, method: 'POST', body: formData };
+      },
+      invalidatesTags: ['LeaveRequest'],
+      transformResponse: unwrap<LeaveRequest>,
+    }),
   }),
 });
 
@@ -226,4 +391,41 @@ export const {
   useCheckInMutation,
   useCheckOutMutation,
   useMarkAttendanceStatusMutation,
+  useGetHolidaysQuery,
+  useCreateHolidayMutation,
+  useUpdateHolidayMutation,
+  useDeleteHolidayMutation,
+  useGetLeavePolicyQuery,
+  useUpdateLeavePolicyMutation,
+  useGetLeaveBalanceQuery,
+  useGetLeaveRequestsQuery,
+  useCreateLeaveRequestMutation,
+  useReviewLeaveRequestMutation,
+  useCancelLeaveRequestMutation,
+  useUploadLeaveDocumentMutation,
 } = hrmApi;
+
+/** Streams the authenticated document endpoint and opens it in a new tab. RTK Query's
+ *  fetchBaseQuery isn't a fit for binary responses, and a plain <a href> can't carry the
+ *  bearer token, so this does the fetch + blob URL dance directly. */
+export async function openLeaveDocument(requestId: string): Promise<void> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/orders', '') || 'http://localhost:5001/api/v1';
+  const token = localStorage.getItem('bitcommerce_token');
+  const storeId = localStorage.getItem('bitcommerce_active_store_id');
+
+  const response = await fetch(`${baseUrl}/hr/leave-requests/${requestId}/document`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(storeId ? { 'x-store-id': storeId } : {}),
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Could not load the attached document.');
+  }
+
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  window.open(url, '_blank');
+  setTimeout(() => window.URL.revokeObjectURL(url), 60_000);
+}
