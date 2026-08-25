@@ -21,6 +21,7 @@ import {
   Monitor,
   UploadCloud,
   ShoppingBag,
+  Sparkles,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -45,17 +46,36 @@ export function CustomerAnalyticsView({ onSelectCustomer }: CustomerAnalyticsVie
   const { data: trendData = [], isLoading: isTrendLoading } = useGetCustomerAnalyticsTrendQuery({ dateRange });
   const { data: topCustomers = [], isLoading: isTopLoading } = useGetTopCustomersQuery(10);
 
-  const getSourceIcon = (sourceName: string) => {
-    switch (sourceName.toUpperCase()) {
-      case 'ONLINE_STORE':
-        return <Globe className="w-4 h-4 text-blue-600" />;
-      case 'POS':
-        return <Store className="w-4 h-4 text-emerald-600" />;
-      case 'MANUAL':
-        return <Monitor className="w-4 h-4 text-amber-600" />;
-      default:
-        return <UploadCloud className="w-4 h-4 text-indigo-600" />;
+  const getOriginDisplayName = (origin: string) => {
+    const map: Record<string, string> = {
+      facebook: 'Facebook',
+      instagram: 'Instagram',
+      tiktok: 'TikTok',
+      google: 'Google',
+      youtube: 'YouTube',
+      direct: 'Direct Traffic',
+      organic_search: 'Organic Search',
+      paid_search: 'Paid Search',
+      social: 'Social Media',
+      referral: 'Referral',
+      email: 'Email Campaign',
+      online_store: 'Online Store',
+    };
+    return map[origin.toLowerCase()] || origin.replace(/_/g, ' ');
+  };
+
+  const getOriginIcon = (originName: string) => {
+    const key = originName.toLowerCase();
+    if (key.includes('facebook') || key.includes('instagram') || key.includes('social') || key.includes('tiktok')) {
+      return <Sparkles className="w-4 h-4 text-blue-600" />;
     }
+    if (key.includes('google') || key.includes('search') || key.includes('youtube')) {
+      return <Globe className="w-4 h-4 text-emerald-600" />;
+    }
+    if (key.includes('direct')) {
+      return <Monitor className="w-4 h-4 text-amber-600" />;
+    }
+    return <Globe className="w-4 h-4 text-indigo-600" />;
   };
 
   const formatCurrency = (val?: number) => {
@@ -202,11 +222,11 @@ export function CustomerAnalyticsView({ onSelectCustomer }: CustomerAnalyticsVie
           )}
         </div>
 
-        {/* Source Distribution Breakdown (1 col) */}
+        {/* Origin Distribution Breakdown (1 col) */}
         <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-2xs space-y-4 flex flex-col justify-between">
           <div>
-            <h3 className="font-extrabold text-sm text-slate-900">Acquisition Channels</h3>
-            <p className="text-xs text-slate-500 mt-0.5">Distribution by registration source</p>
+            <h3 className="font-extrabold text-sm text-slate-900">Marketing Origin & Channels</h3>
+            <p className="text-xs text-slate-500 mt-0.5">Customer acquisition by marketing traffic origin</p>
           </div>
 
           {isSourcesLoading ? (
@@ -215,15 +235,15 @@ export function CustomerAnalyticsView({ onSelectCustomer }: CustomerAnalyticsVie
               <Skeleton className="h-10 w-full rounded-xl" />
             </div>
           ) : sources.length === 0 ? (
-            <p className="text-xs text-slate-400 text-center py-8">No channel data available.</p>
+            <p className="text-xs text-slate-400 text-center py-8">No origin data available.</p>
           ) : (
             <div className="space-y-4">
               {sources.map((item) => (
                 <div key={item.source} className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2">
-                      {getSourceIcon(item.source)}
-                      <span className="font-bold text-slate-800">{item.source.replace('_', ' ')}</span>
+                      {getOriginIcon(item.source)}
+                      <span className="font-bold text-slate-800">{getOriginDisplayName(item.source)}</span>
                     </div>
                     <span className="font-extrabold text-slate-900">{item.count} ({item.percentage}%)</span>
                   </div>
@@ -239,7 +259,7 @@ export function CustomerAnalyticsView({ onSelectCustomer }: CustomerAnalyticsVie
           )}
 
           <div className="pt-2 border-t border-slate-100 text-[11px] text-slate-400 text-center">
-            Derived from stored customer registration profiles
+            Derived from first-touch marketing attribution & UTM parameters
           </div>
         </div>
       </div>

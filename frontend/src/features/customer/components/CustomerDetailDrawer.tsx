@@ -17,6 +17,7 @@ import {
   CustomerAddress,
   CustomerStatusType,
 } from '../api/customerApi';
+import { getOriginLabel } from '../utils/origin';
 import {
   X,
   Phone,
@@ -580,10 +581,39 @@ export function CustomerDetailDrawer({
                       <p className="font-bold text-slate-900 mt-0.5">{formatDate(customer.createdAt)}</p>
                     </div>
                     <div>
-                      <p className="text-slate-400 font-medium">Source</p>
-                      <p className="font-bold text-slate-900 mt-0.5">{customer.source.replace('_', ' ')}</p>
+                      <p className="text-slate-400 font-medium">Marketing Origin</p>
+                      <p className="font-bold text-blue-700 mt-0.5">{getOriginLabel(customer) ?? 'Direct / Organic'}</p>
                     </div>
                   </div>
+
+                  {(customer.registrationUtmSource || customer.registrationUtmMedium || customer.registrationUtmCampaign || customer.registrationReferrerHost) && (
+                    <div className="grid grid-cols-2 gap-4 text-xs mt-4 pt-4 border-t border-slate-100">
+                      {customer.registrationUtmSource && (
+                        <div>
+                          <p className="text-slate-400 font-medium">UTM Source</p>
+                          <p className="font-bold text-slate-900 mt-0.5">{customer.registrationUtmSource}</p>
+                        </div>
+                      )}
+                      {customer.registrationUtmMedium && (
+                        <div>
+                          <p className="text-slate-400 font-medium">UTM Medium</p>
+                          <p className="font-bold text-slate-900 mt-0.5">{customer.registrationUtmMedium}</p>
+                        </div>
+                      )}
+                      {customer.registrationUtmCampaign && (
+                        <div>
+                          <p className="text-slate-400 font-medium">UTM Campaign</p>
+                          <p className="font-bold text-slate-900 mt-0.5">{customer.registrationUtmCampaign}</p>
+                        </div>
+                      )}
+                      {customer.registrationReferrerHost && (
+                        <div>
+                          <p className="text-slate-400 font-medium">Referrer</p>
+                          <p className="font-bold text-slate-900 mt-0.5 truncate">{customer.registrationReferrerHost}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Statistics Card */}
@@ -749,6 +779,19 @@ export function CustomerDetailDrawer({
                             </button>
                           </div>
                         </div>
+
+                        {order.courierProvider && (
+                          <div className="flex items-center gap-1.5 text-[11px] text-slate-500 pt-1">
+                            <Truck className="w-3.5 h-3.5 text-slate-400" />
+                            <span className="font-semibold text-slate-700">{order.courierProvider}</span>
+                            {order.trackingCode && <span className="text-slate-400">• {order.trackingCode}</span>}
+                            {order.consignmentStatus && (
+                              <span className="px-1.5 py-0.5 bg-slate-100 rounded text-[10px] font-bold uppercase">
+                                {order.consignmentStatus.replace(/_/g, ' ')}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ))}
 

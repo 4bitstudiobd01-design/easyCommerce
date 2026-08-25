@@ -25,6 +25,10 @@ export enum CustomerSourceEnum {
 @Index(['tenantId', 'email'])
 @Index(['tenantId', 'status'])
 @Index(['tenantId', 'createdAt'])
+@Index('IDX_customers_tenant_email_registered', ['tenantId', 'email'], {
+  unique: true,
+  where: '"passwordHash" IS NOT NULL',
+})
 export class CustomerEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -62,6 +66,39 @@ export class CustomerEntity {
     default: CustomerSourceEnum.ONLINE_STORE,
   })
   source: CustomerSourceEnum;
+
+  /**
+   * Storefront login credential. `select: false` keeps it out of the many
+   * existing `customerRepository.find(...)` call sites across the merchant
+   * console — the login service opts in explicitly via `.addSelect(...)`.
+   */
+  @Column({ type: 'varchar', length: 255, nullable: true, select: false })
+  passwordHash?: string;
+
+  /** True once passwordHash is set — distinguishes a guest-only row (created by checkout) from a registered login. */
+  @Column({ type: 'boolean', default: false })
+  hasAccount: boolean;
+
+  /**
+   * Marketing origin captured at registration time, same vocabulary as
+   * Order.channel/utmSource/etc (see normalizeChannel()). Populated once and
+   * never overwritten by a later registration on an already-guest row, so it
+   * reflects true first-touch attribution from the customer's first order.
+   */
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  registrationChannel?: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  registrationUtmSource?: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  registrationUtmMedium?: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  registrationUtmCampaign?: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  registrationReferrerHost?: string;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;

@@ -170,10 +170,10 @@ export class GetCustomerAnalyticsService {
     const total = await this.customerRepository.count({ where: { tenantId } });
 
     const raw = await this.customerRepository.createQueryBuilder('c')
-      .select('c.source', 'source')
+      .select("COALESCE(NULLIF(LOWER(c.registrationUtmSource), ''), NULLIF(LOWER(c.registrationChannel), ''), 'direct')", 'source')
       .addSelect('COUNT(c.id)', 'count')
       .where('c.tenantId = :tenantId', { tenantId })
-      .groupBy('c.source')
+      .groupBy("COALESCE(NULLIF(LOWER(c.registrationUtmSource), ''), NULLIF(LOWER(c.registrationChannel), ''), 'direct')")
       .getRawMany();
 
     return raw.map((r) => {

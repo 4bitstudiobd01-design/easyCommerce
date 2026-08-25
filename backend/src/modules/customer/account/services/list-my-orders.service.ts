@@ -1,11 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
-import { CustomerEntity } from '../entities/customer.entity';
-import { OrderEntity } from '../../order/entities/order.entity';
-import { CustomerOrderListDto } from '../dto/customer-order-list.dto';
+import { OrderEntity } from '../../../order/entities/order.entity';
+import { CustomerOrderListDto } from '../../dto/customer-order-list.dto';
 
-export interface CustomerOrderListItem {
+export interface MyOrderListItem {
   id: string;
   orderNumber: string;
   createdAt: string;
@@ -16,42 +15,37 @@ export interface CustomerOrderListItem {
   paymentStatus: string;
   orderStatus: string;
   itemsCount: number;
-  customerName: string;
-  customerPhone: string;
   courierProvider?: string;
   consignmentStatus?: string;
   trackingCode?: string;
 }
 
+/**
+ * Customer-facing "my orders" list. Unlike ListCustomerOrdersService (the
+ * merchant-side equivalent), this never accepts a customerId from the
+ * request — only from the authenticated JWT — and deliberately has no
+ * customerPhone fallback: guest orders already carry the customer's real
+ * CustomerEntity.id in order.customerId by the time they can log in (see
+ * register-customer.service.ts's (tenantId, phone) upgrade match), so an
+ * OR-by-phone fallback here would only be a phone-spoofing surface.
+ */
 @Injectable()
-export class ListCustomerOrdersService {
+export class ListMyOrdersService {
   constructor(
-    @InjectRepository(CustomerEntity)
-    private readonly customerRepository: Repository<CustomerEntity>,
     @InjectRepository(OrderEntity)
     private readonly orderRepository: Repository<OrderEntity>,
     private readonly dataSource: DataSource,
   ) {}
 
-  async execute(customerId: string, tenantId: string, dto: CustomerOrderListDto) {
-    const customer = await this.customerRepository.findOne({
-      where: { id: customerId, tenantId },
-    });
-
-    if (!customer) {
-      throw new NotFoundException(`Customer with ID ${customerId} not found.`);
-    }
-
+  async execute(customerId: string, tenantId: string, storeSlug: string, dto: CustomerOrderListDto) {
     const page = Math.max(1, dto.page || 1);
     const limit = Math.min(50, Math.max(1, dto.limit || 10));
     const skip = (page - 1) * limit;
 
     const query = this.orderRepository.createQueryBuilder('o')
       .where('o.tenantId = :tenantId', { tenantId })
-      .andWhere('(o.customerId = :customerId OR o.customerPhone = :phone)', {
-        customerId: customer.id,
-        phone: customer.phone,
-      });
+      .andWhere('o.storeSlug = :storeSlug', { storeSlug })
+      .andWhere('o.customerId = :customerId', { customerId });
 
     if (dto.status) {
       query.andWhere('o.orderStatus = :status', { status: dto.status });
@@ -69,18 +63,9 @@ export class ListCustomerOrdersService {
     const totalPages = Math.ceil(total / limit) || 0;
 
     if (orders.length === 0) {
-      return {
-        data: [],
-        meta: {
-          page,
-          limit,
-          total,
-          totalPages,
-        },
-      };
+      return { data: [], meta: { page, limit, total, totalPages } };
     }
 
-    // Fetch order item counts in a single aggregated query for retrieved page orders
     const orderIds = orders.map((o) => o.id);
     const itemCountsRaw = await this.dataSource.query(
       `
@@ -97,8 +82,6 @@ export class ListCustomerOrdersService {
       itemCountsMap.set(row.orderId, Number(row.itemsCount || 0));
     }
 
-    // Most recent consignment per order — an order can have more than one over
-    // its lifetime (e.g. a return/reshipment), so surface current state.
     const consignmentsRaw = await this.dataSource.query(
       `
       SELECT DISTINCT ON ("orderId") "orderId", "courierProvider", "status", "trackingCode"
@@ -114,7 +97,7 @@ export class ListCustomerOrdersService {
       consignmentMap.set(row.orderId, row);
     }
 
-    const items: CustomerOrderListItem[] = orders.map((o) => ({
+    const items: MyOrderListItem[] = orders.map((o) => ({
       id: o.id,
       orderNumber: o.orderNumber,
       createdAt: new Date(o.createdAt).toISOString(),
@@ -125,21 +108,11 @@ export class ListCustomerOrdersService {
       paymentStatus: o.paymentStatus,
       orderStatus: o.orderStatus,
       itemsCount: itemCountsMap.get(o.id) || 0,
-      customerName: o.customerName,
-      customerPhone: o.customerPhone,
       courierProvider: consignmentMap.get(o.id)?.courierProvider,
       consignmentStatus: consignmentMap.get(o.id)?.status,
       trackingCode: consignmentMap.get(o.id)?.trackingCode ?? undefined,
     }));
 
-    return {
-      data: items,
-      meta: {
-        page,
-        limit,
-        total,
-        totalPages,
-      },
-    };
+    return { data: items, meta: { page, limit, total, totalPages } };
   }
 }

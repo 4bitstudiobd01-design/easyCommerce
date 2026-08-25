@@ -23,6 +23,8 @@ import { EmailMarketingModule } from './modules/email-marketing/email-marketing.
 import { SeoModule } from './modules/seo/seo.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { CustomerModule } from './modules/customer/customer.module';
+import { CustomerAuthModule } from './modules/customer/auth/customer-auth.module';
+import { CustomerAccountModule } from './modules/customer/account/customer-account.module';
 import { MarketingModule } from './modules/marketing/marketing.module';
 import { TrackingModule } from './modules/tracking/tracking.module';
 import { BlogModule } from './modules/blog/blog.module';
@@ -82,6 +84,8 @@ import { APP_FILTER } from '@nestjs/core';
     SeoModule,
     BillingModule,
     CustomerModule,
+    CustomerAuthModule,
+    CustomerAccountModule,
     MarketingModule,
     TrackingModule,
     BlogModule,

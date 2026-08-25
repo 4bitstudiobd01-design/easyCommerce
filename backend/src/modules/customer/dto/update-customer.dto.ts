@@ -36,4 +36,9 @@ export class UpdateCustomerDto {
   @IsOptional()
   @IsEnum(CustomerSourceEnum)
   source?: CustomerSourceEnum;
+
+  @ApiPropertyOptional({ description: 'Customer marketing origin (e.g. facebook, tiktok, google, direct, etc.)' })
+  @IsOptional()
+  @IsString()
+  origin?: string;
 }

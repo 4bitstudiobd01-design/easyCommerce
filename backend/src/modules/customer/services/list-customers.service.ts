@@ -41,6 +41,15 @@ export class ListCustomersService {
       query.andWhere('c.source = :source', { source: dto.source });
     }
 
+    // Origin filter (matches registrationUtmSource or registrationChannel)
+    if (dto.origin && dto.origin.trim() !== '' && dto.origin !== 'ALL') {
+      const orig = dto.origin.trim().toLowerCase();
+      query.andWhere(
+        '(LOWER(c.registrationUtmSource) = :orig OR LOWER(c.registrationChannel) = :orig)',
+        { orig },
+      );
+    }
+
     // Search filter
     if (dto.search && dto.search.trim() !== '') {
       const s = `%${dto.search.trim()}%`;

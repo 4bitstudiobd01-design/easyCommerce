@@ -1,7 +1,7 @@
 import { Injectable, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CustomerEntity } from '../entities/customer.entity';
+import { CustomerEntity, CustomerSourceEnum } from '../entities/customer.entity';
 import { CreateCustomerDto } from '../dto/create-customer.dto';
 
 @Injectable()
@@ -29,6 +29,9 @@ export class CreateCustomerService {
       }
     }
 
+    const origin = dto.origin ? dto.origin.trim().toLowerCase() : undefined;
+    const isChannel = ['direct', 'organic_search', 'paid_search', 'social', 'referral', 'email', 'other'].includes(origin || '');
+
     const customer = this.customerRepository.create({
       tenantId,
       storeId,
@@ -37,7 +40,9 @@ export class CreateCustomerService {
       email: dto.email ? dto.email.trim().toLowerCase() : undefined,
       phone: dto.phone.trim(),
       status: dto.status,
-      source: dto.source,
+      source: dto.source || CustomerSourceEnum.MANUAL,
+      registrationChannel: isChannel ? origin : (origin ? 'social' : 'direct'),
+      registrationUtmSource: isChannel ? undefined : origin,
     });
 
     return this.customerRepository.save(customer);

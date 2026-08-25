@@ -46,6 +46,11 @@ export class CustomerListDto {
   @IsEnum(CustomerSourceEnum)
   source?: CustomerSourceEnum;
 
+  @ApiPropertyOptional({ description: 'Filter by marketing origin (e.g. facebook, tiktok, google, direct, etc.)' })
+  @IsOptional()
+  @IsString()
+  origin?: string;
+
   @ApiPropertyOptional({ description: 'Filter by Customer Segment ID' })
   @IsOptional()
   @IsString()

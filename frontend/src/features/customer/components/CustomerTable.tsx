@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Customer } from '../api/customerApi';
+import { getOriginLabel } from '../utils/origin';
 import { MoreVertical, Eye, Edit2, UserCheck, UserX, ShieldAlert, ShieldCheck, ArrowUp, ArrowDown, ArrowUpDown, SearchX, RefreshCw } from 'lucide-react';
 
 interface CustomerTableProps {
@@ -163,6 +164,9 @@ export function CustomerTable({
               {/* Phone Header — hidden on small screens; phone is also shown under the name */}
               <th className="hidden md:table-cell py-3.5 px-4 min-w-[130px]">Phone</th>
 
+              {/* Origin Header — where the customer's registration/first touch came from (Facebook, TikTok, direct, etc) */}
+              <th className="hidden lg:table-cell py-3.5 px-4 min-w-[110px]">Origin</th>
+
               {/* Orders Header */}
               <th className="py-3.5 px-4 text-center min-w-[90px]" aria-sort={ariaSortFor('ordersCount')}>
                 <button
@@ -266,6 +270,17 @@ export function CustomerTable({
                   {/* 3. Phone */}
                   <td className="hidden md:table-cell py-3.5 px-4 font-medium text-slate-800 whitespace-nowrap">
                     {customer.phone}
+                  </td>
+
+                  {/* 3c. Origin — Facebook/TikTok/Instagram/etc, from registration attribution */}
+                  <td className="hidden lg:table-cell py-3.5 px-4 whitespace-nowrap">
+                    {getOriginLabel(customer) ? (
+                      <span className="px-2 py-0.5 bg-blue-50 text-blue-700 font-semibold rounded-lg text-[10px]">
+                        {getOriginLabel(customer)}
+                      </span>
+                    ) : (
+                      <span className="text-slate-300 text-[11px]">—</span>
+                    )}
                   </td>
 
                   {/* 4. Orders */}

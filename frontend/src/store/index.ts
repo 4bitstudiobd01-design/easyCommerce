@@ -9,6 +9,9 @@ import { inventoryApi } from '@/features/inventory/api/inventoryApi';
 import inventoryReducer from '@/features/inventory/slices/inventorySlice';
 import { storefrontApi } from '@/features/storefront/api/storefrontApi';
 import cartReducer from '@/features/storefront/slices/cartSlice';
+import { customerAuthApi } from '@/features/storefront/api/customerAuthApi';
+import { customerAccountApi } from '@/features/storefront/api/customerAccountApi';
+import customerAuthReducer from '@/features/storefront/slices/customerAuthSlice';
 import { orderApi } from '@/features/order/api/orderApi';
 import orderReducer from '@/features/order/slices/orderSlice';
 import { paymentApi } from '@/features/payment/api/paymentApi';
@@ -34,6 +37,7 @@ export const store = configureStore({
     catalog: catalogReducer,
     inventory: inventoryReducer,
     cart: cartReducer,
+    customerAuth: customerAuthReducer,
     order: orderReducer,
     staff: staffReducer,
     emailMarketing: emailMarketingReducer,
@@ -42,6 +46,8 @@ export const store = configureStore({
     [catalogApi.reducerPath]: catalogApi.reducer,
     [inventoryApi.reducerPath]: inventoryApi.reducer,
     [storefrontApi.reducerPath]: storefrontApi.reducer,
+    [customerAuthApi.reducerPath]: customerAuthApi.reducer,
+    [customerAccountApi.reducerPath]: customerAccountApi.reducer,
     [orderApi.reducerPath]: orderApi.reducer,
     [paymentApi.reducerPath]: paymentApi.reducer,
     [analyticsApi.reducerPath]: analyticsApi.reducer,
@@ -64,6 +70,8 @@ export const store = configureStore({
       catalogApi.middleware,
       inventoryApi.middleware,
       storefrontApi.middleware,
+      customerAuthApi.middleware,
+      customerAccountApi.middleware,
       orderApi.middleware,
       paymentApi.middleware,
       analyticsApi.middleware,

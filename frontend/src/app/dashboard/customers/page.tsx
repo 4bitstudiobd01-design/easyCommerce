@@ -38,7 +38,7 @@ export default function CustomersPage() {
   const page = parseInt(searchParams.get('page') || '1', 10);
   const limit = parseInt(searchParams.get('limit') || '20', 10);
   const statusParam = (searchParams.get('status') as CustomerStatusType | 'ALL') || 'ALL';
-  const sourceParam = (searchParams.get('source') as CustomerSourceType | 'ALL') || 'ALL';
+  const originParam = searchParams.get('origin') || 'ALL';
   const segmentIdParam = searchParams.get('segmentId') || '';
   const dateRangeParam = searchParams.get('dateRange') || 'ALL';
   const sortByParam = searchParams.get('sortBy') || 'createdAt';
@@ -93,7 +93,7 @@ export default function CustomersPage() {
     limit,
     search: debouncedSearch || undefined,
     status: statusParam === 'ALL' ? undefined : statusParam,
-    source: sourceParam === 'ALL' ? undefined : sourceParam,
+    origin: originParam === 'ALL' ? undefined : originParam,
     segmentId: segmentIdParam || undefined,
     dateRange: dateRangeParam === 'ALL' ? undefined : dateRangeParam,
     sortBy: sortByParam,
@@ -126,15 +126,15 @@ export default function CustomersPage() {
   // Clear selection on page/filter change
   useEffect(() => {
     setSelectedIds([]);
-  }, [page, statusParam, sourceParam, segmentIdParam, dateRangeParam, debouncedSearch]);
+  }, [page, statusParam, originParam, segmentIdParam, dateRangeParam, debouncedSearch]);
 
   const hasActiveFilters = Boolean(
-    debouncedSearch || statusParam !== 'ALL' || sourceParam !== 'ALL' || segmentIdParam || dateRangeParam !== 'ALL',
+    debouncedSearch || statusParam !== 'ALL' || originParam !== 'ALL' || segmentIdParam || dateRangeParam !== 'ALL',
   );
 
   const handleClearFilters = () => {
     setSearchInput('');
-    updateUrlParams({ search: null, status: null, source: null, segmentId: null, dateRange: null, page: '1' });
+    updateUrlParams({ search: null, status: null, origin: null, source: null, segmentId: null, dateRange: null, page: '1' });
   };
 
   const handleSortChange = (field: string) => {
@@ -193,7 +193,7 @@ export default function CustomersPage() {
       const params = new URLSearchParams();
       if (debouncedSearch) params.set('search', debouncedSearch);
       if (statusParam !== 'ALL') params.set('status', statusParam);
-      if (sourceParam !== 'ALL') params.set('source', sourceParam);
+      if (originParam !== 'ALL') params.set('origin', originParam);
       if (segmentIdParam) params.set('segmentId', segmentIdParam);
       if (dateRangeParam !== 'ALL') params.set('dateRange', dateRangeParam);
       if (sortByParam) params.set('sortBy', sortByParam);
@@ -262,7 +262,7 @@ export default function CustomersPage() {
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5 active:scale-95"
           >
             <Plus className="w-4 h-4" />
-            + Add Customer
+            Add Customer
           </button>
         </div>
       </div>
@@ -451,8 +451,8 @@ export default function CustomersPage() {
             onSearchChange={(q) => setSearchInput(q)}
             statusFilter={statusParam}
             onStatusChange={(status) => updateUrlParams({ status, page: '1' })}
-            sourceFilter={sourceParam}
-            onSourceChange={(source) => updateUrlParams({ source, page: '1' })}
+            originFilter={originParam}
+            onOriginChange={(origin) => updateUrlParams({ origin, page: '1' })}
             dateRangeFilter={dateRangeParam}
             onDateRangeChange={(range) => updateUrlParams({ dateRange: range, page: '1' })}
             onClearFilters={handleClearFilters}

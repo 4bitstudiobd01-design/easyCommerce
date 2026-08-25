@@ -18,7 +18,7 @@ export function AddCustomerModal({ isOpen, onClose }: AddCustomerModalProps) {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<CustomerStatusType>('ACTIVE');
-  const [source, setSource] = useState<CustomerSourceType>('ONLINE_STORE');
+  const [origin, setOrigin] = useState('direct');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   if (!isOpen) return null;
@@ -50,7 +50,7 @@ export function AddCustomerModal({ isOpen, onClose }: AddCustomerModalProps) {
         phone: phone.trim(),
         email: email.trim() || undefined,
         status,
-        source,
+        origin,
       }).unwrap();
 
       toast.success('Customer created successfully!');
@@ -61,7 +61,7 @@ export function AddCustomerModal({ isOpen, onClose }: AddCustomerModalProps) {
       setPhone('');
       setEmail('');
       setStatus('ACTIVE');
-      setSource('ONLINE_STORE');
+      setOrigin('direct');
       setErrors({});
     } catch (err: any) {
       const msg = err?.data?.message || 'Failed to create customer. Please check input values.';
@@ -157,7 +157,7 @@ export function AddCustomerModal({ isOpen, onClose }: AddCustomerModalProps) {
             {errors.email && <p className="text-[11px] text-rose-500 font-medium mt-1">{errors.email}</p>}
           </div>
 
-          {/* Status & Source */}
+          {/* Status & Origin */}
           <div className="grid grid-cols-2 gap-3 pt-1">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">Status</label>
@@ -172,16 +172,23 @@ export function AddCustomerModal({ isOpen, onClose }: AddCustomerModalProps) {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Source</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Marketing Origin</label>
               <select
-                value={source}
-                onChange={(e) => setSource(e.target.value as any)}
+                value={origin}
+                onChange={(e) => setOrigin(e.target.value)}
                 className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
               >
-                <option value="ONLINE_STORE">Online Store</option>
-                <option value="MANUAL">Manual</option>
-                <option value="POS">POS</option>
-                <option value="IMPORT">Import</option>
+                <option value="direct">Direct Traffic</option>
+                <option value="facebook">Facebook</option>
+                <option value="instagram">Instagram</option>
+                <option value="tiktok">TikTok</option>
+                <option value="google">Google</option>
+                <option value="youtube">YouTube</option>
+                <option value="organic_search">Organic Search</option>
+                <option value="social">Social Media</option>
+                <option value="referral">Referral</option>
+                <option value="email">Email Campaign</option>
+                <option value="other">Other</option>
               </select>
             </div>
           </div>

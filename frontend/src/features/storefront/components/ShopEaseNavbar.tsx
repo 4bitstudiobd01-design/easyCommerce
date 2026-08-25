@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import {
   ShoppingBag,
@@ -13,10 +13,12 @@ import {
   Sparkles,
   UserPlus,
   LogIn,
+  UserCircle,
 } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store';
 import { toggleCartDrawer } from '../slices/cartSlice';
+import { customerLogout } from '../slices/customerAuthSlice';
 import { CustomerAuthModal } from './CustomerAuthModal';
 import { toast } from 'sonner';
 
@@ -58,21 +60,19 @@ export const ShopEaseNavbar = ({
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Customer Auth state
+  // Customer Auth state — sourced from Redux/ec_customer_* storage (see
+  // customerAuthSlice.ts), not a local-only copy, so it stays in sync with
+  // anything that updates the session (login, logout, profile edits).
   const [isCustomerAuthOpen, setIsCustomerAuthOpen] = useState(false);
   const [customerAuthMode, setCustomerAuthMode] = useState<'login' | 'register'>('login');
-  const [customer, setCustomer] = useState<{ name: string; email?: string; phone?: string } | null>(null);
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(`bitcommerce_customer_${slug}`);
-      if (stored) {
-        setCustomer(JSON.parse(stored));
+  const customerAuthState = useSelector((state: RootState) => state.customerAuth);
+  const customer = customerAuthState.isAuthenticated && customerAuthState.customer
+    ? {
+        name: `${customerAuthState.customer.firstName || ''} ${customerAuthState.customer.lastName || ''}`.trim() || customerAuthState.customer.email,
+        email: customerAuthState.customer.email,
+        phone: customerAuthState.customer.phone,
       }
-    } catch (e) {
-      // ignore JSON parse errors
-    }
-  }, [slug]);
+    : null;
 
   const handleOpenCustomerAuth = (mode: 'login' | 'register') => {
     setCustomerAuthMode(mode);
@@ -82,10 +82,7 @@ export const ShopEaseNavbar = ({
   };
 
   const handleCustomerLogout = () => {
-    try {
-      localStorage.removeItem(`bitcommerce_customer_${slug}`);
-    } catch (e) {}
-    setCustomer(null);
+    dispatch(customerLogout());
     setIsAccountMenuOpen(false);
     toast.success('You have been signed out.');
   };
@@ -102,7 +99,6 @@ export const ShopEaseNavbar = ({
         storeSlug={slug}
         primaryColor={primaryColor}
         initialMode={customerAuthMode}
-        onAuthSuccess={(cust) => setCustomer(cust)}
       />
 
       <header className="sticky top-0 z-40 bg-white border-b border-slate-200/90 shadow-2xs transition-all">
@@ -202,12 +198,28 @@ export const ShopEaseNavbar = ({
                         </div>
                         <div className="py-1">
                           <Link
-                            href={`/store/${slug}/track`}
+                            href={`/store/${slug}/account`}
+                            onClick={() => setIsAccountMenuOpen(false)}
+                            className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                          >
+                            <UserCircle className="w-4 h-4 text-blue-500" />
+                            <span>My Profile</span>
+                          </Link>
+                          <Link
+                            href={`/store/${slug}/account/orders`}
                             onClick={() => setIsAccountMenuOpen(false)}
                             className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                           >
                             <Package className="w-4 h-4 text-blue-500" />
-                            <span>My Orders / Track</span>
+                            <span>My Orders</span>
+                          </Link>
+                          <Link
+                            href={`/store/${slug}/track`}
+                            onClick={() => setIsAccountMenuOpen(false)}
+                            className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                          >
+                            <Search className="w-4 h-4 text-blue-500" />
+                            <span>Track an Order</span>
                           </Link>
                         </div>
                         <div className="pt-1">
@@ -363,13 +375,29 @@ export const ShopEaseNavbar = ({
                 Track Order
               </Link>
               {customer ? (
-                <button
-                  type="button"
-                  onClick={handleCustomerLogout}
-                  className="px-3 py-2 rounded-lg text-red-600 hover:bg-red-50 text-left font-bold"
-                >
-                  Sign Out ({customer.name})
-                </button>
+                <>
+                  <Link
+                    href={`/store/${slug}/account`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="px-3 py-2 rounded-lg hover:bg-slate-50 font-medium text-slate-600"
+                  >
+                    My Profile
+                  </Link>
+                  <Link
+                    href={`/store/${slug}/account/orders`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="px-3 py-2 rounded-lg hover:bg-slate-50 font-medium text-slate-600"
+                  >
+                    My Orders
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={handleCustomerLogout}
+                    className="px-3 py-2 rounded-lg text-red-600 hover:bg-red-50 text-left font-bold"
+                  >
+                    Sign Out ({customer.name})
+                  </button>
+                </>
               ) : (
                 <div className="pt-2 border-t border-slate-100 flex items-center gap-2">
                   <button

@@ -48,6 +48,13 @@ export class UpdateCustomerService {
     if (dto.status !== undefined) customer.status = dto.status;
     if (dto.source !== undefined) customer.source = dto.source;
 
+    if (dto.origin !== undefined) {
+      const origin = dto.origin ? dto.origin.trim().toLowerCase() : undefined;
+      const isChannel = ['direct', 'organic_search', 'paid_search', 'social', 'referral', 'email', 'other'].includes(origin || '');
+      customer.registrationChannel = isChannel ? origin : (origin ? 'social' : undefined);
+      customer.registrationUtmSource = isChannel ? undefined : origin;
+    }
+
     return this.customerRepository.save(customer);
   }
 }

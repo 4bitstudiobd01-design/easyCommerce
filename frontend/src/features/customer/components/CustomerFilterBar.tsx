@@ -1,16 +1,16 @@
 'use client';
 
 import React from 'react';
-import { Search, Filter, Calendar, X } from 'lucide-react';
-import { CustomerStatusType, CustomerSourceType } from '../api/customerApi';
+import { Search, Filter, Calendar, X, Globe } from 'lucide-react';
+import { CustomerStatusType } from '../api/customerApi';
 
 interface CustomerFilterBarProps {
   searchQuery: string;
   onSearchChange: (q: string) => void;
   statusFilter: CustomerStatusType | 'ALL';
   onStatusChange: (status: CustomerStatusType | 'ALL') => void;
-  sourceFilter: CustomerSourceType | 'ALL';
-  onSourceChange: (source: CustomerSourceType | 'ALL') => void;
+  originFilter: string;
+  onOriginChange: (origin: string) => void;
   dateRangeFilter: string;
   onDateRangeChange: (range: string) => void;
   onClearFilters: () => void;
@@ -22,8 +22,8 @@ export function CustomerFilterBar({
   onSearchChange,
   statusFilter,
   onStatusChange,
-  sourceFilter,
-  onSourceChange,
+  originFilter,
+  onOriginChange,
   dateRangeFilter,
   onDateRangeChange,
   onClearFilters,
@@ -86,23 +86,32 @@ export function CustomerFilterBar({
             <option value="ALL">All Statuses</option>
             <option value="ACTIVE">Active</option>
             <option value="INACTIVE">Inactive</option>
+            <option value="BLOCKED">Blocked</option>
           </select>
         </div>
 
-        {/* Source Select */}
+        {/* Origin Select */}
         <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700">
-          <span className="text-slate-400 text-[11px]">Source:</span>
+          <Globe className="w-3.5 h-3.5 text-slate-400" />
+          <span className="text-slate-400 text-[11px]">Origin:</span>
           <select
-            value={sourceFilter}
-            onChange={(e) => onSourceChange(e.target.value as any)}
-            aria-label="Filter customers by acquisition source"
+            value={originFilter}
+            onChange={(e) => onOriginChange(e.target.value)}
+            aria-label="Filter customers by marketing origin"
             className="bg-transparent focus:outline-none font-semibold text-slate-800 cursor-pointer text-xs"
           >
-            <option value="ALL">All Sources</option>
-            <option value="ONLINE_STORE">Online Store</option>
-            <option value="MANUAL">Manual</option>
-            <option value="POS">POS</option>
-            <option value="IMPORT">Import</option>
+            <option value="ALL">All Origins</option>
+            <option value="facebook">Facebook</option>
+            <option value="instagram">Instagram</option>
+            <option value="tiktok">TikTok</option>
+            <option value="google">Google</option>
+            <option value="youtube">YouTube</option>
+            <option value="direct">Direct</option>
+            <option value="organic_search">Organic Search</option>
+            <option value="social">Social</option>
+            <option value="referral">Referral</option>
+            <option value="email">Email</option>
+            <option value="other">Other</option>
           </select>
         </div>
 
@@ -121,3 +130,4 @@ export function CustomerFilterBar({
     </div>
   );
 }
+

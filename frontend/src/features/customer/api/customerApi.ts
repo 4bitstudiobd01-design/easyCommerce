@@ -20,6 +20,14 @@ export interface Customer {
   ordersCount?: number;
   totalSpent?: number;
   lastOrderAt?: string | null;
+  hasAccount?: boolean;
+  /** Marketing channel captured at registration — 'social', 'paid_search', 'direct', etc. Unset for guest-only (never-registered) customers. */
+  registrationChannel?: string;
+  /** Exact platform, e.g. 'facebook', 'tiktok', 'instagram' — only present when the registration URL carried a utm_source param. */
+  registrationUtmSource?: string;
+  registrationUtmMedium?: string;
+  registrationUtmCampaign?: string;
+  registrationReferrerHost?: string;
 }
 
 export interface CustomerDetail extends Customer {
@@ -69,6 +77,9 @@ export interface CustomerOrderItem {
   itemsCount: number;
   customerName: string;
   customerPhone: string;
+  courierProvider?: string;
+  consignmentStatus?: string;
+  trackingCode?: string;
 }
 
 export interface CustomerNote {
@@ -182,6 +193,7 @@ export interface CreateCustomerRequest {
   phone: string;
   status?: CustomerStatusType;
   source?: CustomerSourceType;
+  origin?: string;
 }
 
 export interface UpdateCustomerRequest {
@@ -191,6 +203,7 @@ export interface UpdateCustomerRequest {
   phone?: string;
   status?: CustomerStatusType;
   source?: CustomerSourceType;
+  origin?: string;
 }
 
 export interface ImportCustomerRow {
@@ -233,6 +246,7 @@ export interface CustomerListQueryParams {
   search?: string;
   status?: string;
   source?: string;
+  origin?: string;
   segmentId?: string;
   dateRange?: string;
   dateFrom?: string;
