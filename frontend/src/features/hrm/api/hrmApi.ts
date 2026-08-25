@@ -80,6 +80,50 @@ export interface UpdateEmployeeRequest extends Omit<Partial<CreateEmployeeReques
   departmentId?: string | null;
 }
 
+export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'HALF_DAY' | 'ON_LEAVE';
+
+export interface Attendance {
+  id: string;
+  tenantId: string;
+  storeId: string;
+  employeeId: string;
+  date: string;
+  status: AttendanceStatus;
+  checkInAt?: string;
+  checkOutAt?: string;
+  notes?: string;
+  markedByUserId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AttendanceRosterRow {
+  employee: Employee;
+  attendance: Attendance | null;
+}
+
+export interface ListAttendanceParams {
+  date?: string;
+  departmentId?: string;
+}
+
+export interface CheckInRequest {
+  employeeId: string;
+  date: string;
+}
+
+export interface CheckOutRequest {
+  employeeId: string;
+  date: string;
+}
+
+export interface MarkAttendanceStatusRequest {
+  employeeId: string;
+  date: string;
+  status: AttendanceStatus;
+  notes?: string;
+}
+
 export interface ListEmployeesParams {
   search?: string;
   departmentId?: string;
@@ -96,7 +140,7 @@ export const hrmApi = createApi({
   baseQuery: createBaseQueryWithReauth(
     process.env.NEXT_PUBLIC_API_URL?.replace('/orders', '') || 'http://localhost:5001/api/v1',
   ),
-  tagTypes: ['Department', 'Employee'],
+  tagTypes: ['Department', 'Employee', 'Attendance'],
   endpoints: (builder) => ({
     getDepartments: builder.query<Department[], void>({
       query: () => '/hr/departments',
@@ -144,6 +188,27 @@ export const hrmApi = createApi({
       invalidatesTags: ['Employee'],
       transformResponse: unwrap<Employee>,
     }),
+
+    getAttendance: builder.query<AttendanceRosterRow[], ListAttendanceParams | void>({
+      query: (params) => ({ url: '/hr/attendance', params: params || undefined }),
+      providesTags: ['Attendance'],
+      transformResponse: unwrap<AttendanceRosterRow[]>,
+    }),
+    checkIn: builder.mutation<Attendance, CheckInRequest>({
+      query: (body) => ({ url: '/hr/attendance/check-in', method: 'POST', body }),
+      invalidatesTags: ['Attendance'],
+      transformResponse: unwrap<Attendance>,
+    }),
+    checkOut: builder.mutation<Attendance, CheckOutRequest>({
+      query: (body) => ({ url: '/hr/attendance/check-out', method: 'POST', body }),
+      invalidatesTags: ['Attendance'],
+      transformResponse: unwrap<Attendance>,
+    }),
+    markAttendanceStatus: builder.mutation<Attendance, MarkAttendanceStatusRequest>({
+      query: (body) => ({ url: '/hr/attendance/status', method: 'POST', body }),
+      invalidatesTags: ['Attendance'],
+      transformResponse: unwrap<Attendance>,
+    }),
   }),
 });
 
@@ -157,4 +222,8 @@ export const {
   useCreateEmployeeMutation,
   useUpdateEmployeeMutation,
   useTerminateEmployeeMutation,
+  useGetAttendanceQuery,
+  useCheckInMutation,
+  useCheckOutMutation,
+  useMarkAttendanceStatusMutation,
 } = hrmApi;

@@ -26,10 +26,15 @@ import { ListEmployeesService } from './services/list-employees.service';
 import { GetEmployeeService } from './services/get-employee.service';
 import { UpdateEmployeeService } from './services/update-employee.service';
 import { TerminateEmployeeService } from './services/terminate-employee.service';
+import { CheckInService } from './services/check-in.service';
+import { CheckOutService } from './services/check-out.service';
+import { MarkAttendanceStatusService } from './services/mark-attendance-status.service';
+import { ListAttendanceService } from './services/list-attendance.service';
 import { CreateDepartmentDto } from './dto/create-department.dto';
 import { UpdateDepartmentDto } from './dto/update-department.dto';
 import { CreateEmployeeDto, UpdateEmployeeDto } from './dto/create-employee.dto';
 import { ListEmployeesQueryDto } from './dto/list-employees-query.dto';
+import { CheckInDto, CheckOutDto, MarkAttendanceStatusDto, ListAttendanceQueryDto } from './dto/attendance.dto';
 
 @ApiTags('HR — Employees & Departments')
 @Controller('hr')
@@ -45,6 +50,10 @@ export class HrmController {
     private readonly getEmployeeService: GetEmployeeService,
     private readonly updateEmployeeService: UpdateEmployeeService,
     private readonly terminateEmployeeService: TerminateEmployeeService,
+    private readonly checkInService: CheckInService,
+    private readonly checkOutService: CheckOutService,
+    private readonly markAttendanceStatusService: MarkAttendanceStatusService,
+    private readonly listAttendanceService: ListAttendanceService,
   ) {}
 
   private async getStoreContext(userId: string, storeIdHeader?: string) {
@@ -194,5 +203,67 @@ export class HrmController {
   ) {
     const store = await this.getStoreContext(userId, headerStoreId);
     return this.terminateEmployeeService.execute(store.id, employeeId);
+  }
+
+  // ─── Attendance ─────────────────────────────────────────────────
+
+  @Get('attendance')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:attendance:manage')
+  @ApiOperation({ summary: "List every active employee with their attendance record for a date (today if omitted)" })
+  @ApiResponse({ status: 200, description: 'Employee + attendance roster for the date' })
+  async listAttendance(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Query() query: ListAttendanceQueryDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.listAttendanceService.execute(store.id, query);
+  }
+
+  @Post('attendance/check-in')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:attendance:manage')
+  @ApiOperation({ summary: 'Check an employee in for a given date' })
+  @ApiResponse({ status: 201, description: 'Checked in' })
+  async checkIn(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Body() dto: CheckInDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.checkInService.execute(store.tenantId, store.id, userId, dto);
+  }
+
+  @Post('attendance/check-out')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:attendance:manage')
+  @ApiOperation({ summary: 'Check an employee out for a given date' })
+  @ApiResponse({ status: 200, description: 'Checked out' })
+  async checkOut(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Body() dto: CheckOutDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.checkOutService.execute(store.id, userId, dto);
+  }
+
+  @Post('attendance/status')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:attendance:manage')
+  @ApiOperation({ summary: 'Directly set a day\'s attendance status (Absent/On Leave/Half Day/etc.), no check-in required' })
+  @ApiResponse({ status: 201, description: 'Attendance status set' })
+  async markAttendanceStatus(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Body() dto: MarkAttendanceStatusDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.markAttendanceStatusService.execute(store.tenantId, store.id, userId, dto);
   }
 }

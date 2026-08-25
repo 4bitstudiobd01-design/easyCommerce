@@ -24,7 +24,8 @@ import {
   FileText,
   ShoppingBag,
   UserCog,
-  Building2
+  Building2,
+  CalendarCheck
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -339,6 +340,19 @@ export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onCl
             <div className="flex items-center gap-2.5">
               <Building2 className={iconClass} strokeWidth={iconStroke} />
               {!isDesktopCollapsed && <span>Departments</span>}
+            </div>
+          </Link>
+          <Link
+            href="/dashboard/hr/attendance"
+            className={navItemClass('/dashboard/hr/attendance')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Attendance")}
+            onFocus={(e) => handleTooltipEnter(e, "Attendance")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <CalendarCheck className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Attendance</span>}
             </div>
           </Link>
 
