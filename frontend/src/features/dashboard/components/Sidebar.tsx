@@ -29,7 +29,8 @@ import {
   CalendarRange,
   PartyPopper,
   Clock3,
-  Receipt
+  Receipt,
+  Wallet
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -409,6 +410,19 @@ export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onCl
             <div className="flex items-center gap-2.5">
               <Receipt className={iconClass} strokeWidth={iconStroke} />
               {!isDesktopCollapsed && <span>Expenses</span>}
+            </div>
+          </Link>
+          <Link
+            href="/dashboard/hr/payroll"
+            className={navItemClass('/dashboard/hr/payroll')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Payroll")}
+            onFocus={(e) => handleTooltipEnter(e, "Payroll")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <Wallet className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Payroll</span>}
             </div>
           </Link>
 

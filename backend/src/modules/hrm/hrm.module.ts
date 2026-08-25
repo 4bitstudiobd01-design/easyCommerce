@@ -11,6 +11,9 @@ import { LeaveRequestEntity } from './entities/leave-request.entity';
 import { ShiftEntity } from './entities/shift.entity';
 import { ShiftAssignmentEntity } from './entities/shift-assignment.entity';
 import { ExpenseEntity } from './entities/expense.entity';
+import { SalaryStructureEntity } from './entities/salary-structure.entity';
+import { PayrollRunEntity } from './entities/payroll-run.entity';
+import { PayslipEntity } from './entities/payslip.entity';
 import { TenantModule } from '../tenant/tenant.module';
 import { StaffModule } from '../staff/staff.module';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
@@ -56,6 +59,14 @@ import { MarkExpenseReimbursedService } from './services/mark-expense-reimbursed
 import { DeleteExpenseService } from './services/delete-expense.service';
 import { UploadExpenseReceiptService } from './services/upload-expense-receipt.service';
 import { GetExpenseReceiptService } from './services/get-expense-receipt.service';
+import { SetSalaryStructureService } from './services/set-salary-structure.service';
+import { ListSalaryStructuresService } from './services/list-salary-structures.service';
+import { GeneratePayrollRunService } from './services/generate-payroll-run.service';
+import { ListPayrollRunsService } from './services/list-payroll-runs.service';
+import { GetPayrollRunService } from './services/get-payroll-run.service';
+import { FinalizePayrollRunService } from './services/finalize-payroll-run.service';
+import { MarkPayrollRunPaidService } from './services/mark-payroll-run-paid.service';
+import { DeletePayrollRunService } from './services/delete-payroll-run.service';
 
 @Module({
   imports: [
@@ -69,6 +80,9 @@ import { GetExpenseReceiptService } from './services/get-expense-receipt.service
       ShiftEntity,
       ShiftAssignmentEntity,
       ExpenseEntity,
+      SalaryStructureEntity,
+      PayrollRunEntity,
+      PayslipEntity,
     ]),
     TenantModule,
     // Provides GetMyPermissionsService, the source of truth PermissionsGuard uses to
@@ -125,6 +139,14 @@ import { GetExpenseReceiptService } from './services/get-expense-receipt.service
     DeleteExpenseService,
     UploadExpenseReceiptService,
     GetExpenseReceiptService,
+    SetSalaryStructureService,
+    ListSalaryStructuresService,
+    GeneratePayrollRunService,
+    ListPayrollRunsService,
+    GetPayrollRunService,
+    FinalizePayrollRunService,
+    MarkPayrollRunPaidService,
+    DeletePayrollRunService,
     JwtAuthGuard,
     PermissionsGuard,
   ],

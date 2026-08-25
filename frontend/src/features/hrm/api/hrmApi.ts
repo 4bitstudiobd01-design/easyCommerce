@@ -334,6 +334,87 @@ export interface ListExpensesParams {
   limit?: number;
 }
 
+export interface SalaryStructure {
+  id: string;
+  tenantId: string;
+  storeId: string;
+  employeeId: string;
+  basicSalary: string;
+  houseRentAllowance: string;
+  medicalAllowance: string;
+  conveyanceAllowance: string;
+  otherAllowance: string;
+  providentFundDeduction: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SalaryStructureRow {
+  employee: Employee;
+  salaryStructure: SalaryStructure | null;
+}
+
+export interface SetSalaryStructureRequest {
+  employeeId: string;
+  basicSalary: string;
+  houseRentAllowance?: string;
+  medicalAllowance?: string;
+  conveyanceAllowance?: string;
+  otherAllowance?: string;
+  providentFundDeduction?: string;
+}
+
+export type PayrollRunStatus = 'DRAFT' | 'FINALIZED' | 'PAID';
+
+export interface PayrollRun {
+  id: string;
+  tenantId: string;
+  storeId: string;
+  month: number;
+  year: number;
+  status: PayrollRunStatus;
+  totalGrossAmount: string;
+  totalDeductions: string;
+  totalNetAmount: string;
+  skippedEmployeeCount: number;
+  finalizedAt?: string;
+  paidAt?: string;
+  createdByUserId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Payslip {
+  id: string;
+  tenantId: string;
+  storeId: string;
+  payrollRunId: string;
+  employeeId: string;
+  employee?: Employee;
+  basicSalary: string;
+  houseRentAllowance: string;
+  medicalAllowance: string;
+  conveyanceAllowance: string;
+  otherAllowance: string;
+  grossSalary: string;
+  providentFundDeduction: string;
+  taxDeduction: string;
+  otherDeductions: string;
+  netSalary: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PayrollRunDetail {
+  run: PayrollRun;
+  payslips: Payslip[];
+}
+
+export interface GeneratePayrollRunRequest {
+  month: number;
+  year: number;
+}
+
 export interface ListEmployeesParams {
   search?: string;
   departmentId?: string;
@@ -350,7 +431,7 @@ export const hrmApi = createApi({
   baseQuery: createBaseQueryWithReauth(
     process.env.NEXT_PUBLIC_API_URL?.replace('/orders', '') || 'http://localhost:5001/api/v1',
   ),
-  tagTypes: ['Department', 'Employee', 'Attendance', 'Holiday', 'LeavePolicy', 'LeaveRequest', 'LeaveBalance', 'Shift', 'Roster', 'Expense'],
+  tagTypes: ['Department', 'Employee', 'Attendance', 'Holiday', 'LeavePolicy', 'LeaveRequest', 'LeaveBalance', 'Shift', 'Roster', 'Expense', 'SalaryStructure', 'PayrollRun'],
   endpoints: (builder) => ({
     getDepartments: builder.query<Department[], void>({
       query: () => '/hr/departments',
@@ -559,6 +640,48 @@ export const hrmApi = createApi({
       invalidatesTags: ['Expense'],
       transformResponse: unwrap<Expense>,
     }),
+
+    getSalaryStructures: builder.query<SalaryStructureRow[], void>({
+      query: () => '/hr/payroll/salary-structures',
+      providesTags: ['SalaryStructure'],
+      transformResponse: unwrap<SalaryStructureRow[]>,
+    }),
+    setSalaryStructure: builder.mutation<SalaryStructure, SetSalaryStructureRequest>({
+      query: ({ employeeId, ...body }) => ({ url: `/hr/payroll/salary-structures/${employeeId}`, method: 'PUT', body }),
+      invalidatesTags: ['SalaryStructure'],
+      transformResponse: unwrap<SalaryStructure>,
+    }),
+
+    getPayrollRuns: builder.query<PayrollRun[], { year?: number } | void>({
+      query: (params) => ({ url: '/hr/payroll/runs', params: params || undefined }),
+      providesTags: ['PayrollRun'],
+      transformResponse: unwrap<PayrollRun[]>,
+    }),
+    getPayrollRun: builder.query<PayrollRunDetail, string>({
+      query: (id) => `/hr/payroll/runs/${id}`,
+      providesTags: ['PayrollRun'],
+      transformResponse: unwrap<PayrollRunDetail>,
+    }),
+    generatePayrollRun: builder.mutation<PayrollRun, GeneratePayrollRunRequest>({
+      query: (body) => ({ url: '/hr/payroll/runs', method: 'POST', body }),
+      invalidatesTags: ['PayrollRun'],
+      transformResponse: unwrap<PayrollRun>,
+    }),
+    finalizePayrollRun: builder.mutation<PayrollRun, string>({
+      query: (id) => ({ url: `/hr/payroll/runs/${id}/finalize`, method: 'POST' }),
+      invalidatesTags: ['PayrollRun'],
+      transformResponse: unwrap<PayrollRun>,
+    }),
+    markPayrollRunPaid: builder.mutation<PayrollRun, string>({
+      query: (id) => ({ url: `/hr/payroll/runs/${id}/mark-paid`, method: 'POST' }),
+      invalidatesTags: ['PayrollRun'],
+      transformResponse: unwrap<PayrollRun>,
+    }),
+    deletePayrollRun: builder.mutation<{ success: boolean; message: string }, string>({
+      query: (id) => ({ url: `/hr/payroll/runs/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['PayrollRun'],
+      transformResponse: unwrap<{ success: boolean; message: string }>,
+    }),
   }),
 });
 
@@ -601,6 +724,14 @@ export const {
   useReimburseExpenseMutation,
   useDeleteExpenseMutation,
   useUploadExpenseReceiptMutation,
+  useGetSalaryStructuresQuery,
+  useSetSalaryStructureMutation,
+  useGetPayrollRunsQuery,
+  useGetPayrollRunQuery,
+  useGeneratePayrollRunMutation,
+  useFinalizePayrollRunMutation,
+  useMarkPayrollRunPaidMutation,
+  useDeletePayrollRunMutation,
 } = hrmApi;
 
 /** Streams the authenticated document endpoint and opens it in a new tab. RTK Query's

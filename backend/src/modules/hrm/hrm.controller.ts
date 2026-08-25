@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Patch,
   Delete,
   Body,
@@ -78,6 +79,15 @@ import { DeleteExpenseService } from './services/delete-expense.service';
 import { UploadExpenseReceiptService } from './services/upload-expense-receipt.service';
 import { GetExpenseReceiptService } from './services/get-expense-receipt.service';
 import { CreateExpenseDto, ReviewExpenseDto, ListExpensesQueryDto } from './dto/expense.dto';
+import { SetSalaryStructureService } from './services/set-salary-structure.service';
+import { ListSalaryStructuresService } from './services/list-salary-structures.service';
+import { GeneratePayrollRunService } from './services/generate-payroll-run.service';
+import { ListPayrollRunsService } from './services/list-payroll-runs.service';
+import { GetPayrollRunService } from './services/get-payroll-run.service';
+import { FinalizePayrollRunService } from './services/finalize-payroll-run.service';
+import { MarkPayrollRunPaidService } from './services/mark-payroll-run-paid.service';
+import { DeletePayrollRunService } from './services/delete-payroll-run.service';
+import { SetSalaryStructureDto, GeneratePayrollRunDto, ListPayrollRunsQueryDto } from './dto/payroll.dto';
 
 @ApiTags('HR — Employees & Departments')
 @Controller('hr')
@@ -124,6 +134,14 @@ export class HrmController {
     private readonly deleteExpenseService: DeleteExpenseService,
     private readonly uploadExpenseReceiptService: UploadExpenseReceiptService,
     private readonly getExpenseReceiptService: GetExpenseReceiptService,
+    private readonly setSalaryStructureService: SetSalaryStructureService,
+    private readonly listSalaryStructuresService: ListSalaryStructuresService,
+    private readonly generatePayrollRunService: GeneratePayrollRunService,
+    private readonly listPayrollRunsService: ListPayrollRunsService,
+    private readonly getPayrollRunService: GetPayrollRunService,
+    private readonly finalizePayrollRunService: FinalizePayrollRunService,
+    private readonly markPayrollRunPaidService: MarkPayrollRunPaidService,
+    private readonly deletePayrollRunService: DeletePayrollRunService,
   ) {}
 
   private async getStoreContext(userId: string, storeIdHeader?: string) {
@@ -792,5 +810,125 @@ export class HrmController {
     res.setHeader('Content-Type', mimeType);
     res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
     stream.pipe(res);
+  }
+
+  // ─── Payroll ────────────────────────────────────────────────────
+
+  @Get('payroll/salary-structures')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:payroll:manage')
+  @ApiOperation({ summary: 'List active employees with their current salary structure (if set)' })
+  @ApiResponse({ status: 200, description: 'Employee + salary structure rows' })
+  async listSalaryStructures(@CurrentUser('sub') userId: string, @Headers('x-store-id') headerStoreId: string) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.listSalaryStructuresService.execute(store.id);
+  }
+
+  @Put('payroll/salary-structures/:employeeId')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:payroll:manage')
+  @ApiOperation({ summary: "Set an employee's salary structure (creates or overwrites)" })
+  @ApiResponse({ status: 200, description: 'Salary structure saved' })
+  async setSalaryStructure(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('employeeId') employeeId: string,
+    @Body() dto: SetSalaryStructureDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.setSalaryStructureService.execute(store.tenantId, store.id, employeeId, dto);
+  }
+
+  @Post('payroll/runs')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:payroll:manage')
+  @ApiOperation({ summary: 'Generate a draft payroll run for a month, one payslip per active employee with a salary structure' })
+  @ApiResponse({ status: 201, description: 'Payroll run generated' })
+  async generatePayrollRun(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Body() dto: GeneratePayrollRunDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.generatePayrollRunService.execute(store.tenantId, store.id, userId, dto);
+  }
+
+  @Get('payroll/runs')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:payroll:manage')
+  @ApiOperation({ summary: 'List payroll runs, most recent first' })
+  @ApiResponse({ status: 200, description: 'List of payroll runs' })
+  async listPayrollRuns(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Query() query: ListPayrollRunsQueryDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.listPayrollRunsService.execute(store.id, query);
+  }
+
+  @Get('payroll/runs/:id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:payroll:manage')
+  @ApiOperation({ summary: 'Get a payroll run with its payslips' })
+  @ApiResponse({ status: 200, description: 'Payroll run detail' })
+  async getPayrollRun(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') runId: string,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.getPayrollRunService.execute(store.id, runId);
+  }
+
+  @Post('payroll/runs/:id/finalize')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:payroll:manage')
+  @ApiOperation({ summary: 'Finalize a draft payroll run, locking its payslips' })
+  @ApiResponse({ status: 200, description: 'Payroll run finalized' })
+  async finalizePayrollRun(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') runId: string,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.finalizePayrollRunService.execute(store.id, runId);
+  }
+
+  @Post('payroll/runs/:id/mark-paid')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:payroll:manage')
+  @ApiOperation({ summary: 'Mark a finalized payroll run as paid' })
+  @ApiResponse({ status: 200, description: 'Payroll run marked paid' })
+  async markPayrollRunPaid(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') runId: string,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.markPayrollRunPaidService.execute(store.id, runId);
+  }
+
+  @Delete('payroll/runs/:id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:payroll:manage')
+  @ApiOperation({ summary: 'Delete a draft payroll run' })
+  @ApiResponse({ status: 200, description: 'Payroll run deleted' })
+  async deletePayrollRun(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') runId: string,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    await this.deletePayrollRunService.execute(store.id, runId);
+    return { success: true, message: 'Payroll run deleted successfully.' };
   }
 }
