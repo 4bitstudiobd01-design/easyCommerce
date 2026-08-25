@@ -3,10 +3,12 @@
 import React, { useState } from 'react';
 import { PayrollRunsTable } from './PayrollRunsTable';
 import { SalaryStructuresTable } from './SalaryStructuresTable';
+import { TaxSlabsTable } from './TaxSlabsTable';
 
 const TABS = [
   { key: 'runs', label: 'Payroll Runs' },
   { key: 'structures', label: 'Salary Structures' },
+  { key: 'tax', label: 'Tax Slabs' },
 ] as const;
 
 type TabKey = (typeof TABS)[number]['key'];
@@ -36,7 +38,9 @@ export function PayrollManagementView() {
         })}
       </ul>
 
-      {activeTab === 'runs' ? <PayrollRunsTable /> : <SalaryStructuresTable />}
+      {activeTab === 'runs' && <PayrollRunsTable />}
+      {activeTab === 'structures' && <SalaryStructuresTable />}
+      {activeTab === 'tax' && <TaxSlabsTable />}
     </div>
   );
 }

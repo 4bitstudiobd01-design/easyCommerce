@@ -14,6 +14,7 @@ import { ExpenseEntity } from './entities/expense.entity';
 import { SalaryStructureEntity } from './entities/salary-structure.entity';
 import { PayrollRunEntity } from './entities/payroll-run.entity';
 import { PayslipEntity } from './entities/payslip.entity';
+import { TaxSlabEntity } from './entities/tax-slab.entity';
 import { TenantModule } from '../tenant/tenant.module';
 import { StaffModule } from '../staff/staff.module';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
@@ -67,6 +68,10 @@ import { GetPayrollRunService } from './services/get-payroll-run.service';
 import { FinalizePayrollRunService } from './services/finalize-payroll-run.service';
 import { MarkPayrollRunPaidService } from './services/mark-payroll-run-paid.service';
 import { DeletePayrollRunService } from './services/delete-payroll-run.service';
+import { GetTaxSlabsService } from './services/get-tax-slabs.service';
+import { SetTaxSlabsService } from './services/set-tax-slabs.service';
+import { ComputeTaxService } from './services/compute-tax.service';
+import { EstimateTaxService } from './services/estimate-tax.service';
 
 @Module({
   imports: [
@@ -83,6 +88,7 @@ import { DeletePayrollRunService } from './services/delete-payroll-run.service';
       SalaryStructureEntity,
       PayrollRunEntity,
       PayslipEntity,
+      TaxSlabEntity,
     ]),
     TenantModule,
     // Provides GetMyPermissionsService, the source of truth PermissionsGuard uses to
@@ -147,6 +153,10 @@ import { DeletePayrollRunService } from './services/delete-payroll-run.service';
     FinalizePayrollRunService,
     MarkPayrollRunPaidService,
     DeletePayrollRunService,
+    GetTaxSlabsService,
+    SetTaxSlabsService,
+    ComputeTaxService,
+    EstimateTaxService,
     JwtAuthGuard,
     PermissionsGuard,
   ],

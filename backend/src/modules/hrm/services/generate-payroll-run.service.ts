@@ -5,6 +5,8 @@ import { PayrollRunEntity, PayrollRunStatusEnum } from '../entities/payroll-run.
 import { PayslipEntity } from '../entities/payslip.entity';
 import { EmployeeEntity, EmploymentStatusEnum } from '../entities/employee.entity';
 import { SalaryStructureEntity } from '../entities/salary-structure.entity';
+import { TaxSlabEntity } from '../entities/tax-slab.entity';
+import { ComputeTaxService } from './compute-tax.service';
 import { GeneratePayrollRunDto } from '../dto/payroll.dto';
 
 @Injectable()
@@ -18,6 +20,9 @@ export class GeneratePayrollRunService {
     private readonly employeeRepository: Repository<EmployeeEntity>,
     @InjectRepository(SalaryStructureEntity)
     private readonly salaryStructureRepository: Repository<SalaryStructureEntity>,
+    @InjectRepository(TaxSlabEntity)
+    private readonly taxSlabRepository: Repository<TaxSlabEntity>,
+    private readonly computeTaxService: ComputeTaxService,
   ) {}
 
   /**
@@ -25,8 +30,9 @@ export class GeneratePayrollRunService {
    * without one are skipped (counted, not silently dropped) — HR sets up pay structures
    * from the Salary Structures tab before running payroll for a new hire.
    *
-   * Tax is intentionally left at 0 here; Bangladesh tax calculation is a separate,
-   * professionally-reviewed phase and must not be guessed at in this generator.
+   * Tax is computed from the store's own configured tax slabs (Settings > Tax) for the
+   * run's fiscal year, if any are set — this module never assumes or hardcodes a rate.
+   * If no slabs are configured, tax stays 0, matching the pre-tax-module behavior.
    */
   async execute(tenantId: string, storeId: string, createdByUserId: string, dto: GeneratePayrollRunDto): Promise<PayrollRunEntity> {
     const existing = await this.payrollRunRepository.findOne({ where: { storeId, month: dto.month, year: dto.year } });
@@ -34,9 +40,11 @@ export class GeneratePayrollRunService {
       throw new ConflictException(`A payroll run for ${dto.month}/${dto.year} already exists.`);
     }
 
-    const [employees, structures] = await Promise.all([
+    const fiscalYear = this.computeTaxService.getFiscalYear(dto.month, dto.year);
+    const [employees, structures, taxSlabs] = await Promise.all([
       this.employeeRepository.find({ where: { storeId, employmentStatus: EmploymentStatusEnum.ACTIVE } }),
       this.salaryStructureRepository.find({ where: { storeId } }),
+      this.taxSlabRepository.find({ where: { storeId, fiscalYear }, order: { sortOrder: 'ASC' } }),
     ]);
     const structureByEmployeeId = new Map(structures.map((s) => [s.employeeId, s]));
 
@@ -71,7 +79,8 @@ export class GeneratePayrollRunService {
       const providentFund = Number(structure.providentFundDeduction);
 
       const gross = basic + hra + medical + conveyance + other;
-      const deductions = providentFund;
+      const monthlyTax = taxSlabs.length > 0 ? this.computeTaxService.computeAnnualTax(taxSlabs, gross * 12).monthlyTax : 0;
+      const deductions = providentFund + monthlyTax;
       const net = gross - deductions;
 
       await this.payslipRepository.save(
@@ -87,7 +96,7 @@ export class GeneratePayrollRunService {
           otherAllowance: other.toFixed(2),
           grossSalary: gross.toFixed(2),
           providentFundDeduction: providentFund.toFixed(2),
-          taxDeduction: '0.00',
+          taxDeduction: monthlyTax.toFixed(2),
           otherDeductions: '0.00',
           netSalary: net.toFixed(2),
         }),

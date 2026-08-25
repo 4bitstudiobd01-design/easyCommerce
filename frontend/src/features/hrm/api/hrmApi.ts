@@ -415,6 +415,45 @@ export interface GeneratePayrollRunRequest {
   year: number;
 }
 
+export interface TaxSlab {
+  id: string;
+  tenantId: string;
+  storeId: string;
+  fiscalYear: string;
+  minAmount: string;
+  maxAmount?: string;
+  ratePercent: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TaxSlabInput {
+  minAmount: string;
+  maxAmount?: string;
+  ratePercent: number;
+}
+
+export interface SetTaxSlabsRequest {
+  fiscalYear: string;
+  slabs: TaxSlabInput[];
+}
+
+export interface TaxSlabBreakdown {
+  minAmount: number;
+  maxAmount: number | null;
+  ratePercent: number;
+  taxableInSlab: number;
+  taxInSlab: number;
+}
+
+export interface TaxComputationResult {
+  annualIncome: number;
+  annualTax: number;
+  monthlyTax: number;
+  breakdown: TaxSlabBreakdown[];
+}
+
 export interface ListEmployeesParams {
   search?: string;
   departmentId?: string;
@@ -431,7 +470,7 @@ export const hrmApi = createApi({
   baseQuery: createBaseQueryWithReauth(
     process.env.NEXT_PUBLIC_API_URL?.replace('/orders', '') || 'http://localhost:5001/api/v1',
   ),
-  tagTypes: ['Department', 'Employee', 'Attendance', 'Holiday', 'LeavePolicy', 'LeaveRequest', 'LeaveBalance', 'Shift', 'Roster', 'Expense', 'SalaryStructure', 'PayrollRun'],
+  tagTypes: ['Department', 'Employee', 'Attendance', 'Holiday', 'LeavePolicy', 'LeaveRequest', 'LeaveBalance', 'Shift', 'Roster', 'Expense', 'SalaryStructure', 'PayrollRun', 'TaxSlab'],
   endpoints: (builder) => ({
     getDepartments: builder.query<Department[], void>({
       query: () => '/hr/departments',
@@ -682,6 +721,21 @@ export const hrmApi = createApi({
       invalidatesTags: ['PayrollRun'],
       transformResponse: unwrap<{ success: boolean; message: string }>,
     }),
+
+    getTaxSlabs: builder.query<TaxSlab[], { fiscalYear: string }>({
+      query: (params) => ({ url: '/hr/tax/slabs', params }),
+      providesTags: ['TaxSlab'],
+      transformResponse: unwrap<TaxSlab[]>,
+    }),
+    setTaxSlabs: builder.mutation<TaxSlab[], SetTaxSlabsRequest>({
+      query: (body) => ({ url: '/hr/tax/slabs', method: 'PUT', body }),
+      invalidatesTags: ['TaxSlab'],
+      transformResponse: unwrap<TaxSlab[]>,
+    }),
+    estimateTax: builder.query<TaxComputationResult, { fiscalYear: string; annualIncome: string }>({
+      query: (params) => ({ url: '/hr/tax/estimate', params }),
+      transformResponse: unwrap<TaxComputationResult>,
+    }),
   }),
 });
 
@@ -732,6 +786,9 @@ export const {
   useFinalizePayrollRunMutation,
   useMarkPayrollRunPaidMutation,
   useDeletePayrollRunMutation,
+  useGetTaxSlabsQuery,
+  useSetTaxSlabsMutation,
+  useLazyEstimateTaxQuery,
 } = hrmApi;
 
 /** Streams the authenticated document endpoint and opens it in a new tab. RTK Query's

@@ -88,6 +88,10 @@ import { FinalizePayrollRunService } from './services/finalize-payroll-run.servi
 import { MarkPayrollRunPaidService } from './services/mark-payroll-run-paid.service';
 import { DeletePayrollRunService } from './services/delete-payroll-run.service';
 import { SetSalaryStructureDto, GeneratePayrollRunDto, ListPayrollRunsQueryDto } from './dto/payroll.dto';
+import { GetTaxSlabsService } from './services/get-tax-slabs.service';
+import { SetTaxSlabsService } from './services/set-tax-slabs.service';
+import { EstimateTaxService } from './services/estimate-tax.service';
+import { SetTaxSlabsDto, GetTaxSlabsQueryDto, EstimateTaxQueryDto } from './dto/tax.dto';
 
 @ApiTags('HR — Employees & Departments')
 @Controller('hr')
@@ -142,6 +146,9 @@ export class HrmController {
     private readonly finalizePayrollRunService: FinalizePayrollRunService,
     private readonly markPayrollRunPaidService: MarkPayrollRunPaidService,
     private readonly deletePayrollRunService: DeletePayrollRunService,
+    private readonly getTaxSlabsService: GetTaxSlabsService,
+    private readonly setTaxSlabsService: SetTaxSlabsService,
+    private readonly estimateTaxService: EstimateTaxService,
   ) {}
 
   private async getStoreContext(userId: string, storeIdHeader?: string) {
@@ -930,5 +937,52 @@ export class HrmController {
     const store = await this.getStoreContext(userId, headerStoreId);
     await this.deletePayrollRunService.execute(store.id, runId);
     return { success: true, message: 'Payroll run deleted successfully.' };
+  }
+
+  // ─── Tax ────────────────────────────────────────────────────────
+
+  @Get('tax/slabs')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:payroll:manage')
+  @ApiOperation({ summary: "Get this store's tax slabs for a fiscal year (accountant-configured, not pre-filled)" })
+  @ApiResponse({ status: 200, description: 'List of tax slabs' })
+  async getTaxSlabs(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Query() query: GetTaxSlabsQueryDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.getTaxSlabsService.execute(store.id, query.fiscalYear);
+  }
+
+  @Put('tax/slabs')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:payroll:manage')
+  @ApiOperation({ summary: 'Replace this store\'s tax slabs for a fiscal year' })
+  @ApiResponse({ status: 200, description: 'Tax slabs saved' })
+  async setTaxSlabs(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Body() dto: SetTaxSlabsDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.setTaxSlabsService.execute(store.tenantId, store.id, dto);
+  }
+
+  @Get('tax/estimate')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:payroll:manage')
+  @ApiOperation({ summary: 'Preview the tax computed for a given annual income under the configured slabs' })
+  @ApiResponse({ status: 200, description: 'Tax computation breakdown' })
+  async estimateTax(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Query() query: EstimateTaxQueryDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.estimateTaxService.execute(store.id, query);
   }
 }
