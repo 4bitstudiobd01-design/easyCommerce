@@ -22,7 +22,7 @@ import { ImportCustomersModal } from '@/features/customer/components/ImportCusto
 import { CustomerAnalyticsView } from '@/features/customer/components/CustomerAnalyticsView';
 import { CustomerSegmentsView } from '@/features/customer/components/CustomerSegmentsView';
 
-import { Plus, Download, Upload, ChevronLeft, ChevronRight, UserX, UserCheck, ShieldAlert, ShieldCheck, X, Loader2, Users, BarChart3, Sparkles, Filter } from 'lucide-react';
+import { Plus, Download, Upload, ChevronLeft, ChevronRight, UserX, UserCheck, ShieldAlert, ShieldCheck, X, Loader2, Users, BarChart3, Layers, Filter } from 'lucide-react';
 import { useDebounce } from '@/hooks/useDebounce';
 import { toast } from 'sonner';
 
@@ -301,7 +301,7 @@ export default function CustomersPage() {
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
           }`}
         >
-          <Sparkles className="w-3.5 h-3.5" />
+          <Layers className="w-3.5 h-3.5" />
           Segments & Groups
         </button>
       </div>

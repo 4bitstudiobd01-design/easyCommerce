@@ -44,6 +44,7 @@ import { ExportCustomersService } from './services/export-customers.service';
 import { ImportCustomersService } from './services/import-customers.service';
 import { GetCustomerAnalyticsService } from './services/get-customer-analytics.service';
 import { ManageCustomerSegmentService } from './services/manage-customer-segment.service';
+import { FraudCheckService } from './services/fraud-check.service';
 
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
@@ -86,6 +87,7 @@ export class CustomerController {
     private readonly importCustomersService: ImportCustomersService,
     private readonly getCustomerAnalyticsService: GetCustomerAnalyticsService,
     private readonly manageCustomerSegmentService: ManageCustomerSegmentService,
+    private readonly fraudCheckService: FraudCheckService,
   ) {}
 
   private async getMerchantTenantContext(userId: string, storeId?: string): Promise<{ tenantId: string; storeId?: string }> {
@@ -287,6 +289,37 @@ export class CustomerController {
   ) {
     const ctx = await this.getMerchantTenantContext(userId, storeId);
     return this.bulkCustomerStatusService.execute(ctx.tenantId, dto);
+  }
+
+  @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
+  @Get('fraud-check/by-phone')
+  @ApiOperation({ summary: 'Look up FraudBD courier delivery/cancel history by phone number' })
+  @ApiResponse({ status: 200, description: 'Fraud check result (cached or freshly fetched)' })
+  async fraudCheckByPhone(
+    @CurrentUser('sub') userId: string,
+    @Query('phone') phone: string,
+    @Query('refresh') refresh: string | undefined,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    if (!phone?.trim()) {
+      throw new BadRequestException('A phone number is required.');
+    }
+    const ctx = await this.getMerchantTenantContext(userId, storeId);
+    return this.fraudCheckService.executeForPhone(phone.trim(), ctx.tenantId, refresh === 'true');
+  }
+
+  @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
+  @Get(':id/fraud-check')
+  @ApiOperation({ summary: 'Look up FraudBD courier delivery/cancel history for a customer' })
+  @ApiResponse({ status: 200, description: 'Fraud check result (cached or freshly fetched)' })
+  async fraudCheckForCustomer(
+    @CurrentUser('sub') userId: string,
+    @Param('id') id: string,
+    @Query('refresh') refresh: string | undefined,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const ctx = await this.getMerchantTenantContext(userId, storeId);
+    return this.fraudCheckService.executeForCustomer(id, ctx.tenantId, refresh === 'true');
   }
 
   @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)

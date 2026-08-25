@@ -39,6 +39,7 @@ import { ImportCustomersService } from './services/import-customers.service';
 
 import { GetCustomerAnalyticsService } from './services/get-customer-analytics.service';
 import { ManageCustomerSegmentService } from './services/manage-customer-segment.service';
+import { FraudCheckService } from './services/fraud-check.service';
 
 @Module({
   imports: [
@@ -85,6 +86,7 @@ import { ManageCustomerSegmentService } from './services/manage-customer-segment
     ImportCustomersService,
     GetCustomerAnalyticsService,
     ManageCustomerSegmentService,
+    FraudCheckService,
   ],
   exports: [
     CreateCustomerService,
@@ -110,6 +112,7 @@ import { ManageCustomerSegmentService } from './services/manage-customer-segment
     ImportCustomersService,
     GetCustomerAnalyticsService,
     ManageCustomerSegmentService,
+    FraudCheckService,
     TypeOrmModule,
   ],
 })

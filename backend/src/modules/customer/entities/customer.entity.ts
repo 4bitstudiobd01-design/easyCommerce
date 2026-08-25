@@ -100,6 +100,35 @@ export class CustomerEntity {
   @Column({ type: 'varchar', length: 255, nullable: true })
   registrationReferrerHost?: string;
 
+  /**
+   * Cached FraudBD (fraudbd.com) courier delivery-history check, keyed by
+   * phone. Fetched on-demand (customer detail view, order row expand) and
+   * cached here rather than re-queried every render — FraudBD is rate
+   * limited (60 req/min) and the underlying delivery history changes slowly.
+   * Null until the first check is performed for this customer.
+   */
+  @Column({ type: 'int', nullable: true })
+  fraudTotalOrders?: number;
+
+  @Column({ type: 'int', nullable: true })
+  fraudSuccessOrders?: number;
+
+  @Column({ type: 'int', nullable: true })
+  fraudCancelOrders?: number;
+
+  @Column({ type: 'decimal', precision: 5, scale: 2, nullable: true })
+  fraudSuccessRate?: number;
+
+  @Column({ type: 'decimal', precision: 5, scale: 2, nullable: true })
+  fraudCancelRate?: number;
+
+  /** Per-courier breakdown (Pathao/Steadfast/Paperfly/Redx), stored as returned by FraudBD. */
+  @Column({ type: 'jsonb', nullable: true })
+  fraudSummaries?: Record<string, unknown>;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  fraudCheckedAt?: Date;
+
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 

@@ -8,7 +8,7 @@ import {
 } from 'typeorm';
 
 export interface SegmentRuleCondition {
-  field: 'ordersCount' | 'totalSpent' | 'status' | 'source' | 'daysSinceLastOrder';
+  field: 'ordersCount' | 'totalSpent' | 'status' | 'source' | 'origin' | 'daysSinceLastOrder';
   operator: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'in';
   value: any;
 }

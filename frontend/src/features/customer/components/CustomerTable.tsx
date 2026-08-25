@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Customer } from '../api/customerApi';
 import { getOriginLabel } from '../utils/origin';
+import { FraudRiskBadge } from './FraudRiskBadge';
 import { MoreVertical, Eye, Edit2, UserCheck, UserX, ShieldAlert, ShieldCheck, ArrowUp, ArrowDown, ArrowUpDown, SearchX, RefreshCw } from 'lucide-react';
 
 interface CustomerTableProps {
@@ -263,6 +264,12 @@ export function CustomerTable({
                         <span className="md:hidden text-[11px] text-slate-500 block truncate">
                           {customer.phone}
                         </span>
+                        <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
+                          <FraudRiskBadge
+                            customerId={customer.id}
+                            customerLabel={`${customer.firstName} ${customer.lastName} · ${customer.phone}`}
+                          />
+                        </div>
                       </div>
                     </div>
                   </td>

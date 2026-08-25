@@ -16,6 +16,7 @@ import { OrderDetailPanel } from './OrderDetailPanel';
 import { useBulkUpdateOrderStatusMutation } from '../api/orderApi';
 import { ThermalLabelModal } from './ThermalLabelModal';
 import { useDebounce } from '@/hooks/useDebounce';
+import { FraudRiskBadge } from '@/features/customer/components/FraudRiskBadge';
 import {
   ShoppingCart,
   MapPin,
@@ -819,6 +820,11 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                             >
                               {[order.shippingAddress, order.area, order.thana, order.district, order.city].filter(Boolean).join(', ') || '-'}
                             </p>
+                            {order.customerPhone && (
+                              <div className="mt-1.5">
+                                <FraudRiskBadge phone={order.customerPhone} customerLabel={`${order.customerName} · ${order.customerPhone}`} />
+                              </div>
+                            )}
                           </div>
                         </div>
                       </td>

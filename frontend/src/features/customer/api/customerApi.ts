@@ -154,7 +154,7 @@ export interface TopCustomerItem {
 }
 
 export interface SegmentRuleCondition {
-  field: 'ordersCount' | 'totalSpent' | 'status' | 'source' | 'daysSinceLastOrder';
+  field: 'ordersCount' | 'totalSpent' | 'status' | 'source' | 'origin' | 'daysSinceLastOrder';
   operator: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'in';
   value: any;
 }
@@ -162,6 +162,29 @@ export interface SegmentRuleCondition {
 export interface SegmentRuleGroup {
   matchType: 'ALL' | 'ANY';
   conditions: SegmentRuleCondition[];
+}
+
+export interface FraudCourierSummary {
+  logo?: string;
+  data_type?: 'rating' | 'delivery';
+  customer_rating?: string;
+  risk_level?: string;
+  message?: string;
+  total: number;
+  success: number;
+  cancel: number;
+}
+
+export interface FraudCheckResult {
+  phone: string;
+  summaries: Record<string, FraudCourierSummary>;
+  totalOrders: number;
+  successOrders: number;
+  cancelOrders: number;
+  successRate: number;
+  cancelRate: number;
+  checkedAt: string;
+  cached: boolean;
 }
 
 export interface CustomerSegment {
@@ -284,6 +307,20 @@ export const customerApi = createApi({
       query: (id) => `/${id}`,
       providesTags: (result, error, id) => [{ type: 'Customer', id }],
       transformResponse: (response: { data: CustomerDetail }) => response.data || response,
+    }),
+    getFraudCheckForCustomer: builder.query<FraudCheckResult, { customerId: string; refresh?: boolean }>({
+      query: ({ customerId, refresh }) => ({
+        url: `/${customerId}/fraud-check`,
+        params: refresh ? { refresh: 'true' } : undefined,
+      }),
+      transformResponse: (response: { data: FraudCheckResult }) => response.data || response,
+    }),
+    getFraudCheckByPhone: builder.query<FraudCheckResult, { phone: string; refresh?: boolean }>({
+      query: ({ phone, refresh }) => ({
+        url: `/fraud-check/by-phone`,
+        params: refresh ? { phone, refresh: 'true' } : { phone },
+      }),
+      transformResponse: (response: { data: FraudCheckResult }) => response.data || response,
     }),
     createCustomer: builder.mutation<Customer, CreateCustomerRequest>({
       query: (body) => ({
@@ -543,6 +580,8 @@ export const {
   useGetCustomersQuery,
   useGetCustomerKpisQuery,
   useGetCustomerByIdQuery,
+  useLazyGetFraudCheckForCustomerQuery,
+  useLazyGetFraudCheckByPhoneQuery,
   useCreateCustomerMutation,
   useUpdateCustomerMutation,
   useUpdateCustomerStatusMutation,

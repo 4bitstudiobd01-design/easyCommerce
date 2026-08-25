@@ -121,16 +121,16 @@ export class ManageCustomerSegmentService {
       qb.leftJoin(
         (subQb) => {
           return subQb
-            .select('COALESCE(o."customerId", o."customerPhone")', 'cust_key')
+            .select('COALESCE(o."customerId"::text, o."customerPhone")', 'cust_key')
             .addSelect('COUNT(o.id)::int', 'orders_count')
             .addSelect('COALESCE(SUM(CASE WHEN o."orderStatus" NOT IN (\'CANCELLED\', \'RETURNED\') THEN o."grandTotal" ELSE 0 END), 0)::numeric', 'total_spent')
             .addSelect('MAX(o."createdAt")', 'last_order_at')
             .from('orders', 'o')
             .where('o."tenantId" = :tId', { tId: tenantId })
-            .groupBy('COALESCE(o."customerId", o."customerPhone")');
+            .groupBy('COALESCE(o."customerId"::text, o."customerPhone")');
         },
         'ostats',
-        'ostats.cust_key = c.id OR ostats.cust_key = c.phone',
+        'ostats.cust_key = c.id::text OR ostats.cust_key = c.phone',
       );
     }
 
@@ -149,6 +149,8 @@ export class ManageCustomerSegmentService {
         colExpr = 'EXTRACT(DAY FROM (NOW() - ostats.last_order_at))';
       } else if (cond.field === 'status') {
         colExpr = 'c.status';
+      } else if (cond.field === 'origin') {
+        colExpr = 'LOWER(COALESCE(NULLIF(c."registrationUtmSource", \'\'), NULLIF(c."registrationChannel", \'\'), \'direct\'))';
       } else if (cond.field === 'source') {
         colExpr = 'c.source';
       }

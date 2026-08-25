@@ -12,9 +12,9 @@ import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class SegmentRuleConditionDto {
-  @ApiProperty({ enum: ['ordersCount', 'totalSpent', 'status', 'source', 'daysSinceLastOrder'] })
+  @ApiProperty({ enum: ['ordersCount', 'totalSpent', 'status', 'source', 'origin', 'daysSinceLastOrder'] })
   @IsString()
-  field: 'ordersCount' | 'totalSpent' | 'status' | 'source' | 'daysSinceLastOrder';
+  field: 'ordersCount' | 'totalSpent' | 'status' | 'source' | 'origin' | 'daysSinceLastOrder';
 
   @ApiProperty({ enum: ['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'in'] })
   @IsString()

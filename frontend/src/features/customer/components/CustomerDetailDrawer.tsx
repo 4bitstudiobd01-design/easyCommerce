@@ -18,6 +18,7 @@ import {
   CustomerStatusType,
 } from '../api/customerApi';
 import { getOriginLabel } from '../utils/origin';
+import { FraudRiskBadge } from './FraudRiskBadge';
 import {
   X,
   Phone,
@@ -614,6 +615,22 @@ export function CustomerDetailDrawer({
                       )}
                     </div>
                   )}
+                </div>
+
+                {/* Fraud Check Card */}
+                <div className="bg-white rounded-2xl border border-slate-200/80 p-4 space-y-3 shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-extrabold text-xs text-slate-400 uppercase tracking-wider">
+                      Courier Fraud Check
+                    </h4>
+                    <FraudRiskBadge
+                      customerId={customer.id}
+                      customerLabel={`${customer.firstName} ${customer.lastName} · ${customer.phone}`}
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    Cross-courier delivery and cancellation history from FraudBD, keyed by this customer's phone number.
+                  </p>
                 </div>
 
                 {/* Statistics Card */}
