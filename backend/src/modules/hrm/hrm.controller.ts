@@ -97,6 +97,7 @@ import { ListNoticesService } from './services/list-notices.service';
 import { UpdateNoticeService } from './services/update-notice.service';
 import { DeleteNoticeService } from './services/delete-notice.service';
 import { CreateNoticeDto, UpdateNoticeDto, ListNoticesQueryDto } from './dto/notice.dto';
+import { GetHrOverviewReportService } from './services/get-hr-overview-report.service';
 
 @ApiTags('HR — Employees & Departments')
 @Controller('hr')
@@ -158,6 +159,7 @@ export class HrmController {
     private readonly listNoticesService: ListNoticesService,
     private readonly updateNoticeService: UpdateNoticeService,
     private readonly deleteNoticeService: DeleteNoticeService,
+    private readonly getHrOverviewReportService: GetHrOverviewReportService,
   ) {}
 
   private async getStoreContext(userId: string, storeIdHeader?: string) {
@@ -1056,5 +1058,25 @@ export class HrmController {
     const store = await this.getStoreContext(userId, headerStoreId);
     await this.deleteNoticeService.execute(store.id, noticeId);
     return { success: true, message: 'Notice deleted successfully.' };
+  }
+
+  // ─── Reports ────────────────────────────────────────────────────
+
+  @Get('reports/overview')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions(
+    'hr:employees:manage',
+    'hr:employees:read',
+    'hr:attendance:manage',
+    'hr:leave:manage',
+    'hr:payroll:manage',
+    'hr:expenses:manage',
+  )
+  @ApiOperation({ summary: 'HR overview: headcount, today\'s attendance, leave, payroll, and expense summaries' })
+  @ApiResponse({ status: 200, description: 'HR overview report' })
+  async getHrOverviewReport(@CurrentUser('sub') userId: string, @Headers('x-store-id') headerStoreId: string) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.getHrOverviewReportService.execute(store.id);
   }
 }

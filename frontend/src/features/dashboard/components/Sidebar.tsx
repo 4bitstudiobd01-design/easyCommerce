@@ -30,7 +30,8 @@ import {
   PartyPopper,
   Clock3,
   Receipt,
-  Wallet
+  Wallet,
+  BarChart3
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -436,6 +437,19 @@ export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onCl
             <div className="flex items-center gap-2.5">
               <Megaphone className={iconClass} strokeWidth={iconStroke} />
               {!isDesktopCollapsed && <span>Notice Board</span>}
+            </div>
+          </Link>
+          <Link
+            href="/dashboard/hr/reports"
+            className={navItemClass('/dashboard/hr/reports')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "HR Reports")}
+            onFocus={(e) => handleTooltipEnter(e, "HR Reports")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <BarChart3 className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>HR Reports</span>}
             </div>
           </Link>
 

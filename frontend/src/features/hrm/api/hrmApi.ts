@@ -487,6 +487,30 @@ export interface UpdateNoticeRequest {
   expiresAt?: string | null;
 }
 
+export interface HrOverviewReport {
+  headcount: {
+    total: number;
+    byDepartment: Array<{ departmentName: string; count: number }>;
+    byEmploymentType: Record<EmploymentType, number>;
+  };
+  attendanceToday: Record<AttendanceStatus | 'NOT_MARKED', number>;
+  leave: {
+    pendingRequests: number;
+    approvedThisMonth: number;
+    approvedDaysThisYearByType: Record<LeaveType, number>;
+  };
+  payroll: {
+    latestRun: { month: number; year: number; status: PayrollRunStatus; totalNetAmount: string } | null;
+    runsThisYear: number;
+  };
+  expenses: {
+    pendingCount: number;
+    pendingAmount: string;
+    approvedNotReimbursedAmount: string;
+    reimbursedThisMonthAmount: string;
+  };
+}
+
 export interface ListEmployeesParams {
   search?: string;
   departmentId?: string;
@@ -790,6 +814,11 @@ export const hrmApi = createApi({
       invalidatesTags: ['Notice'],
       transformResponse: unwrap<{ success: boolean; message: string }>,
     }),
+
+    getHrOverviewReport: builder.query<HrOverviewReport, void>({
+      query: () => '/hr/reports/overview',
+      transformResponse: unwrap<HrOverviewReport>,
+    }),
   }),
 });
 
@@ -847,6 +876,7 @@ export const {
   useCreateNoticeMutation,
   useUpdateNoticeMutation,
   useDeleteNoticeMutation,
+  useGetHrOverviewReportQuery,
 } = hrmApi;
 
 /** Streams the authenticated document endpoint and opens it in a new tab. RTK Query's

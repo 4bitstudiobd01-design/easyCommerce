@@ -77,6 +77,7 @@ import { CreateNoticeService } from './services/create-notice.service';
 import { ListNoticesService } from './services/list-notices.service';
 import { UpdateNoticeService } from './services/update-notice.service';
 import { DeleteNoticeService } from './services/delete-notice.service';
+import { GetHrOverviewReportService } from './services/get-hr-overview-report.service';
 
 @Module({
   imports: [
@@ -167,6 +168,7 @@ import { DeleteNoticeService } from './services/delete-notice.service';
     ListNoticesService,
     UpdateNoticeService,
     DeleteNoticeService,
+    GetHrOverviewReportService,
     JwtAuthGuard,
     PermissionsGuard,
   ],
