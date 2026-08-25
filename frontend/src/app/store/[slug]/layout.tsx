@@ -9,7 +9,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const slug = params.slug;
 
   try {
-    const res = await fetch(`http://localhost:5001/api/v1/seo/public/store/${slug}`, {
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://easycoerzserver.vercel.app/api/v1';
+    const res = await fetch(`${apiBase}/seo/public/store/${slug}`, {
       next: { revalidate: 60 },
     });
 
