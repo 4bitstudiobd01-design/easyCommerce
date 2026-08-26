@@ -15,6 +15,7 @@ import { OpenAiProvider } from './ai-providers/openai-ai.provider';
 import { TelegramChannelService } from './telegram-channel.service';
 import { WhatsAppChannelService } from './whatsapp-channel.service';
 import { FacebookChannelService } from './facebook-channel.service';
+import { InstagramChannelService } from './instagram-channel.service';
 
 export interface InboundMessageAiContext {
   tenantId: string;
@@ -49,6 +50,8 @@ export class OmnichannelAiAutoReplyService {
     private readonly whatsappService: WhatsAppChannelService,
     @Inject(forwardRef(() => FacebookChannelService))
     private readonly facebookService: FacebookChannelService,
+    @Inject(forwardRef(() => InstagramChannelService))
+    private readonly instagramService: InstagramChannelService,
   ) {}
 
   /**
@@ -307,7 +310,9 @@ export class OmnichannelAiAutoReplyService {
         await this.whatsappService.sendMessage(tenantId, recipientId, text, storeId);
       } else if (platform === 'telegram') {
         await this.telegramService.sendMessage(tenantId, recipientId, text, storeId);
-      } else if (platform === 'facebook' || platform === 'instagram') {
+      } else if (platform === 'instagram') {
+        await this.instagramService.sendMessage(tenantId, recipientId, text, storeId);
+      } else if (platform === 'facebook') {
         await this.facebookService.sendMessage(tenantId, recipientId, text, storeId);
       }
     } catch (err: any) {

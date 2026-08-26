@@ -114,6 +114,9 @@ export class OmnichannelCredentialsService {
         defaultHandle = `Phone ID: ${dto.credentials.phoneNumberId}`;
       } else if (dto.platform === 'facebook' && dto.credentials.pageId) {
         defaultHandle = `Page ID: ${dto.credentials.pageId}`;
+      } else if (dto.platform === 'instagram') {
+        const igId = dto.credentials.instagramAccountId || dto.credentials.pageId;
+        if (igId) defaultHandle = `IG ID: ${igId}`;
       } else if (dto.platform === 'slack' && dto.credentials.defaultChannel) {
         defaultHandle = `#${dto.credentials.defaultChannel}`;
       }
@@ -241,7 +244,7 @@ export class OmnichannelCredentialsService {
           }
 
           const response = await fetch(
-            `https://graph.facebook.com/v19.0/${phoneNumberId.trim()}?access_token=${accessToken.trim()}`,
+            `https://graph.facebook.com/v19.0/${phoneNumberId.trim()}?access_token=${encodeURIComponent(accessToken.trim())}`,
           );
           const data = await response.json();
 
@@ -275,10 +278,9 @@ export class OmnichannelCredentialsService {
           };
         }
 
-        case 'facebook':
-        case 'instagram': {
+        case 'facebook': {
           const token = credsToTest.pageAccessToken || credsToTest.accessToken;
-          const pageId = credsToTest.pageId || credsToTest.instagramAccountId;
+          const pageId = credsToTest.pageId;
           if (!token) {
             return {
               success: false,
@@ -287,7 +289,7 @@ export class OmnichannelCredentialsService {
           }
 
           let response = await fetch(
-            `https://graph.facebook.com/v19.0/me?fields=id,name&access_token=${token.trim()}`,
+            `https://graph.facebook.com/v19.0/me?fields=id,name&access_token=${encodeURIComponent(token.trim())}`,
           );
           let data = await response.json();
 
@@ -309,7 +311,7 @@ export class OmnichannelCredentialsService {
             }
 
             const errMsg =
-              data.error?.message || `Failed to authenticate ${platform}`;
+              data.error?.message || `Failed to authenticate facebook`;
             if (existing) {
               existing.status = 'error';
               await this.credentialRepo.save(existing);
@@ -330,8 +332,134 @@ export class OmnichannelCredentialsService {
 
           return {
             success: true,
-            message: `${platform.toUpperCase()} connected successfully for ${pageName}`,
+            message: `FACEBOOK connected successfully for ${pageName}`,
             data,
+          };
+        }
+
+        case 'instagram': {
+          const token = credsToTest.accessToken || credsToTest.pageAccessToken;
+          const accountId = credsToTest.instagramAccountId || credsToTest.pageId;
+
+          if (!token) {
+            return { success: false, message: 'Instagram Access Token is required.' };
+          }
+          if (!accountId) {
+            return { success: false, message: 'Instagram Business Account ID is required.' };
+          }
+
+          // Sanitize: remove ALL whitespace / invisible chars that survive copy-paste
+          const sanitizedToken = token.replace(/\s+/g, '').trim();
+          const sanitizedId    = String(accountId).replace(/\s+/g, '').trim();
+
+          this.logger.log(
+            `[Instagram] Validating — prefix=${sanitizedToken.slice(0, 10)}... len=${sanitizedToken.length} id=${sanitizedId}`,
+          );
+
+          let igData: any    = null;
+          let igSuccess      = false;
+          let lastError: any = null;
+
+          /**
+           * IGAA tokens (Instagram API with Instagram Login) require the token
+           * in the Authorization header — passing it as a query param triggers
+           * "Cannot parse access token" (OAuthException 190) for this token class.
+           *
+           * We try 4 strategies in order; the first one that succeeds wins.
+           */
+
+          const authHeaders = {
+            Authorization: `Bearer ${sanitizedToken}`,
+            'Content-Type': 'application/json',
+          };
+
+          // ── Strategy 1: Bearer header → GET /{ig-user-id} ──────────────────
+          if (!igSuccess) {
+            try {
+              const res  = await fetch(
+                `https://graph.facebook.com/v21.0/${sanitizedId}?fields=id,username,name,account_type,profile_picture_url`,
+                { headers: authHeaders },
+              );
+              const json = await res.json();
+              this.logger.log(`[Instagram S1] status=${res.status} body=${JSON.stringify(json).slice(0, 200)}`);
+              if (res.ok && !json.error && json.id) { igData = json; igSuccess = true; }
+              else { lastError = json.error || json; }
+            } catch (e: any) { this.logger.warn(`[Instagram S1] fetch error: ${e.message}`); }
+          }
+
+          // ── Strategy 2: Bearer header → GET /me ─────────────────────────────
+          if (!igSuccess) {
+            try {
+              const res  = await fetch(
+                `https://graph.facebook.com/v21.0/me?fields=id,username,name,account_type,profile_picture_url`,
+                { headers: authHeaders },
+              );
+              const json = await res.json();
+              this.logger.log(`[Instagram S2] status=${res.status} body=${JSON.stringify(json).slice(0, 200)}`);
+              if (res.ok && !json.error && json.id) { igData = json; igSuccess = true; }
+              else { lastError = json.error || json; }
+            } catch (e: any) { this.logger.warn(`[Instagram S2] fetch error: ${e.message}`); }
+          }
+
+          // ── Strategy 3: Query param → GET /{ig-user-id} ─────────────────────
+          if (!igSuccess) {
+            try {
+              const res  = await fetch(
+                `https://graph.facebook.com/v21.0/${sanitizedId}?fields=id,username,name,account_type&access_token=${encodeURIComponent(sanitizedToken)}`,
+              );
+              const json = await res.json();
+              this.logger.log(`[Instagram S3] status=${res.status} body=${JSON.stringify(json).slice(0, 200)}`);
+              if (res.ok && !json.error && json.id) { igData = json; igSuccess = true; }
+              else { lastError = json.error || json; }
+            } catch (e: any) { this.logger.warn(`[Instagram S3] fetch error: ${e.message}`); }
+          }
+
+          // ── Strategy 4: Query param → GET /me ───────────────────────────────
+          if (!igSuccess) {
+            try {
+              const res  = await fetch(
+                `https://graph.facebook.com/v21.0/me?fields=id,username,name,account_type&access_token=${encodeURIComponent(sanitizedToken)}`,
+              );
+              const json = await res.json();
+              this.logger.log(`[Instagram S4] status=${res.status} body=${JSON.stringify(json).slice(0, 200)}`);
+              if (res.ok && !json.error && json.id) { igData = json; igSuccess = true; }
+              else { lastError = json.error || json; }
+            } catch (e: any) { this.logger.warn(`[Instagram S4] fetch error: ${e.message}`); }
+          }
+
+          if (!igSuccess || !igData) {
+            if (existing) { existing.status = 'error'; await this.credentialRepo.save(existing); }
+
+            // Surface the exact Meta error so the user knows what to fix
+            const metaMsg = lastError?.message || 'Failed to authenticate Instagram token.';
+            const metaCode = lastError?.code ? ` (code ${lastError.code})` : '';
+            return {
+              success: false,
+              message: `Meta API error: ${metaMsg}${metaCode} — Re-generate the token from Meta Developer Console and paste immediately.`,
+            };
+          }
+
+          const igUsername = igData.username ? `@${igData.username}` : `IG ID: ${igData.id || sanitizedId}`;
+          const handle = igData.username
+            ? `@${igData.username}${igData.name ? ` (${igData.name})` : ''}`
+            : `${igData.name || 'Instagram Account'} (ID: ${igData.id || sanitizedId})`;
+
+          if (existing) {
+            existing.status         = 'connected';
+            existing.accountHandle  = handle;
+            existing.lastSyncedAt   = new Date();
+            existing.metadata = {
+              ...existing.metadata,
+              ...igData,
+              instagramAccountId: igData.id || sanitizedId,
+            };
+            await this.credentialRepo.save(existing);
+          }
+
+          return {
+            success: true,
+            message: `Instagram connected successfully for ${igUsername}`,
+            data: igData,
           };
         }
 

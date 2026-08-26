@@ -14,6 +14,7 @@ import { OmnichannelConversationStateEntity } from '../entities/omnichannel-conv
 import { TelegramChannelService } from './telegram-channel.service';
 import { WhatsAppChannelService } from './whatsapp-channel.service';
 import { FacebookChannelService } from './facebook-channel.service';
+import { InstagramChannelService } from './instagram-channel.service';
 import { OmnichannelAiAutoReplyService } from './omnichannel-ai-auto-reply.service';
 import { CustomerEntity } from '../../customer/entities/customer.entity';
 
@@ -64,6 +65,7 @@ export class OmnichannelChatService {
     private readonly telegramService: TelegramChannelService,
     private readonly whatsappService: WhatsAppChannelService,
     private readonly facebookService: FacebookChannelService,
+    private readonly instagramService: InstagramChannelService,
     @Inject(forwardRef(() => OmnichannelAiAutoReplyService))
     private readonly aiAutoReplyService: OmnichannelAiAutoReplyService,
   ) {}
@@ -133,7 +135,7 @@ export class OmnichannelChatService {
         whatsapp: `WhatsApp (+${recipientId})`,
         telegram: `Telegram (Chat ID: ${recipientId})`,
         facebook: `Facebook Messenger (PSID: ${recipientId})`,
-        instagram: `Instagram Direct`,
+        instagram: `Instagram Direct (@${recipientId})`,
         x: `X / Twitter DM`,
         slack: `Slack Channel`,
       };
@@ -142,7 +144,7 @@ export class OmnichannelChatService {
         whatsapp: ['WhatsApp Business', 'Inbound'],
         telegram: ['Telegram Bot', 'Live Chat'],
         facebook: ['Messenger', 'Meta Page'],
-        instagram: ['Direct Message'],
+        instagram: ['Instagram Direct', 'Direct Message'],
         x: ['Twitter/X'],
         slack: ['Internal'],
       };
@@ -230,8 +232,10 @@ export class OmnichannelChatService {
       convId = `wa-${recipientId}`;
     } else if (platform === 'telegram') {
       convId = `tg-${recipientId}`;
-    } else if (platform === 'facebook' || platform === 'instagram') {
+    } else if (platform === 'facebook') {
       convId = `fb-${recipientId}`;
+    } else if (platform === 'instagram') {
+      convId = `ig-${recipientId}`;
     }
 
     // Automatically pause AI auto-reply for this conversation (human agent takeover)
@@ -248,6 +252,8 @@ export class OmnichannelChatService {
         return this.whatsappService.sendMessage(tenantId, recipientId, text, storeId);
       case 'facebook':
         return this.facebookService.sendMessage(tenantId, recipientId, text, storeId);
+      case 'instagram':
+        return this.instagramService.sendMessage(tenantId, recipientId, text, storeId);
       default: {
         // Generic fallback for custom/other platforms: save to DB directly
         const record = this.messageRepo.create({
