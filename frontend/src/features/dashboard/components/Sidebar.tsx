@@ -38,7 +38,6 @@ import {
   Clock3,
   Receipt,
   Wallet,
-  ChevronDown,
   UserCircle2,
 } from 'lucide-react';
 
@@ -71,10 +70,6 @@ export const Sidebar = ({
     return false;
   };
 
-  const [isHrOpen, setIsHrOpen] = useState(() => pathname.startsWith('/dashboard/hr'));
-  useEffect(() => {
-    if (pathname.startsWith('/dashboard/hr')) setIsHrOpen(true);
-  }, [pathname]);
   const [tooltipData, setTooltipData] = useState<{
     show: boolean;
     label: string;
@@ -430,20 +425,7 @@ export const Sidebar = ({
             </div>
           </Link>
 
-          {isDesktopCollapsed ? (
-            <NavGroupHeader>Human Resources</NavGroupHeader>
-          ) : (
-            <button
-              onClick={() => setIsHrOpen((open) => !open)}
-              className="w-full flex items-center justify-between px-3 pb-1 pt-5 text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-slate-300 transition"
-              aria-expanded={isHrOpen}
-            >
-              <span>HRM</span>
-              <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isHrOpen ? 'rotate-180' : ''}`} />
-            </button>
-          )}
-          {(isDesktopCollapsed || isHrOpen) && (
-          <>
+          <NavGroupHeader>Human Resources</NavGroupHeader>
           <Link
             href="/dashboard/hr/my-leave"
             className={navItemClass('/dashboard/hr/my-leave')}
@@ -587,8 +569,6 @@ export const Sidebar = ({
               {!isDesktopCollapsed && <span>HR Reports</span>}
             </div>
           </Link>
-          </>
-          )}
 
           <NavGroupHeader>Store</NavGroupHeader>
           <Link
