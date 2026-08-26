@@ -106,4 +106,13 @@ export class CreateOrderDto {
   @IsOptional()
   @IsUUID()
   sessionId?: string;
+
+  @ApiProperty({ required: false, description: 'Authenticated customer user ID if logged in' })
+  @IsOptional()
+  @IsUUID()
+  userId?: string;
+
+  @ApiProperty({ required: false, description: 'Whether checkout was made as guest', default: true })
+  @IsOptional()
+  isGuest?: boolean;
 }

@@ -45,6 +45,15 @@ import { ImportCustomersService } from './services/import-customers.service';
 import { GetCustomerAnalyticsService } from './services/get-customer-analytics.service';
 import { ManageCustomerSegmentService } from './services/manage-customer-segment.service';
 import { FraudCheckService } from './services/fraud-check.service';
+import { ListLeadsService } from './services/list-leads.service';
+import { CreateLeadService } from './services/create-lead.service';
+import { UpdateLeadStageService } from './services/update-lead-stage.service';
+import { ScheduleLeadFollowUpService } from './services/schedule-lead-follow-up.service';
+import { ConvertLeadToCustomerService } from './services/convert-lead-to-customer.service';
+import { SeedLeadsService } from './services/seed-leads.service';
+import { SeedCustomersService } from './services/seed-customers.service';
+import { ListStoreActivitiesService } from './services/list-store-activities.service';
+import { RecordCustomerActivityService } from './services/record-customer-activity.service';
 
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
@@ -58,6 +67,9 @@ import { BulkCustomerStatusDto } from './dto/bulk-customer-status.dto';
 import { ImportCustomersDto } from './dto/import-customer.dto';
 import { CustomerAnalyticsQueryDto } from './dto/customer-analytics.dto';
 import { CreateCustomerSegmentDto, UpdateCustomerSegmentDto, SegmentRuleGroupDto } from './dto/customer-segment.dto';
+import { CreateLeadDto } from './dto/create-lead.dto';
+import { UpdateLeadStageDto } from './dto/update-lead.dto';
+import { LeadQueryDto } from './dto/lead-query.dto';
 
 @ApiTags('Customers')
 @Controller('customers')
@@ -88,6 +100,15 @@ export class CustomerController {
     private readonly getCustomerAnalyticsService: GetCustomerAnalyticsService,
     private readonly manageCustomerSegmentService: ManageCustomerSegmentService,
     private readonly fraudCheckService: FraudCheckService,
+    private readonly listLeadsService: ListLeadsService,
+    private readonly createLeadService: CreateLeadService,
+    private readonly updateLeadStageService: UpdateLeadStageService,
+    private readonly scheduleLeadFollowUpService: ScheduleLeadFollowUpService,
+    private readonly convertLeadToCustomerService: ConvertLeadToCustomerService,
+    private readonly seedLeadsService: SeedLeadsService,
+    private readonly seedCustomersService: SeedCustomersService,
+    private readonly listStoreActivitiesService: ListStoreActivitiesService,
+    private readonly recordCustomerActivityService: RecordCustomerActivityService,
   ) {}
 
   private async getMerchantTenantContext(userId: string, storeId?: string): Promise<{ tenantId: string; storeId?: string }> {
@@ -97,6 +118,31 @@ export class CustomerController {
     }
     return { tenantId: store.tenantId, storeId: store.id };
   }
+
+  // --- STORE-WIDE ACTIVITY FEED ENDPOINT ---
+
+  @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
+  @Get('activities/all')
+  @ApiOperation({ summary: 'Get store-wide activity feed (leads, customers, orders, notes)' })
+  async listStoreActivities(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') storeId?: string,
+    @Query('type') type?: string,
+    @Query('search') search?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const ctx = await this.getMerchantTenantContext(userId, storeId);
+    const items = await this.listStoreActivitiesService.execute(
+      ctx.tenantId,
+      ctx.storeId,
+      limit ? Math.min(parseInt(limit, 10), 100) : 50,
+      type,
+      search,
+    );
+    return { success: true, data: items };
+  }
+
+  // --- CUSTOMER LISTING ---
 
   @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
   @Get()
@@ -135,6 +181,19 @@ export class CustomerController {
   ) {
     const ctx = await this.getMerchantTenantContext(userId, storeId);
     return this.getCustomerAnalyticsService.getOverview(ctx.tenantId, dto);
+  }
+
+  @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
+  @Get('analytics/full')
+  @ApiOperation({ summary: 'Get full CRM analytics (KPIs, RFM, channels, top spenders, leads pipeline) in one request' })
+  async getFullAnalytics(
+    @CurrentUser('sub') userId: string,
+    @Query() dto: CustomerAnalyticsQueryDto,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const ctx = await this.getMerchantTenantContext(userId, storeId);
+    const data = await this.getCustomerAnalyticsService.getFullAnalytics(ctx.tenantId, dto);
+    return { success: true, data };
   }
 
   @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
@@ -223,6 +282,19 @@ export class CustomerController {
   }
 
   @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
+  @Get('segments/:id/customers')
+  @ApiOperation({ summary: 'Get list of real customers matching this segment' })
+  async getSegmentCustomers(
+    @CurrentUser('sub') userId: string,
+    @Param('id') id: string,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const ctx = await this.getMerchantTenantContext(userId, storeId);
+    return this.manageCustomerSegmentService.findSegmentCustomers(id, ctx.tenantId);
+  }
+
+
+  @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
   @Patch('segments/:id')
   @ApiOperation({ summary: 'Update customer segment rules or details' })
   async updateSegment(
@@ -290,6 +362,90 @@ export class CustomerController {
     const ctx = await this.getMerchantTenantContext(userId, storeId);
     return this.bulkCustomerStatusService.execute(ctx.tenantId, dto);
   }
+
+  // --- LEADS / CRM PIPELINE ENDPOINTS ---
+  // These MUST be defined before @Get(':id') to prevent 'leads' matching :id param
+
+  @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
+  @Get('leads')
+  @ApiOperation({ summary: 'List sales leads and deals pipeline' })
+  @ApiResponse({ status: 200, description: 'List of leads' })
+  async listLeads(
+    @CurrentUser('sub') userId: string,
+    @Query() dto: LeadQueryDto,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const ctx = await this.getMerchantTenantContext(userId, storeId);
+    return this.listLeadsService.execute(ctx.tenantId, dto, ctx.storeId);
+  }
+
+  @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
+  @Post('leads')
+  @ApiOperation({ summary: 'Create a new prospective sales lead' })
+  @ApiResponse({ status: 201, description: 'Lead created successfully' })
+  async createLead(
+    @CurrentUser('sub') userId: string,
+    @Body() dto: CreateLeadDto,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const ctx = await this.getMerchantTenantContext(userId, storeId);
+    return this.createLeadService.execute(ctx.tenantId, dto, ctx.storeId);
+  }
+
+  @Roles(UserRoleEnum.STORE_OWNER)
+  @Post('leads/seed')
+  @ApiOperation({ summary: 'Seed realistic sales leads for current merchant store' })
+  @ApiResponse({ status: 201, description: 'Leads seeded successfully' })
+  async seedLeads(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const ctx = await this.getMerchantTenantContext(userId, storeId);
+    return this.seedLeadsService.execute(ctx.tenantId, ctx.storeId);
+  }
+
+  @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
+  @Patch('leads/:id/stage')
+  @ApiOperation({ summary: 'Update lead pipeline stage (Kanban drag-and-drop & status change)' })
+  @ApiResponse({ status: 200, description: 'Lead stage updated successfully' })
+  async updateLeadStage(
+    @CurrentUser('sub') userId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateLeadStageDto,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const ctx = await this.getMerchantTenantContext(userId, storeId);
+    return this.updateLeadStageService.execute(id, ctx.tenantId, dto.stage, dto.lostReason);
+  }
+
+  @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
+  @Patch('leads/:id/follow-up')
+  @ApiOperation({ summary: 'Schedule or update follow-up reminder date and note' })
+  @ApiResponse({ status: 200, description: 'Follow-up updated successfully' })
+  async scheduleFollowUp(
+    @CurrentUser('sub') userId: string,
+    @Param('id') id: string,
+    @Body() body: { followUpAt: string | null; note?: string },
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const ctx = await this.getMerchantTenantContext(userId, storeId);
+    return this.scheduleLeadFollowUpService.execute(id, ctx.tenantId, body.followUpAt, body.note);
+  }
+
+  @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
+  @Post('leads/:id/convert')
+  @ApiOperation({ summary: 'Convert sales lead into durable Customer 360 profile' })
+  @ApiResponse({ status: 200, description: 'Lead converted into customer profile successfully' })
+  async convertLead(
+    @CurrentUser('sub') userId: string,
+    @Param('id') id: string,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const ctx = await this.getMerchantTenantContext(userId, storeId);
+    return this.convertLeadToCustomerService.execute(id, ctx.tenantId, ctx.storeId);
+  }
+
+  // --- CUSTOMER PROFILE ENDPOINTS (parameterized routes AFTER named routes) ---
 
   @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
   @Get('fraud-check/by-phone')
@@ -520,5 +676,17 @@ export class CustomerController {
   ) {
     const ctx = await this.getMerchantTenantContext(userId, storeId);
     return this.listCustomerActivitiesService.execute(customerId, ctx.tenantId);
+  }
+
+  @Roles(UserRoleEnum.STORE_OWNER)
+  @Post('seed')
+  @ApiOperation({ summary: 'Seed 5 realistic Customer 360 profiles for current merchant store' })
+  @ApiResponse({ status: 201, description: 'Customers seeded successfully' })
+  async seedCustomers(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const ctx = await this.getMerchantTenantContext(userId, storeId);
+    return this.seedCustomersService.execute(ctx.tenantId, ctx.storeId);
   }
 }

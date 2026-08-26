@@ -27,3 +27,4 @@ yarn-error.log*
 
 # Uploaded merchant media (served from disk at /uploads, never committed)
 backend/uploads/
+.vercel

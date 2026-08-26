@@ -2292,6 +2292,7 @@ async function seed() {
     },
   ];
 
+  await abandonedCartRepo.delete({ tenantId });
   for (const c of abandonedCartsData) {
     const cart = abandonedCartRepo.create({
       ...c,

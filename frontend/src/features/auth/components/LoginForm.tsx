@@ -46,6 +46,10 @@ export function LoginForm() {
         })
       );
 
+      if (response.store?.id) {
+        localStorage.setItem('bitcommerce_active_store_id', response.store.id);
+      }
+
       toast.success('Signed in successfully.');
 
       if (response.user?.role === 'SUPER_ADMIN') {

@@ -64,7 +64,11 @@ export class PlanSeederService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    await this.seedPlans();
+    try {
+      await this.seedPlans();
+    } catch (err: any) {
+      this.logger.warn(`Plan seeder note: ${err?.message}`);
+    }
   }
 
   async seedPlans() {

@@ -22,9 +22,13 @@ export interface PushNotification {
   createdAt: string;
 }
 
+const API_ROOT = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1')
+  .replace(/\/+$/, '')
+  .replace(/\/sms$/, '');
+
 export const smsApi = createApi({
   reducerPath: 'smsApi',
-  baseQuery: createBaseQueryWithReauth(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1/sms'),
+  baseQuery: createBaseQueryWithReauth(`${API_ROOT}/sms`),
   tagTypes: ['SmsLog', 'PushNotification'],
   endpoints: (builder) => ({
     getSmsLogs: builder.query<SmsLog[], void>({

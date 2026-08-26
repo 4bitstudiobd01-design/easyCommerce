@@ -30,6 +30,7 @@ import { TrackingModule } from './modules/tracking/tracking.module';
 import { BlogModule } from './modules/blog/blog.module';
 import { FileModule } from './modules/file/file.module';
 import { NotificationModule } from './common/notification/notification.module';
+import { OmnichannelModule } from './modules/omnichannel/omnichannel.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { APP_FILTER } from '@nestjs/core';
 
@@ -90,6 +91,7 @@ import { APP_FILTER } from '@nestjs/core';
     TrackingModule,
     BlogModule,
     FileModule,
+    OmnichannelModule,
   ],
   controllers: [],
   providers: [

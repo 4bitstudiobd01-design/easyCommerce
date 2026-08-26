@@ -28,33 +28,42 @@ export class RegisterMerchantDto {
   })
   phone?: string;
 
-  @ApiProperty({ example: 'Daruchini Fashion', description: 'Store name — provide together with storeSlug to create the merchant\'s first store in the same request', required: false })
+  @ApiProperty({ example: 'Daruchini Fashion', description: 'Store name', required: false })
   @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  @MaxLength(255)
   storeName?: string;
 
-  @ApiProperty({ example: 'daruchini', description: 'Unique store URL slug / subdomain', required: false })
+  @ApiProperty({ example: 'daruchini', description: 'Store subdomain slug', required: false })
   @IsOptional()
   @IsString()
-  @Length(3, 50)
-  @Matches(/^[a-z0-9-]+$/, {
-    message: 'storeSlug must contain only lowercase letters, numbers, and hyphens',
-  })
   storeSlug?: string;
+
+  @ApiProperty({ example: 'daruchini', description: 'Store subdomain slug alias', required: false })
+  @IsOptional()
+  @IsString()
+  subdomain?: string;
 
   @ApiProperty({ example: 'Fashion & Apparel', description: 'Store business category', required: false })
   @IsOptional()
   @IsString()
   businessType?: string;
 
+  @ApiProperty({ example: 'Fashion & Apparel', description: 'Business category alias', required: false })
+  @IsOptional()
+  @IsString()
+  category?: string;
+
   @ApiProperty({ example: 'Bangladesh', description: 'Store country', required: false })
   @IsOptional()
   @IsString()
   country?: string;
 
-  @ApiProperty({ example: true, description: 'Must be true — confirms the merchant accepted the Terms of Service and Privacy Policy' })
-  @Equals(true, { message: 'You must accept the Terms of Service and Privacy Policy to register.' })
-  acceptedTerms: boolean;
+  @ApiProperty({ example: 'Dhaka, Bangladesh', description: 'Store address / location', required: false })
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @ApiProperty({ example: true, description: 'Accept terms of service', required: false })
+  @IsOptional()
+  acceptedTerms?: boolean;
 }

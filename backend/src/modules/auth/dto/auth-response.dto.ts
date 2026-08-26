@@ -14,6 +14,20 @@ export class UserPayloadDto {
   role: string;
 }
 
+export class StorePayloadDto {
+  @ApiProperty({ example: 'dfebec8e-b01d-4896-8a96-953aad611468' })
+  id: string;
+
+  @ApiProperty({ example: 'My Fashion Store' })
+  name: string;
+
+  @ApiProperty({ example: 'my-fashion-store' })
+  slug: string;
+
+  @ApiProperty({ example: '9a936a28-9774-4b53-a5c9-58d34346e492' })
+  tenantId: string;
+}
+
 export class AuthResponseDto {
   @ApiProperty({ example: 'eyJhbGciOiJIUzI1NiIsIn...' })
   accessToken: string;
@@ -23,4 +37,7 @@ export class AuthResponseDto {
 
   @ApiProperty({ type: UserPayloadDto })
   user: UserPayloadDto;
+
+  @ApiProperty({ type: StorePayloadDto, required: false })
+  store?: StorePayloadDto;
 }

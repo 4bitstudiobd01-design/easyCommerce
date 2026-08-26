@@ -714,9 +714,13 @@ export interface CreateShippingProfileRequest {
   isDefault?: boolean;
 }
 
+const API_ROOT = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1')
+  .replace(/\/+$/, '')
+  .replace(/\/catalog$/, '');
+
 export const catalogApi = createApi({
   reducerPath: 'catalogApi',
-  baseQuery: createBaseQueryWithReauth(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1/catalog'),
+  baseQuery: createBaseQueryWithReauth(`${API_ROOT}/catalog`),
   tagTypes: ['Product', 'Category', 'Brand', 'Collection', 'Attribute', 'Review', 'ProductMedia', 'Inventory', 'Variant', 'ShippingProfile', 'RelatedProduct', 'ProductAnalytics'],
   endpoints: (builder) => ({
     getProducts: builder.query<ProductListResponse, ProductListParams | void>({

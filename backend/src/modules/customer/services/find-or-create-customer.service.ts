@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CustomerEntity, CustomerSourceEnum } from '../entities/customer.entity';
+import { CustomerEntity, CustomerStatusEnum, CustomerAccountTypeEnum, CustomerSourceEnum } from '../entities/customer.entity';
+import { CustomerAddressEntity } from '../entities/customer-address.entity';
 
 export interface FindOrCreateCustomerInput {
   phone: string;
@@ -9,17 +10,26 @@ export interface FindOrCreateCustomerInput {
   email?: string;
   storeId?: string;
   source?: CustomerSourceEnum;
+  userId?: string;
+  isGuest?: boolean;
+  address?: {
+    recipientName?: string;
+    phone?: string;
+    addressLine1: string;
+    city: string;
+  };
 }
 
 /**
- * Resolves the customer record an order belongs to, creating one on first sight.
+ * Resolves the customer record an order belongs to, creating or updating one on first sight.
+ *
+ * Uniqueness is strictly keyed on (tenantId, phone).
+ * If the user is logged in (has userId or isGuest=false), accountType is REGISTERED and status is ACTIVE.
+ * If the user checks out without login (isGuest=true), accountType is GUEST and status is GUEST.
  *
  * Checkout must never fail because of customer bookkeeping, so this is deliberately
  * forgiving: it returns null rather than throwing if resolution fails, letting the
  * order proceed with the denormalised name/phone it already carries.
- *
- * Unlike CreateCustomerService this does not throw on duplicates — an existing phone
- * is the expected case for a returning customer.
  */
 @Injectable()
 export class FindOrCreateCustomerService {
@@ -28,6 +38,8 @@ export class FindOrCreateCustomerService {
   constructor(
     @InjectRepository(CustomerEntity)
     private readonly customerRepository: Repository<CustomerEntity>,
+    @InjectRepository(CustomerAddressEntity)
+    private readonly addressRepository: Repository<CustomerAddressEntity>,
   ) {}
 
   private splitName(name?: string): { firstName: string; lastName: string } {
@@ -47,40 +59,129 @@ export class FindOrCreateCustomerService {
     const phone = (input.phone || '').trim();
     if (!phone) return null;
 
+    const isLoggedIn = Boolean(input.userId) || input.isGuest === false;
+    const { firstName, lastName } = this.splitName(input.name);
+    const email = input.email?.trim().toLowerCase() || undefined;
+
+    let customer: CustomerEntity | null = null;
+
     try {
       const existing = await this.customerRepository.findOne({
         where: { tenantId, phone },
       });
 
-      if (existing) return existing;
+      if (existing) {
+        let changed = false;
 
-      const { firstName, lastName } = this.splitName(input.name);
-      const email = input.email?.trim().toLowerCase() || undefined;
+        // If existing had placeholder name and now a real name is provided, update
+        if ((existing.firstName === 'Guest' || !existing.firstName) && firstName !== 'Guest') {
+          existing.firstName = firstName;
+          existing.lastName = lastName;
+          changed = true;
+        }
 
-      const customer = this.customerRepository.create({
-        tenantId,
-        storeId: input.storeId,
-        firstName,
-        lastName,
-        email,
-        phone,
-        source: input.source ?? CustomerSourceEnum.ONLINE_STORE,
-      });
+        // If existing had no email and email is provided
+        if (!existing.email && email) {
+          existing.email = email;
+          changed = true;
+        }
 
-      return await this.customerRepository.save(customer);
+        // If customer just logged in, upgrade from GUEST to REGISTERED / ACTIVE
+        if (isLoggedIn) {
+          if (input.userId && !existing.userId) {
+            existing.userId = input.userId;
+            changed = true;
+          }
+          if (existing.accountType === CustomerAccountTypeEnum.GUEST || !existing.accountType) {
+            existing.accountType = CustomerAccountTypeEnum.REGISTERED;
+            changed = true;
+          }
+          if (existing.status === CustomerStatusEnum.GUEST) {
+            existing.status = CustomerStatusEnum.ACTIVE;
+            changed = true;
+          }
+        }
+
+        if (changed) {
+          customer = await this.customerRepository.save(existing);
+        } else {
+          customer = existing;
+        }
+      } else {
+        // Create new customer
+        const status = isLoggedIn ? CustomerStatusEnum.ACTIVE : CustomerStatusEnum.GUEST;
+        const accountType = isLoggedIn ? CustomerAccountTypeEnum.REGISTERED : CustomerAccountTypeEnum.GUEST;
+
+        const newCustomer = this.customerRepository.create({
+          tenantId,
+          storeId: input.storeId,
+          userId: input.userId,
+          firstName,
+          lastName,
+          email,
+          phone,
+          status,
+          accountType,
+          source: input.source ?? CustomerSourceEnum.ONLINE_STORE,
+        });
+
+        customer = await this.customerRepository.save(newCustomer);
+      }
+
+      // Automatically persist shipping address if provided
+      if (customer && input.address?.addressLine1) {
+        await this.syncAddress(tenantId, customer.id, input, input.address);
+      }
+
+      return customer;
     } catch (err: any) {
       // A concurrent checkout for the same phone can lose the race against the
       // (tenantId, phone) unique index — re-read rather than failing the order.
       const isUniqueViolation = err?.code === '23505';
       if (isUniqueViolation) {
-        const existing = await this.customerRepository.findOne({ where: { tenantId, phone } });
-        if (existing) return existing;
+        const fallback = await this.customerRepository.findOne({ where: { tenantId, phone } });
+        if (fallback) return fallback;
       }
 
       this.logger.error(
         `Failed to resolve customer for phone ${phone} on tenant ${tenantId}: ${err?.message}`,
       );
       return null;
+    }
+  }
+
+  private async syncAddress(
+    tenantId: string,
+    customerId: string,
+    input: FindOrCreateCustomerInput,
+    addr: { recipientName?: string; phone?: string; addressLine1: string; city: string },
+  ): Promise<void> {
+    try {
+      const existingAddr = await this.addressRepository.findOne({
+        where: {
+          tenantId,
+          customerId,
+          addressLine1: addr.addressLine1.trim(),
+        },
+      });
+
+      if (!existingAddr) {
+        const address = this.addressRepository.create({
+          tenantId,
+          storeId: input.storeId,
+          customerId,
+          label: 'Shipping',
+          recipientName: addr.recipientName || input.name || 'Customer',
+          phone: addr.phone || input.phone,
+          addressLine1: addr.addressLine1.trim(),
+          city: addr.city?.trim() || 'Dhaka',
+          country: 'Bangladesh',
+          isDefault: true,
+        });
+        await this.addressRepository.save(address);
+      }
+    } catch (err) {
+      // Best-effort address sync; never block checkout
     }
   }
 }

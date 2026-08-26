@@ -3,11 +3,11 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { FindUserByEmailService } from '../../user/services/find-user-by-email.service';
 import { CreateUserService } from '../../user/services/create-user.service';
+import { CreateStoreService } from '../../tenant/services/create-store.service';
 import { UserRoleEnum } from '../../user/entities/user.entity';
 import { RegisterMerchantDto } from '../dto/register-merchant.dto';
 import { AuthResponseDto } from '../dto/auth-response.dto';
 import { normalizePhone } from '../../../common/utils/normalize-phone.util';
-import { CreateStoreService } from '../../tenant/services/create-store.service';
 
 @Injectable()
 export class RegisterMerchantService {
@@ -41,16 +41,16 @@ export class RegisterMerchantService {
       termsAcceptedAt: new Date(),
     });
 
-    if (dto.storeName && dto.storeSlug) {
-      // Registration created the account; if the merchant's first store fails to
-      // create (e.g. slug taken), the account still exists — surface the error so
-      // the client can retry store creation rather than silently dropping it.
+    const storeName = dto.storeName?.trim();
+    const rawSlug = dto.storeSlug?.trim() || dto.subdomain?.trim();
+    if (storeName && rawSlug) {
       await this.createStoreService.execute(savedUser.id, {
-        name: dto.storeName,
-        slug: dto.storeSlug,
-        category: dto.businessType,
-        country: dto.country,
+        name: storeName,
+        slug: rawSlug,
+        category: dto.businessType || dto.category || 'Fashion & Apparel',
+        country: dto.country || 'Bangladesh',
         phone: dto.phone ? normalizePhone(dto.phone) : undefined,
+        address: dto.address,
       });
     }
 

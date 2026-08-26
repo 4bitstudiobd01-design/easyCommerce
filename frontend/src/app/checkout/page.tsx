@@ -84,6 +84,7 @@ export default function CheckoutPage() {
   const [searchCategory, setSearchCategory] = useState('All Categories');
   const [searchQuery, setSearchQuery] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const authUser = useSelector((state: RootState) => (state as any).auth?.user);
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
 
   const [createOrder, { isLoading: isCreatingOrder }] = useCreatePublicOrderMutation();
@@ -128,6 +129,8 @@ export default function CheckoutPage() {
       const sessionId = readStoredSessionId();
       const formattedPhone = countryCode + phoneNumber.replace(/\D/g, '');
 
+      const isGuest = !authUser;
+
       // 1. Create order
       const order = await createOrder({
         storeSlug,
@@ -148,6 +151,8 @@ export default function CheckoutPage() {
         utmCampaign: attribution?.utmCampaign,
         referrerHost: attribution?.referrerHost,
         sessionId: sessionId || undefined,
+        userId: authUser?.id || undefined,
+        isGuest,
       }).unwrap();
 
       // 2. If Online / Gateway Payment (bKash, Nagad, Card)

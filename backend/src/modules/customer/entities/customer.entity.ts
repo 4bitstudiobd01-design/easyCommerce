@@ -11,6 +11,12 @@ export enum CustomerStatusEnum {
   ACTIVE = 'ACTIVE',
   INACTIVE = 'INACTIVE',
   BLOCKED = 'BLOCKED',
+  GUEST = 'GUEST',
+}
+
+export enum CustomerAccountTypeEnum {
+  REGISTERED = 'REGISTERED',
+  GUEST = 'GUEST',
 }
 
 export enum CustomerSourceEnum {
@@ -41,6 +47,9 @@ export class CustomerEntity {
   @Index()
   storeId?: string;
 
+  @Column({ name: 'user_id', type: 'uuid', nullable: true })
+  userId?: string;
+
   @Column({ type: 'varchar', length: 100 })
   firstName: string;
 
@@ -59,6 +68,14 @@ export class CustomerEntity {
     default: CustomerStatusEnum.ACTIVE,
   })
   status: CustomerStatusEnum;
+
+  @Column({
+    type: 'enum',
+    enum: CustomerAccountTypeEnum,
+    default: CustomerAccountTypeEnum.GUEST,
+    nullable: true,
+  })
+  accountType?: CustomerAccountTypeEnum;
 
   @Column({
     type: 'enum',

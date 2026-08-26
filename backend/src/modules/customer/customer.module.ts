@@ -8,6 +8,7 @@ import { CustomerAddressEntity } from './entities/customer-address.entity';
 import { CustomerNoteEntity } from './entities/customer-note.entity';
 import { CustomerActivityEntity } from './entities/customer-activity.entity';
 import { CustomerSegmentEntity } from './entities/customer-segment.entity';
+import { LeadEntity } from './entities/lead.entity';
 import { OrderEntity } from '../order/entities/order.entity';
 import { CustomerController } from './customer.controller';
 import { TenantModule } from '../tenant/tenant.module';
@@ -41,6 +42,16 @@ import { GetCustomerAnalyticsService } from './services/get-customer-analytics.s
 import { ManageCustomerSegmentService } from './services/manage-customer-segment.service';
 import { FraudCheckService } from './services/fraud-check.service';
 
+import { ListLeadsService } from './services/list-leads.service';
+import { CreateLeadService } from './services/create-lead.service';
+import { UpdateLeadStageService } from './services/update-lead-stage.service';
+import { ScheduleLeadFollowUpService } from './services/schedule-lead-follow-up.service';
+import { ConvertLeadToCustomerService } from './services/convert-lead-to-customer.service';
+import { SeedLeadsService } from './services/seed-leads.service';
+import { SeedCustomersService } from './services/seed-customers.service';
+import { CustomerSeederBootstrapService } from './services/customer-seeder-bootstrap.service';
+import { ListStoreActivitiesService } from './services/list-store-activities.service';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -49,6 +60,7 @@ import { FraudCheckService } from './services/fraud-check.service';
       CustomerNoteEntity,
       CustomerActivityEntity,
       CustomerSegmentEntity,
+      LeadEntity,
       OrderEntity,
     ]),
     TenantModule,
@@ -85,8 +97,16 @@ import { FraudCheckService } from './services/fraud-check.service';
     ExportCustomersService,
     ImportCustomersService,
     GetCustomerAnalyticsService,
-    ManageCustomerSegmentService,
     FraudCheckService,
+    ListLeadsService,
+    CreateLeadService,
+    UpdateLeadStageService,
+    ScheduleLeadFollowUpService,
+    ConvertLeadToCustomerService,
+    SeedLeadsService,
+    SeedCustomersService,
+    CustomerSeederBootstrapService,
+    ListStoreActivitiesService,
   ],
   exports: [
     CreateCustomerService,
@@ -113,7 +133,15 @@ import { FraudCheckService } from './services/fraud-check.service';
     GetCustomerAnalyticsService,
     ManageCustomerSegmentService,
     FraudCheckService,
+    ListLeadsService,
+    CreateLeadService,
+    UpdateLeadStageService,
+    ScheduleLeadFollowUpService,
+    ConvertLeadToCustomerService,
+    SeedLeadsService,
+    SeedCustomersService,
     TypeOrmModule,
+    ListStoreActivitiesService,
   ],
 })
 export class CustomerModule {}

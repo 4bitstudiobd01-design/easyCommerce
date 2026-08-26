@@ -278,9 +278,13 @@ export interface CustomerListQueryParams {
   sortOrder?: 'ASC' | 'DESC';
 }
 
+const API_ROOT = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1')
+  .replace(/\/+$/, '')
+  .replace(/\/customers$/, '');
+
 export const customerApi = createApi({
   reducerPath: 'customerApi',
-  baseQuery: createBaseQueryWithReauth(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1/customers'),
+  baseQuery: createBaseQueryWithReauth(`${API_ROOT}/customers`),
   tagTypes: ['Customer', 'CustomerKpi', 'CustomerAddress', 'CustomerOrders', 'CustomerNote', 'CustomerActivity', 'CustomerAnalytics', 'CustomerSegment'],
   endpoints: (builder) => ({
     getCustomers: builder.query<{ data: Customer[]; meta: any }, CustomerListQueryParams | void>({

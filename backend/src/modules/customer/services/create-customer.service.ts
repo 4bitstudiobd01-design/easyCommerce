@@ -1,7 +1,7 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CustomerEntity, CustomerSourceEnum } from '../entities/customer.entity';
+import { CustomerEntity, CustomerStatusEnum, CustomerAccountTypeEnum, CustomerSourceEnum } from '../entities/customer.entity';
 import { CreateCustomerDto } from '../dto/create-customer.dto';
 
 @Injectable()
@@ -12,21 +12,28 @@ export class CreateCustomerService {
   ) {}
 
   async execute(tenantId: string, dto: CreateCustomerDto, storeId?: string): Promise<CustomerEntity> {
-    const existingPhone = await this.customerRepository.findOne({
-      where: { tenantId, phone: dto.phone.trim() },
+    const phone = dto.phone.trim();
+    const existingCustomer = await this.customerRepository.findOne({
+      where: { tenantId, phone },
     });
 
-    if (existingPhone) {
-      throw new ConflictException(`A customer with phone number ${dto.phone} already exists in your store.`);
-    }
-
-    if (dto.email && dto.email.trim()) {
-      const existingEmail = await this.customerRepository.findOne({
-        where: { tenantId, email: dto.email.trim().toLowerCase() },
-      });
-      if (existingEmail) {
-        throw new ConflictException(`A customer with email address ${dto.email} already exists in your store.`);
+    if (existingCustomer) {
+      // If customer with this phone number already exists (e.g. from guest orders), update info gracefully
+      existingCustomer.firstName = dto.firstName.trim() || existingCustomer.firstName;
+      existingCustomer.lastName = dto.lastName.trim() || existingCustomer.lastName;
+      if (dto.email && dto.email.trim()) {
+        existingCustomer.email = dto.email.trim().toLowerCase();
       }
+      if (dto.status) {
+        existingCustomer.status = dto.status;
+      } else if (existingCustomer.status === CustomerStatusEnum.GUEST) {
+        existingCustomer.status = CustomerStatusEnum.ACTIVE;
+      }
+      if (dto.source) {
+        existingCustomer.source = dto.source;
+      }
+      existingCustomer.accountType = CustomerAccountTypeEnum.REGISTERED;
+      return this.customerRepository.save(existingCustomer);
     }
 
     const origin = dto.origin ? dto.origin.trim().toLowerCase() : undefined;
@@ -38,8 +45,9 @@ export class CreateCustomerService {
       firstName: dto.firstName.trim(),
       lastName: dto.lastName.trim(),
       email: dto.email ? dto.email.trim().toLowerCase() : undefined,
-      phone: dto.phone.trim(),
-      status: dto.status,
+      phone,
+      status: dto.status || CustomerStatusEnum.ACTIVE,
+      accountType: CustomerAccountTypeEnum.REGISTERED,
       source: dto.source || CustomerSourceEnum.MANUAL,
       registrationChannel: isChannel ? origin : (origin ? 'social' : 'direct'),
       registrationUtmSource: isChannel ? undefined : origin,

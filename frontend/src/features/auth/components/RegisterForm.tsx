@@ -130,8 +130,11 @@ export function RegisterForm() {
           ? {
               storeName: trimmedStoreName,
               storeSlug: trimmedSubdomain,
-              ...(businessType ? { businessType } : {}),
+              subdomain: trimmedSubdomain,
+              businessType: businessType || undefined,
+              category: businessType || undefined,
               country,
+              address: country || undefined,
             }
           : {}),
       }).unwrap();
