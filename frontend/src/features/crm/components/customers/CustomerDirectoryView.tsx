@@ -395,13 +395,22 @@ export const CustomerDirectoryView: React.FC<CustomerDirectoryViewProps> = ({
                     {renderSortIcon('spent')}
                   </button>
                 </th>
-                <th className="hidden md:table-cell py-3.5 px-4 min-w-[130px]">
+                <th className="py-3.5 px-4 min-w-[140px]">
                   <button
                     onClick={() => handleHeaderSort('recent')}
                     className="group flex items-center gap-1 hover:text-slate-900 transition-colors focus:outline-none"
                   >
-                    <span>Last Active</span>
+                    <span>Last Order Date</span>
                     {renderSortIcon('recent')}
+                  </button>
+                </th>
+                <th className="hidden xl:table-cell py-3.5 px-4 min-w-[120px]">
+                  <button
+                    onClick={() => handleHeaderSort('createdAt')}
+                    className="group flex items-center gap-1 hover:text-slate-900 transition-colors focus:outline-none"
+                  >
+                    <span>Created Date</span>
+                    {renderSortIcon('createdAt')}
                   </button>
                 </th>
                 <th className="py-3.5 px-4 text-right min-w-[100px]">Actions</th>
@@ -411,14 +420,14 @@ export const CustomerDirectoryView: React.FC<CustomerDirectoryViewProps> = ({
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i}>
-                    <td colSpan={8} className="py-4 px-5">
+                    <td colSpan={9} className="py-4 px-5">
                       <div className="h-10 w-full bg-slate-100 animate-pulse rounded-xl" />
                     </td>
                   </tr>
                 ))
               ) : paginatedCustomers.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-16 text-center text-slate-500">
+                  <td colSpan={9} className="py-16 text-center text-slate-500">
                     <p className="font-bold text-sm text-slate-800">No Customers Found</p>
                     <p className="text-xs text-slate-400 mt-1">Try adjusting your filters or search terms.</p>
                   </td>
@@ -509,8 +518,8 @@ export const CustomerDirectoryView: React.FC<CustomerDirectoryViewProps> = ({
                         </span>
                       </td>
 
-                      {/* 7. Last Active / Order */}
-                      <td className="hidden md:table-cell py-3.5 px-4 whitespace-nowrap">
+                      {/* 7. Last Order Date */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
                         {c.lastOrderAt ? (
                           <div>
                             <span className="font-semibold text-slate-800 text-xs block">
@@ -528,7 +537,20 @@ export const CustomerDirectoryView: React.FC<CustomerDirectoryViewProps> = ({
                             </span>
                           </div>
                         ) : (
-                          <span className="text-slate-400 text-[11px]">No orders yet</span>
+                          <span className="text-slate-400 text-[11px] font-normal">No orders</span>
+                        )}
+                      </td>
+
+                      {/* 8. Created Date */}
+                      <td className="hidden xl:table-cell py-3.5 px-4 text-slate-500 whitespace-nowrap">
+                        {c.createdAt ? (
+                          new Date(c.createdAt).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: '2-digit',
+                            year: 'numeric',
+                          })
+                        ) : (
+                          '—'
                         )}
                       </td>
 
