@@ -21,6 +21,9 @@ export const mockCustomers: Customer360[] = [
     rfmSegment: 'VIP',
     leadScore: 95,
     city: 'Gulshan, Dhaka',
+    registrationChannel: 'social',
+    registrationUtmSource: 'facebook',
+    registrationUtmCampaign: 'gadget_fest_2026',
     addresses: [
       {
         id: 'addr-1',
@@ -117,6 +120,9 @@ export const mockCustomers: Customer360[] = [
     rfmSegment: 'LOYAL',
     leadScore: 88,
     city: 'Dhanmondi, Dhaka',
+    registrationChannel: 'social',
+    registrationUtmSource: 'instagram',
+    registrationUtmCampaign: 'summer_kurti_drop',
     addresses: [
       {
         id: 'addr-3',
@@ -177,6 +183,9 @@ export const mockCustomers: Customer360[] = [
     rfmSegment: 'PROMISING',
     leadScore: 72,
     city: 'Uttara, Dhaka',
+    registrationChannel: 'social',
+    registrationUtmSource: 'tiktok',
+    registrationUtmCampaign: 'viral_gadgets_bd',
   },
   {
     id: 'cust-104',
@@ -198,6 +207,9 @@ export const mockCustomers: Customer360[] = [
     rfmSegment: 'AT_RISK',
     leadScore: 45,
     city: 'Chittagong',
+    registrationChannel: 'paid_search',
+    registrationUtmSource: 'google',
+    registrationUtmCampaign: 'flash_sale_electronics',
   },
   {
     id: 'cust-105',
@@ -219,6 +231,9 @@ export const mockCustomers: Customer360[] = [
     rfmSegment: 'NEW',
     leadScore: 68,
     city: 'Sylhet',
+    registrationChannel: 'social',
+    registrationUtmSource: 'youtube',
+    registrationUtmCampaign: 'tech_unboxing_sponsor',
   },
   {
     id: 'cust-106',
@@ -239,6 +254,9 @@ export const mockCustomers: Customer360[] = [
     rfmSegment: 'HIBERNATING',
     leadScore: 10,
     city: 'Khulna',
+    registrationChannel: 'direct',
+    registrationUtmSource: 'direct',
+    registrationUtmCampaign: 'direct_storefront',
   },
 ];
 

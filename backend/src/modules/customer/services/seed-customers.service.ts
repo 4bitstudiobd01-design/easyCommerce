@@ -34,6 +34,9 @@ export class SeedCustomersService {
         status: CustomerStatusEnum.ACTIVE,
         accountType: CustomerAccountTypeEnum.REGISTERED,
         source: CustomerSourceEnum.ONLINE_STORE,
+        registrationChannel: 'social',
+        registrationUtmSource: 'facebook',
+        registrationUtmCampaign: 'eid_fashion_collection',
         address: {
           label: 'Home',
           recipientName: 'Asif Mahmud',
@@ -59,6 +62,9 @@ export class SeedCustomersService {
         status: CustomerStatusEnum.ACTIVE,
         accountType: CustomerAccountTypeEnum.REGISTERED,
         source: CustomerSourceEnum.ONLINE_STORE,
+        registrationChannel: 'social',
+        registrationUtmSource: 'instagram',
+        registrationUtmCampaign: 'luxury_silk_drop',
         address: {
           label: 'Apartment',
           recipientName: 'Nadia Rahman',
@@ -84,6 +90,9 @@ export class SeedCustomersService {
         status: CustomerStatusEnum.GUEST,
         accountType: CustomerAccountTypeEnum.GUEST,
         source: CustomerSourceEnum.ONLINE_STORE,
+        registrationChannel: 'social',
+        registrationUtmSource: 'tiktok',
+        registrationUtmCampaign: 'viral_gadgets_2026',
         address: {
           label: 'Primary Delivery',
           recipientName: 'Tanvirul Islam',
@@ -109,6 +118,9 @@ export class SeedCustomersService {
         status: CustomerStatusEnum.ACTIVE,
         accountType: CustomerAccountTypeEnum.REGISTERED,
         source: CustomerSourceEnum.ONLINE_STORE,
+        registrationChannel: 'paid_search',
+        registrationUtmSource: 'google',
+        registrationUtmCampaign: 'wholesale_jewelry_bd',
         address: {
           label: 'Office',
           recipientName: 'Sabrina Sultana',
@@ -134,6 +146,9 @@ export class SeedCustomersService {
         status: CustomerStatusEnum.ACTIVE,
         accountType: CustomerAccountTypeEnum.REGISTERED,
         source: CustomerSourceEnum.MANUAL,
+        registrationChannel: 'direct',
+        registrationUtmSource: 'direct',
+        registrationUtmCampaign: 'store_walkin',
         address: {
           label: 'Store Delivery',
           recipientName: 'Mahabub Alam',
@@ -171,6 +186,9 @@ export class SeedCustomersService {
           status: item.status,
           accountType: item.accountType,
           source: item.source,
+          registrationChannel: item.registrationChannel,
+          registrationUtmSource: item.registrationUtmSource,
+          registrationUtmCampaign: item.registrationUtmCampaign,
         });
         customer = await this.customerRepository.save(customer);
 
