@@ -7,14 +7,12 @@ import {
   Phone,
   Mail,
   MapPin,
-  Calendar,
   ShoppingBag,
   Clock,
   Sparkles,
   MessageCircle,
   PhoneCall,
   Plus,
-  Send,
   Trash2,
   CheckCircle2,
   AlertCircle,
@@ -27,8 +25,12 @@ import {
   BadgeCheck,
   ChevronLeft,
   ChevronRight,
+  Edit2,
+  Globe,
 } from 'lucide-react';
 import { formatCrmDate } from '../../utils/formatDate';
+import { getOriginLabel } from '@/features/customer/utils/origin';
+import { FraudRiskBadge } from '@/features/customer/components/FraudRiskBadge';
 import { toast } from 'sonner';
 
 interface CustomerDetailDrawer360Props {
@@ -36,6 +38,8 @@ interface CustomerDetailDrawer360Props {
   isOpen: boolean;
   onClose: () => void;
   onOpenQuickContact?: (customer: Customer360, channel: 'WHATSAPP' | 'CALL' | 'SMS') => void;
+  onOpenEdit?: (customer: Customer360) => void;
+  onOpenAddAddress?: (customer: Customer360) => void;
 }
 
 export const CustomerDetailDrawer360: React.FC<CustomerDetailDrawer360Props> = ({
@@ -43,6 +47,8 @@ export const CustomerDetailDrawer360: React.FC<CustomerDetailDrawer360Props> = (
   isOpen,
   onClose,
   onOpenQuickContact,
+  onOpenEdit,
+  onOpenAddAddress,
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'timeline' | 'notes' | 'addresses'>('overview');
   const [newNote, setNewNote] = useState('');
@@ -75,6 +81,8 @@ export const CustomerDetailDrawer360: React.FC<CustomerDetailDrawer360Props> = (
     toast.success('Internal customer note logged.');
   };
 
+  const originLabel = getOriginLabel(customer);
+
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
       {/* Backdrop */}
@@ -95,7 +103,7 @@ export const CustomerDetailDrawer360: React.FC<CustomerDetailDrawer360Props> = (
                 {customer.fullName.charAt(0)}
               </div>
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <h2 className="text-lg font-black tracking-tight">{customer.fullName}</h2>
                   {customer.status === 'GUEST' ? (
                     <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-400/30 rounded-md text-[10px] font-extrabold uppercase">
@@ -112,7 +120,7 @@ export const CustomerDetailDrawer360: React.FC<CustomerDetailDrawer360Props> = (
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-3 text-xs text-slate-300 mt-1">
+                <div className="flex items-center gap-3 text-xs text-slate-300 mt-1 flex-wrap">
                   <span className="flex items-center gap-1">
                     <Phone className="w-3.5 h-3.5 text-slate-400" />
                     {customer.phone}
@@ -124,11 +132,29 @@ export const CustomerDetailDrawer360: React.FC<CustomerDetailDrawer360Props> = (
                     </span>
                   )}
                 </div>
+
+                {/* Fraud Risk Courier Verification Badge */}
+                <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+                  <FraudRiskBadge
+                    customerId={customer.id}
+                    customerLabel={`${customer.fullName} · ${customer.phone}`}
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Quick Contact & Close */}
+            {/* Actions & Close */}
             <div className="flex items-center gap-2 relative z-10">
+              {onOpenEdit && (
+                <button
+                  onClick={() => onOpenEdit(customer)}
+                  className="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs border border-slate-700"
+                  title="Edit Customer Details"
+                >
+                  <Edit2 className="w-4 h-4 text-amber-400" />
+                  <span className="hidden sm:inline">Edit</span>
+                </button>
+              )}
               {onOpenQuickContact && (
                 <>
                   <button
@@ -165,7 +191,7 @@ export const CustomerDetailDrawer360: React.FC<CustomerDetailDrawer360Props> = (
                 Total Spent
               </span>
               <span className="text-lg font-black text-slate-900 block mt-0.5">
-                ৳{customer.totalSpent.toLocaleString()}
+                ৳{(customer.totalSpent || 0).toLocaleString()}
               </span>
             </div>
             <div>
@@ -173,7 +199,7 @@ export const CustomerDetailDrawer360: React.FC<CustomerDetailDrawer360Props> = (
                 Orders Count
               </span>
               <span className="text-lg font-black text-blue-600 block mt-0.5">
-                {customer.ordersCount} Orders
+                {customer.ordersCount || 0} Orders
               </span>
             </div>
             <div>
@@ -181,7 +207,7 @@ export const CustomerDetailDrawer360: React.FC<CustomerDetailDrawer360Props> = (
                 Avg Order Value
               </span>
               <span className="text-lg font-black text-slate-900 block mt-0.5">
-                ৳{customer.avgOrderValue.toLocaleString()}
+                ৳{(customer.avgOrderValue || 0).toLocaleString()}
               </span>
             </div>
           </div>
@@ -190,7 +216,7 @@ export const CustomerDetailDrawer360: React.FC<CustomerDetailDrawer360Props> = (
           <div className="flex items-center gap-1 px-6 pt-3 bg-white border-b border-slate-200/80 overflow-x-auto scrollbar-none shrink-0">
             {[
               { id: 'overview', label: '360° Overview' },
-              { id: 'orders', label: `Orders (${customer.orders?.length || customer.ordersCount})` },
+              { id: 'orders', label: `Orders (${customer.orders?.length || customer.ordersCount || 0})` },
               { id: 'timeline', label: 'Activity Feed' },
               { id: 'notes', label: `Staff Notes (${notesList.length})` },
               { id: 'addresses', label: `Addresses (${customer.addresses?.length || 1})` },
@@ -217,9 +243,20 @@ export const CustomerDetailDrawer360: React.FC<CustomerDetailDrawer360Props> = (
               <div className="space-y-6">
                 {/* Profile Details Card */}
                 <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-4">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                    Contact & Profile
-                  </h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                      Contact & Profile
+                    </h3>
+                    {onOpenEdit && (
+                      <button
+                        onClick={() => onOpenEdit(customer)}
+                        className="text-xs text-blue-600 hover:text-blue-700 font-bold flex items-center gap-1"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                        <span>Edit Info</span>
+                      </button>
+                    )}
+                  </div>
                   <div className="grid grid-cols-2 gap-4 text-xs">
                     <div>
                       <span className="text-slate-400 block">Full Name:</span>
@@ -236,6 +273,20 @@ export const CustomerDetailDrawer360: React.FC<CustomerDetailDrawer360Props> = (
                     <div>
                       <span className="text-slate-400 block">Acquisition Source:</span>
                       <span className="font-bold text-blue-600 mt-0.5 block">{customer.source}</span>
+                    </div>
+                    {originLabel && (
+                      <div>
+                        <span className="text-slate-400 block">Marketing Origin:</span>
+                        <span className="font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/60 px-2 py-0.5 rounded text-[11px] inline-block mt-0.5">
+                          {originLabel}
+                        </span>
+                      </div>
+                    )}
+                    <div>
+                      <span className="text-slate-400 block">Registered On:</span>
+                      <span className="font-medium text-slate-700 mt-0.5 block">
+                        {formatCrmDate(customer.createdAt, { showTime: true })}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -263,24 +314,32 @@ export const CustomerDetailDrawer360: React.FC<CustomerDetailDrawer360Props> = (
 
                 {/* Primary Delivery Address */}
                 <div className="bg-white p-5 rounded-2xl border border-slate-200/80 space-y-3">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center justify-between">
-                    <span>Default Delivery Address</span>
-                    <span className="text-[10px] px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-md font-bold">
-                      Verified
-                    </span>
-                  </h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                      Default Delivery Address
+                    </h3>
+                    {onOpenAddAddress && (
+                      <button
+                        onClick={() => onOpenAddAddress(customer)}
+                        className="text-xs text-blue-600 hover:text-blue-700 font-bold flex items-center gap-1"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Manage Address</span>
+                      </button>
+                    )}
+                  </div>
                   {customer.addresses && customer.addresses.length > 0 ? (
                     <div className="text-xs text-slate-700 space-y-1">
                       <p className="font-bold text-slate-900">{customer.addresses[0].recipientName}</p>
                       <p>{customer.addresses[0].addressLine1}</p>
                       <p>
-                        {customer.addresses[0].area}, {customer.addresses[0].district} -{' '}
-                        {customer.addresses[0].division}
+                        {customer.addresses[0].area ? `${customer.addresses[0].area}, ` : ''}
+                        {customer.addresses[0].district} - {customer.addresses[0].division}
                       </p>
                       <p className="text-slate-500">{customer.addresses[0].phone}</p>
                     </div>
                   ) : (
-                    <p className="text-xs text-slate-500">Dhaka, Bangladesh</p>
+                    <p className="text-xs text-slate-500">No addresses saved yet.</p>
                   )}
                 </div>
               </div>
@@ -319,84 +378,73 @@ export const CustomerDetailDrawer360: React.FC<CustomerDetailDrawer360Props> = (
                             </span>
                           </div>
 
-                          <p className="text-xs text-slate-600 font-medium">
-                            {ord.itemsSummary || `${ord.itemCount} items in order`}
-                          </p>
+                          {ord.itemsSummary && (
+                            <p className="text-xs text-slate-600 font-medium">{ord.itemsSummary}</p>
+                          )}
 
                           <div className="flex items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-slate-100">
-                            <span>Payment: {ord.paymentMethod} ({ord.paymentStatus})</span>
                             <span>{formatCrmDate(ord.createdAt, { showTime: true })}</span>
+                            <span className="font-semibold text-slate-600">{ord.paymentMethod}</span>
                           </div>
                         </div>
                       ))}
 
+                    {/* Pagination buttons */}
                     {customer.orders.length > orderPageSize && (
-                      <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                      <div className="flex items-center justify-between pt-2">
                         <button
-                          onClick={() => setOrderPage((p) => Math.max(1, p - 1))}
                           disabled={orderPage <= 1}
-                          className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40 transition-all flex items-center gap-1"
+                          onClick={() => setOrderPage((p) => Math.max(1, p - 1))}
+                          className="px-3 py-1.5 bg-slate-100 disabled:opacity-40 hover:bg-slate-200 rounded-lg text-xs font-bold text-slate-700 transition"
                         >
-                          <ChevronLeft className="w-3.5 h-3.5" />
                           Previous
                         </button>
-                        <span className="text-xs font-bold text-slate-600">
-                          {orderPage} / {Math.ceil(customer.orders.length / orderPageSize)}
-                        </span>
                         <button
-                          onClick={() => setOrderPage((p) => Math.min(Math.ceil((customer.orders?.length || 0) / orderPageSize), p + 1))}
                           disabled={orderPage >= Math.ceil(customer.orders.length / orderPageSize)}
-                          className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40 transition-all flex items-center gap-1"
+                          onClick={() => setOrderPage((p) => p + 1)}
+                          className="px-3 py-1.5 bg-slate-100 disabled:opacity-40 hover:bg-slate-200 rounded-lg text-xs font-bold text-slate-700 transition"
                         >
                           Next
-                          <ChevronRight className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     )}
                   </>
                 ) : (
-                  <div className="text-center py-12 text-slate-400 text-xs">
-                    <ShoppingBag className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p className="font-bold">No orders recorded yet</p>
+                  <div className="p-12 text-center bg-slate-50 rounded-2xl border border-slate-200/80">
+                    <ShoppingBag className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                    <p className="text-sm font-bold text-slate-700">No Orders Placed Yet</p>
+                    <p className="text-xs text-slate-400 mt-1">This customer has not completed any checkouts.</p>
                   </div>
                 )}
               </div>
             )}
 
-            {/* TAB 3: ACTIVITY TIMELINE */}
+            {/* TAB 3: TIMELINE */}
             {activeTab === 'timeline' && (
-              <div className="space-y-6 relative pl-6 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
-                <div className="relative">
-                  <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] absolute -left-6 top-0.5 shadow-xs">
-                    <CheckCircle2 className="w-3 h-3" />
+              <div className="space-y-4">
+                <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+                  <div className="relative">
+                    <div className="absolute -left-6 top-0.5 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white shadow-xs" />
+                    <div>
+                      <span className="text-[11px] text-slate-400 font-medium block">
+                        {formatCrmDate(customer.createdAt, { showTime: true })}
+                      </span>
+                      <p className="text-xs font-bold text-slate-900 mt-0.5">Account Created</p>
+                      <p className="text-xs text-slate-500">Customer registered via {customer.source}.</p>
+                    </div>
                   </div>
-                  <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80">
-                    <span className="text-[10px] font-bold text-slate-400 block">Today, 02:30 PM</span>
-                    <p className="text-xs font-bold text-slate-900 mt-0.5">Steadfast Parcel Delivered</p>
-                    <p className="text-xs text-slate-600 mt-1">Customer received parcel at Gulshan address without issues.</p>
-                  </div>
-                </div>
-
-                <div className="relative">
-                  <div className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px] absolute -left-6 top-0.5 shadow-xs">
-                    <PhoneCall className="w-3 h-3" />
-                  </div>
-                  <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80">
-                    <span className="text-[10px] font-bold text-slate-400 block">Yesterday, 11:15 AM</span>
-                    <p className="text-xs font-bold text-slate-900 mt-0.5">Phone Call Verification</p>
-                    <p className="text-xs text-slate-600 mt-1">Confirmed delivery time before 2 PM as requested.</p>
-                  </div>
-                </div>
-
-                <div className="relative">
-                  <div className="w-5 h-5 rounded-full bg-purple-500 text-white flex items-center justify-center text-[10px] absolute -left-6 top-0.5 shadow-xs">
-                    <Sparkles className="w-3 h-3" />
-                  </div>
-                  <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80">
-                    <span className="text-[10px] font-bold text-slate-400 block">15 Aug 2026</span>
-                    <p className="text-xs font-bold text-slate-900 mt-0.5">Upgraded to VIP Segment</p>
-                    <p className="text-xs text-slate-600 mt-1">Total spend exceeded ৳40,000 threshold.</p>
-                  </div>
+                  {customer.lastOrderAt && (
+                    <div className="relative">
+                      <div className="absolute -left-6 top-0.5 w-4 h-4 rounded-full bg-blue-500 border-2 border-white shadow-xs" />
+                      <div>
+                        <span className="text-[11px] text-slate-400 font-medium block">
+                          {formatCrmDate(customer.lastOrderAt, { showTime: true })}
+                        </span>
+                        <p className="text-xs font-bold text-slate-900 mt-0.5">Recent Purchase Completed</p>
+                        <p className="text-xs text-slate-500">Completed checkout successfully.</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -445,27 +493,50 @@ export const CustomerDetailDrawer360: React.FC<CustomerDetailDrawer360Props> = (
             {/* TAB 5: ADDRESSES */}
             {activeTab === 'addresses' && (
               <div className="space-y-4">
-                {customer.addresses?.map((addr) => (
-                  <div
-                    key={addr.id}
-                    className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2 relative"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-[10px] font-bold uppercase">
-                        {addr.label}
-                      </span>
-                      {addr.isDefault && (
-                        <span className="text-[10px] font-bold text-emerald-600">Default Shipping</span>
-                      )}
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Customer Addresses ({customer.addresses?.length || 0})
+                  </span>
+                  {onOpenAddAddress && (
+                    <button
+                      onClick={() => onOpenAddAddress(customer)}
+                      className="px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl text-xs font-bold transition flex items-center gap-1"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Address</span>
+                    </button>
+                  )}
+                </div>
+                {customer.addresses && customer.addresses.length > 0 ? (
+                  customer.addresses.map((addr) => (
+                    <div
+                      key={addr.id}
+                      className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2 relative"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-[10px] font-bold uppercase">
+                          {addr.label}
+                        </span>
+                        {addr.isDefault && (
+                          <span className="text-[10px] font-bold text-emerald-600">Default Shipping</span>
+                        )}
+                      </div>
+                      <p className="font-bold text-slate-900 text-xs">{addr.recipientName}</p>
+                      <p className="text-xs text-slate-600">{addr.addressLine1}</p>
+                      <p className="text-xs text-slate-600">
+                        {addr.area ? `${addr.area}, ` : ''}
+                        {addr.district} - {addr.division}
+                      </p>
+                      <p className="text-xs text-slate-400 font-medium">{addr.phone}</p>
                     </div>
-                    <p className="font-bold text-slate-900 text-xs">{addr.recipientName}</p>
-                    <p className="text-xs text-slate-600">{addr.addressLine1}</p>
-                    <p className="text-xs text-slate-600">
-                      {addr.area}, {addr.district} - {addr.division}
-                    </p>
-                    <p className="text-xs text-slate-400 font-medium">{addr.phone}</p>
+                  ))
+                ) : (
+                  <div className="p-8 text-center bg-slate-50 rounded-2xl border border-slate-200/80">
+                    <MapPin className="w-6 h-6 text-slate-300 mx-auto mb-2" />
+                    <p className="text-xs font-bold text-slate-700">No Addresses Saved</p>
+                    <p className="text-xs text-slate-400 mt-0.5">Click &quot;Add Address&quot; above to store shipping info.</p>
                   </div>
-                ))}
+                )}
               </div>
             )}
 

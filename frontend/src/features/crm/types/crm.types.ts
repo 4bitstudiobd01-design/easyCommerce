@@ -67,6 +67,12 @@ export interface Customer360 {
   rfmSegment?: 'VIP' | 'LOYAL' | 'PROMISING' | 'AT_RISK' | 'HIBERNATING' | 'NEW';
   leadScore?: number;
   city?: string;
+  hasAccount?: boolean;
+  registrationChannel?: string;
+  registrationUtmSource?: string;
+  registrationUtmMedium?: string;
+  registrationUtmCampaign?: string;
+  registrationReferrerHost?: string;
 }
 
 export type LeadStageType = 'NEW' | 'CONTACTED' | 'QUALIFIED' | 'PROPOSAL_SENT' | 'WON' | 'LOST';
