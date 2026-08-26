@@ -83,7 +83,7 @@ export const Sidebar = ({
 
   // Auto-expand active group when route changes
   useEffect(() => {
-    if (isRouteInGroup(['/dashboard/orders', '/dashboard/products', '/dashboard/categories', '/dashboard/inventory', '/dashboard/logistics', '/dashboard/abandoned-carts', '/dashboard/themes'])) {
+    if (isRouteInGroup(['/dashboard/orders', '/dashboard/products', '/dashboard/categories', '/dashboard/customers', '/dashboard/inventory', '/dashboard/logistics', '/dashboard/abandoned-carts', '/dashboard/themes'])) {
       setOpenGroups(prev => ({ ...prev, ecommerce: true }));
     }
     if (isRouteInGroup('/dashboard/crm')) {
@@ -302,6 +302,19 @@ export const Sidebar = ({
                 <div className="flex items-center gap-2.5">
                   <FolderTree className={iconClass} strokeWidth={iconStroke} />
                   {!isDesktopCollapsed && <span>Categories</span>}
+                </div>
+              </Link>
+              <Link 
+                href="/dashboard/customers" 
+                className={navItemClass('/dashboard/customers')}
+                onMouseEnter={(e) => handleTooltipEnter(e, "Customers")}
+                onFocus={(e) => handleTooltipEnter(e, "Customers")}
+                onMouseLeave={handleTooltipLeave}
+                onBlur={handleTooltipLeave}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Users className={iconClass} strokeWidth={iconStroke} />
+                  {!isDesktopCollapsed && <span>Customers</span>}
                 </div>
               </Link>
               <Link
