@@ -2,6 +2,8 @@ import {
   Controller,
   Post,
   Get,
+  Patch,
+  Delete,
   Param,
   Body,
   Query,
@@ -14,6 +16,8 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CreateWarehouseService } from './services/create-warehouse.service';
 import { ListWarehousesService } from './services/list-warehouses.service';
+import { UpdateWarehouseService } from './services/update-warehouse.service';
+import { DeleteWarehouseService } from './services/delete-warehouse.service';
 import { AdjustStockService } from './services/adjust-stock.service';
 import { GetInventoryStockService } from './services/get-inventory-stock.service';
 import { ListStockMovementsService } from './services/list-stock-movements.service';
@@ -27,6 +31,7 @@ import { GetInventorySettingsOverviewService } from './services/get-inventory-se
 import { SeedInventoryDemoDataService } from './services/seed-inventory-demo-data.service';
 import { FindStoreByUserService } from '../tenant/services/find-store-by-user.service';
 import { CreateWarehouseDto } from './dto/create-warehouse.dto';
+import { UpdateWarehouseDto } from './dto/update-warehouse.dto';
 import { AdjustStockDto } from './dto/adjust-stock.dto';
 import { BulkAdjustStockDto } from './dto/bulk-adjust-stock.dto';
 import { BulkAdjustStockResponseDto } from './dto/bulk-adjust-stock-response.dto';
@@ -49,6 +54,8 @@ export class InventoryController {
   constructor(
     private readonly createWarehouseService: CreateWarehouseService,
     private readonly listWarehousesService: ListWarehousesService,
+    private readonly updateWarehouseService: UpdateWarehouseService,
+    private readonly deleteWarehouseService: DeleteWarehouseService,
     private readonly adjustStockService: AdjustStockService,
     private readonly bulkAdjustStockService: BulkAdjustStockService,
     private readonly getInventoryStockService: GetInventoryStockService,
@@ -149,6 +156,41 @@ export class InventoryController {
   ) {
     const tenantId = await this.getMerchantTenantId(userId, storeId);
     return this.listWarehousesService.execute(tenantId);
+  }
+
+  @Patch('warehouses/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update a fulfillment warehouse' })
+  @ApiResponse({ status: 200, description: 'Warehouse updated successfully' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid authentication token' })
+  @ApiResponse({ status: 404, description: 'Warehouse not found or access denied' })
+  @ApiResponse({ status: 409, description: 'Warehouse code already in use' })
+  async updateWarehouse(
+    @CurrentUser('sub') userId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateWarehouseDto,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
+    return this.updateWarehouseService.execute(tenantId, id, dto);
+  }
+
+  @Delete('warehouses/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete a fulfillment warehouse' })
+  @ApiResponse({ status: 200, description: 'Warehouse deleted successfully' })
+  @ApiResponse({ status: 400, description: 'Warehouse still has stock or is the sole default warehouse' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid authentication token' })
+  @ApiResponse({ status: 404, description: 'Warehouse not found or access denied' })
+  async deleteWarehouse(
+    @CurrentUser('sub') userId: string,
+    @Param('id') id: string,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
+    return this.deleteWarehouseService.execute(tenantId, id);
   }
 
   @Post('adjust')

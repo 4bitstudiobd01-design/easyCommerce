@@ -5,10 +5,31 @@ import { RootState } from '@/store';
 export interface Warehouse {
   id: string;
   name: string;
+  code: string;
   address?: string;
   city?: string;
+  phone?: string;
   isDefault: boolean;
   tenantId: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateWarehouseRequest {
+  name: string;
+  code: string;
+  isDefault?: boolean;
+  address?: string;
+  phone?: string;
+}
+
+export interface UpdateWarehouseRequest {
+  id: string;
+  name?: string;
+  code?: string;
+  isDefault?: boolean;
+  address?: string;
+  phone?: string;
 }
 
 export interface InventoryStock {
@@ -446,6 +467,33 @@ export const inventoryApi = createApi({
       transformResponse: (response: { data: Warehouse[] } | Warehouse[]) =>
         Array.isArray(response) ? response : (response as any).data || [],
     }),
+    createWarehouse: builder.mutation<Warehouse, CreateWarehouseRequest>({
+      query: (body) => ({
+        url: '/inventory/warehouses',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Warehouse'],
+      transformResponse: (response: { data: Warehouse } | Warehouse) =>
+        ('data' in (response as any)) ? (response as any).data : response,
+    }),
+    updateWarehouse: builder.mutation<Warehouse, UpdateWarehouseRequest>({
+      query: ({ id, ...body }) => ({
+        url: `/inventory/warehouses/${id}`,
+        method: 'PATCH',
+        body,
+      }),
+      invalidatesTags: ['Warehouse'],
+      transformResponse: (response: { data: Warehouse } | Warehouse) =>
+        ('data' in (response as any)) ? (response as any).data : response,
+    }),
+    deleteWarehouse: builder.mutation<{ message: string }, string>({
+      query: (id) => ({
+        url: `/inventory/warehouses/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Warehouse'],
+    }),
     getInventoryStocks: builder.query<InventoryStock[], void>({
       query: () => '/inventory/stock',
       providesTags: ['Stock'],
@@ -592,6 +640,9 @@ export const {
   useSeedInventoryDemoDataMutation,
   useGetInventoryKpisQuery,
   useGetWarehousesQuery,
+  useCreateWarehouseMutation,
+  useUpdateWarehouseMutation,
+  useDeleteWarehouseMutation,
   useGetInventoryStocksQuery,
   useGetInventoryStockQuery,
   useAdjustStockMutation,

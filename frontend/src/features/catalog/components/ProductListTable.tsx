@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import {
   useGetProductsQuery,
   useDeleteProductMutation,
+  useUpdateProductMutation,
   Product,
   ProductStatus,
   ProductType,
@@ -59,6 +60,8 @@ export function ProductListTable({
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
   const [deleteProduct, { isLoading: isDeleting }] = useDeleteProductMutation();
+  const [updateProduct] = useUpdateProductMutation();
+  const [togglingVisibilityId, setTogglingVisibilityId] = useState<string | null>(null);
 
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
@@ -69,6 +72,18 @@ export function ProductListTable({
       setDeleteTarget(null);
     } catch (err: any) {
       toast.error(err?.data?.message || 'Failed to delete product. Please try again.');
+    }
+  };
+
+  const handleToggleVisibility = async (product: Product) => {
+    setTogglingVisibilityId(product.id);
+    try {
+      await updateProduct({ id: product.id, isVisible: !product.isVisible }).unwrap();
+      toast.success(product.isVisible ? 'Hidden from storefront' : 'Now visible on storefront');
+    } catch (err: any) {
+      toast.error(err?.data?.message || 'Failed to update storefront visibility.');
+    } finally {
+      setTogglingVisibilityId(null);
     }
   };
 
@@ -296,7 +311,7 @@ export function ProductListTable({
               <th className="px-3 py-3 w-[100px]">Price</th>
               <th className="px-3 py-3 w-[80px]">Stock</th>
               <th className="px-3 py-3 w-[110px]">Status</th>
-              <th className="px-3 py-3 w-[110px]">Created At</th>
+              <th className="px-3 py-3 w-[110px]">Storefront</th>
               <th className="px-3 py-3 w-[110px] text-center">Action</th>
             </tr>
           </thead>
@@ -383,12 +398,24 @@ export function ProductListTable({
                     {renderStatusBadge(product.status, product.stockInfo)}
                   </td>
 
-                  <td className="px-3 py-3 text-slate-500 text-[11px] whitespace-nowrap">
-                    {new Date(product.createdAt).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                    })}
+                  <td className="px-3 py-3">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={!!product.isVisible}
+                      aria-label={`${product.isVisible ? 'Hide' : 'Show'} ${productName} on storefront`}
+                      disabled={togglingVisibilityId === product.id}
+                      onClick={() => handleToggleVisibility(product)}
+                      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                        product.isVisible ? 'bg-blue-600' : 'bg-slate-200'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
+                          product.isVisible ? 'translate-x-[18px]' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
                   </td>
 
                   <td className="px-3 py-3">

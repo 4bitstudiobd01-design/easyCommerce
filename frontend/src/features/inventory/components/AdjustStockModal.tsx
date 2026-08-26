@@ -80,13 +80,13 @@ export function AdjustStockModal({
     <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
       <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden relative">
         {/* Top Accent Bar */}
-        <div className="h-2 bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-600"></div>
+        <div className="h-2 bg-blue-600"></div>
 
         <div className="p-8">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3.5">
-              <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl border border-indigo-100 shrink-0">
+              <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl border border-blue-100 shrink-0">
                 <Boxes className="w-6 h-6" />
               </div>
               <div>
@@ -120,7 +120,7 @@ export function AdjustStockModal({
                   required
                   value={productId}
                   onChange={(e) => setProductId(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white transition-all font-medium"
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all font-medium"
                 >
                   <option value="">Choose a product from catalog...</option>
                   {products.map((prod) => (
@@ -142,7 +142,7 @@ export function AdjustStockModal({
                 <select
                   value={warehouseId}
                   onChange={(e) => setWarehouseId(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white transition-all font-medium"
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all font-medium"
                 >
                   {warehouses.map((wh) => (
                     <option key={wh.id} value={wh.id}>
@@ -177,7 +177,7 @@ export function AdjustStockModal({
                   onClick={() => setAction('SET')}
                   className={`py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
                     action === 'SET'
-                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/20'
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-600/20'
                       : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                   }`}
                 >
@@ -212,7 +212,7 @@ export function AdjustStockModal({
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
                 placeholder="50"
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-base font-extrabold focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white transition-all"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-base font-extrabold focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all"
               />
             </div>
 
@@ -220,7 +220,7 @@ export function AdjustStockModal({
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full mt-4 py-3.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all text-sm shadow-lg shadow-indigo-600/20 active:scale-95 disabled:opacity-50"
+              className="w-full mt-4 py-3.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all text-sm shadow-lg shadow-blue-600/20 active:scale-95 disabled:opacity-50"
             >
               {isLoading ? (
                 <span>Updating Stock Level...</span>

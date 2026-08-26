@@ -242,7 +242,7 @@ export function ProductVariantInventoryView({
         <div className="flex items-center gap-2 shrink-0">
           <Link
             href={`/dashboard/products/${productId}/edit`}
-            className="px-3.5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-sm shadow-purple-600/30 flex items-center gap-1.5 transition-all"
+            className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm shadow-blue-600/30 flex items-center gap-1.5 transition-all"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Add Variant Stock</span>

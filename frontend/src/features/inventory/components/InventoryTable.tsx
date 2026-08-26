@@ -276,16 +276,6 @@ export function InventoryTable({
                   <ArrowUpDown className="w-3 h-3 text-slate-400" />
                 </button>
               </th>
-              <th className="py-3 px-4 text-right">Reserved</th>
-              <th className="py-3 px-4 text-right">
-                <button
-                  onClick={() => onSortChange('availableQuantity')}
-                  className="inline-flex items-center gap-1 hover:text-slate-800 focus:outline-none ml-auto"
-                >
-                  <span>Available</span>
-                  <ArrowUpDown className="w-3 h-3 text-slate-400" />
-                </button>
-              </th>
               <th className="py-3 px-4 text-right">Threshold</th>
               <th className="py-3 px-4 text-center">Status</th>
               <th className="py-3 px-4 text-right">
@@ -383,20 +373,6 @@ export function InventoryTable({
                 {/* Physical Stock Column */}
                 <td className="py-3.5 px-4 text-right font-extrabold text-slate-900">
                   {item.quantityOnHand.toLocaleString()}
-                </td>
-
-                {/* Reserved Column */}
-                <td className="py-3.5 px-4 text-right font-medium text-slate-500">
-                  {item.quantityReserved > 0 ? (
-                    <span className="text-amber-600 font-semibold">{item.quantityReserved.toLocaleString()}</span>
-                  ) : (
-                    '0'
-                  )}
-                </td>
-
-                {/* Available Stock Column */}
-                <td className="py-3.5 px-4 text-right font-extrabold text-blue-600">
-                  {item.availableQuantity.toLocaleString()}
                 </td>
 
                 {/* Threshold Column */}

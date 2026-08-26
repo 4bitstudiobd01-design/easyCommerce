@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   CheckCircle2,
   ShieldCheck,
@@ -11,6 +12,7 @@ import {
   Database,
   Lock,
   ArrowRight,
+  ArrowLeft,
   Sparkles,
   Boxes,
   FileText,
@@ -106,10 +108,21 @@ const QA_ITEMS: QaCheckItem[] = [
 ];
 
 export function InventoryQaView() {
+  const router = useRouter();
   const allPassed = QA_ITEMS.every((item) => item.passed);
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto py-8">
+      {/* Back Navigation */}
+      <button
+        type="button"
+        onClick={() => router.back()}
+        className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
+      >
+        <ArrowLeft className="w-3.5 h-3.5" />
+        <span>Back</span>
+      </button>
+
       {/* Top Header */}
       <div>
         <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">

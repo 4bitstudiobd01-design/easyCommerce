@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, UseGuards, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Get, Body, Headers, UseGuards, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { StockTransferService } from '../services/stock-transfer.service';
 import { FindStoreByUserService } from '../../tenant/services/find-store-by-user.service';
@@ -14,8 +14,8 @@ export class StockTransferController {
     private readonly findStoreByUserService: FindStoreByUserService,
   ) {}
 
-  private async getMerchantTenantId(userId: string): Promise<string> {
-    const store = await this.findStoreByUserService.execute(userId);
+  private async getMerchantTenantId(userId: string, storeId?: string): Promise<string> {
+    const store = await this.findStoreByUserService.execute(userId, storeId);
     if (!store) {
       throw new BadRequestException('Merchant must create a store first.');
     }
@@ -32,8 +32,9 @@ export class StockTransferController {
   async transferStock(
     @CurrentUser('sub') userId: string,
     @Body() dto: TransferStockDto,
+    @Headers('x-store-id') storeId?: string,
   ) {
-    const tenantId = await this.getMerchantTenantId(userId);
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
     return this.stockTransferService.transferStock(tenantId, dto);
   }
 
@@ -44,8 +45,11 @@ export class StockTransferController {
   @ApiResponse({ status: 200, description: 'List of stock transfers for the merchant store' })
   @ApiResponse({ status: 401, description: 'Missing or invalid authentication token' })
   @ApiResponse({ status: 400, description: 'Merchant has not created a store yet' })
-  async listTransfers(@CurrentUser('sub') userId: string) {
-    const tenantId = await this.getMerchantTenantId(userId);
+  async listTransfers(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
     return this.stockTransferService.listStockTransfers(tenantId);
   }
 }

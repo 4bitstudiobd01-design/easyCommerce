@@ -12,6 +12,8 @@ import { TenantModule } from '../tenant/tenant.module';
 import { CatalogModule } from '../catalog/catalog.module';
 import { CreateWarehouseService } from './services/create-warehouse.service';
 import { ListWarehousesService } from './services/list-warehouses.service';
+import { UpdateWarehouseService } from './services/update-warehouse.service';
+import { DeleteWarehouseService } from './services/delete-warehouse.service';
 import { AdjustStockService } from './services/adjust-stock.service';
 import { GetInventoryStockService } from './services/get-inventory-stock.service';
 import { ListStockMovementsService } from './services/list-stock-movements.service';
@@ -54,6 +56,8 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
   providers: [
     CreateWarehouseService,
     ListWarehousesService,
+    UpdateWarehouseService,
+    DeleteWarehouseService,
     AdjustStockService,
     BulkAdjustStockService,
     GetInventoryStockService,
@@ -72,6 +76,8 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
   exports: [
     CreateWarehouseService,
     ListWarehousesService,
+    UpdateWarehouseService,
+    DeleteWarehouseService,
     AdjustStockService,
     BulkAdjustStockService,
     GetInventoryStockService,

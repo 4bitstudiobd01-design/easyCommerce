@@ -185,8 +185,8 @@ export function InventoryHistoryView({ inventoryId: propInventoryId }: Inventory
         );
       case 'RETURNED':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-purple-50 text-purple-700 text-xs font-semibold border border-purple-200">
-            <RotateCcw className="w-3.5 h-3.5 text-purple-600" />
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-cyan-50 text-cyan-700 text-xs font-semibold border border-cyan-200">
+            <RotateCcw className="w-3.5 h-3.5 text-cyan-600" />
             <span>Returned</span>
           </span>
         );
@@ -603,7 +603,7 @@ export function InventoryHistoryView({ inventoryId: propInventoryId }: Inventory
       {activeMovement && (
         <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
           <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden relative">
-            <div className="h-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600" />
+            <div className="h-2 bg-blue-600" />
 
             <div className="p-6 space-y-5">
               {/* Modal Header */}

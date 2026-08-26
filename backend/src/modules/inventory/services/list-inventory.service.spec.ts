@@ -19,6 +19,7 @@ describe('ListInventoryService', () => {
       andWhere: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
       addOrderBy: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
       skip: jest.fn().mockReturnThis(),
       take: jest.fn().mockReturnThis(),
       getManyAndCount: jest.fn().mockResolvedValue([
@@ -125,7 +126,11 @@ describe('ListInventoryService', () => {
     expect(qb.andWhere).toHaveBeenCalledWith(
       '(stock."quantityOnHand" - stock."quantityReserved") <= COALESCE(stock."reorderPoint", product."lowStockThreshold", 10)',
     );
-    expect(qb.orderBy).toHaveBeenCalledWith('(stock.quantityOnHand - stock.quantityReserved)', 'ASC');
+    expect(qb.addSelect).toHaveBeenCalledWith(
+      '(stock.quantityOnHand - stock.quantityReserved)',
+      'available_quantity_sort',
+    );
+    expect(qb.orderBy).toHaveBeenCalledWith('available_quantity_sort', 'ASC');
   });
 
   it('should filter by OUT_OF_STOCK status when available stock <= 0', async () => {

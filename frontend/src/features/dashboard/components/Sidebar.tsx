@@ -216,8 +216,8 @@ export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onCl
               {!isDesktopCollapsed && <span>Categories</span>}
             </div>
           </Link>
-          {/* <Link 
-            href="/dashboard/inventory" 
+          <Link
+            href="/dashboard/inventory"
             className={navItemClass('/dashboard/inventory')}
             onMouseEnter={(e) => handleTooltipEnter(e, "Inventory")}
             onFocus={(e) => handleTooltipEnter(e, "Inventory")}
@@ -228,7 +228,7 @@ export const Sidebar = ({ isMobileOpen = false, isDesktopCollapsed = false, onCl
               <Layers className={iconClass} strokeWidth={iconStroke} />
               {!isDesktopCollapsed && <span>Inventory</span>}
             </div>
-          </Link> */}
+          </Link>
 
           <NavGroupHeader>Operations</NavGroupHeader>
           {/* <Link 

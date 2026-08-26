@@ -4,11 +4,12 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { notFound, useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Package, History, SlidersHorizontal, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Package, History, SlidersHorizontal, Image as ImageIcon, Warehouse as WarehouseIcon, MapPin, Phone, Star } from 'lucide-react';
 import { useGetInventoryDetailsQuery, InventoryStockItem } from '../api/inventoryApi';
 
 export function InventoryDetailsView() {
   const params = useParams();
+  const router = useRouter();
   const inventoryId = typeof params?.id === 'string' ? params.id : '';
 
   const { data: stock, isLoading, isError } = useGetInventoryDetailsQuery(inventoryId, {
@@ -72,6 +73,16 @@ export function InventoryDetailsView() {
 
   return (
     <div className="space-y-6">
+      {/* Back Navigation */}
+      <button
+        type="button"
+        onClick={() => router.back()}
+        className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
+      >
+        <ArrowLeft className="w-3.5 h-3.5" />
+        <span>Back</span>
+      </button>
+
       {/* Top Header & Breadcrumb */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -95,7 +106,7 @@ export function InventoryDetailsView() {
         <div className="flex items-center gap-2.5 shrink-0">
           <Link
             href={`/dashboard/inventory/adjust?productId=${product?.id}`}
-            className="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl shadow-sm shadow-purple-600/30 flex items-center gap-2 transition-all"
+            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-sm shadow-blue-600/30 flex items-center gap-2 transition-all"
           >
             <SlidersHorizontal className="w-4 h-4" />
             <span>Adjust Stock</span>
@@ -129,31 +140,39 @@ export function InventoryDetailsView() {
                 <ImageIcon className="w-16 h-16 text-slate-300" />
               )}
             </div>
-            
-            {/* Small Thumbnails Placeholder (Matching mockup visual) */}
-            <div className="grid grid-cols-4 gap-3">
-              {[...Array(4)].map((_, i) => (
-                <div
-                  key={i}
-                  className={`aspect-square rounded-xl border flex items-center justify-center overflow-hidden bg-slate-50 ${
-                    i === 0 ? 'border-purple-600 ring-2 ring-purple-600/20' : 'border-slate-200'
-                  }`}
-                >
-                  {product?.thumbnail ? (
-                    <Image
-                      src={product.thumbnail}
-                      alt={`${product.name} thumb ${i}`}
-                      width={60}
-                      height={60}
-                      className="object-cover opacity-80"
-                      unoptimized
-                    />
-                  ) : (
-                    <ImageIcon className="w-5 h-5 text-slate-300" />
+
+            {/* Warehouse Card */}
+            {stock.warehouse && (
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center shrink-0">
+                    <WarehouseIcon className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-extrabold text-slate-900 truncate">{stock.warehouse.name}</p>
+                    <p className="text-[11px] font-mono text-slate-400">{stock.warehouse.code}</p>
+                  </div>
+                  {stock.warehouse.isDefault && (
+                    <span className="ml-auto px-1.5 py-0.5 bg-blue-50 text-blue-700 font-bold text-[9px] rounded-full border border-blue-200 flex items-center gap-0.5 shrink-0">
+                      <Star className="w-2 h-2 fill-blue-600 text-blue-600" />
+                      Default
+                    </span>
                   )}
                 </div>
-              ))}
-            </div>
+                {stock.warehouse.address && (
+                  <p className="text-[11px] text-slate-500 flex items-start gap-1.5">
+                    <MapPin className="w-3 h-3 text-slate-400 shrink-0 mt-0.5" />
+                    <span>{stock.warehouse.address}</span>
+                  </p>
+                )}
+                {stock.warehouse.phone && (
+                  <p className="text-[11px] text-slate-500 flex items-center gap-1.5">
+                    <Phone className="w-3 h-3 text-slate-400 shrink-0" />
+                    <span>{stock.warehouse.phone}</span>
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Right Column: Details Grid */}

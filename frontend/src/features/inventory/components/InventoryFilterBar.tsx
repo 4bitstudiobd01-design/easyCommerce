@@ -3,6 +3,7 @@
 import React from 'react';
 import { Search, X, Filter, RotateCcw } from 'lucide-react';
 import { useGetCategoriesQuery } from '@/features/catalog/api/catalogApi';
+import { useGetWarehousesQuery } from '../api/inventoryApi';
 
 interface InventoryFilterBarProps {
   search: string;
@@ -13,6 +14,8 @@ interface InventoryFilterBarProps {
   onCategoryChange: (value: string) => void;
   productType: string;
   onProductTypeChange: (value: string) => void;
+  warehouseId?: string;
+  onWarehouseChange?: (value: string) => void;
   onResetFilters: () => void;
   activeFilterCount: number;
 }
@@ -26,10 +29,13 @@ export function InventoryFilterBar({
   onCategoryChange,
   productType,
   onProductTypeChange,
+  warehouseId = '',
+  onWarehouseChange,
   onResetFilters,
   activeFilterCount,
 }: InventoryFilterBarProps) {
   const { data: categories = [] } = useGetCategoriesQuery();
+  const { data: warehouses = [] } = useGetWarehousesQuery();
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 space-y-3">
@@ -104,6 +110,25 @@ export function InventoryFilterBar({
               <option value="SERVICE">Service</option>
             </select>
           </div>
+
+          {/* Warehouse Filter */}
+          {onWarehouseChange && (
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Warehouse:</span>
+              <select
+                value={warehouseId}
+                onChange={(e) => onWarehouseChange(e.target.value)}
+                className="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none cursor-pointer py-1 max-w-[150px] truncate"
+              >
+                <option value="">All Warehouses</option>
+                {warehouses.map((wh) => (
+                  <option key={wh.id} value={wh.id}>
+                    {wh.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Reset Filters CTA */}
           {activeFilterCount > 0 && (

@@ -313,7 +313,7 @@ export function BulkAdjustStockModal({
                  type="button"
                  onClick={() => setCurrentStep(3)}
                  disabled={!canProceedToReview}
-                 className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:hover:bg-purple-600 text-white text-xs font-bold rounded-xl transition-colors shadow-sm shadow-purple-600/30"
+                 className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 text-white text-xs font-bold rounded-xl transition-colors shadow-sm shadow-blue-600/30"
                >
                  Continue to Review
                </button>

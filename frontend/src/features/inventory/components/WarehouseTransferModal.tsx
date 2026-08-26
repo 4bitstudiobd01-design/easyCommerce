@@ -8,6 +8,7 @@ import {
   useGetStockTransfersQuery,
   Warehouse,
   InventoryStockItem,
+  StockTransfer,
 } from '../api/inventoryApi';
 import { useGetProductsQuery, Product } from '@/features/catalog/api/catalogApi';
 import {
@@ -15,9 +16,14 @@ import {
   Warehouse as WarehouseIcon,
   Package,
   Clock,
-  ArrowRight
+  ArrowRight,
+  Settings2,
+  ArrowLeft,
 } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { StockTransferDetailsDrawer } from './StockTransferDetailsDrawer';
+
 export function WarehouseTransferModal() {
   const { data: warehouses = [] } = useGetWarehousesQuery();
   const { data: stockItems = [] } = useGetInventoryStockQuery();
@@ -26,11 +32,23 @@ export function WarehouseTransferModal() {
   const { data: transfers = [] } = useGetStockTransfersQuery();
   const router = useRouter();
 
+  const [selectedTransfer, setSelectedTransfer] = useState<StockTransfer | null>(null);
+
   const productMap = new Map<string, Product>(products.map((p) => [p.id, p]));
   const warehouseMap = new Map<string, Warehouse>(warehouses.map((w) => [w.id, w]));
 
   return (
     <div className="space-y-6 max-w-5xl">
+      {/* Back Navigation */}
+      <button
+        type="button"
+        onClick={() => router.back()}
+        className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
+      >
+        <ArrowLeft className="w-3.5 h-3.5" />
+        <span>Back</span>
+      </button>
+
       {/* HEADER */}
       <div className="flex items-center justify-between">
         <div>
@@ -40,14 +58,24 @@ export function WarehouseTransferModal() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => router.push('/dashboard/warehouse-transfers/create')}
-          className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-2 transition-all active:scale-95"
-        >
-          <ArrowRightLeft className="w-4 h-4" />
-          <span>Transfer Stock</span>
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Link
+            href="/dashboard/inventory/warehouses"
+            className="px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold text-xs rounded-xl shadow-sm flex items-center gap-2 transition-all active:scale-95"
+          >
+            <Settings2 className="w-4 h-4" />
+            <span>Manage Warehouses</span>
+          </Link>
+
+          <button
+            type="button"
+            onClick={() => router.push('/dashboard/warehouse-transfers/create')}
+            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-600/20 flex items-center gap-2 transition-all active:scale-95"
+          >
+            <ArrowRightLeft className="w-4 h-4" />
+            <span>Transfer Stock</span>
+          </button>
+        </div>
       </div>
 
       {/* WAREHOUSE STOCK OVERVIEW */}
@@ -61,8 +89,8 @@ export function WarehouseTransferModal() {
             return (
               <div key={wh.id} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center">
-                    <WarehouseIcon className="w-4 h-4 text-slate-600" />
+                  <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center">
+                    <WarehouseIcon className="w-4 h-4 text-blue-600" />
                   </div>
                   <div>
                     <p className="font-black text-slate-900 text-sm">{wh.name}</p>
@@ -118,13 +146,17 @@ export function WarehouseTransferModal() {
                 </tr>
               ) : (
                 transfers.slice(0, 15).map((t) => (
-                  <tr key={t.id} className="hover:bg-slate-50/70 transition-colors">
+                  <tr
+                    key={t.id}
+                    onClick={() => setSelectedTransfer(t)}
+                    className="hover:bg-blue-50/50 transition-colors cursor-pointer"
+                  >
                     <td className="px-6 py-3 font-bold text-slate-900">
-                      {productMap.get(t.productId)?.title || 'Product'}
+                      {productMap.get(t.productId)?.name || productMap.get(t.productId)?.title || 'Product'}
                     </td>
                     <td className="px-6 py-3 text-slate-700">{t.fromWarehouse?.name || warehouseMap.get(t.fromWarehouseId)?.name || '—'}</td>
                     <td className="px-6 py-3 text-center">
-                      <ArrowRight className="w-4 h-4 text-purple-500 mx-auto" />
+                      <ArrowRight className="w-4 h-4 text-blue-500 mx-auto" />
                     </td>
                     <td className="px-6 py-3 text-slate-700">{t.toWarehouse?.name || warehouseMap.get(t.toWarehouseId)?.name || '—'}</td>
                     <td className="px-6 py-3 text-center font-extrabold text-slate-900">{t.quantity}</td>
@@ -137,6 +169,12 @@ export function WarehouseTransferModal() {
         </div>
       </div>
 
+      <StockTransferDetailsDrawer
+        transfer={selectedTransfer}
+        onClose={() => setSelectedTransfer(null)}
+        productMap={productMap}
+        warehouseMap={warehouseMap}
+      />
     </div>
   );
 }

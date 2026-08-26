@@ -15,12 +15,15 @@ import {
   CheckCircle2,
   Download,
   MoreVertical,
+  Warehouse as WarehouseIcon,
+  ArrowRightLeft,
 } from 'lucide-react';
 
 
 import {
   useGetInventoryListQuery,
   useGetInventoryKpisQuery,
+  useGetWarehousesQuery,
   ListInventoryParams,
   InventoryListItem,
 } from '../api/inventoryApi';
@@ -47,6 +50,7 @@ export function InventoryListView() {
   const initialStatus = searchParams?.get('status') || '';
   const initialCategory = searchParams?.get('categoryId') || '';
   const initialProductType = searchParams?.get('productType') || '';
+  const initialWarehouseId = searchParams?.get('warehouseId') || '';
   const initialSortBy = searchParams?.get('sortBy') || 'updatedAt';
   const initialSortOrder = (searchParams?.get('sortOrder') as 'ASC' | 'DESC') || 'DESC';
 
@@ -57,6 +61,7 @@ export function InventoryListView() {
   const [status, setStatus] = useState<string>(initialStatus);
   const [categoryId, setCategoryId] = useState<string>(initialCategory);
   const [productType, setProductType] = useState<string>(initialProductType);
+  const [warehouseId, setWarehouseId] = useState<string>(initialWarehouseId);
   const [sortBy, setSortBy] = useState<string>(initialSortBy);
   const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>(initialSortOrder);
 
@@ -71,7 +76,23 @@ export function InventoryListView() {
       setStatus(urlStatus);
       setSelectedInventoryIds([]);
     }
+    const urlWarehouseId = searchParams?.get('warehouseId') || '';
+    if (urlWarehouseId !== warehouseId) {
+      setWarehouseId(urlWarehouseId);
+      setPage(1);
+      setSelectedInventoryIds([]);
+    }
   }, [searchParams]);
+
+  // Jump straight to the table when arriving with a warehouse filter already
+  // in the URL (e.g. clicked in from a warehouse card) — the KPI/overview
+  // sections above the table make the filtered result easy to miss otherwise.
+  useEffect(() => {
+    if (initialWarehouseId) {
+      document.getElementById('inventory-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Debounce search input
   useEffect(() => {
@@ -98,8 +119,9 @@ export function InventoryListView() {
     if (status) p.status = status;
     if (categoryId) p.categoryId = categoryId;
     if (productType) p.productType = productType;
+    if (warehouseId) p.warehouseId = warehouseId;
     return p;
-  }, [page, limit, debouncedSearch, status, categoryId, productType, sortBy, sortOrder]);
+  }, [page, limit, debouncedSearch, status, categoryId, productType, warehouseId, sortBy, sortOrder]);
 
   // Fetch Inventory List & Store-wide KPIs
   const {
@@ -111,6 +133,8 @@ export function InventoryListView() {
   } = useGetInventoryListQuery(queryParams);
 
   const { data: kpis, isLoading: isKpisLoading } = useGetInventoryKpisQuery();
+  const { data: warehouses = [] } = useGetWarehousesQuery();
+  const activeWarehouse = warehouseId ? warehouses.find((w) => w.id === warehouseId) : undefined;
 
   const items: InventoryListItem[] = useMemo(() => {
     if (!listResponse) return [];
@@ -152,8 +176,9 @@ export function InventoryListView() {
     if (status && status !== 'LOW_STOCK' && status !== 'OUT_OF_STOCK') count += 1;
     if (categoryId) count += 1;
     if (productType) count += 1;
+    if (warehouseId) count += 1;
     return count;
-  }, [debouncedSearch, status, categoryId, productType]);
+  }, [debouncedSearch, status, categoryId, productType, warehouseId]);
 
   const handleResetFilters = () => {
     setSearchInput('');
@@ -161,6 +186,7 @@ export function InventoryListView() {
     setStatus('');
     setCategoryId('');
     setProductType('');
+    setWarehouseId('');
     setPage(1);
     setSelectedInventoryIds([]);
     router.push('/dashboard/inventory', { scroll: false });
@@ -204,7 +230,7 @@ export function InventoryListView() {
     }
   };
 
-  const isFiltered = Boolean(debouncedSearch || categoryId || productType || status);
+  const isFiltered = Boolean(debouncedSearch || categoryId || productType || status || warehouseId);
 
   return (
     <div className="space-y-6">
@@ -222,6 +248,24 @@ export function InventoryListView() {
           <p className="text-xs text-slate-500 mt-0.5">
             Manage your product stock, track inventory and keep your business running smoothly.
           </p>
+          {activeWarehouse && (
+            <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-[11px] font-bold">
+              <WarehouseIcon className="w-3 h-3" />
+              <span>Showing stock in: {activeWarehouse.name}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setWarehouseId('');
+                  setPage(1);
+                  router.push('/dashboard/inventory', { scroll: false });
+                }}
+                className="ml-1 hover:text-blue-900"
+                title="Clear warehouse filter"
+              >
+                ×
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Top Action Buttons (Mockup Screen 2) */}
@@ -234,9 +278,27 @@ export function InventoryListView() {
             <span>Export</span>
           </button>
 
+          <Link
+            href="/dashboard/inventory/warehouses"
+            className="px-3.5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 shadow-sm flex items-center gap-1.5 transition-all"
+            title="Manage Warehouses"
+          >
+            <WarehouseIcon className="w-4 h-4 text-slate-500" />
+            <span>Warehouses</span>
+          </Link>
+
+          <Link
+            href="/dashboard/warehouse-transfers"
+            className="px-3.5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 shadow-sm flex items-center gap-1.5 transition-all"
+            title="Warehouse Transfers"
+          >
+            <ArrowRightLeft className="w-4 h-4 text-slate-500" />
+            <span>Transfers</span>
+          </Link>
+
           <button
             onClick={() => handleAddStockClick()}
-            className="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl shadow-sm shadow-purple-600/30 flex items-center gap-2 transition-all"
+            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-sm shadow-blue-600/30 flex items-center gap-2 transition-all"
           >
             <Plus className="w-4 h-4" />
             <span>Add Stock</span>
@@ -290,11 +352,11 @@ export function InventoryListView() {
           onClick={() => handleTabChange('LOW_STOCK')}
           className={`px-4 py-2 text-xs font-bold rounded-xl flex items-center gap-2 transition-all whitespace-nowrap border ${
             status === 'LOW_STOCK'
-              ? 'bg-purple-600 text-white border-purple-600 shadow-sm shadow-purple-600/20'
+              ? 'bg-amber-50 text-amber-700 border-amber-100 shadow-sm'
               : 'bg-white text-slate-500 border-transparent hover:bg-slate-50 hover:text-slate-700'
           }`}
         >
-          <span className={`${status === 'LOW_STOCK' ? 'bg-purple-500' : 'bg-slate-100'} px-2 py-0.5 rounded-md`}>Low Stock ({kpis?.lowStockCount ?? 24})</span>
+          <span>Low Stock ({kpis?.lowStockCount ?? 24})</span>
         </button>
 
         <button
@@ -329,11 +391,17 @@ export function InventoryListView() {
           setProductType(val);
           setPage(1);
         }}
+        warehouseId={warehouseId}
+        onWarehouseChange={(val) => {
+          setWarehouseId(val);
+          setPage(1);
+        }}
         activeFilterCount={activeFilterCount}
         onResetFilters={handleResetFilters}
       />
 
       {/* Main Inventory Table */}
+      <div id="inventory-table" />
       <InventoryTable
         items={items}
         isLoading={isListLoading}

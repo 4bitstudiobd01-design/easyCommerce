@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Database,
   ShieldCheck,
@@ -10,6 +11,7 @@ import {
   AlertTriangle,
   Sparkles,
   Loader2,
+  ArrowLeft,
 } from 'lucide-react';
 import {
   useGetInventorySettingsOverviewQuery,
@@ -17,6 +19,7 @@ import {
 } from '../api/inventoryApi';
 
 export function InventorySettingsView() {
+  const router = useRouter();
   const { data: settingsData, isLoading, refetch } = useGetInventorySettingsOverviewQuery(undefined, {
     pollingInterval: 30000,
   });
@@ -49,6 +52,16 @@ export function InventorySettingsView() {
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
+      {/* Back Navigation */}
+      <button
+        type="button"
+        onClick={() => router.back()}
+        className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
+      >
+        <ArrowLeft className="w-3.5 h-3.5" />
+        <span>Back</span>
+      </button>
+
       {/* Top Header & Breadcrumb */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -107,7 +120,7 @@ export function InventorySettingsView() {
               type="button"
               onClick={() => setShowSeedModal(true)}
               disabled={isSeeding}
-              className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-sm shadow-purple-600/30 flex items-center justify-center gap-2 transition-all"
+              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm shadow-blue-600/30 flex items-center justify-center gap-2 transition-all"
             >
               {isSeeding ? (
                 <>

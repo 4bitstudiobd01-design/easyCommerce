@@ -80,19 +80,26 @@ export class ListInventoryService {
 
 
     // Server-side Sorting
+    // Raw SQL expressions can't be passed to orderBy() directly here: TypeORM's
+    // getManyAndCount() re-parses the ORDER BY clause to find "alias.column" pairs
+    // for merging the count subquery results, and throws ("alias was not found")
+    // on anything that isn't a plain alias reference. Expressions must instead be
+    // exposed as a SELECT alias via addSelect(), then ordered by that alias name.
     const sortOrder = queryDto.sortOrder === 'ASC' ? 'ASC' : 'DESC';
     switch (queryDto.sortBy) {
       case InventorySortField.ON_HAND:
         qb.orderBy('stock.quantityOnHand', sortOrder);
         break;
       case InventorySortField.AVAILABLE:
-        qb.orderBy('(stock.quantityOnHand - stock.quantityReserved)', sortOrder);
+        qb.addSelect('(stock.quantityOnHand - stock.quantityReserved)', 'available_quantity_sort');
+        qb.orderBy('available_quantity_sort', sortOrder);
         break;
       case InventorySortField.NAME:
         qb.orderBy('product.name', sortOrder);
         break;
       case InventorySortField.SKU:
-        qb.orderBy('COALESCE(variant.sku, product.sku)', sortOrder);
+        qb.addSelect('COALESCE(variant.sku, product.sku)', 'sku_sort');
+        qb.orderBy('sku_sort', sortOrder);
         break;
       case InventorySortField.UPDATED_AT:
       default:

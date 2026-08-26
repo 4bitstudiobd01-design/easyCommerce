@@ -37,7 +37,7 @@ export function InventoryStockTable({ onAdjustStockClick }: InventoryStockTableP
   if (stocks.length === 0) {
     return (
       <div className="p-12 bg-white rounded-2xl border border-slate-200 text-center max-w-lg mx-auto my-6">
-        <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-indigo-100">
+        <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-blue-100">
           <Boxes className="w-6 h-6" />
         </div>
         <h3 className="font-extrabold text-base text-slate-900">No Inventory Stock Recorded</h3>
@@ -47,7 +47,7 @@ export function InventoryStockTable({ onAdjustStockClick }: InventoryStockTableP
         {onAdjustStockClick && (
           <button
             onClick={() => onAdjustStockClick()}
-            className="mt-5 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-600/20 transition-all inline-flex items-center gap-2"
+            className="mt-5 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-600/20 transition-all inline-flex items-center gap-2"
           >
             <SlidersHorizontal className="w-4 h-4" />
             <span>Adjust First Stock</span>
@@ -70,7 +70,7 @@ export function InventoryStockTable({ onAdjustStockClick }: InventoryStockTableP
         {onAdjustStockClick && (
           <button
             onClick={() => onAdjustStockClick()}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-600/20 transition-all flex items-center gap-1.5"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-600/20 transition-all flex items-center gap-1.5"
           >
             <SlidersHorizontal className="w-4 h-4" />
             <span>Adjust Stock</span>
@@ -123,7 +123,7 @@ export function InventoryStockTable({ onAdjustStockClick }: InventoryStockTableP
                 </td>
 
                 <td className="px-6 py-4">
-                  <span className="font-extrabold text-indigo-600 text-sm">
+                  <span className="font-extrabold text-blue-600 text-sm">
                     {stock.availableQuantity} units
                   </span>
                 </td>
@@ -151,7 +151,7 @@ export function InventoryStockTable({ onAdjustStockClick }: InventoryStockTableP
                   {onAdjustStockClick && (
                     <button
                       onClick={() => onAdjustStockClick(stock.productId)}
-                      className="px-3 py-1.5 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 font-bold text-xs rounded-xl transition-colors"
+                      className="px-3 py-1.5 bg-slate-100 hover:bg-blue-50 hover:text-blue-600 font-bold text-xs rounded-xl transition-colors"
                     >
                       Update Stock
                     </button>
