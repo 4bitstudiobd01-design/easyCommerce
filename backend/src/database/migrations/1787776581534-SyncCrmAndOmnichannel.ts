@@ -1,0 +1,120 @@
+import { MigrationInterface, QueryRunner } from "typeorm";
+
+export class SyncCrmAndOmnichannel1787776581534 implements MigrationInterface {
+    name = 'SyncCrmAndOmnichannel1787776581534'
+
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`ALTER TABLE "customer_sessions" DROP CONSTRAINT "FK_customer_sessions_customerId"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_23d02cf6e67e4c73b59f1cdcbb"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_courier_integrations_webhook_secret"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_blog_posts_status_published"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_blog_posts_slug"`);
+        await queryRunner.query(`CREATE TABLE "omnichannel_messages" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "tenantId" uuid NOT NULL, "storeId" uuid, "platform" character varying(50) NOT NULL, "conversationId" character varying(255) NOT NULL, "externalMessageId" character varying(255), "senderId" character varying(255) NOT NULL, "senderName" character varying(255) NOT NULL, "senderAvatar" text, "recipientId" character varying(255), "text" text NOT NULL, "direction" character varying(20) NOT NULL DEFAULT 'INBOUND', "status" character varying(20) NOT NULL DEFAULT 'RECEIVED', "type" character varying(50) NOT NULL DEFAULT 'text', "rawMetadata" jsonb, "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_37191a3ce2aebb6a7faf6fe2eac" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE INDEX "IDX_d1d3edb75a9d5b9e52bab61728" ON "omnichannel_messages" ("tenantId") `);
+        await queryRunner.query(`CREATE INDEX "IDX_803ca565ab1d0067bf6fed17e4" ON "omnichannel_messages" ("storeId") `);
+        await queryRunner.query(`CREATE INDEX "IDX_bfeca0fdca90d891d335a3e1f1" ON "omnichannel_messages" ("tenantId", "createdAt") `);
+        await queryRunner.query(`CREATE INDEX "IDX_185d01ca6024d1d28c65d3c503" ON "omnichannel_messages" ("tenantId", "conversationId") `);
+        await queryRunner.query(`CREATE INDEX "IDX_8eafd8bcd67f3cd65cbd100e1f" ON "omnichannel_messages" ("tenantId", "platform") `);
+        await queryRunner.query(`CREATE TABLE "omnichannel_conversation_states" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "tenantId" uuid NOT NULL, "conversationId" character varying(255) NOT NULL, "isAiPaused" boolean NOT NULL DEFAULT false, "pausedReason" character varying(50) NOT NULL DEFAULT 'NONE', "pausedByUserId" character varying(255), "aiPausedAt" TIMESTAMP WITH TIME ZONE, "lastHumanAgentMessageAt" TIMESTAMP WITH TIME ZONE, "lastAiMessageAt" TIMESTAMP WITH TIME ZONE, "totalAiRepliesCount" integer NOT NULL DEFAULT '0', "metadata" jsonb NOT NULL DEFAULT '{}', "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_de825f6ebaae493302f20e37434" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE INDEX "IDX_d4a00e3ebf548b9f699d7dc70f" ON "omnichannel_conversation_states" ("tenantId") `);
+        await queryRunner.query(`CREATE INDEX "IDX_fc32daba59466ddd86695d9468" ON "omnichannel_conversation_states" ("conversationId") `);
+        await queryRunner.query(`CREATE UNIQUE INDEX "IDX_f334d965025874c5b23e84a924" ON "omnichannel_conversation_states" ("tenantId", "conversationId") `);
+        await queryRunner.query(`CREATE TABLE "omnichannel_credentials" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "tenantId" uuid NOT NULL, "storeId" uuid, "platform" character varying(50) NOT NULL, "name" character varying(255) NOT NULL, "accountHandle" character varying(255), "credentials" jsonb NOT NULL DEFAULT '{}', "metadata" jsonb NOT NULL DEFAULT '{}', "status" character varying(50) NOT NULL DEFAULT 'disconnected', "isActive" boolean NOT NULL DEFAULT true, "lastSyncedAt" TIMESTAMP WITH TIME ZONE, "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_1a628de30f712262a16b14339f3" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE INDEX "IDX_524bcf7dfc1279671756d47020" ON "omnichannel_credentials" ("tenantId") `);
+        await queryRunner.query(`CREATE INDEX "IDX_2b8cb9d99474d40f662105c243" ON "omnichannel_credentials" ("storeId") `);
+        await queryRunner.query(`CREATE UNIQUE INDEX "IDX_8a6e07fdb66bd7359b8bd64de6" ON "omnichannel_credentials" ("tenantId", "platform") `);
+        await queryRunner.query(`CREATE TABLE "omnichannel_ai_logs" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "tenantId" uuid NOT NULL, "conversationId" character varying(255) NOT NULL, "platform" character varying(50) NOT NULL, "provider" character varying(50) NOT NULL, "model" character varying(100) NOT NULL, "userQuery" text NOT NULL, "aiResponse" text, "status" character varying(50) NOT NULL DEFAULT 'SUCCESS', "tokensUsed" integer NOT NULL DEFAULT '0', "latencyMs" integer NOT NULL DEFAULT '0', "errorMessage" text, "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_ce66fe2cff767e16085dccb410c" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE INDEX "IDX_47c9a7045bf4df7d0f3272b044" ON "omnichannel_ai_logs" ("tenantId") `);
+        await queryRunner.query(`CREATE INDEX "IDX_accf13c1097b05116486b06d7d" ON "omnichannel_ai_logs" ("tenantId", "conversationId") `);
+        await queryRunner.query(`CREATE INDEX "IDX_3ca1e69f3b783b8fa3e5d036f4" ON "omnichannel_ai_logs" ("tenantId", "createdAt") `);
+        await queryRunner.query(`CREATE TABLE "omnichannel_ai_configs" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "tenantId" uuid NOT NULL, "storeId" uuid, "isEnabled" boolean NOT NULL DEFAULT false, "provider" character varying(50) NOT NULL DEFAULT 'gemini', "model" character varying(100) NOT NULL DEFAULT 'gemini-1.5-flash', "encryptedApiKey" text, "systemPrompt" text NOT NULL DEFAULT 'You are a helpful, professional, and friendly eCommerce customer support assistant for our store. Answer customer questions regarding products, orders, shipping, payment methods, and return policies accurately and concisely. If you do not know the answer, politely ask the customer to wait for a human support representative.', "triggerMode" character varying(50) NOT NULL DEFAULT 'NO_HUMAN_ACTIVE', "temperature" double precision NOT NULL DEFAULT '0.7', "maxTokens" integer NOT NULL DEFAULT '500', "businessContext" jsonb NOT NULL DEFAULT '{}', "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_09afb143142cb2e310c27e8de2e" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE UNIQUE INDEX "IDX_457419ddfdddedf37b833d430d" ON "omnichannel_ai_configs" ("tenantId") `);
+        await queryRunner.query(`CREATE INDEX "IDX_f9155ec2543cf143cd4242076a" ON "omnichannel_ai_configs" ("storeId") `);
+        await queryRunner.query(`CREATE TYPE "public"."crm_leads_source_enum" AS ENUM('WEBSITE', 'WHATSAPP', 'FACEBOOK', 'INSTAGRAM', 'PHONE_CALL', 'STORE_INQUIRY', 'MANUAL')`);
+        await queryRunner.query(`CREATE TYPE "public"."crm_leads_stage_enum" AS ENUM('NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL_SENT', 'WON', 'LOST')`);
+        await queryRunner.query(`CREATE TABLE "crm_leads" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "tenant_id" uuid NOT NULL, "store_id" uuid, "name" character varying(255) NOT NULL, "email" character varying(255), "phone" character varying(50) NOT NULL, "company_name" character varying(255), "source" "public"."crm_leads_source_enum" NOT NULL DEFAULT 'WEBSITE', "stage" "public"."crm_leads_stage_enum" NOT NULL DEFAULT 'NEW', "estimated_value" numeric(12,2) NOT NULL DEFAULT '0', "lead_score" integer NOT NULL DEFAULT '50', "assigned_staff_id" uuid, "assigned_staff_name" character varying(255), "notes" text, "tags" text array NOT NULL DEFAULT '{}', "converted_customer_id" uuid, "lost_reason" character varying(255), "next_follow_up_at" TIMESTAMP WITH TIME ZONE, "follow_up_note" text, "follow_up_status" character varying(50), "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_023c67e7150b04458c964631db3" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE INDEX "IDX_4e826890e3b1d041e7c035e308" ON "crm_leads" ("tenant_id", "created_at") `);
+        await queryRunner.query(`CREATE INDEX "IDX_0e45f210d643b806b40181d171" ON "crm_leads" ("tenant_id", "stage") `);
+        await queryRunner.query(`ALTER TABLE "marketing_pixels" DROP COLUMN "pageRules"`);
+        await queryRunner.query(`ALTER TABLE "marketing_pixels" DROP COLUMN "name"`);
+        await queryRunner.query(`ALTER TABLE "courier_integrations" DROP COLUMN "webhookSecret"`);
+        await queryRunner.query(`ALTER TABLE "customers" ADD "user_id" uuid`);
+        await queryRunner.query(`CREATE TYPE "public"."customers_accounttype_enum" AS ENUM('REGISTERED', 'GUEST')`);
+        await queryRunner.query(`ALTER TABLE "customers" ADD "accountType" "public"."customers_accounttype_enum" DEFAULT 'GUEST'`);
+        await queryRunner.query(`ALTER TYPE "public"."marketing_pixels_provider_enum" RENAME TO "marketing_pixels_provider_enum_old"`);
+        await queryRunner.query(`CREATE TYPE "public"."marketing_pixels_provider_enum" AS ENUM('META', 'GOOGLE_ANALYTICS', 'GOOGLE_ADS', 'TIKTOK')`);
+        await queryRunner.query(`ALTER TABLE "marketing_pixels" ALTER COLUMN "provider" TYPE "public"."marketing_pixels_provider_enum" USING "provider"::"text"::"public"."marketing_pixels_provider_enum"`);
+        await queryRunner.query(`DROP TYPE "public"."marketing_pixels_provider_enum_old"`);
+        await queryRunner.query(`ALTER TABLE "consignments" ALTER COLUMN "parcelWeight" SET DEFAULT '0.5'`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_625f16be36eec940b817fd6022"`);
+        await queryRunner.query(`ALTER TYPE "public"."customers_status_enum" RENAME TO "customers_status_enum_old"`);
+        await queryRunner.query(`CREATE TYPE "public"."customers_status_enum" AS ENUM('ACTIVE', 'INACTIVE', 'BLOCKED', 'GUEST')`);
+        await queryRunner.query(`ALTER TABLE "customers" ALTER COLUMN "status" DROP DEFAULT`);
+        await queryRunner.query(`ALTER TABLE "customers" ALTER COLUMN "status" TYPE "public"."customers_status_enum" USING "status"::"text"::"public"."customers_status_enum"`);
+        await queryRunner.query(`ALTER TABLE "customers" ALTER COLUMN "status" SET DEFAULT 'ACTIVE'`);
+        await queryRunner.query(`DROP TYPE "public"."customers_status_enum_old"`);
+        await queryRunner.query(`ALTER TABLE "plans" ALTER COLUMN "features" SET DEFAULT '[]'::jsonb`);
+        await queryRunner.query(`CREATE INDEX "IDX_625f16be36eec940b817fd6022" ON "customers" ("tenantId", "status") `);
+        await queryRunner.query(`CREATE INDEX "IDX_430596e880ef6f3e28844b0eb2" ON "blog_posts" ("status", "publishedAt") `);
+        await queryRunner.query(`CREATE UNIQUE INDEX "IDX_5b2818a2c45c3edb9991b1c7a5" ON "blog_posts" ("slug") `);
+        await queryRunner.query(`ALTER TABLE "customer_sessions" ADD CONSTRAINT "FK_3bfe7c9447ac413ce32c9b49c1a" FOREIGN KEY ("customerId") REFERENCES "customers"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
+    }
+
+    public async down(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`ALTER TABLE "customer_sessions" DROP CONSTRAINT "FK_3bfe7c9447ac413ce32c9b49c1a"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_5b2818a2c45c3edb9991b1c7a5"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_430596e880ef6f3e28844b0eb2"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_625f16be36eec940b817fd6022"`);
+        await queryRunner.query(`ALTER TABLE "plans" ALTER COLUMN "features" SET DEFAULT '[]'`);
+        await queryRunner.query(`CREATE TYPE "public"."customers_status_enum_old" AS ENUM('ACTIVE', 'BLOCKED', 'INACTIVE')`);
+        await queryRunner.query(`ALTER TABLE "customers" ALTER COLUMN "status" DROP DEFAULT`);
+        await queryRunner.query(`ALTER TABLE "customers" ALTER COLUMN "status" TYPE "public"."customers_status_enum_old" USING "status"::"text"::"public"."customers_status_enum_old"`);
+        await queryRunner.query(`ALTER TABLE "customers" ALTER COLUMN "status" SET DEFAULT 'ACTIVE'`);
+        await queryRunner.query(`DROP TYPE "public"."customers_status_enum"`);
+        await queryRunner.query(`ALTER TYPE "public"."customers_status_enum_old" RENAME TO "customers_status_enum"`);
+        await queryRunner.query(`CREATE INDEX "IDX_625f16be36eec940b817fd6022" ON "customers" ("status", "tenantId") `);
+        await queryRunner.query(`ALTER TABLE "consignments" ALTER COLUMN "parcelWeight" SET DEFAULT 0.5`);
+        await queryRunner.query(`CREATE TYPE "public"."marketing_pixels_provider_enum_old" AS ENUM('META', 'GOOGLE_ANALYTICS', 'GOOGLE_ADS', 'TIKTOK', 'SNAPCHAT', 'PINTEREST', 'LINKEDIN', 'MICROSOFT_ADS', 'GOOGLE_TAG_MANAGER')`);
+        await queryRunner.query(`ALTER TABLE "marketing_pixels" ALTER COLUMN "provider" TYPE "public"."marketing_pixels_provider_enum_old" USING "provider"::"text"::"public"."marketing_pixels_provider_enum_old"`);
+        await queryRunner.query(`DROP TYPE "public"."marketing_pixels_provider_enum"`);
+        await queryRunner.query(`ALTER TYPE "public"."marketing_pixels_provider_enum_old" RENAME TO "marketing_pixels_provider_enum"`);
+        await queryRunner.query(`ALTER TABLE "customers" DROP COLUMN "accountType"`);
+        await queryRunner.query(`DROP TYPE "public"."customers_accounttype_enum"`);
+        await queryRunner.query(`ALTER TABLE "customers" DROP COLUMN "user_id"`);
+        await queryRunner.query(`ALTER TABLE "courier_integrations" ADD "webhookSecret" character varying(64)`);
+        await queryRunner.query(`ALTER TABLE "marketing_pixels" ADD "name" character varying(255) NOT NULL`);
+        await queryRunner.query(`ALTER TABLE "marketing_pixels" ADD "pageRules" jsonb`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_0e45f210d643b806b40181d171"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_4e826890e3b1d041e7c035e308"`);
+        await queryRunner.query(`DROP TABLE "crm_leads"`);
+        await queryRunner.query(`DROP TYPE "public"."crm_leads_stage_enum"`);
+        await queryRunner.query(`DROP TYPE "public"."crm_leads_source_enum"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_f9155ec2543cf143cd4242076a"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_457419ddfdddedf37b833d430d"`);
+        await queryRunner.query(`DROP TABLE "omnichannel_ai_configs"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_3ca1e69f3b783b8fa3e5d036f4"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_accf13c1097b05116486b06d7d"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_47c9a7045bf4df7d0f3272b044"`);
+        await queryRunner.query(`DROP TABLE "omnichannel_ai_logs"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_8a6e07fdb66bd7359b8bd64de6"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_2b8cb9d99474d40f662105c243"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_524bcf7dfc1279671756d47020"`);
+        await queryRunner.query(`DROP TABLE "omnichannel_credentials"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_f334d965025874c5b23e84a924"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_fc32daba59466ddd86695d9468"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_d4a00e3ebf548b9f699d7dc70f"`);
+        await queryRunner.query(`DROP TABLE "omnichannel_conversation_states"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_8eafd8bcd67f3cd65cbd100e1f"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_185d01ca6024d1d28c65d3c503"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_bfeca0fdca90d891d335a3e1f1"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_803ca565ab1d0067bf6fed17e4"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_d1d3edb75a9d5b9e52bab61728"`);
+        await queryRunner.query(`DROP TABLE "omnichannel_messages"`);
+        await queryRunner.query(`CREATE UNIQUE INDEX "IDX_blog_posts_slug" ON "blog_posts" ("slug") `);
+        await queryRunner.query(`CREATE INDEX "IDX_blog_posts_status_published" ON "blog_posts" ("publishedAt", "status") `);
+        await queryRunner.query(`CREATE INDEX "IDX_courier_integrations_webhook_secret" ON "courier_integrations" ("webhookSecret") `);
+        await queryRunner.query(`CREATE INDEX "IDX_23d02cf6e67e4c73b59f1cdcbb" ON "marketing_pixels" ("provider", "storeId", "tenantId") `);
+        await queryRunner.query(`ALTER TABLE "customer_sessions" ADD CONSTRAINT "FK_customer_sessions_customerId" FOREIGN KEY ("customerId") REFERENCES "customers"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
+    }
+
+}
