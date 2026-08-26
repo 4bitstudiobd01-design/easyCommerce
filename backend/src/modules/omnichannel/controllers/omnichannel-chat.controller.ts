@@ -59,6 +59,8 @@ export class OmnichannelChatController {
       platform,
       search,
     );
+    this.chatService['logger']?.log?.(`[getConversations] tenantId=${ctx.tenantId} platform=${platform} results=${data.length}`);
+    console.log(`[getConversations] tenantId=${ctx.tenantId} platform=${platform} count=${data.length}`);
     return { success: true, data };
   }
 
