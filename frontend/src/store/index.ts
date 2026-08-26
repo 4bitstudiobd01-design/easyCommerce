@@ -31,6 +31,7 @@ import { marketingApi } from '@/features/marketing/api/marketingApi';
 import { blogApi } from '@/features/blog/api/blogApi';
 import { crmApi } from '@/features/crm/api/crmApi';
 import { omnichannelApi } from '@/features/crm/api/omnichannelApi';
+import { hrmApi } from '@/features/hrm/api/hrmApi';
 
 export const store = configureStore({
   reducer: {
@@ -66,6 +67,7 @@ export const store = configureStore({
     [blogApi.reducerPath]: blogApi.reducer,
     [crmApi.reducerPath]: crmApi.reducer,
     [omnichannelApi.reducerPath]: omnichannelApi.reducer,
+    [hrmApi.reducerPath]: hrmApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -92,6 +94,7 @@ export const store = configureStore({
       blogApi.middleware,
       crmApi.middleware,
       omnichannelApi.middleware,
+      hrmApi.middleware,
     ),
 });
 

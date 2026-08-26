@@ -1,10 +1,12 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { RegisterMerchantService } from './services/register-merchant.service';
 import { LoginService } from './services/login.service';
 import { RefreshTokenService } from './services/refresh-token.service';
 import { RequestPasswordResetService } from './services/request-password-reset.service';
 import { ResetPasswordService } from './services/reset-password.service';
+import { ListDevMerchantsService } from './services/list-dev-merchants.service';
+import { DevLoginAsMerchantService } from './services/dev-login-as-merchant.service';
 import { RegisterMerchantDto } from './dto/register-merchant.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
@@ -12,6 +14,8 @@ import { AuthResponseDto } from './dto/auth-response.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { PasswordResetMessageDto } from './dto/password-reset-message.dto';
+import { DevLoginAsDto } from './dto/dev-login-as.dto';
+import { DevMerchantListItemDto } from './dto/dev-merchant-list-item.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -22,6 +26,8 @@ export class AuthController {
     private readonly refreshTokenService: RefreshTokenService,
     private readonly requestPasswordResetService: RequestPasswordResetService,
     private readonly resetPasswordService: ResetPasswordService,
+    private readonly listDevMerchantsService: ListDevMerchantsService,
+    private readonly devLoginAsMerchantService: DevLoginAsMerchantService,
   ) {}
 
   @Post('register')
@@ -67,5 +73,23 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Invalid/expired OTP, too many attempts, or cooldown active' })
   async resetPassword(@Body() dto: ResetPasswordDto): Promise<{ message: string }> {
     return this.resetPasswordService.execute(dto);
+  }
+
+  @Get('dev/merchants')
+  @ApiOperation({ summary: '[DEV ONLY] List merchant accounts for the dev merchant switcher' })
+  @ApiResponse({ status: 200, type: [DevMerchantListItemDto] })
+  @ApiResponse({ status: 403, description: 'Disabled in production environments' })
+  async listDevMerchants(): Promise<DevMerchantListItemDto[]> {
+    return this.listDevMerchantsService.execute();
+  }
+
+  @Post('dev/login-as')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '[DEV ONLY] Log in as a chosen merchant, no password required' })
+  @ApiResponse({ status: 200, type: AuthResponseDto })
+  @ApiResponse({ status: 403, description: 'Disabled in production, or target is not an active merchant account' })
+  @ApiResponse({ status: 404, description: 'Merchant not found' })
+  async devLoginAs(@Body() dto: DevLoginAsDto): Promise<AuthResponseDto> {
+    return this.devLoginAsMerchantService.execute(dto.userId);
   }
 }

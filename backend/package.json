@@ -21,7 +21,8 @@
     "migration:show": "npm run typeorm -- migration:show -d src/database/data-source.ts",
     "db:flush": "ts-node -r tsconfig-paths/register scripts/flush-db.ts",
     "db:reset": "npm run db:flush && npm run seed",
-    "seed": "ts-node -r tsconfig-paths/register src/database/seeds/seed-demo-data.ts"
+    "seed": "ts-node -r tsconfig-paths/register src/database/seeds/seed-demo-data.ts",
+    "seed:hrm": "ts-node -r tsconfig-paths/register src/database/seeds/seed-hrm-demo-data.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1113.0",
