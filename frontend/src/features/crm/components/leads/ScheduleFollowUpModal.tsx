@@ -97,26 +97,24 @@ export const ScheduleFollowUpModal: React.FC<ScheduleFollowUpModalProps> = ({
 
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs" onClick={onClose} />
-
-      <div className="relative bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+        <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-300 text-amber-600 flex items-center justify-center font-bold shadow-xs">
-              <Clock className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+              <Calendar className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-black text-slate-900">কথা বলার সময় সেট করুন (Schedule Callback)</h2>
-              <p className="text-xs text-slate-500">ক্লায়েন্টের সাথে কথা বলার নির্দিষ্ট তারিখ ও সময় সংরক্ষণ করুন</p>
+              <h3 className="font-extrabold text-base text-slate-900">শিডিউল কল / ফলো-আপ</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Schedule discussion with {lead.name}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition-all"
+            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 

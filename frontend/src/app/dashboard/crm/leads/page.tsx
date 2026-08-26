@@ -193,30 +193,30 @@ export default function CrmLeadsPage() {
         addLabel="New Lead"
         onAddClick={() => setIsAddModalOpen(true)}
         secondaryAction={
-          <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+          <div className="flex items-center bg-white p-1 rounded-xl border border-slate-200/80 shadow-2xs">
             <button
               onClick={() => setViewMode('KANBAN')}
-              className={`p-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
                 viewMode === 'KANBAN'
-                  ? 'bg-white text-slate-900 shadow-2xs'
-                  : 'text-slate-500 hover:text-slate-900'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
               title="Kanban Board View"
             >
               <LayoutGrid className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Kanban</span>
+              <span>Kanban</span>
             </button>
             <button
               onClick={() => setViewMode('TABLE')}
-              className={`p-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
                 viewMode === 'TABLE'
-                  ? 'bg-white text-slate-900 shadow-2xs'
-                  : 'text-slate-500 hover:text-slate-900'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
               title="Table Data View"
             >
               <List className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Table</span>
+              <span>Table</span>
             </button>
           </div>
         }

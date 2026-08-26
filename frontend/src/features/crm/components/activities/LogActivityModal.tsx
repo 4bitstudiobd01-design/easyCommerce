@@ -50,38 +50,36 @@ export const LogActivityModal: React.FC<LogActivityModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs" onClick={onClose} />
-
-      <div className="relative bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 overflow-hidden">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+        <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
               <Activity className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-black text-slate-900">Log Interaction</h2>
-              <p className="text-xs text-slate-500">Record an omnichannel touchpoint with customer</p>
+              <h3 className="font-extrabold text-base text-slate-900">Log Interaction</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Record an omnichannel touchpoint with customer</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition-all"
+            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="mt-5 space-y-4 text-xs">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="font-bold text-slate-700 block mb-1">Interaction Type</label>
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value as any)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:bg-white focus:outline-none"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/30"
               >
                 <option value="CALL">📞 Phone Call</option>
                 <option value="WHATSAPP">💬 WhatsApp Chat</option>
@@ -96,7 +94,7 @@ export const LogActivityModal: React.FC<LogActivityModalProps> = ({
               <select
                 value={outcome}
                 onChange={(e) => setOutcome(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:bg-white focus:outline-none"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/30"
               >
                 <option value="Completed">Completed / Resolved</option>
                 <option value="Call Answered">Call Answered</option>
@@ -114,7 +112,7 @@ export const LogActivityModal: React.FC<LogActivityModalProps> = ({
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
               placeholder="e.g. Tahmid Rahman"
-              className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none"
+              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/30"
             />
           </div>
 
@@ -128,7 +126,7 @@ export const LogActivityModal: React.FC<LogActivityModalProps> = ({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Order Delivery Address Confirmation"
-              className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none"
+              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/30"
             />
           </div>
 
@@ -142,7 +140,7 @@ export const LogActivityModal: React.FC<LogActivityModalProps> = ({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What was discussed? Any special customer requests or delivery instructions?"
-              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none"
+              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/30"
             />
           </div>
 
@@ -150,13 +148,13 @@ export const LogActivityModal: React.FC<LogActivityModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl"
+              className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md shadow-blue-600/25 transition-all flex items-center gap-1.5"
+              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md shadow-blue-600/25 transition-all flex items-center gap-1.5 active:scale-95"
             >
               <Plus className="w-4 h-4" />
               <span>Save Activity</span>
