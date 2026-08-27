@@ -12,7 +12,11 @@ import {
   useGetConversationMessagesQuery,
   useSendChannelMessageMutation,
   useGetTelegramBotInfoQuery,
+  useGetAiConfigQuery,
+  useGetConversationAiStateQuery,
+  useToggleConversationAiMutation,
 } from '../../api/omnichannelApi';
+import { AiAutoReplySettingsModal } from './AiAutoReplySettingsModal';
 import {
   Search,
   Send,
@@ -33,6 +37,13 @@ import {
   X,
   AlertCircle,
   Building,
+  Sparkles,
+  Bot,
+  PauseCircle,
+  PlayCircle,
+  Settings,
+  ShieldCheck,
+  Zap,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -62,14 +73,15 @@ export const OmnichannelChatInterface: React.FC = () => {
   const [newNoteInput, setNewNoteInput] = useState('');
   const [isAddingNote, setIsAddingNote] = useState(false);
 
-  // Direct Telegram Send Modal State
+  // Modals State
+  const [isAiSettingsOpen, setIsAiSettingsOpen] = useState(false);
   const [isDirectTelegramOpen, setIsDirectTelegramOpen] = useState(false);
   const [directChatId, setDirectChatId] = useState('');
   const [directText, setDirectText] = useState('');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Polling conversations every 10 seconds
+  // Polling conversations every 4 seconds — reload immediately on mount
   const {
     data: conversations = [],
     isLoading: isLoadingConversations,
@@ -80,19 +92,31 @@ export const OmnichannelChatInterface: React.FC = () => {
       platform: selectedPlatform !== 'all' ? selectedPlatform : undefined,
       search: search || undefined,
     },
-    { pollingInterval: 10000 },
+    { pollingInterval: 4000, refetchOnMountOrArgChange: true },
   );
 
-  // Active conversation thread messages with 5 second polling
+  // Active conversation thread messages with 3 second polling
   const {
     data: threadMessages = [],
     isLoading: isLoadingMessages,
     refetch: refetchMessages,
   } = useGetConversationMessagesQuery(activeConversationId || '', {
     skip: !activeConversationId,
-    pollingInterval: 5000,
+    pollingInterval: 3000,
+    refetchOnMountOrArgChange: true,
   });
 
+  // AI Configuration & State Queries
+  const { data: aiConfig } = useGetAiConfigQuery();
+  const { data: convAiState, refetch: refetchAiState } = useGetConversationAiStateQuery(
+    activeConversationId || '',
+    {
+      skip: !activeConversationId,
+      pollingInterval: 5000,
+    },
+  );
+
+  const [toggleAiMutation, { isLoading: isTogglingAi }] = useToggleConversationAiMutation();
   const [sendMessageMutation, { isLoading: isSending }] = useSendChannelMessageMutation();
   const { data: telegramInfo } = useGetTelegramBotInfoQuery();
 
@@ -129,8 +153,23 @@ export const OmnichannelChatInterface: React.FC = () => {
 
       refetchMessages();
       refetchConversations();
+      refetchAiState();
     } catch (err: any) {
       alert(err?.data?.message || 'Failed to send message.');
+    }
+  };
+
+  const handleToggleAi = async (pause: boolean) => {
+    if (!activeConversationId) return;
+    try {
+      await toggleAiMutation({
+        conversationId: activeConversationId,
+        isPaused: pause,
+      }).unwrap();
+      refetchAiState();
+      refetchConversations();
+    } catch (err: any) {
+      alert(err?.data?.message || 'Failed to toggle AI state.');
     }
   };
 
@@ -166,10 +205,11 @@ export const OmnichannelChatInterface: React.FC = () => {
   };
 
   const currentNotes = activeConversationId ? customerNotes[activeConversationId] || [] : [];
+  const isAiPaused = convAiState?.isAiPaused ?? activeConversation?.isAiPaused ?? false;
 
   return (
     <div className="w-full bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden flex flex-col h-[calc(100vh-210px)] min-h-[640px] max-h-[880px]">
-      {/* ─── Top Filter & Channel Switcher Bar ────────────────────────────── */}
+      {/* ─── Top Filter & Action Bar ───────────────────────────────────────── */}
       <div className="px-4 py-3 bg-slate-50/90 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 shrink-0">
         {/* Channel Filter Chips */}
         <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none min-w-0">
@@ -190,18 +230,36 @@ export const OmnichannelChatInterface: React.FC = () => {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2 shrink-0">
+          {/* AI Auto-Reply Settings Launcher Button */}
+          <button
+            type="button"
+            onClick={() => setIsAiSettingsOpen(true)}
+            className={`px-3.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs border ${
+              aiConfig?.isEnabled
+                ? 'bg-teal-50 text-teal-700 border-teal-300 hover:bg-teal-100'
+                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+            }`}
+          >
+            <Sparkles className={`w-3.5 h-3.5 ${aiConfig?.isEnabled ? 'text-teal-600' : 'text-slate-400'}`} />
+            <span>AI Auto-Reply: {aiConfig?.isEnabled ? 'ON' : 'OFF'}</span>
+            <Settings className="w-3 h-3 text-slate-400" />
+          </button>
+
           <button
             onClick={() => setIsDirectTelegramOpen(true)}
             className="px-3.5 py-1.5 bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-colors shrink-0"
           >
             <Send className="w-3.5 h-3.5" />
-            <span>Send Direct Telegram</span>
+            <span>Direct Telegram</span>
           </button>
 
           <button
             onClick={() => {
               refetchConversations();
-              if (activeConversationId) refetchMessages();
+              if (activeConversationId) {
+                refetchMessages();
+                refetchAiState();
+              }
             }}
             title="Refresh conversations"
             className="p-1.5 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl text-slate-600 transition-colors"
@@ -223,59 +281,58 @@ export const OmnichannelChatInterface: React.FC = () => {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search conversations..."
-                className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/30"
+                placeholder="Search conversations & phone..."
+                className="w-full pl-9 pr-3.5 py-2 bg-slate-100/70 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/30"
               />
             </div>
           </div>
 
-          {/* Conversation Cards List */}
-          <div className="flex-1 overflow-y-auto divide-y divide-slate-100/80">
+          {/* Conversation Scroll List */}
+          <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
             {isLoadingConversations ? (
               <div className="p-8 text-center text-slate-400 text-xs flex flex-col items-center gap-2">
                 <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-                <p className="font-bold">Loading live threads...</p>
+                <p>Loading conversations...</p>
               </div>
             ) : conversations.length === 0 ? (
               <div className="p-8 text-center text-slate-400 text-xs space-y-2">
                 <MessageSquare className="w-8 h-8 mx-auto text-slate-300" />
-                <p className="font-bold text-slate-700">No active conversations</p>
-                <p className="text-[11px] leading-relaxed">
-                  Messages received via Telegram bot, WhatsApp, or Facebook Messenger will appear here live.
-                </p>
+                <p className="font-bold text-slate-700">No conversations found</p>
+                <p className="text-[11px]">Connect your channels in Settings to start receiving live inquiries.</p>
               </div>
             ) : (
               conversations.map((conv) => {
-                const isSelected = conv.id === activeConversationId;
+                const isActive = conv.id === activeConversationId;
                 return (
                   <button
                     key={conv.id}
+                    type="button"
                     onClick={() => setActiveConversationId(conv.id)}
-                    className={`w-full text-left p-3 flex items-start gap-3 transition-colors ${
-                      isSelected
-                        ? 'bg-blue-50/90 border-l-4 border-blue-600 shadow-2xs'
-                        : 'hover:bg-slate-100/70 border-l-4 border-transparent'
+                    className={`w-full p-3.5 text-left flex items-start gap-3 transition-colors ${
+                      isActive
+                        ? 'bg-blue-50/80 border-l-4 border-blue-600'
+                        : 'hover:bg-slate-100/70 bg-white'
                     }`}
                   >
-                    {/* Customer Avatar with Platform Badge */}
-                    <div className="relative shrink-0">
+                    {/* User Avatar with Platform Badge */}
+                    <div className="relative shrink-0 mt-0.5">
                       <img
                         src={conv.avatarUrl}
                         alt={conv.customerName}
-                        className="w-10 h-10 rounded-2xl object-cover border border-slate-200 bg-white shrink-0"
+                        className="w-10 h-10 rounded-2xl object-cover border border-slate-200"
                       />
                       <div className="absolute -bottom-1 -right-1">
-                        <PlatformIcon platform={conv.platform} size={16} />
+                        <PlatformIcon platform={conv.platform} size={14} />
                       </div>
                     </div>
 
                     {/* Meta info */}
-                    <div className="flex-1 min-w-0 space-y-0.5">
+                    <div className="flex-1 min-w-0 space-y-1">
                       <div className="flex items-center justify-between gap-1">
-                        <h4 className="font-black text-xs text-slate-900 truncate">
+                        <h4 className="font-bold text-xs text-slate-900 truncate">
                           {conv.customerName}
                         </h4>
-                        <span className="text-[10px] text-slate-400 whitespace-nowrap shrink-0">
+                        <span className="text-[10px] text-slate-400 shrink-0 font-medium">
                           {conv.timestamp}
                         </span>
                       </div>
@@ -285,9 +342,16 @@ export const OmnichannelChatInterface: React.FC = () => {
                       </p>
 
                       <div className="flex items-center justify-between pt-0.5">
-                        <span className="text-[10px] text-slate-400 font-semibold truncate capitalize">
-                          {conv.platform}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] text-slate-400 font-semibold truncate capitalize">
+                            {conv.platform}
+                          </span>
+                          {conv.isAiPaused && (
+                            <span className="px-1.5 py-0.2 bg-amber-100 text-amber-800 rounded-md text-[9px] font-bold">
+                              AI Paused
+                            </span>
+                          )}
+                        </div>
 
                         {conv.unreadCount > 0 && (
                           <span className="px-1.5 py-0.2 bg-blue-600 text-white rounded-full text-[10px] font-black">
@@ -308,7 +372,7 @@ export const OmnichannelChatInterface: React.FC = () => {
           {activeConversation ? (
             <>
               {/* Chat Thread Header */}
-              <div className="px-5 py-3.5 bg-white border-b border-slate-200 flex items-center justify-between shrink-0">
+              <div className="px-5 py-3 bg-white border-b border-slate-200 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="relative shrink-0">
                     <img
@@ -336,6 +400,41 @@ export const OmnichannelChatInterface: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
+                  {/* AI Status Control Pill */}
+                  {aiConfig?.isEnabled && (
+                    <div className="flex items-center gap-1.5">
+                      {isAiPaused ? (
+                        <div className="flex items-center gap-1 px-2.5 py-1 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs font-semibold">
+                          <PauseCircle className="w-3.5 h-3.5 text-amber-600" />
+                          <span className="hidden sm:inline">AI Paused (Agent Takeover)</span>
+                          <span className="sm:hidden">Paused</span>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleAi(false)}
+                            disabled={isTogglingAi}
+                            className="ml-1 text-[11px] font-bold text-amber-900 underline hover:text-amber-950"
+                          >
+                            Resume AI
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 px-2.5 py-1 bg-teal-50 border border-teal-200 rounded-xl text-teal-800 text-xs font-semibold">
+                          <Sparkles className="w-3.5 h-3.5 text-teal-600 animate-pulse" />
+                          <span className="hidden sm:inline">AI Auto-Reply Active</span>
+                          <span className="sm:hidden">AI Active</span>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleAi(true)}
+                            disabled={isTogglingAi}
+                            className="ml-1 text-[11px] font-bold text-teal-900 underline hover:text-teal-950"
+                          >
+                            Pause
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {activeConversation.customerId && (
                     <Link
                       href={`/dashboard/crm/customers/${activeConversation.customerId}`}
@@ -365,6 +464,8 @@ export const OmnichannelChatInterface: React.FC = () => {
                 ) : (
                   threadMessages.map((msg) => {
                     const isOutbound = msg.sender === 'agent';
+                    const isAi = msg.isAiGenerated || msg.senderType === 'ai';
+
                     return (
                       <div
                         key={msg.id}
@@ -380,22 +481,39 @@ export const OmnichannelChatInterface: React.FC = () => {
                           )}
 
                           <div
-                            className={`p-3.5 rounded-2xl text-xs leading-relaxed break-words ${
+                            className={`p-3.5 rounded-2xl text-xs leading-relaxed break-words relative ${
                               isOutbound
-                                ? 'bg-blue-600 text-white rounded-br-xs shadow-xs shadow-blue-500/20'
+                                ? isAi
+                                  ? 'bg-gradient-to-br from-teal-700 to-emerald-700 text-white rounded-br-xs shadow-xs border border-teal-500/30'
+                                  : 'bg-blue-600 text-white rounded-br-xs shadow-xs shadow-blue-500/20'
                                 : 'bg-white text-slate-800 border border-slate-200/90 rounded-bl-xs shadow-2xs'
                             }`}
                           >
+                            {/* Internal AI Generated Badge (Agent visible only) */}
+                            {isAi && (
+                              <div className="flex items-center gap-1 mb-1.5 px-2 py-0.5 bg-teal-900/60 rounded-md text-[10px] font-extrabold tracking-wide uppercase text-teal-200 w-fit">
+                                <Sparkles className="w-2.5 h-2.5 text-teal-300" />
+                                <span>AI Generated</span>
+                                {msg.aiMetadata?.model && (
+                                  <span className="opacity-75 font-normal">({msg.aiMetadata.model})</span>
+                                )}
+                              </div>
+                            )}
+
                             <p className="whitespace-pre-wrap">{msg.text}</p>
 
                             <div
                               className={`flex items-center justify-end gap-1 mt-1 text-[10px] ${
-                                isOutbound ? 'text-blue-200' : 'text-slate-400'
+                                isOutbound
+                                  ? isAi
+                                    ? 'text-teal-200'
+                                    : 'text-blue-200'
+                                  : 'text-slate-400'
                               }`}
                             >
                               <span>{msg.timestamp}</span>
                               {isOutbound && (
-                                <CheckCheck className="w-3 h-3 text-blue-200" />
+                                <CheckCheck className="w-3 h-3 text-teal-200" />
                               )}
                             </div>
                           </div>
@@ -491,6 +609,70 @@ export const OmnichannelChatInterface: React.FC = () => {
               </div>
             </div>
 
+            {/* AI Auto-Reply Control Card */}
+            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-teal-50/60 to-emerald-50/60 border border-teal-200/80 space-y-2.5 text-xs">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Bot className="w-4 h-4 text-teal-700" />
+                  <span className="font-bold text-teal-950">AI Auto-Reply</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAiSettingsOpen(true)}
+                  className="text-[10px] text-teal-700 hover:underline font-bold"
+                >
+                  Configure
+                </button>
+              </div>
+
+              <div className="space-y-1 text-slate-600 text-[11px]">
+                <div className="flex items-center justify-between">
+                  <span>Conversation Status:</span>
+                  <span
+                    className={`font-bold ${
+                      isAiPaused ? 'text-amber-700' : 'text-emerald-700'
+                    }`}
+                  >
+                    {isAiPaused ? 'Paused' : 'Active'}
+                  </span>
+                </div>
+                {convAiState?.pausedReason && convAiState.pausedReason !== 'NONE' && (
+                  <p className="text-[10px] text-amber-800 bg-amber-100/60 px-2 py-1 rounded-lg">
+                    Reason: {convAiState.pausedReason.replace(/_/g, ' ')}
+                  </p>
+                )}
+                <div className="flex items-center justify-between pt-1">
+                  <span>Total AI Replies:</span>
+                  <span className="font-mono font-bold text-slate-900">
+                    {convAiState?.totalAiRepliesCount || 0}
+                  </span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleToggleAi(!isAiPaused)}
+                disabled={isTogglingAi}
+                className={`w-full py-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${
+                  isAiPaused
+                    ? 'bg-teal-600 hover:bg-teal-700 text-white'
+                    : 'bg-amber-600 hover:bg-amber-700 text-white'
+                }`}
+              >
+                {isAiPaused ? (
+                  <>
+                    <PlayCircle className="w-3.5 h-3.5" />
+                    <span>Resume AI Auto-Reply</span>
+                  </>
+                ) : (
+                  <>
+                    <PauseCircle className="w-3.5 h-3.5" />
+                    <span>Pause AI for this Thread</span>
+                  </>
+                )}
+              </button>
+            </div>
+
             {/* Contact Details */}
             <div className="space-y-2.5 text-xs">
               <h5 className="text-[10px] font-black uppercase tracking-wider text-slate-400">
@@ -572,6 +754,12 @@ export const OmnichannelChatInterface: React.FC = () => {
         )}
       </div>
 
+      {/* ─── AI Auto-Reply Settings Modal ─────────────────────────────────── */}
+      <AiAutoReplySettingsModal
+        isOpen={isAiSettingsOpen}
+        onClose={() => setIsAiSettingsOpen(false)}
+      />
+
       {/* ─── Direct Telegram Send Modal ───────────────────────────────────── */}
       {isDirectTelegramOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
@@ -598,33 +786,30 @@ export const OmnichannelChatInterface: React.FC = () => {
 
             <form onSubmit={handleSendDirectTelegram} className="p-5 space-y-4">
               <div>
-                <label className="text-xs font-bold text-slate-800 block mb-1">
-                  Telegram Chat ID / User ID <span className="text-red-500">*</span>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  Telegram Chat ID
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. 123456789"
                   value={directChatId}
                   onChange={(e) => setDirectChatId(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/30"
+                  placeholder="e.g. 5239102938"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                 />
-                <p className="text-[10px] text-slate-400 mt-1">
-                  User must have started or sent at least 1 message to your bot.
-                </p>
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-800 block mb-1">
-                  Message Text <span className="text-red-500">*</span>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  Message Content
                 </label>
                 <textarea
-                  rows={3}
                   required
-                  placeholder="Type your message..."
+                  rows={3}
                   value={directText}
                   onChange={(e) => setDirectText(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/30"
+                  placeholder="Write message to send directly to customer Telegram..."
+                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                 />
               </div>
 
@@ -632,17 +817,17 @@ export const OmnichannelChatInterface: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsDirectTelegramOpen(false)}
-                  className="px-3.5 py-2 text-xs font-bold text-slate-600 hover:text-slate-800"
+                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={isSending || !directChatId || !directText}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-600/25 flex items-center gap-1.5 disabled:opacity-50"
+                  disabled={isSending}
+                  className="px-5 py-2 bg-sky-500 hover:bg-sky-600 text-white text-xs font-bold rounded-xl shadow-md shadow-sky-500/20 flex items-center gap-1.5 transition-all disabled:opacity-50"
                 >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>{isSending ? 'Sending...' : 'Send Message'}</span>
+                  {isSending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                  <span>Send Message</span>
                 </button>
               </div>
             </form>

@@ -5,9 +5,15 @@ import {
   ConversationThread,
   ThreadMessage,
   SocialPlatform,
+  OmnichannelAiConfig,
+  SaveAiConfigRequest,
+  TestAiConnectionRequest,
+  TestAiConnectionResponse,
+  OmnichannelAiLog,
+  ConversationAiState,
 } from '../types/omnichannel.types';
 
-const API_ROOT = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1')
+const API_ROOT = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1')
   .replace(/\/+$/, '');
 
 function extractData<T = any>(response: any): T {
@@ -23,7 +29,13 @@ function extractData<T = any>(response: any): T {
 export const omnichannelApi = createApi({
   reducerPath: 'omnichannelApi',
   baseQuery: createBaseQueryWithReauth(`${API_ROOT}/omnichannel`),
-  tagTypes: ['OmnichannelCredential', 'OmnichannelConversation', 'OmnichannelMessage'],
+  tagTypes: [
+    'OmnichannelCredential',
+    'OmnichannelConversation',
+    'OmnichannelMessage',
+    'OmnichannelAiConfig',
+    'OmnichannelAiLog',
+  ],
   endpoints: (builder) => ({
     // ─── Credentials Endpoints ─────────────────────────────────────────────
     getChannelCredentials: builder.query<ChannelCredential[], { unmask?: boolean } | void>({
@@ -70,7 +82,19 @@ export const omnichannelApi = createApi({
         body: credentials ? { credentials } : {},
       }),
       invalidatesTags: ['OmnichannelCredential'],
-      transformResponse: (response: any) => extractData(response),
+      transformResponse: (response: any) => {
+        const isSuccess = response?.success !== false;
+        const msg =
+          response?.message ||
+          (response?.data?.username
+            ? `Connected successfully as @${response.data.username}`
+            : 'Connection validated successfully!');
+        return {
+          success: isSuccess,
+          message: msg,
+          data: response?.data ?? response,
+        };
+      },
     }),
 
     toggleChannelActive: builder.mutation<
@@ -149,6 +173,74 @@ export const omnichannelApi = createApi({
       query: () => '/chat/telegram/info',
       transformResponse: (response: any) => extractData(response),
     }),
+
+    // ─── AI Auto-Reply Endpoints ───────────────────────────────────────────
+    getAiConfig: builder.query<OmnichannelAiConfig, void>({
+      query: () => '/ai/config',
+      providesTags: ['OmnichannelAiConfig'],
+      transformResponse: (response: any) => extractData(response),
+    }),
+
+    saveAiConfig: builder.mutation<OmnichannelAiConfig, SaveAiConfigRequest>({
+      query: (body) => ({
+        url: '/ai/config',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['OmnichannelAiConfig', 'OmnichannelAiLog'],
+      transformResponse: (response: any) => extractData(response),
+    }),
+
+    testAiConnection: builder.mutation<TestAiConnectionResponse, TestAiConnectionRequest>({
+      query: (body) => ({
+        url: '/ai/test',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response: any) => {
+        return {
+          success: response?.success !== false,
+          message: response?.message || response?.data?.reply || 'AI connection test successful.',
+          sampleReply: response?.data?.reply || response?.reply,
+          provider: response?.data?.provider || response?.provider,
+          model: response?.data?.model || response?.model,
+          latencyMs: response?.data?.latencyMs || response?.latencyMs || 0,
+        };
+      },
+    }),
+
+    getAiLogs: builder.query<OmnichannelAiLog[], { limit?: number } | void>({
+      query: (params) => ({
+        url: '/ai/logs',
+        params: params || {},
+      }),
+      providesTags: ['OmnichannelAiLog'],
+      transformResponse: (response: any) => {
+        const payload = extractData(response);
+        return Array.isArray(payload) ? payload : [];
+      },
+    }),
+
+    getConversationAiState: builder.query<ConversationAiState, string>({
+      query: (conversationId) => `/ai/conversations/${conversationId}/state`,
+      providesTags: (result, error, conversationId) => [
+        { type: 'OmnichannelConversation', id: conversationId },
+      ],
+      transformResponse: (response: any) => extractData(response),
+    }),
+
+    toggleConversationAi: builder.mutation<
+      ConversationAiState,
+      { conversationId: string; isPaused: boolean }
+    >({
+      query: ({ conversationId, isPaused }) => ({
+        url: `/ai/conversations/${conversationId}/toggle`,
+        method: 'POST',
+        body: { isPaused },
+      }),
+      invalidatesTags: ['OmnichannelConversation'],
+      transformResponse: (response: any) => extractData(response),
+    }),
   }),
 });
 
@@ -163,4 +255,10 @@ export const {
   useGetConversationMessagesQuery,
   useSendChannelMessageMutation,
   useGetTelegramBotInfoQuery,
+  useGetAiConfigQuery,
+  useSaveAiConfigMutation,
+  useTestAiConnectionMutation,
+  useGetAiLogsQuery,
+  useGetConversationAiStateQuery,
+  useToggleConversationAiMutation,
 } = omnichannelApi;

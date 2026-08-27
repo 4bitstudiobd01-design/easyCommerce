@@ -5,11 +5,8 @@ export type OmnichannelPlatform =
   | 'whatsapp'
   | 'facebook'
   | 'instagram'
-  | 'linkedin'
   | 'x'
-  | 'shopify'
   | 'slack'
-  | 'hubspot'
   | 'custom';
 
 interface PlatformIconProps {
