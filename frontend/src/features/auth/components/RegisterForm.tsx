@@ -27,10 +27,22 @@ import {
 const STORE_DOMAIN = '.bitcommerce.app';
 
 /**
- * Mirrors the `phone` rule on the backend RegisterMerchantDto. The server
- * remains the authority; this only avoids a round-trip for a malformed number.
+ * The phone input only collects the subscriber number without the leading 0
+ * (e.g. `1700000000`), matching what a Bangladeshi mobile number looks like
+ * after the leading 0 is dropped for the +880 country code.
  */
-const PHONE_PATTERN = /^01[3-9]\d{8}$/;
+const PHONE_PATTERN = /^1[3-9]\d{8}$/;
+
+/** Strips any `+880`/`880`/leading-0` a user might paste in, leaving the bare subscriber number. */
+function normalizePhone(value: string): string {
+  const digitsOnly = value.trim().replace(/[\s-]/g, '');
+  return digitsOnly.replace(/^(?:\+?880|0)/, '');
+}
+
+/** Combines the +880 country code with the local subscriber number for submission. */
+function toE164(localPhone: string): string {
+  return `+880${localPhone}`;
+}
 
 const BUSINESS_TYPES = [
   'Fashion & Apparel',
@@ -42,7 +54,7 @@ const BUSINESS_TYPES = [
   'Other',
 ];
 
-const COUNTRIES = ['Bangladesh', 'India', 'Pakistan', 'Nepal', 'Sri Lanka'];
+const COUNTRIES = ['Bangladesh'];
 
 /** Derives a URL-safe slug, matching the backend CreateStoreDto slug rule. */
 function toSlug(value: string): string {
@@ -85,9 +97,9 @@ export function RegisterForm() {
     if (fullName.trim().length < 2) {
       return 'Please enter your full name.';
     }
-    const localPhone = phone.trim().replace(/[\s-]/g, '');
+    const localPhone = normalizePhone(phone);
     if (localPhone && !PHONE_PATTERN.test(localPhone)) {
-      return 'Enter a valid phone number, e.g. 01700000000.';
+      return 'Enter a valid phone number, e.g. 1700000000.';
     }
     if (password.length < 8 || !/[a-zA-Z]/.test(password) || !/\d/.test(password)) {
       return 'Password must be at least 8 characters and include letters and numbers.';
@@ -116,7 +128,7 @@ export function RegisterForm() {
     }
 
     try {
-      const localPhone = phone.trim().replace(/[\s-]/g, '');
+      const localPhone = normalizePhone(phone);
       const trimmedStoreName = storeName.trim();
       const trimmedSubdomain = subdomain.trim();
 
@@ -125,7 +137,7 @@ export function RegisterForm() {
         password,
         fullName: fullName.trim(),
         acceptedTerms,
-        ...(localPhone ? { phone: localPhone } : {}),
+        ...(localPhone ? { phone: toE164(localPhone) } : {}),
         ...(trimmedStoreName && trimmedSubdomain
           ? {
               storeName: trimmedStoreName,
@@ -213,9 +225,11 @@ export function RegisterForm() {
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px] leading-none">🇧🇩</span>
                     <select
                       aria-label="Country calling code"
+                      value="+880"
+                      onChange={() => {}}
                       className="h-9 pl-8 pr-7 bg-white border border-slate-200 rounded-xl text-slate-700 text-[13px] font-medium appearance-none focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors cursor-pointer"
                     >
-                      <option>+880</option>
+                      <option value="+880">+880</option>
                     </select>
                     <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
@@ -225,13 +239,13 @@ export function RegisterForm() {
                       id="phone"
                       type="tel"
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="Enter your phone number"
+                      onChange={(e) => setPhone(normalizePhone(e.target.value))}
+                      maxLength={10}
+                      placeholder="1700000000"
                       className={fieldClass}
                     />
                   </div>
                 </div>
-                <p className={hintClass}>Include the leading 0, e.g. 01700000000</p>
               </div>
 
               {/* Store Name */}

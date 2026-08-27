@@ -158,7 +158,7 @@ export const Sidebar = ({
       <button
         type="button"
         onClick={() => toggleGroup(groupKey)}
-        className="w-full flex items-center justify-between px-3 py-1.5 mt-3 mb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-200 rounded-lg hover:bg-slate-800/40 transition-colors group"
+        className="w-full flex items-center justify-between px-3 py-1.5 mt-3 mb-1 text-[11px] font-bold uppercase tracking-wider text-white hover:text-white rounded-lg hover:bg-slate-800/40 transition-colors group"
       >
         <span className="flex items-center gap-1.5">
           <span>{title}</span>
@@ -333,14 +333,14 @@ export const Sidebar = ({
               <Link 
                 href="/dashboard/logistics" 
                 className={navItemClass('/dashboard/logistics')}
-                onMouseEnter={(e) => handleTooltipEnter(e, "Courier & Delivery")}
-                onFocus={(e) => handleTooltipEnter(e, "Courier & Delivery")}
+                onMouseEnter={(e) => handleTooltipEnter(e, "Courier")}
+                onFocus={(e) => handleTooltipEnter(e, "Courier")}
                 onMouseLeave={handleTooltipLeave}
                 onBlur={handleTooltipLeave}
               >
                 <div className="flex items-center gap-2.5">
                   <Truck className={iconClass} strokeWidth={iconStroke} />
-                  {!isDesktopCollapsed && <span>Courier & Delivery</span>}
+                  {!isDesktopCollapsed && <span>Courier</span>}
                 </div>
               </Link>
               <Link

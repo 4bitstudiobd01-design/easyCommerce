@@ -48,12 +48,14 @@ import { FraudCheckService } from './services/fraud-check.service';
 import { ListLeadsService } from './services/list-leads.service';
 import { CreateLeadService } from './services/create-lead.service';
 import { UpdateLeadStageService } from './services/update-lead-stage.service';
+import { UpdateLeadDetailsService } from './services/update-lead-details.service';
 import { ScheduleLeadFollowUpService } from './services/schedule-lead-follow-up.service';
 import { ConvertLeadToCustomerService } from './services/convert-lead-to-customer.service';
 import { SeedLeadsService } from './services/seed-leads.service';
 import { SeedCustomersService } from './services/seed-customers.service';
 import { ListStoreActivitiesService } from './services/list-store-activities.service';
 import { RecordCustomerActivityService } from './services/record-customer-activity.service';
+import { LogCustomerActivityService } from './services/log-customer-activity.service';
 
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
@@ -63,12 +65,13 @@ import { CreateCustomerAddressDto } from './dto/create-customer-address.dto';
 import { UpdateCustomerAddressDto } from './dto/update-customer-address.dto';
 import { CustomerOrderListDto } from './dto/customer-order-list.dto';
 import { CreateCustomerNoteDto } from './dto/create-customer-note.dto';
+import { LogCustomerActivityDto } from './dto/log-customer-activity.dto';
 import { BulkCustomerStatusDto } from './dto/bulk-customer-status.dto';
 import { ImportCustomersDto } from './dto/import-customer.dto';
 import { CustomerAnalyticsQueryDto } from './dto/customer-analytics.dto';
 import { CreateCustomerSegmentDto, UpdateCustomerSegmentDto, SegmentRuleGroupDto } from './dto/customer-segment.dto';
 import { CreateLeadDto } from './dto/create-lead.dto';
-import { UpdateLeadStageDto } from './dto/update-lead.dto';
+import { UpdateLeadStageDto, UpdateLeadDetailsDto } from './dto/update-lead.dto';
 import { LeadQueryDto } from './dto/lead-query.dto';
 
 @ApiTags('Customers')
@@ -103,12 +106,14 @@ export class CustomerController {
     private readonly listLeadsService: ListLeadsService,
     private readonly createLeadService: CreateLeadService,
     private readonly updateLeadStageService: UpdateLeadStageService,
+    private readonly updateLeadDetailsService: UpdateLeadDetailsService,
     private readonly scheduleLeadFollowUpService: ScheduleLeadFollowUpService,
     private readonly convertLeadToCustomerService: ConvertLeadToCustomerService,
     private readonly seedLeadsService: SeedLeadsService,
     private readonly seedCustomersService: SeedCustomersService,
     private readonly listStoreActivitiesService: ListStoreActivitiesService,
     private readonly recordCustomerActivityService: RecordCustomerActivityService,
+    private readonly logCustomerActivityService: LogCustomerActivityService,
   ) {}
 
   private async getMerchantTenantContext(userId: string, storeId?: string): Promise<{ tenantId: string; storeId?: string }> {
@@ -242,6 +247,19 @@ export class CustomerController {
     @Headers('x-store-id') storeId?: string,
   ) {
     const ctx = await this.getMerchantTenantContext(userId, storeId);
+    return this.manageCustomerSegmentService.findAll(ctx.tenantId);
+  }
+
+  @Roles(UserRoleEnum.STORE_OWNER)
+  @Post('segments/seed')
+  @ApiOperation({ summary: 'Seed default starter customer segments for current merchant store' })
+  @ApiResponse({ status: 201, description: 'Default segments seeded successfully' })
+  async seedSegments(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const ctx = await this.getMerchantTenantContext(userId, storeId);
+    await this.manageCustomerSegmentService.seedDefaultSegments(ctx.tenantId);
     return this.manageCustomerSegmentService.findAll(ctx.tenantId);
   }
 
@@ -416,6 +434,20 @@ export class CustomerController {
   ) {
     const ctx = await this.getMerchantTenantContext(userId, storeId);
     return this.updateLeadStageService.execute(id, ctx.tenantId, dto.stage, dto.lostReason);
+  }
+
+  @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
+  @Patch('leads/:id/details')
+  @ApiOperation({ summary: 'Update lead requirement notes and estimated deal value' })
+  @ApiResponse({ status: 200, description: 'Lead details updated successfully' })
+  async updateLeadDetails(
+    @CurrentUser('sub') userId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateLeadDetailsDto,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const ctx = await this.getMerchantTenantContext(userId, storeId);
+    return this.updateLeadDetailsService.execute(id, ctx.tenantId, dto);
   }
 
   @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
@@ -676,6 +708,21 @@ export class CustomerController {
   ) {
     const ctx = await this.getMerchantTenantContext(userId, storeId);
     return this.listCustomerActivitiesService.execute(customerId, ctx.tenantId);
+  }
+
+  @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
+  @Post(':id/activities')
+  @ApiOperation({ summary: 'Manually log a staff-initiated interaction (call, WhatsApp, SMS, note, meeting) for a customer' })
+  @ApiResponse({ status: 201, description: 'Activity logged successfully' })
+  async logActivity(
+    @CurrentUser('sub') userId: string,
+    @Param('id') customerId: string,
+    @Body() dto: LogCustomerActivityDto,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const ctx = await this.getMerchantTenantContext(userId, storeId);
+    const activity = await this.logCustomerActivityService.execute(customerId, ctx.tenantId, dto, 'Merchant', ctx.storeId);
+    return { success: true, data: activity };
   }
 
   @Roles(UserRoleEnum.STORE_OWNER)

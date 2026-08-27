@@ -71,10 +71,10 @@ export const ScheduleFollowUpModal: React.FC<ScheduleFollowUpModalProps> = ({
         note: finalNote,
       }).unwrap();
     } catch (err: any) {
-      console.warn('Follow-up backend sync:', err?.message || err);
+      toast.error('ফলো-আপ সেভ করা যায়নি। আবার চেষ্টা করুন। (Failed to save follow-up. Please try again.)');
+      return;
     }
 
-    // Update local state regardless
     onFollowUpSaved(lead.id, isoDate, finalNote);
     toast.success(`কথা বলার সময় নির্ধারণ করা হয়েছে: ${new Date(datetime).toLocaleString()}`);
     onClose();
@@ -88,7 +88,8 @@ export const ScheduleFollowUpModal: React.FC<ScheduleFollowUpModalProps> = ({
         note: '',
       }).unwrap();
     } catch (err: any) {
-      console.warn('Clear follow-up sync:', err?.message || err);
+      toast.error('রিমাইন্ডার মুছে ফেলা যায়নি। আবার চেষ্টা করুন। (Failed to clear follow-up. Please try again.)');
+      return;
     }
     onFollowUpSaved(lead.id, null, '');
     toast.success('শিডিউল রিমাইন্ডার মুছে ফেলা হয়েছে (Follow-up cleared)');

@@ -103,6 +103,20 @@ export interface Lead {
   updatedAt: string;
 }
 
+export type SegmentRuleField = 'totalSpent' | 'ordersCount' | 'daysSinceLastOrder' | 'status' | 'origin' | 'source';
+export type SegmentRuleOperator = 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte';
+
+export interface SegmentRuleCondition {
+  field: SegmentRuleField;
+  operator: SegmentRuleOperator;
+  value: string | number;
+}
+
+export interface SegmentRuleGroup {
+  matchType: 'ALL' | 'ANY';
+  conditions: SegmentRuleCondition[];
+}
+
 export interface CustomerSegment {
   id: string;
   name: string;
@@ -110,6 +124,8 @@ export interface CustomerSegment {
   type: 'DYNAMIC' | 'STATIC';
   customerCount: number;
   avgSpend: number;
+  rules?: SegmentRuleGroup;
+  isActive?: boolean;
   criteria?: {
     minOrders?: number;
     maxOrders?: number;

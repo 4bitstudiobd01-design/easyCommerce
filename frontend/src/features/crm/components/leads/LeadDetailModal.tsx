@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { formatCrmDate } from '../../utils/formatDate';
 import { toast } from 'sonner';
+import { useUpdateLeadDetailsMutation } from '../../api/crmApi';
 
 interface LeadDetailModalProps {
   lead: Lead | null;
@@ -63,6 +64,7 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [editableNotes, setEditableNotes] = useState('');
   const [editableValue, setEditableValue] = useState('');
+  const [updateLeadDetails, { isLoading: isSavingRequirements }] = useUpdateLeadDetailsMutation();
 
   useEffect(() => {
     if (lead) {
@@ -77,18 +79,25 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
 
   const currentStageConfig = STAGES.find((s) => s.id === lead.stage) || STAGES[0];
 
-  const handleSaveRequirements = () => {
-    const updatedLead: Lead = {
-      ...lead,
-      notes: editableNotes.trim() || undefined,
-      estimatedValue: Number(editableValue) || lead.estimatedValue,
-      updatedAt: new Date().toISOString(),
-    };
-    if (onLeadUpdated) {
-      onLeadUpdated(updatedLead);
+  const handleSaveRequirements = async () => {
+    const notes = editableNotes.trim() || undefined;
+    const estimatedValue = Number(editableValue) || lead.estimatedValue;
+
+    try {
+      const updatedLead = await updateLeadDetails({
+        id: lead.id,
+        notes,
+        estimatedValue,
+      }).unwrap();
+
+      if (onLeadUpdated) {
+        onLeadUpdated(updatedLead);
+      }
+      setIsEditingNotes(false);
+      toast.success('Lead requirements and estimated value updated!');
+    } catch (err: any) {
+      toast.error('Failed to update lead requirements. Please try again.');
     }
-    setIsEditingNotes(false);
-    toast.success('Lead requirements and estimated value updated!');
   };
 
   const handleStageSelect = (stageId: LeadStageType) => {

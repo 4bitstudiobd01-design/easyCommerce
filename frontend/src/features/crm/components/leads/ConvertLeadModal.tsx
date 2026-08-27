@@ -30,43 +30,18 @@ export const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({
   const handleConvert = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const optimisticCustomer: Customer360 = {
-      id: `cust-${Date.now()}`,
-      tenantId: lead.tenantId,
-      storeId: lead.storeId,
-      firstName: lead.name.split(' ')[0] || lead.name,
-      lastName: lead.name.split(' ').slice(1).join(' ') || '',
-      fullName: lead.name,
-      email: lead.email,
-      phone: lead.phone,
-      status: 'ACTIVE',
-      accountType: 'REGISTERED',
-      source: 'STORE_INQUIRY',
-      tags: ['Converted Lead', ...(lead.tags || [])],
-      totalSpent: createInitialOrder ? Number(orderAmount) || 0 : 0,
-      ordersCount: createInitialOrder ? 1 : 0,
-      avgOrderValue: createInitialOrder ? Number(orderAmount) || 0 : 0,
-      lastOrderAt: createInitialOrder ? new Date().toISOString() : null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      city: 'Dhaka',
-    };
-
     try {
       const res = await convertLead({
         leadId: lead.id,
         createInitialOrder,
       }).unwrap();
 
-      onLeadConverted(res || optimisticCustomer);
+      onLeadConverted(res);
       toast.success(`Lead "${lead.name}" converted to registered Store Customer!`);
+      onClose();
     } catch (err: any) {
-      console.warn('Fallback to optimistic state:', err);
-      onLeadConverted(optimisticCustomer);
-      toast.success(`Lead "${lead.name}" converted to registered Store Customer!`);
+      toast.error('Failed to convert lead. Please try again.');
     }
-
-    onClose();
   };
 
   return (
