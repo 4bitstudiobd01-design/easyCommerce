@@ -37,24 +37,6 @@ export const AddLeadModal: React.FC<AddLeadModalProps> = ({
       return;
     }
 
-    const optimisticLead: Lead = {
-      id: `lead-${Date.now()}`,
-      tenantId: '9139e1ed-04cf-4778-810e-da3f248f1ffd',
-      name: name.trim(),
-      phone: phone.trim(),
-      email: email.trim() || undefined,
-      companyName: companyName.trim() || undefined,
-      estimatedValue: Number(estimatedValue) || 0,
-      leadScore: 75,
-      source,
-      stage,
-      notes: notes.trim() || undefined,
-      tags: ['New Lead', source],
-      assignedStaffName: 'MD Belal Hossain',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
     try {
       const serverLead = await createLead({
         name: name.trim(),
@@ -69,15 +51,12 @@ export const AddLeadModal: React.FC<AddLeadModalProps> = ({
         tags: ['New Lead', source],
       }).unwrap();
 
-      onLeadAdded(serverLead || optimisticLead);
+      onLeadAdded(serverLead);
       toast.success(`Lead for "${name}" added to pipeline!`);
+      onClose();
     } catch (err: any) {
-      console.warn('Fallback to local state:', err);
-      onLeadAdded(optimisticLead);
-      toast.success(`Lead for "${name}" added to pipeline!`);
+      toast.error('Failed to create lead. Please try again.');
     }
-
-    onClose();
   };
 
   return (

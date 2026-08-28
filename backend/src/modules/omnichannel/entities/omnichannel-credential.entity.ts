@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
   Index,
 } from 'typeorm';
+import { credentialsColumnTransformer } from './omnichannel-credential.transformer';
 
 export type OmnichannelPlatformType =
   | 'telegram'
@@ -45,7 +46,11 @@ export class OmnichannelCredentialEntity {
   @Column({ type: 'varchar', length: 255, nullable: true })
   accountHandle?: string;
 
-  @Column({ type: 'jsonb', default: {} })
+  // Encrypted at rest (AES-256-GCM) via credentialsColumnTransformer — the
+  // jsonb value stored on disk is `{ enc: true, payload: '<ciphertext>' }`,
+  // never the raw tokens/secrets. Always plaintext Record<string, any> in
+  // application code; encryption/decryption happens transparently here.
+  @Column({ type: 'jsonb', default: {}, transformer: credentialsColumnTransformer })
   credentials: Record<string, any>;
 
   @Column({ type: 'jsonb', default: {} })

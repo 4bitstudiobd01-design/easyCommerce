@@ -3,23 +3,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { LeadEntity } from '../entities/lead.entity';
 import { LeadQueryDto } from '../dto/lead-query.dto';
-import { SeedLeadsService } from './seed-leads.service';
 
 @Injectable()
 export class ListLeadsService {
   constructor(
     @InjectRepository(LeadEntity)
     private readonly leadRepository: Repository<LeadEntity>,
-    private readonly seedLeadsService: SeedLeadsService,
   ) {}
 
   async execute(tenantId: string, dto?: LeadQueryDto, storeId?: string): Promise<LeadEntity[]> {
-    // Auto-seed if tenant has no leads or needs starter pipeline data
-    const count = await this.leadRepository.count({ where: { tenantId } });
-    if (count === 0) {
-      await this.seedLeadsService.execute(tenantId, storeId);
-    }
-
     const qb = this.leadRepository.createQueryBuilder('lead')
       .where('lead.tenantId = :tenantId', { tenantId });
 

@@ -42,18 +42,10 @@ export class ManageCustomerSegmentService {
   }
 
   async findAll(tenantId: string): Promise<SegmentWithMetrics[]> {
-    let segments = await this.segmentRepository.find({
+    const segments = await this.segmentRepository.find({
       where: { tenantId },
       order: { createdAt: 'ASC' },
     });
-
-    if (segments.length === 0) {
-      await this.seedDefaultSegments(tenantId);
-      segments = await this.segmentRepository.find({
-        where: { tenantId },
-        order: { createdAt: 'ASC' },
-      });
-    }
 
     const result: SegmentWithMetrics[] = [];
 
@@ -293,7 +285,7 @@ export class ManageCustomerSegmentService {
     }
   }
 
-  private async seedDefaultSegments(tenantId: string): Promise<void> {
+  async seedDefaultSegments(tenantId: string): Promise<void> {
     const starterSegments = [
       {
         tenantId,
