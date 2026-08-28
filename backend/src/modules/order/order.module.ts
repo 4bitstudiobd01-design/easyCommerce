@@ -13,6 +13,7 @@ import { OrderNoteEntity } from './entities/order-note.entity';
 import { UserEntity } from '../user/entities/user.entity';
 import { ProductEntity } from '../catalog/entities/product.entity';
 import { ConsignmentEntity } from '../logistics/entities/consignment.entity';
+import { LeadEntity } from '../customer/entities/lead.entity';
 import { TenantModule } from '../tenant/tenant.module';
 import { CustomerModule } from '../customer/customer.module';
 import { CatalogModule } from '../catalog/catalog.module';
@@ -65,6 +66,7 @@ import { GenerateOrderNumberService } from './services/generate-order-number.ser
       ConsignmentEntity,
       PaymentEntity,
       UserEntity,
+      LeadEntity,
     ]),
     TenantModule,
     CustomerModule,

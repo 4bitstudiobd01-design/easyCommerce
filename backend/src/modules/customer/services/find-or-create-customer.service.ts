@@ -12,6 +12,7 @@ export interface FindOrCreateCustomerInput {
   storeId?: string;
   source?: CustomerSourceEnum;
   userId?: string;
+  customerId?: string;
   isGuest?: boolean;
   address?: {
     recipientName?: string;
@@ -67,10 +68,26 @@ export class FindOrCreateCustomerService {
     let customer: CustomerEntity | null = null;
 
     try {
-      const phoneVariants = getPhoneLookupVariants(phone);
-      const existing = await this.customerRepository.findOne({
-        where: { tenantId, phone: In(phoneVariants) },
-      });
+      let existing: CustomerEntity | null = null;
+
+      // 1. If logged-in customer, first look up by customer ID / userId
+      if (input.userId || input.customerId) {
+        const lookupId = input.customerId || input.userId;
+        existing = await this.customerRepository.findOne({
+          where: [
+            { id: lookupId, tenantId },
+            { userId: lookupId, tenantId },
+          ],
+        });
+      }
+
+      // 2. Fallback to phone lookup variants
+      if (!existing && phone) {
+        const phoneVariants = getPhoneLookupVariants(phone);
+        existing = await this.customerRepository.findOne({
+          where: { tenantId, phone: In(phoneVariants) },
+        });
+      }
 
       if (existing) {
         let changed = false;
@@ -88,7 +105,7 @@ export class FindOrCreateCustomerService {
           changed = true;
         }
 
-        // If customer just logged in, upgrade from GUEST to REGISTERED / ACTIVE
+        // If customer is logged in, ensure REGISTERED / ACTIVE
         if (isLoggedIn) {
           if (input.userId && !existing.userId) {
             existing.userId = input.userId;

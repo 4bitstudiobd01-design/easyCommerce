@@ -84,6 +84,8 @@ export default function CheckoutPage() {
   const [searchCategory, setSearchCategory] = useState('All Categories');
   const [searchQuery, setSearchQuery] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const customerAuth = useSelector((state: RootState) => (state as any).customerAuth);
+  const loggedInCustomer = customerAuth?.customer;
   const authUser = useSelector((state: RootState) => (state as any).auth?.user);
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
 
@@ -94,8 +96,28 @@ export default function CheckoutPage() {
 
   const storeSlug = activeCartItems[0]?.storeSlug || 'main';
 
-  // Autofill customer profile if previously logged in / ordered
+  // Autofill customer profile if logged in or previously ordered
   React.useEffect(() => {
+    // 1. If storefront customer is authenticated, prefill default profile info
+    if (loggedInCustomer) {
+      const name = `${loggedInCustomer.firstName || ''} ${loggedInCustomer.lastName || ''}`.trim();
+      if (name) setFullName(name);
+      if (loggedInCustomer.email) setEmailAddress(loggedInCustomer.email);
+      if (loggedInCustomer.phone) {
+        let p = loggedInCustomer.phone.replace(/\D/g, '');
+        if (p.startsWith('880')) {
+          p = p.slice(3);
+          setCountryCode('+880');
+        } else if (p.startsWith('0')) {
+          p = p.slice(1);
+          setCountryCode('+880');
+        }
+        setPhoneNumber(p);
+      }
+      return;
+    }
+
+    // 2. Fallback to localStorage cache for guest shoppers
     try {
       const stored = localStorage.getItem(`bitcommerce_customer_${storeSlug}`);
       if (stored) {
@@ -105,7 +127,7 @@ export default function CheckoutPage() {
         if (parsed.email) setEmailAddress(parsed.email);
       }
     } catch (e) {}
-  }, [storeSlug]);
+  }, [loggedInCustomer, storeSlug]);
 
   // Price calculations
   const itemsCount = activeCartItems.reduce((acc, item) => acc + item.quantity, 0);
@@ -129,7 +151,8 @@ export default function CheckoutPage() {
       const sessionId = readStoredSessionId();
       const formattedPhone = countryCode + phoneNumber.replace(/\D/g, '');
 
-      const isGuest = !authUser;
+      const isGuest = !loggedInCustomer && !authUser;
+      const authenticatedUserId = loggedInCustomer?.id || authUser?.id || undefined;
 
       // 1. Create order
       const order = await createOrder({
@@ -151,7 +174,7 @@ export default function CheckoutPage() {
         utmCampaign: attribution?.utmCampaign,
         referrerHost: attribution?.referrerHost,
         sessionId: sessionId || undefined,
-        userId: authUser?.id || undefined,
+        userId: authenticatedUserId,
         isGuest,
       }).unwrap();
 
