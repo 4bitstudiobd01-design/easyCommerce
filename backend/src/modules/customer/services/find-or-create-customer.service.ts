@@ -1,8 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { CustomerEntity, CustomerStatusEnum, CustomerAccountTypeEnum, CustomerSourceEnum } from '../entities/customer.entity';
 import { CustomerAddressEntity } from '../entities/customer-address.entity';
+import { getPhoneLookupVariants } from '../../../common/utils/normalize-phone.util';
 
 export interface FindOrCreateCustomerInput {
   phone: string;
@@ -66,8 +67,9 @@ export class FindOrCreateCustomerService {
     let customer: CustomerEntity | null = null;
 
     try {
+      const phoneVariants = getPhoneLookupVariants(phone);
       const existing = await this.customerRepository.findOne({
-        where: { tenantId, phone },
+        where: { tenantId, phone: In(phoneVariants) },
       });
 
       if (existing) {
@@ -122,6 +124,7 @@ export class FindOrCreateCustomerService {
           phone,
           status,
           accountType,
+          hasAccount: isLoggedIn,
           source: input.source ?? CustomerSourceEnum.ONLINE_STORE,
         });
 
@@ -139,7 +142,8 @@ export class FindOrCreateCustomerService {
       // (tenantId, phone) unique index — re-read rather than failing the order.
       const isUniqueViolation = err?.code === '23505';
       if (isUniqueViolation) {
-        const fallback = await this.customerRepository.findOne({ where: { tenantId, phone } });
+        const phoneVariants = getPhoneLookupVariants(phone);
+        const fallback = await this.customerRepository.findOne({ where: { tenantId, phone: In(phoneVariants) } });
         if (fallback) return fallback;
       }
 

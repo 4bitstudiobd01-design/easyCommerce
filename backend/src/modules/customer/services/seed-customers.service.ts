@@ -185,6 +185,7 @@ export class SeedCustomersService {
           email: item.email,
           status: item.status,
           accountType: item.accountType,
+          hasAccount: item.accountType === CustomerAccountTypeEnum.REGISTERED,
           source: item.source,
           registrationChannel: item.registrationChannel,
           registrationUtmSource: item.registrationUtmSource,

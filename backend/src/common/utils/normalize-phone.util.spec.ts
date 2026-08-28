@@ -1,4 +1,4 @@
-import { normalizePhone } from './normalize-phone.util';
+import { normalizePhone, getPhoneLookupVariants } from './normalize-phone.util';
 
 describe('normalizePhone', () => {
   it('promotes a Bangladesh local number to its +880 international form', () => {
@@ -28,3 +28,23 @@ describe('normalizePhone', () => {
     expect(normalizePhone(once)).toBe(once);
   });
 });
+
+describe('getPhoneLookupVariants', () => {
+  it('returns local, international and raw variants for Bangladesh numbers', () => {
+    const variants = getPhoneLookupVariants('01886807417');
+    expect(variants).toContain('01886807417');
+    expect(variants).toContain('+8801886807417');
+    expect(variants).toContain('8801886807417');
+  });
+
+  it('resolves variants when passed international format with plus', () => {
+    const variants = getPhoneLookupVariants('+8801886807417');
+    expect(variants).toContain('01886807417');
+    expect(variants).toContain('+8801886807417');
+  });
+
+  it('handles empty input gracefully', () => {
+    expect(getPhoneLookupVariants('')).toEqual([]);
+  });
+});
+
