@@ -66,6 +66,12 @@ export class OmnichannelAiAutoReplyService {
       return false;
     }
 
+    // Check Per-Platform Enablement
+    if (config.enabledPlatforms && config.enabledPlatforms[platform] === false) {
+      this.logger.log(`AI Auto-Reply skipped for platform "${platform}" (disabled in AI Settings).`);
+      return false;
+    }
+
     const apiKey = this.cryptoService.decrypt(config.encryptedApiKey);
     if (!apiKey) {
       this.logger.warn(`AI Auto-Reply enabled for tenant ${tenantId} but no valid API Key configured.`);
@@ -86,19 +92,43 @@ export class OmnichannelAiAutoReplyService {
 
     // 3. Check Conversation Pause Condition
     if (state.isAiPaused) {
-      await this.logRepo.save(
-        this.logRepo.create({
-          tenantId,
-          conversationId,
-          platform,
-          provider: config.provider,
-          model: config.model,
-          userQuery: text,
-          status: 'SKIPPED_PAUSED',
-          errorMessage: `AI Auto-reply skipped: paused by ${state.pausedReason}`,
-        }),
-      );
-      return false;
+      if (state.pausedReason === 'AGENT_MANUAL') {
+        // Explicitly paused by an agent clicking "Pause AI" in the UI
+        await this.logRepo.save(
+          this.logRepo.create({
+            tenantId,
+            conversationId,
+            platform,
+            provider: config.provider,
+            model: config.model,
+            userQuery: text,
+            status: 'SKIPPED_PAUSED',
+            errorMessage: `AI Auto-reply skipped: explicitly paused by agent`,
+          }),
+        );
+        return false;
+      }
+
+      if (config.triggerMode === 'ALWAYS') {
+        // In ALWAYS mode, incoming customer messages automatically resume AI auto-replies
+        state.isAiPaused = false;
+        state.pausedReason = 'NONE';
+        await this.stateRepo.save(state);
+      } else {
+        await this.logRepo.save(
+          this.logRepo.create({
+            tenantId,
+            conversationId,
+            platform,
+            provider: config.provider,
+            model: config.model,
+            userQuery: text,
+            status: 'SKIPPED_PAUSED',
+            errorMessage: `AI Auto-reply skipped: paused by ${state.pausedReason}`,
+          }),
+        );
+        return false;
+      }
     }
 
     // 4. Trigger Mode & Human Activity Check
@@ -243,13 +273,19 @@ export class OmnichannelAiAutoReplyService {
     }
 
     state.lastHumanAgentMessageAt = new Date();
-    state.isAiPaused = true;
-    state.pausedReason = 'HUMAN_AGENT_TAKEOVER';
-    state.pausedByUserId = agentUserId || 'dashboard_agent';
-    state.aiPausedAt = new Date();
+
+    const config = await this.configRepo.findOne({ where: { tenantId } });
+    if (config?.triggerMode === 'NO_HUMAN_ACTIVE') {
+      state.isAiPaused = true;
+      state.pausedReason = 'HUMAN_AGENT_TAKEOVER';
+      state.pausedByUserId = agentUserId || 'dashboard_agent';
+      state.aiPausedAt = new Date();
+      this.logger.log(`AI Auto-Reply paused for conversation ${conversationId} (Human Agent Takeover).`);
+    } else {
+      this.logger.log(`Human agent message sent in ALWAYS mode for conversation ${conversationId}.`);
+    }
 
     await this.stateRepo.save(state);
-    this.logger.log(`AI Auto-Reply automatically paused for conversation ${conversationId} (Human Agent Takeover).`);
   }
 
   /**
@@ -309,7 +345,9 @@ export class OmnichannelAiAutoReplyService {
       if (platform === 'whatsapp') {
         await this.whatsappService.sendMessage(tenantId, recipientId, text, storeId);
       } else if (platform === 'telegram') {
-        await this.telegramService.sendMessage(tenantId, recipientId, text, storeId);
+        await this.telegramService.sendMessage(tenantId, recipientId, text, storeId, {
+          skipDbSave: true,
+        });
       } else if (platform === 'instagram') {
         await this.instagramService.sendMessage(tenantId, recipientId, text, storeId);
       } else if (platform === 'facebook') {

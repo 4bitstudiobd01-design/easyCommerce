@@ -101,7 +101,7 @@ export class OmnichannelChatController {
   }
 
   @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
-  @Get('telegram/bot-info')
+  @Get(['telegram/bot-info', 'telegram/info'])
   @ApiOperation({ summary: 'Get Telegram bot info for merchant' })
   async getTelegramBotInfo(
     @CurrentUser('sub') userId: string,
@@ -110,5 +110,24 @@ export class OmnichannelChatController {
     const ctx = await this.getMerchantTenantContext(userId, storeId);
     const bot = await this.telegramService.getBotInfo(ctx.tenantId);
     return { success: true, data: { bot } };
+  }
+
+  @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
+  @Post('telegram/send-direct')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Direct send message to a Telegram chat ID' })
+  async sendDirectTelegram(
+    @CurrentUser('sub') userId: string,
+    @Body() body: { chatId: string | number; text: string },
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const ctx = await this.getMerchantTenantContext(userId, storeId);
+    const data = await this.telegramService.sendMessage(
+      ctx.tenantId,
+      body.chatId,
+      body.text,
+      ctx.storeId,
+    );
+    return { success: true, data };
   }
 }

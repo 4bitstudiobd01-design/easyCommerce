@@ -23,7 +23,13 @@ function extractData<T = any>(response: any): T {
 export const omnichannelApi = createApi({
   reducerPath: 'omnichannelApi',
   baseQuery: createBaseQueryWithReauth(`${API_ROOT}/omnichannel`),
-  tagTypes: ['OmnichannelCredential', 'OmnichannelConversation', 'OmnichannelMessage'],
+  tagTypes: [
+    'OmnichannelCredential',
+    'OmnichannelConversation',
+    'OmnichannelMessage',
+    'OmnichannelAiConfig',
+    'OmnichannelAiLog',
+  ],
   endpoints: (builder) => ({
     // ─── Credentials Endpoints ─────────────────────────────────────────────
     getChannelCredentials: builder.query<ChannelCredential[], { unmask?: boolean } | void>({
@@ -149,6 +155,54 @@ export const omnichannelApi = createApi({
       query: () => '/chat/telegram/info',
       transformResponse: (response: any) => extractData(response),
     }),
+
+    // ─── AI Auto-Reply Endpoints ───────────────────────────────────────────
+    getAiConfig: builder.query<any, void>({
+      query: () => '/ai/config',
+      providesTags: ['OmnichannelAiConfig'],
+      transformResponse: (response: any) => extractData(response),
+    }),
+
+    saveAiConfig: builder.mutation<any, any>({
+      query: (body) => ({
+        url: '/ai/config',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['OmnichannelAiConfig'],
+      transformResponse: (response: any) => extractData(response),
+    }),
+
+    testAiConnection: builder.mutation<any, { provider?: string; model?: string; apiKey?: string }>({
+      query: (body) => ({
+        url: '/ai/test',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response: any) => extractData(response),
+    }),
+
+    toggleConversationAi: builder.mutation<any, { conversationId: string; isPaused: boolean }>({
+      query: ({ conversationId, isPaused }) => ({
+        url: `/ai/conversations/${conversationId}/toggle`,
+        method: 'POST',
+        body: { isPaused },
+      }),
+      invalidatesTags: ['OmnichannelConversation'],
+      transformResponse: (response: any) => extractData(response),
+    }),
+
+    getAiLogs: builder.query<any[], { limit?: number } | void>({
+      query: (params) => ({
+        url: '/ai/logs',
+        params: params || {},
+      }),
+      providesTags: ['OmnichannelAiLog'],
+      transformResponse: (response: any) => {
+        const payload = extractData(response);
+        return Array.isArray(payload) ? payload : [];
+      },
+    }),
   }),
 });
 
@@ -162,5 +216,11 @@ export const {
   useGetConversationsQuery,
   useGetConversationMessagesQuery,
   useSendChannelMessageMutation,
+  useSendDirectTelegramMessageMutation,
   useGetTelegramBotInfoQuery,
+  useGetAiConfigQuery,
+  useSaveAiConfigMutation,
+  useTestAiConnectionMutation,
+  useToggleConversationAiMutation,
+  useGetAiLogsQuery,
 } = omnichannelApi;

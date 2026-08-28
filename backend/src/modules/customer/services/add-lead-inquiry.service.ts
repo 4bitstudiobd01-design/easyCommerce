@@ -29,22 +29,30 @@ export class AddLeadInquiryService {
       throw new NotFoundException(`Lead with ID "${id}" not found`);
     }
 
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+
     let authorName = dto.authorName?.trim();
     let authorRole = dto.authorRole?.trim();
+    const authorId = dto.authorId || userId || user?.id;
 
-    if (!authorName) {
-      const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!authorName || authorName === 'Admin') {
       authorName = user?.fullName || user?.email || 'Store Staff';
-      if (!authorRole) {
-        authorRole = user?.role === 'STORE_OWNER' ? 'Admin' : 'Store Staff';
-      }
+    }
+
+    if (!authorRole || authorRole === 'Admin') {
+      authorRole =
+        user?.role === 'STORE_OWNER'
+          ? 'Merchant'
+          : user?.role === 'SUPER_ADMIN'
+          ? 'Admin'
+          : 'Staff';
     }
 
     const newInquiry: LeadInquiryItem = {
       id: randomUUID(),
       authorName: authorName || 'Staff Member',
       authorRole: authorRole || 'Staff',
-      authorId: userId,
+      authorId,
       note: dto.note.trim(),
       createdAt: new Date().toISOString(),
     };

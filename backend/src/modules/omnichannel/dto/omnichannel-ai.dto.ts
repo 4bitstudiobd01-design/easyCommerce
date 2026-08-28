@@ -73,6 +73,13 @@ export class SaveAiConfigDto {
   @IsObject()
   @IsOptional()
   businessContext?: Record<string, any>;
+
+  @ApiPropertyOptional({
+    description: 'Per-platform AI enablement map (e.g. { telegram: true, whatsapp: false, instagram: true, facebook: true })',
+  })
+  @IsObject()
+  @IsOptional()
+  enabledPlatforms?: Record<string, boolean>;
 }
 
 export class TestAiConnectionDto {

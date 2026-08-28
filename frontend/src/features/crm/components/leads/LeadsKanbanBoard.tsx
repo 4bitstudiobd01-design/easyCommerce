@@ -25,6 +25,7 @@ import {
   Search,
   ShoppingBag,
   Package,
+  MessageSquare,
 } from 'lucide-react';
 import { LeadStageDropdown } from './LeadStageDropdown';
 import { formatCrmDate } from '../../utils/formatDate';
@@ -618,11 +619,24 @@ export const LeadsKanbanBoard: React.FC<LeadsKanbanBoardProps> = ({
                           ) : null}
                         </div>
 
-                        {/* Notes */}
+                        {/* Multi-Staff Notes / Inquiries Preview */}
                         {lead.notes && (
-                          <p className="text-[11px] text-slate-600 line-clamp-2 bg-slate-50 p-1.5 rounded-lg border border-slate-100/90 leading-relaxed">
-                            {lead.notes}
-                          </p>
+                          <div className="space-y-1">
+                            <p className="text-[11px] text-slate-600 line-clamp-2 bg-slate-50 p-1.5 rounded-lg border border-slate-100/90 leading-relaxed">
+                              {lead.notes}
+                            </p>
+                            {lead.inquiries && lead.inquiries.length > 1 && (
+                              <div className="flex items-center justify-between text-[10px] text-blue-700 bg-blue-50/70 px-1.5 py-0.5 rounded border border-blue-100 font-bold">
+                                <span className="flex items-center gap-1">
+                                  <MessageSquare className="w-2.5 h-2.5" />
+                                  <span>{lead.inquiries.length} টি টিম ডিসকাশন নোট</span>
+                                </span>
+                                <span className="text-[9px] text-blue-600 font-medium">
+                                  +{lead.inquiries.length - 1} আরও
+                                </span>
+                              </div>
+                            )}
+                          </div>
                         )}
 
                         {/* Follow-up pill or Set Time shortcut */}

@@ -28,11 +28,14 @@ import {
   AlertTriangle,
   ShoppingBag,
   Package,
+  MessageSquare,
 } from 'lucide-react';
 import { LeadStageDropdown } from './LeadStageDropdown';
 import { formatCrmDate } from '../../utils/formatDate';
 import { getFollowUpInfo } from '../../utils/followUpHelper';
 import { toast } from 'sonner';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
 import {
   useUpdateLeadDetailsMutation,
   useAddLeadInquiryMutation,
@@ -69,16 +72,28 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
   onOpenScheduleFollowUp,
   onLeadUpdated,
 }) => {
+  const { user: authUser } = useSelector((state: RootState) => state.auth);
   const [activeTab, setActiveTab] = useState<'overview' | 'requirements' | 'followup' | 'timeline'>('overview');
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [editableNotes, setEditableNotes] = useState('');
   const [editableValue, setEditableValue] = useState('');
   const [updateLeadDetails, { isLoading: isSavingRequirements }] = useUpdateLeadDetailsMutation();
 
+  const currentUserName = authUser?.fullName || authUser?.email || lead?.assignedStaffName || 'Merchant';
+  const currentUserRole =
+    authUser?.role === 'STORE_OWNER'
+      ? 'Merchant'
+      : authUser?.role === 'SUPER_ADMIN'
+      ? 'Admin'
+      : authUser?.role === 'STORE_STAFF'
+      ? 'Staff'
+      : 'Merchant';
+  const currentUserId = authUser?.id;
+
   // Multi-person inquiry state
   const [newInquiryNote, setNewInquiryNote] = useState('');
-  const [inquiryAuthorName, setInquiryAuthorName] = useState('Admin');
-  const [inquiryAuthorRole, setInquiryAuthorRole] = useState('Admin');
+  const [inquiryAuthorName, setInquiryAuthorName] = useState(currentUserName);
+  const [inquiryAuthorRole, setInquiryAuthorRole] = useState(currentUserRole);
   const [addLeadInquiry, { isLoading: isAddingInquiry }] = useAddLeadInquiryMutation();
   const [deleteLeadInquiry, { isLoading: isDeletingInquiry }] = useDeleteLeadInquiryMutation();
 
@@ -87,12 +102,12 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
       setEditableNotes(lead.notes || '');
       setEditableValue(String(lead.estimatedValue || ''));
       setIsEditingNotes(false);
-      setInquiryAuthorName(lead.assignedStaffName || 'Admin');
-      setInquiryAuthorRole('Admin');
+      setInquiryAuthorName(currentUserName);
+      setInquiryAuthorRole(currentUserRole);
       setNewInquiryNote('');
       setActiveTab('overview');
     }
-  }, [lead?.id]);
+  }, [lead?.id, currentUserName, currentUserRole]);
 
   if (!isOpen || !lead) return null;
 
@@ -130,8 +145,9 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
       const updatedLead = await addLeadInquiry({
         id: lead.id,
         note: newInquiryNote.trim(),
-        authorName: inquiryAuthorName.trim() || undefined,
-        authorRole: inquiryAuthorRole || undefined,
+        authorName: inquiryAuthorName.trim() || currentUserName,
+        authorRole: inquiryAuthorRole || currentUserRole,
+        authorId: currentUserId,
       }).unwrap();
 
       setNewInquiryNote('');
@@ -381,7 +397,7 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                   </span>
                   <div className="text-sm font-bold text-slate-900 mt-1 flex items-center gap-1.5">
                     <User className="w-4 h-4 text-blue-600" />
-                    <span>{lead.assignedStaffName || 'MD Belal Hossain'}</span>
+                    <span>{lead.assignedStaffName || authUser?.fullName || 'Assigned Staff'}</span>
                   </div>
                   <p className="text-[10px] text-slate-500 mt-1">
                     Created on {formatCrmDate(lead.createdAt)}
@@ -507,6 +523,43 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                 </div>
               )}
 
+              {/* Team Inquiries Preview on Overview Tab */}
+              <div className="p-3.5 bg-slate-50 border border-slate-200/90 rounded-2xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 font-bold text-xs text-slate-800">
+                    <MessageSquare className="w-3.5 h-3.5 text-blue-600" />
+                    <span>টিম কমেন্ট ও ইনকোয়ারি নোট ({lead.inquiries?.length || (lead.notes ? 1 : 0)})</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('requirements')}
+                    className="text-xs text-blue-600 font-bold hover:underline flex items-center gap-0.5"
+                  >
+                    <span>+ নতুন কমেন্ট যোগ করুন</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                {lead.inquiries && lead.inquiries.length > 0 ? (
+                  <div className="bg-white p-2.5 rounded-xl border border-slate-200/70 text-xs space-y-1">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-extrabold text-slate-900">
+                        {lead.inquiries[0].authorName} <span className="text-slate-400 font-normal">({lead.inquiries[0].authorRole || 'Staff'})</span>
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        {formatCrmDate(lead.inquiries[0].createdAt)}
+                      </span>
+                    </div>
+                    <p className="text-slate-700 line-clamp-2 leading-relaxed">
+                      {lead.inquiries[0].note}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-slate-600 text-xs italic bg-white p-2 rounded-xl border border-slate-100">
+                    {lead.notes || 'এখনো কোনো ইনকোয়ারি কমেন্ট যুক্ত করা হয়নি।'}
+                  </p>
+                )}
+              </div>
+
               {/* Tags Section */}
               {lead.tags && lead.tags.length > 0 && (
                 <div className="space-y-1.5">
@@ -629,12 +682,22 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                         onChange={(e) => setInquiryAuthorRole(e.target.value)}
                         className="font-bold text-slate-800 text-xs bg-transparent focus:outline-none cursor-pointer"
                       >
+                        <option value="Merchant">Merchant</option>
                         <option value="Admin">Admin</option>
                         <option value="Store Manager">Store Manager</option>
                         <option value="Sales Executive">Sales Executive</option>
                         <option value="Support Staff">Support Staff</option>
                       </select>
                     </div>
+
+                    {currentUserId && (
+                      <span
+                        className="px-2 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-mono font-bold border border-slate-200"
+                        title={`Your User ID: ${currentUserId}`}
+                      >
+                        ID: #{currentUserId.slice(0, 8)}
+                      </span>
+                    )}
                   </div>
 
                   <button
@@ -660,6 +723,7 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                             id: 'legacy-init',
                             authorName: lead.assignedStaffName || 'Initial Requirement',
                             authorRole: 'Initial Inquiry',
+                            authorId: undefined,
                             note: lead.notes,
                             createdAt: lead.createdAt,
                           },
@@ -682,7 +746,9 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
 
                   return inquiryList.map((inq) => {
                     const roleColor =
-                      inq.authorRole?.toLowerCase().includes('admin')
+                      inq.authorRole?.toLowerCase().includes('merchant')
+                        ? 'bg-blue-50 text-blue-800 border-blue-200'
+                        : inq.authorRole?.toLowerCase().includes('admin')
                         ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
                         : inq.authorRole?.toLowerCase().includes('manager')
                         ? 'bg-purple-50 text-purple-700 border-purple-200'
@@ -709,6 +775,14 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                                   className={`px-1.5 py-0.5 rounded text-[10px] font-black border ${roleColor}`}
                                 >
                                   {inq.authorRole}
+                                </span>
+                              )}
+                              {inq.authorId && (
+                                <span
+                                  className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[9px] font-mono font-bold border border-slate-200"
+                                  title={`User ID: ${inq.authorId}`}
+                                >
+                                  ID: #{inq.authorId.slice(0, 8)}
                                 </span>
                               )}
                             </div>

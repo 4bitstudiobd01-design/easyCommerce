@@ -16,4 +16,9 @@ export class AddLeadInquiryDto {
   @IsOptional()
   @IsString()
   authorRole?: string;
+
+  @ApiPropertyOptional({ description: 'User ID of the staff who commented' })
+  @IsOptional()
+  @IsString()
+  authorId?: string;
 }

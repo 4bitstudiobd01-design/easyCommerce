@@ -174,7 +174,7 @@ export const crmApi = createApi({
       transformResponse: (response: any) => response?.data ?? response,
     }),
 
-    addLeadInquiry: builder.mutation<Lead, { id: string; note: string; authorName?: string; authorRole?: string }>({
+    addLeadInquiry: builder.mutation<Lead, { id: string; note: string; authorName?: string; authorRole?: string; authorId?: string }>({
       query: ({ id, ...body }) => ({
         url: `/leads/${id}/inquiries`,
         method: 'POST',

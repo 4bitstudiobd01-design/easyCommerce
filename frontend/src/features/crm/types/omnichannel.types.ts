@@ -44,6 +44,8 @@ export interface ConversationThread {
   tags: string[];
   status: 'all' | 'unread' | 'resolved';
   customerId?: string;
+  isAiPaused?: boolean;
+  pausedReason?: string;
 }
 
 export interface ThreadMessage {
@@ -56,6 +58,9 @@ export interface ThreadMessage {
   platform: SocialPlatform;
   status: 'sent' | 'delivered' | 'read' | 'received';
   type?: string;
+  senderType?: 'customer' | 'agent' | 'ai' | 'system';
+  isAiGenerated?: boolean;
+  aiMetadata?: Record<string, any>;
 }
 
 export interface PlatformField {

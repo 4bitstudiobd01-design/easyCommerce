@@ -40,6 +40,13 @@ export class OmnichannelAiConfigService {
         temperature: 0.7,
         maxTokens: 500,
         businessContext: {},
+        enabledPlatforms: {
+          telegram: true,
+          whatsapp: true,
+          instagram: true,
+          facebook: true,
+          x: true,
+        },
       };
     }
 
@@ -60,6 +67,13 @@ export class OmnichannelAiConfigService {
       temperature: config.temperature,
       maxTokens: config.maxTokens,
       businessContext: config.businessContext || {},
+      enabledPlatforms: config.enabledPlatforms || {
+        telegram: true,
+        whatsapp: true,
+        instagram: true,
+        facebook: true,
+        x: true,
+      },
       updatedAt: config.updatedAt,
     };
   }
@@ -78,6 +92,13 @@ export class OmnichannelAiConfigService {
         temperature: dto.temperature ?? 0.7,
         maxTokens: dto.maxTokens ?? 500,
         businessContext: dto.businessContext || {},
+        enabledPlatforms: dto.enabledPlatforms || {
+          telegram: true,
+          whatsapp: true,
+          instagram: true,
+          facebook: true,
+          x: true,
+        },
       });
     } else {
       if (dto.isEnabled !== undefined) config.isEnabled = dto.isEnabled;
@@ -88,6 +109,7 @@ export class OmnichannelAiConfigService {
       if (dto.temperature !== undefined) config.temperature = dto.temperature;
       if (dto.maxTokens !== undefined) config.maxTokens = dto.maxTokens;
       if (dto.businessContext !== undefined) config.businessContext = dto.businessContext;
+      if (dto.enabledPlatforms !== undefined) config.enabledPlatforms = dto.enabledPlatforms;
     }
 
     // Process API Key update

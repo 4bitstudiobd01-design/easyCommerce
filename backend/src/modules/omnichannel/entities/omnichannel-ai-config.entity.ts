@@ -66,6 +66,12 @@ export class OmnichannelAiConfigEntity {
   @Column({ type: 'jsonb', default: {} })
   businessContext: Record<string, any>;
 
+  @Column({
+    type: 'jsonb',
+    default: { telegram: true, whatsapp: true, instagram: true, facebook: true, x: true },
+  })
+  enabledPlatforms: Record<string, boolean>;
+
   @CreateDateColumn({ type: 'timestamp with time zone' })
   createdAt: Date;
 

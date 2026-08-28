@@ -45,18 +45,26 @@ export class GeminiAiProvider implements IAiProvider {
     for (const msg of history) {
       const role = msg.role === 'model' || msg.role === 'assistant' ? 'model' : 'user';
       if (msg.text && msg.text.trim()) {
-        contents.push({
-          role,
-          parts: [{ text: msg.text.trim() }],
-        });
+        if (contents.length > 0 && contents[contents.length - 1].role === role) {
+          contents[contents.length - 1].parts[0].text += `\n${msg.text.trim()}`;
+        } else {
+          contents.push({
+            role,
+            parts: [{ text: msg.text.trim() }],
+          });
+        }
       }
     }
 
     // Append latest customer message
-    contents.push({
-      role: 'user',
-      parts: [{ text: latestMessage.trim() }],
-    });
+    if (contents.length > 0 && contents[contents.length - 1].role === 'user') {
+      contents[contents.length - 1].parts[0].text += `\n${latestMessage.trim()}`;
+    } else {
+      contents.push({
+        role: 'user',
+        parts: [{ text: latestMessage.trim() }],
+      });
+    }
 
     const payload = {
       systemInstruction: {
