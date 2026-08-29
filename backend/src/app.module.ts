@@ -50,9 +50,10 @@ import { APP_FILTER } from '@nestjs/core';
           port: config.get<number>('REDIS_PORT', 6379),
           // Local dev without Redis running: fail fast instead of retrying forever,
           // so boot doesn't hang. Queue-backed features (email/SMS) just won't fire.
-          retryStrategy: () => null,
+          maxRetriesPerRequest: null,
+          enableOfflineQueue: false,
           enableReadyCheck: false,
-          maxRetriesPerRequest: 1,
+          retryStrategy: () => null,
         },
         defaultJobOptions: {
           attempts: 3,

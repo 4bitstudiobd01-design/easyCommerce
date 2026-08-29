@@ -155,6 +155,19 @@ export class OmnichannelCredentialsService {
       return this.credentialRepo.save(existing);
     }
 
+    if (dto.platform === 'facebook') {
+      const fbToken =
+        dto.credentials?.pageAccessToken ||
+        dto.credentials?.accessToken ||
+        (existing?.credentials as any)?.pageAccessToken;
+      if (fbToken && typeof fbToken === 'string' && !fbToken.includes('••••••••')) {
+        fetch(
+          `https://graph.facebook.com/v19.0/me/subscribed_apps?subscribed_fields=messages,messaging_postbacks,messaging_optins,message_deliveries,message_reads&access_token=${encodeURIComponent(fbToken.trim())}`,
+          { method: 'POST' },
+        ).catch(() => {});
+      }
+    }
+
     const created = this.credentialRepo.create({
       tenantId,
       storeId,

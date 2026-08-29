@@ -19,12 +19,22 @@ import { OmnichannelChatService } from './services/omnichannel-chat.service';
 import { OmnichannelAiCryptoService } from './services/omnichannel-ai-crypto.service';
 import { GeminiAiProvider } from './services/ai-providers/gemini-ai.provider';
 import { OpenAiProvider } from './services/ai-providers/openai-ai.provider';
+import { ClaudeAiProvider } from './services/ai-providers/claude-ai.provider';
 import { OmnichannelAiConfigService } from './services/omnichannel-ai-config.service';
 import { OmnichannelAiAutoReplyService } from './services/omnichannel-ai-auto-reply.service';
 import { OmnichannelCredentialsController } from './controllers/omnichannel-credentials.controller';
 import { OmnichannelChatController } from './controllers/omnichannel-chat.controller';
 import { OmnichannelWebhookController } from './controllers/omnichannel-webhook.controller';
 import { OmnichannelAiController } from './controllers/omnichannel-ai.controller';
+
+import { OmnichannelAiDocumentEntity } from './entities/omnichannel-ai-document.entity';
+import { OmnichannelAiDocumentChunkEntity } from './entities/omnichannel-ai-document-chunk.entity';
+import { ProductEntity } from '../catalog/entities/product.entity';
+import { ProductVariantEntity } from '../catalog/entities/product-variant.entity';
+import { InventoryStockEntity } from '../inventory/entities/inventory-stock.entity';
+import { OrderEntity } from '../order/entities/order.entity';
+import { OmnichannelAiRagService } from './services/omnichannel-ai-rag.service';
+import { OmnichannelAiToolsService } from './services/omnichannel-ai-tools.service';
 
 @Module({
   imports: [
@@ -34,6 +44,12 @@ import { OmnichannelAiController } from './controllers/omnichannel-ai.controller
       OmnichannelAiConfigEntity,
       OmnichannelConversationStateEntity,
       OmnichannelAiLogEntity,
+      OmnichannelAiDocumentEntity,
+      OmnichannelAiDocumentChunkEntity,
+      ProductEntity,
+      ProductVariantEntity,
+      InventoryStockEntity,
+      OrderEntity,
       CustomerEntity,
     ]),
     TenantModule,
@@ -62,8 +78,11 @@ import { OmnichannelAiController } from './controllers/omnichannel-ai.controller
     OmnichannelAiCryptoService,
     GeminiAiProvider,
     OpenAiProvider,
+    ClaudeAiProvider,
     OmnichannelAiConfigService,
     OmnichannelAiAutoReplyService,
+    OmnichannelAiRagService,
+    OmnichannelAiToolsService,
   ],
   exports: [
     OmnichannelCredentialsService,

@@ -16,6 +16,11 @@ import {
   useSaveAiConfigMutation,
   useTestAiConnectionMutation,
   useToggleConversationAiMutation,
+  useGenerateAiDraftMutation,
+  useGetAiDocumentsQuery,
+  useUploadAiDocumentMutation,
+  useDeleteAiDocumentMutation,
+  useSyncChannelConversationsMutation,
 } from '../../api/omnichannelApi';
 import {
   Search,
@@ -46,9 +51,18 @@ import {
   Settings,
   CheckCircle2,
   Sliders,
+  KeyRound,
+  EyeOff,
+  Eye,
+  BookOpen,
+  UploadCloud,
+  FileText,
+  Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+
+import { AI_PROVIDERS } from './ChannelCredentialsManager';
 
 const QUICK_REPLIES = [
   'Hello! How can I help you today?',
@@ -83,7 +97,9 @@ export const OmnichannelChatInterface: React.FC = () => {
 
   // AI Auto-Reply Modal State
   const [isAiSettingsOpen, setIsAiSettingsOpen] = useState(false);
+  const [aiProvider, setAiProvider] = useState<'gemini' | 'openai' | 'claude' | 'deepseek' | 'groq'>('gemini');
   const [aiApiKeyInput, setAiApiKeyInput] = useState('');
+  const [showAiApiKey, setShowAiApiKey] = useState(false);
   const [aiSystemPromptInput, setAiSystemPromptInput] = useState('');
   const [aiTriggerMode, setAiTriggerMode] = useState<'ALWAYS' | 'NO_HUMAN_ACTIVE'>('ALWAYS');
   const [aiModel, setAiModel] = useState('gemini-1.5-flash');
@@ -128,10 +144,104 @@ export const OmnichannelChatInterface: React.FC = () => {
   const [saveAiConfig, { isLoading: isSavingAiConfig }] = useSaveAiConfigMutation();
   const [testAiConnection, { isLoading: isTestingAi }] = useTestAiConnectionMutation();
   const [toggleConversationAi, { isLoading: isTogglingAi }] = useToggleConversationAiMutation();
+  const [generateAiDraftMutation, { isLoading: isDraftingAi }] = useGenerateAiDraftMutation();
+
+  // AI Smart Draft Suggestion State
+  const [aiSuggestedDraft, setAiSuggestedDraft] = useState<string | null>(null);
+  const [aiDraftMetadata, setAiDraftMetadata] = useState<{ model?: string; provider?: string; latencyMs?: number } | null>(null);
+  // RAG Document Knowledge Base State
+  const { data: aiDocuments = [], isLoading: isLoadingDocs, refetch: refetchDocs } = useGetAiDocumentsQuery();
+  const [uploadAiDocument, { isLoading: isUploadingDoc }] = useUploadAiDocumentMutation();
+  const [deleteAiDocument, { isLoading: isDeletingDoc }] = useDeleteAiDocumentMutation();
+  const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
+
+  const [syncChannelConversations, { isLoading: isSyncingConversations }] = useSyncChannelConversationsMutation();
+
+  const handleSyncFacebookChats = async () => {
+    const toastId = toast.loading('Syncing historical Facebook Messenger chats from Meta Graph API...');
+    try {
+      const res = await syncChannelConversations('facebook').unwrap();
+      refetchConversations();
+      if (activeConversationId) refetchMessages();
+      toast.success(res?.message || 'Facebook conversations synced successfully!', { id: toastId });
+    } catch (err: any) {
+      toast.error(err?.data?.message || err?.message || 'Failed to sync Facebook conversations.', { id: toastId });
+    }
+  };
+
+  const handleUploadDocument = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File size exceeds 10MB limit.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    const toastId = toast.loading(`Indexing "${file.name}" into Store RAG Knowledge Base...`);
+
+    try {
+      await uploadAiDocument(formData).unwrap();
+      refetchDocs();
+      toast.success(`✨ "${file.name}" indexed successfully!`, { id: toastId });
+    } catch (err: any) {
+      const errorMsg =
+        err?.data?.message ||
+        (Array.isArray(err?.data?.errorSources) && err.data.errorSources[0]?.details) ||
+        err?.error ||
+        err?.message ||
+        'Failed to upload document.';
+      toast.error(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg), { id: toastId });
+    } finally {
+      e.target.value = '';
+    }
+  };
+
+  const handleDeleteDocument = async (docId: string, docName: string) => {
+    setDeletingDocId(docId);
+    try {
+      await deleteAiDocument(docId).unwrap();
+      refetchDocs();
+      toast.success(`"${docName}" removed from knowledge base.`);
+    } catch (err: any) {
+      toast.error(err?.data?.message || 'Failed to delete document.');
+    } finally {
+      setDeletingDocId(null);
+    }
+  };
+
+  const [isSavingKey, setIsSavingKey] = useState(false);
+  const [providerStatuses, setProviderStatuses] = useState<
+    Record<string, { success: boolean; message: string; latencyMs?: number } | null>
+  >({});
+  const [activeGenerationProvider, setActiveGenerationProvider] = useState<string>('openai');
+
+  // Auto-detect active generation provider based on saved keys
+  useEffect(() => {
+    if (aiConfig?.providerKeys) {
+      // If current selected provider has a key, keep it
+      if (aiConfig.providerKeys[activeGenerationProvider]?.hasApiKey) return;
+
+      // Otherwise pick first provider with a saved key
+      const firstWithKey = Object.keys(aiConfig.providerKeys).find(
+        (k) => aiConfig.providerKeys[k]?.hasApiKey,
+      );
+      if (firstWithKey) {
+        setActiveGenerationProvider(firstWithKey);
+      } else if (aiConfig.provider) {
+        setActiveGenerationProvider(aiConfig.provider);
+      }
+    }
+  }, [aiConfig, activeGenerationProvider]);
 
   // Populate AI config state
   useEffect(() => {
     if (aiConfig) {
+      if (aiConfig.provider) {
+        setAiProvider(aiConfig.provider as any);
+      }
       setAiSystemPromptInput(
         aiConfig.systemPrompt ||
           'You are an intelligent, friendly and professional customer support AI assistant for our store. Assist customers with inquiries, product info, pricing, delivery times, and order details promptly and politely in Bengali or English based on the customer language.',
@@ -147,8 +257,96 @@ export const OmnichannelChatInterface: React.FC = () => {
           x: aiConfig.enabledPlatforms.x === true,
         });
       }
+      setAiApiKeyInput('');
     }
   }, [aiConfig]);
+
+  const handleSelectAiProvider = (provId: 'gemini' | 'openai' | 'claude' | 'deepseek' | 'groq') => {
+    setAiProvider(provId);
+    setAiApiKeyInput('');
+    setTestResult(null);
+    const prov = AI_PROVIDERS.find((p) => p.id === provId);
+    if (prov && prov.models.length > 0) {
+      setAiModel(prov.models[0].id);
+    }
+  };
+
+  const handleSaveKeyAndTest = async () => {
+    const rawKey = aiApiKeyInput.trim();
+    if (!rawKey || rawKey.includes('•') || rawKey.includes('*')) {
+      toast.error('Please enter a valid API key.');
+      return;
+    }
+    setIsSavingKey(true);
+    setProviderStatuses((prev) => ({ ...prev, [aiProvider]: null }));
+    try {
+      await saveAiConfig({
+        provider: aiProvider,
+        model: aiModel,
+        apiKey: rawKey,
+        isEnabled: aiConfig?.isEnabled ?? false,
+        triggerMode: aiTriggerMode,
+        systemPrompt: aiSystemPromptInput.trim() || undefined,
+        enabledPlatforms: aiEnabledPlatforms,
+      }).unwrap();
+
+      const testRes = await testAiConnection({
+        provider: aiProvider,
+        model: aiModel,
+        apiKey: rawKey,
+      }).unwrap();
+
+      const result = (testRes as any)?.data ?? testRes;
+      setProviderStatuses((prev) => ({ ...prev, [aiProvider]: result }));
+      setTestResult(result);
+
+      if (result?.success) {
+        toast.success(`✅ ${aiProvider.toUpperCase()} key saved & verified!`);
+      } else {
+        toast.warning(`Key saved, but test failed: ${result?.message || 'Unknown error'}`);
+      }
+
+      setAiApiKeyInput('');
+      refetchAiConfig();
+    } catch (err: any) {
+      const msg =
+        err?.data?.data?.message ||
+        err?.data?.message ||
+        err?.message ||
+        'Failed to save or test key.';
+      const res = { success: false, message: msg };
+      setProviderStatuses((prev) => ({ ...prev, [aiProvider]: res }));
+      setTestResult(res);
+      toast.error(msg);
+    } finally {
+      setIsSavingKey(false);
+    }
+  };
+
+  const handleRetestProvider = async (provId: string) => {
+    setProviderStatuses((prev) => ({ ...prev, [provId]: null }));
+    try {
+      const testRes = await testAiConnection({
+        provider: provId,
+        model: AI_PROVIDERS.find((p) => p.id === provId)?.models[0]?.id || aiModel,
+      }).unwrap();
+      const result = (testRes as any)?.data ?? testRes;
+      setProviderStatuses((prev) => ({ ...prev, [provId]: result }));
+      setTestResult(result);
+      if (result?.success) {
+        toast.success(`${provId.toUpperCase()} connection verified!`);
+      } else {
+        toast.error(result?.message || 'Test failed.');
+      }
+    } catch (err: any) {
+      const msg = err?.data?.message || err?.message || 'Test failed.';
+      const res = { success: false, message: msg };
+      setProviderStatuses((prev) => ({ ...prev, [provId]: res }));
+      setTestResult(res);
+      toast.error(msg);
+    }
+  };
+
 
   // Set default active conversation if none selected
   useEffect(() => {
@@ -166,17 +364,72 @@ export const OmnichannelChatInterface: React.FC = () => {
     return conversations.find((c) => c.id === activeConversationId);
   }, [conversations, activeConversationId]);
 
-  // Check if AI is currently generating a reply for this thread
-  const isAiGeneratingReply = useMemo(() => {
-    if (!activeConversation || threadMessages.length === 0) return false;
-    const isGlobalActive = Boolean(aiConfig?.isEnabled);
-    const isConvPlatformAiOn = isGlobalActive && (aiEnabledPlatforms[activeConversation.platform] !== false);
-    if (!isConvPlatformAiOn || activeConversation.isAiPaused) return false;
+  // Check if AI is actively generating a reply for this thread (only when drafting is triggered)
+  const isAiGeneratingReply = isDraftingAi;
 
-    const lastMsg = threadMessages[threadMessages.length - 1];
-    // If the latest message in thread was received from the customer and not yet replied
-    return lastMsg.sender === 'customer' || lastMsg.senderType === 'customer';
-  }, [activeConversation, threadMessages, aiConfig, aiEnabledPlatforms]);
+  // Reset draft on active conversation change
+  useEffect(() => {
+    setAiSuggestedDraft(null);
+    setAiDraftMetadata(null);
+  }, [activeConversationId]);
+
+  const handleGenerateAiDraft = async (customPrompt?: string) => {
+    if (!activeConversationId) {
+      toast.error('Please select a conversation first.');
+      return;
+    }
+
+    try {
+      const res = await generateAiDraftMutation({
+        conversationId: activeConversationId,
+        promptOverride: customPrompt,
+        provider: activeGenerationProvider,
+        model: aiModel,
+      }).unwrap();
+
+      if (res.reply) {
+        setAiSuggestedDraft(res.reply);
+        setAiDraftMetadata({
+          model: res.model,
+          provider: res.provider || activeGenerationProvider,
+          latencyMs: res.latencyMs,
+        });
+        const provName = AI_PROVIDERS.find((p) => p.id === (res.provider || activeGenerationProvider))?.name || (res.provider || activeGenerationProvider).toUpperCase();
+        toast.success(`✨ AI Reply Draft generated via ${provName}!`);
+      }
+    } catch (err: any) {
+      toast.error(err?.data?.message || err?.message || 'Failed to generate AI draft reply.');
+    }
+  };
+
+  const handleInsertDraftToComposer = () => {
+    if (aiSuggestedDraft) {
+      setInputMessage(aiSuggestedDraft);
+      setAiSuggestedDraft(null);
+      toast.info('Draft added to chat input! You can modify it and hit Send.');
+    }
+  };
+
+  const handleSendDraftDirectly = async () => {
+    if (!aiSuggestedDraft || !activeConversation) return;
+    const textToSend = aiSuggestedDraft;
+    setAiSuggestedDraft(null);
+
+    try {
+      await sendMessageMutation({
+        platform: activeConversation.platform,
+        recipientId: activeConversation.recipientId,
+        text: textToSend,
+        conversationId: activeConversation.id,
+      }).unwrap();
+
+      refetchMessages();
+      refetchConversations();
+      toast.success('AI reply sent successfully!');
+    } catch (err: any) {
+      toast.error(err?.data?.message || 'Failed to send message.');
+    }
+  };
 
   const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -233,7 +486,7 @@ export const OmnichannelChatInterface: React.FC = () => {
       const isEnabled = enableMaster !== undefined ? enableMaster : (aiConfig?.isEnabled ?? true);
       const payload: any = {
         isEnabled,
-        provider: 'gemini',
+        provider: aiProvider,
         model: aiModel,
         triggerMode: aiTriggerMode,
         systemPrompt: aiSystemPromptInput.trim(),
@@ -261,25 +514,38 @@ export const OmnichannelChatInterface: React.FC = () => {
 
   const handleTestAiConnection = async () => {
     setTestResult(null);
+    // Pass raw key only if user typed something new (not empty, not masked dots)
+    const rawKey = aiApiKeyInput.trim();
+    const keyPayload = rawKey && !rawKey.includes('•') && !rawKey.includes('*') ? rawKey : undefined;
+
     try {
       const res = await testAiConnection({
-        provider: 'gemini',
+        provider: aiProvider,
         model: aiModel,
-        apiKey: aiApiKeyInput.trim() || undefined,
+        apiKey: keyPayload,
       }).unwrap();
 
-      setTestResult(res);
-      if (res.success) {
-        toast.success(res.message);
+      // RTK Query unwrap may return nested {data: {...}} from some interceptors
+      const result = (res as any)?.data ?? res;
+
+      setTestResult(result);
+      if (result.success) {
+        toast.success(result.message);
       } else {
-        toast.error(res.message);
+        toast.error(result.message);
       }
     } catch (err: any) {
-      const msg = err?.data?.message || 'Failed to test Gemini API connection.';
+      // Extract the most useful error message from various formats
+      const msg =
+        err?.data?.data?.message ||
+        err?.data?.message ||
+        err?.message ||
+        `Failed to test ${aiProvider.toUpperCase()} API connection.`;
       setTestResult({ success: false, message: msg });
       toast.error(msg);
     }
   };
+
 
   const handleToggleConversationState = async (isPaused: boolean) => {
     if (!activeConversationId) return;
@@ -362,6 +628,17 @@ export const OmnichannelChatInterface: React.FC = () => {
             <Settings className="w-3 h-3 text-slate-400 ml-0.5" />
           </button>
 
+          {/* Sync Facebook Conversations */}
+          <button
+            onClick={handleSyncFacebookChats}
+            disabled={isSyncingConversations}
+            title="Import historical customer conversations from Facebook Page"
+            className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs rounded-xl border border-blue-200 shadow-2xs flex items-center gap-1.5 transition-colors shrink-0 disabled:opacity-50 cursor-pointer"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-blue-600 ${isSyncingConversations ? 'animate-spin' : ''}`} />
+            <span>{isSyncingConversations ? 'Syncing...' : 'Sync Facebook'}</span>
+          </button>
+
           <button
             onClick={() => setIsDirectTelegramOpen(true)}
             className="px-3.5 py-1.5 bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-colors shrink-0 cursor-pointer"
@@ -388,8 +665,8 @@ export const OmnichannelChatInterface: React.FC = () => {
         {/* ── Panel 1: Conversation List (Left) ───────────────────────────── */}
         <div className="w-[300px] md:w-[320px] lg:w-[340px] shrink-0 border-r border-slate-200 flex flex-col bg-slate-50/40 overflow-hidden">
           {/* Search Box */}
-          <div className="p-3 border-b border-slate-200/80 bg-white shrink-0">
-            <div className="relative">
+          <div className="p-3 border-b border-slate-200/80 bg-white shrink-0 flex items-center gap-2">
+            <div className="relative flex-1">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
@@ -413,8 +690,16 @@ export const OmnichannelChatInterface: React.FC = () => {
                 <MessageSquare className="w-8 h-8 mx-auto text-slate-300" />
                 <p className="font-bold text-slate-700">No active conversations</p>
                 <p className="text-[11px] leading-relaxed">
-                  Messages received via Telegram bot, WhatsApp, or Instagram will appear here live.
+                  Messages received via Telegram bot, WhatsApp, or Facebook Messenger will appear here live.
                 </p>
+                <button
+                  onClick={handleSyncFacebookChats}
+                  disabled={isSyncingConversations}
+                  className="mt-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
+                >
+                  <RefreshCw className={`w-3 h-3 ${isSyncingConversations ? 'animate-spin' : ''}`} />
+                  <span>Sync Facebook Chats</span>
+                </button>
               </div>
             ) : (
               conversations.map((conv) => {
@@ -652,7 +937,14 @@ export const OmnichannelChatInterface: React.FC = () => {
                       <div className="p-3.5 bg-gradient-to-br from-indigo-50/90 via-white to-purple-50/90 border border-indigo-200/80 rounded-2xl rounded-bl-xs shadow-xs space-y-1.5 backdrop-blur-xs">
                         <div className="flex items-center gap-1.5 text-[11px] font-extrabold text-indigo-900">
                           <Bot className="w-3.5 h-3.5 text-indigo-600 animate-spin" />
-                          <span>Gemini AI is analyzing & drafting reply</span>
+                          <span>
+                            {activeGenerationProvider === 'gemini'
+                              ? 'Gemini AI'
+                              : activeGenerationProvider === 'openai'
+                              ? 'OpenAI (ChatGPT)'
+                              : `${activeGenerationProvider.toUpperCase()} AI`}{' '}
+                            is analyzing & drafting reply
+                          </span>
                         </div>
 
                         {/* Animated Wave Dots */}
@@ -688,10 +980,123 @@ export const OmnichannelChatInterface: React.FC = () => {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Quick Replies Bar */}
-              <div className="px-4 py-2 bg-white/90 border-t border-slate-200/70 flex items-center gap-1.5 overflow-x-auto scrollbar-none shrink-0 min-w-0">
+              {/* ─── AI Smart Reply Suggestion Box ─── */}
+              {aiSuggestedDraft && (
+                <div className="mx-4 my-2 p-3.5 bg-gradient-to-r from-indigo-50/95 via-purple-50/90 to-blue-50/95 border border-indigo-200/90 rounded-2xl shadow-sm space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs font-black text-indigo-950">
+                      <Sparkles className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
+                      <span>
+                        {AI_PROVIDERS.find((p) => p.id === (aiDraftMetadata?.provider || activeGenerationProvider))?.name || 'AI'} Suggested Reply
+                      </span>
+                      {aiDraftMetadata?.model && (
+                        <span className="text-[9px] font-mono text-indigo-700 bg-indigo-100/90 px-1.5 py-0.5 rounded font-bold">
+                          {aiDraftMetadata.model}
+                        </span>
+                      )}
+                      {aiDraftMetadata?.latencyMs && (
+                        <span className="text-[9px] font-mono text-slate-500 bg-white/80 px-1.5 py-0.5 rounded font-medium border border-indigo-100">
+                          {aiDraftMetadata.latencyMs}ms
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setAiSuggestedDraft(null)}
+                      className="text-slate-400 hover:text-slate-600 p-0.5 rounded-lg transition-colors cursor-pointer"
+                      title="Dismiss suggestion"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  <p className="text-xs text-slate-800 leading-relaxed whitespace-pre-wrap bg-white/90 p-3 rounded-xl border border-indigo-100/90 font-medium select-text">
+                    {aiSuggestedDraft}
+                  </p>
+
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleInsertDraftToComposer}
+                        className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer active:scale-95"
+                      >
+                        <Sliders className="w-3.5 h-3.5" />
+                        <span>Add to Chat Input & Edit</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleSendDraftDirectly}
+                        disabled={isSending}
+                        className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer active:scale-95"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        <span>Send Instantly</span>
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleGenerateAiDraft()}
+                      disabled={isDraftingAi}
+                      className="text-[11px] text-indigo-700 hover:text-indigo-900 font-bold flex items-center gap-1 cursor-pointer transition-colors px-2 py-1 rounded-lg hover:bg-indigo-100/60"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${isDraftingAi ? 'animate-spin' : ''}`} />
+                      <span>{isDraftingAi ? 'Drafting...' : 'Regenerate'}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Quick Replies Bar with AI Engine Selector */}
+              <div className="px-4 py-2 bg-white/90 border-t border-slate-200/70 flex items-center gap-2 overflow-x-auto scrollbar-none shrink-0 min-w-0">
+                {/* AI Engine Selector Pill */}
+                <div className="flex items-center gap-1 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200/90 rounded-xl px-2 py-1 shrink-0">
+                  <Bot className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                  <span className="text-[10px] font-black text-indigo-900 uppercase tracking-tight shrink-0">
+                    Engine:
+                  </span>
+                  <select
+                    value={activeGenerationProvider}
+                    onChange={(e) => setActiveGenerationProvider(e.target.value)}
+                    className="bg-transparent text-[11px] font-extrabold text-indigo-950 focus:outline-none cursor-pointer pr-1"
+                  >
+                    {AI_PROVIDERS.map((p) => {
+                      const hasKey = Boolean(aiConfig?.providerKeys?.[p.id]?.hasApiKey);
+                      return (
+                        <option key={p.id} value={p.id}>
+                          {p.name} {hasKey ? '✓ (Active)' : '(No Key)'}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+
+                {/* Dedicated AI Generate Reply Button */}
+                <button
+                  type="button"
+                  onClick={() => handleGenerateAiDraft()}
+                  disabled={isDraftingAi}
+                  className="px-3 py-1 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:opacity-90 disabled:opacity-50 text-white text-[11px] font-extrabold rounded-xl flex items-center gap-1.5 shadow-xs transition-all shrink-0 cursor-pointer active:scale-95"
+                >
+                  {isDraftingAi ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin text-white" />
+                      <span>Generating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3 h-3 text-pink-200" />
+                      <span>Generate Reply ({AI_PROVIDERS.find((p) => p.id === activeGenerationProvider)?.name || 'AI'})</span>
+                    </>
+                  )}
+                </button>
+
+                <div className="h-4 w-px bg-slate-200 shrink-0 mx-0.5" />
+
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 shrink-0">
-                  Quick Replies:
+                  Quick:
                 </span>
                 {QUICK_REPLIES.map((reply, idx) => (
                   <button
@@ -706,7 +1111,7 @@ export const OmnichannelChatInterface: React.FC = () => {
               </div>
 
               {/* Message Composer Input */}
-              <form onSubmit={handleSendMessage} className="p-3.5 bg-white border-t border-slate-200 flex items-center gap-2.5 shrink-0">
+              <form onSubmit={handleSendMessage} className="p-3.5 bg-white border-t border-slate-200 flex items-center gap-2 shrink-0">
                 <div className="flex-1 relative min-w-0">
                   <input
                     type="text"
@@ -716,6 +1121,24 @@ export const OmnichannelChatInterface: React.FC = () => {
                     className="w-full py-2.5 pl-4 pr-10 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/30"
                   />
                 </div>
+
+                {/* AI Draft Quick Button */}
+                <button
+                  type="button"
+                  onClick={() => handleGenerateAiDraft()}
+                  disabled={isDraftingAi}
+                  title={`Ask ${AI_PROVIDERS.find((p) => p.id === activeGenerationProvider)?.name || 'AI'} to draft a reply`}
+                  className="px-3 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/90 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition-all shrink-0 cursor-pointer active:scale-95"
+                >
+                  {isDraftingAi ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-600" />
+                  ) : (
+                    <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                  )}
+                  <span className="hidden md:inline">
+                    Draft ({AI_PROVIDERS.find((p) => p.id === activeGenerationProvider)?.name || 'AI'})
+                  </span>
+                </button>
 
                 <button
                   type="submit"
@@ -770,15 +1193,15 @@ export const OmnichannelChatInterface: React.FC = () => {
                     ? 'bg-emerald-100 text-emerald-800'
                     : 'bg-slate-200 text-slate-700'
                 }`}>
-                  {activeConversation.isAiPaused ? 'Paused' : isGlobalAiActive ? 'Active' : 'Off'}
+                  {activeConversation.isAiPaused ? 'Paused (Manual Draft Ready)' : isGlobalAiActive ? 'Auto-Reply Active' : 'Auto-Reply Off (Manual Draft Ready)'}
                 </span>
               </div>
               <p className="text-[10px] text-slate-500">
                 {activeConversation.isAiPaused
-                  ? 'Human agent has taken over. Click resume in chat header to re-enable AI.'
+                  ? 'Auto-reply is paused for this customer. You can still generate and edit AI draft replies anytime.'
                   : isGlobalAiActive
-                  ? 'Gemini AI will automatically reply when customer messages arrive.'
-                  : 'AI is globally disabled in settings.'}
+                  ? 'AI will automatically reply when new customer messages arrive.'
+                  : 'Auto-reply is turned off. You can still generate, edit, and send AI draft replies on demand.'}
               </p>
             </div>
 
@@ -1044,61 +1467,201 @@ export const OmnichannelChatInterface: React.FC = () => {
                 </div>
               </div>
 
-              {/* 4. Gemini API Key & Connection Test */}
-              <div className="space-y-2 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+              {/* 4. AI Provider Selector */}
+              <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="font-bold text-slate-800">
-                    Google Gemini API Key
+                  <label className="font-bold text-slate-800 block">
+                    Select AI Engine / Provider (এআই প্রোভাইডার)
                   </label>
-                  <span className="text-[10px] text-emerald-700 font-bold">
-                    {aiConfig?.hasApiKey ? '✓ Stored Encrypted' : 'Key Required'}
+                  <span className="text-[10px] text-slate-400 font-semibold">
+                    Each provider key saved independently
                   </span>
                 </div>
-                <input
-                  type="password"
-                  value={aiApiKeyInput}
-                  onChange={(e) => setAiApiKeyInput(e.target.value)}
-                  placeholder={aiConfig?.apiKeyMasked || 'Enter Gemini API Key (e.g. AIzaSy...)'}
-                  className="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/30"
-                />
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+                  {AI_PROVIDERS.map((prov) => {
+                    const isSelected = aiProvider === prov.id;
+                    const hasKey = Boolean(aiConfig?.providerKeys?.[prov.id]?.hasApiKey);
+                    const currentStatus = providerStatuses[prov.id];
 
-                <div className="flex items-center justify-between gap-2 pt-1">
-                  <div className="flex items-center gap-1 text-[11px] text-slate-500">
-                    <span>Model:</span>
-                    <select
-                      value={aiModel}
-                      onChange={(e) => setAiModel(e.target.value)}
-                      className="font-bold text-slate-800 bg-white border border-slate-200 rounded-lg px-2 py-1"
-                    >
-                      <option value="gemini-1.5-flash">Gemini 1.5 Flash (Ultra Fast)</option>
-                      <option value="gemini-1.5-pro">Gemini 1.5 Pro (Deep reasoning)</option>
-                      <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
-                    </select>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleTestAiConnection}
-                    disabled={isTestingAi}
-                    className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl font-bold text-xs flex items-center gap-1 cursor-pointer"
-                  >
-                    {isTestingAi ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3 text-blue-600" />}
-                    <span>Test Connection</span>
-                  </button>
+                    return (
+                      <button
+                        key={prov.id}
+                        type="button"
+                        onClick={() => handleSelectAiProvider(prov.id)}
+                        className={`p-2.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[90px] ${
+                          isSelected
+                            ? 'border-indigo-600 bg-indigo-50 text-indigo-950 ring-2 ring-indigo-600/30'
+                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-center justify-between w-full">
+                            <span className="font-black text-xs block truncate">{prov.name}</span>
+                            {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0" />}
+                          </div>
+                          <span className="text-[9px] text-slate-500 line-clamp-1 mt-0.5">
+                            {prov.badge}
+                          </span>
+                        </div>
+                        <div className="mt-1 pt-1 border-t border-slate-100 flex items-center justify-between text-[9px]">
+                          {currentStatus?.success ? (
+                            <span className="font-black text-emerald-700 flex items-center gap-0.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                              Active
+                            </span>
+                          ) : hasKey ? (
+                            <span className="font-bold text-emerald-700 flex items-center gap-0.5">
+                              <Check className="w-2.5 h-2.5 text-emerald-600" />
+                              Saved
+                            </span>
+                          ) : (
+                            <span className="text-slate-400">No Key</span>
+                          )}
+                          {aiConfig?.provider === prov.id && (
+                            <span className="font-black text-[8px] px-1 bg-indigo-100 text-indigo-800 rounded">
+                              Main
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
-
-                {testResult && (
-                  <div
-                    className={`p-2.5 rounded-xl text-[11px] font-bold border ${
-                      testResult.success
-                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                        : 'bg-rose-50 text-rose-800 border-rose-200'
-                    }`}
-                  >
-                    {testResult.message}
-                  </div>
-                )}
               </div>
+
+              {/* 5. API Key & Dynamic Model Selector */}
+              {(() => {
+                const currentProv =
+                  AI_PROVIDERS.find((p) => p.id === aiProvider) || AI_PROVIDERS[0];
+                const hasSavedKey = Boolean(aiConfig?.providerKeys?.[aiProvider]?.hasApiKey);
+                const currentStatus = providerStatuses[aiProvider] || testResult;
+
+                return (
+                  <div className="space-y-2.5 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                    <div className="flex items-center justify-between">
+                      <label className="font-bold text-slate-800 flex items-center gap-1.5">
+                        <KeyRound className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>{currentProv.keyLabel}</span>
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={currentProv.docsUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[10px] text-blue-600 hover:underline flex items-center gap-0.5 font-bold"
+                        >
+                          <span>Get Key</span>
+                          <ExternalLink className="w-2.5 h-2.5" />
+                        </a>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${hasSavedKey ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                          {hasSavedKey ? `✓ Saved: ${aiConfig?.providerKeys?.[aiProvider]?.apiKeyMasked}` : 'Key Required'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <input
+                          type={showAiApiKey ? 'text' : 'password'}
+                          value={aiApiKeyInput}
+                          onChange={(e) => setAiApiKeyInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && aiApiKeyInput.trim()) {
+                              e.preventDefault();
+                              handleSaveKeyAndTest();
+                            }
+                          }}
+                          placeholder={
+                            hasSavedKey
+                              ? `Saved: ${aiConfig?.providerKeys?.[aiProvider]?.apiKeyMasked} (Enter new key to replace)`
+                              : `Paste ${currentProv.name} Key (${currentProv.keyPrefix})`
+                          }
+                          className="w-full p-2.5 pr-10 bg-white border border-slate-200 rounded-xl text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600/30"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowAiApiKey((prev) => !prev)}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                        >
+                          {showAiApiKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+
+                      {/* Instant Save & Test Key Button */}
+                      <button
+                        type="button"
+                        onClick={handleSaveKeyAndTest}
+                        disabled={isSavingKey || isTestingAi || !aiApiKeyInput.trim()}
+                        className="px-3.5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-40 shrink-0"
+                      >
+                        {isSavingKey ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Sparkles className="w-3.5 h-3.5" />
+                        )}
+                        <span>{isSavingKey ? 'Saving & Testing...' : 'Save & Verify Key'}</span>
+                      </button>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
+                      <div className="flex items-center gap-1 text-[11px] text-slate-500 flex-1">
+                        <span className="font-bold shrink-0">Model:</span>
+                        <select
+                          value={aiModel}
+                          onChange={(e) => setAiModel(e.target.value)}
+                          className="font-bold text-slate-800 bg-white border border-slate-200 rounded-lg px-2 py-1 w-full max-w-sm text-xs"
+                        >
+                          {currentProv.models.map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {hasSavedKey && (
+                        <button
+                          type="button"
+                          onClick={() => handleRetestProvider(aiProvider)}
+                          disabled={isTestingAi}
+                          className="px-3 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl font-bold text-xs flex items-center gap-1 cursor-pointer shadow-2xs disabled:opacity-50 shrink-0"
+                        >
+                          {isTestingAi ? (
+                            <Loader2 className="w-3 h-3 animate-spin text-indigo-600" />
+                          ) : (
+                            <Zap className="w-3 h-3 text-indigo-600" />
+                          )}
+                          <span>Re-Test {currentProv.name}</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {currentStatus && (
+                      <div
+                        className={`p-3 rounded-xl text-xs font-semibold flex items-start gap-2 border animate-in fade-in ${
+                          currentStatus.success
+                            ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
+                            : 'bg-rose-50 text-rose-900 border-rose-200'
+                        }`}
+                      >
+                        {currentStatus.success ? (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        ) : (
+                          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                        )}
+                        <div className="space-y-0.5">
+                          <p className="font-bold text-xs">{currentStatus.message}</p>
+                          {currentStatus.latencyMs !== undefined && currentStatus.latencyMs > 0 && (
+                            <p className="text-[10px] text-slate-500">
+                              Latency: <span className="font-mono font-bold text-slate-700">{currentStatus.latencyMs}ms</span>
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* 5. System Prompt / Store Personality */}
               <div className="space-y-1.5">
@@ -1112,6 +1675,114 @@ export const OmnichannelChatInterface: React.FC = () => {
                   placeholder="Describe how the AI should talk to your customers in Bengali/English..."
                   className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/30 leading-relaxed"
                 />
+              </div>
+
+              {/* Store Knowledge Base & Documents (RAG) */}
+              <div className="space-y-3 p-4 bg-gradient-to-br from-indigo-50/70 to-purple-50/50 border border-indigo-200/90 rounded-2xl">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h4 className="font-extrabold text-xs text-indigo-950 uppercase tracking-wider flex items-center gap-1.5">
+                      <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
+                      <span>Store Knowledge Base & Policies (RAG - পিডিএফ ও ডকুমেন্টস)</span>
+                    </h4>
+                    <p className="text-[11px] text-slate-600 mt-0.5">
+                      Upload store PDF policy, warranty, delivery guides, or FAQs. AI will use them strictly for this store.
+                    </p>
+                  </div>
+
+                  {/* Upload PDF Button */}
+                  <label className={`px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer transition-all shrink-0 ${isUploadingDoc ? 'opacity-50 pointer-events-none' : ''}`}>
+                    {isUploadingDoc ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <UploadCloud className="w-3.5 h-3.5" />
+                    )}
+                    <span>{isUploadingDoc ? 'Indexing...' : 'Upload PDF/Doc'}</span>
+                    <input
+                      type="file"
+                      accept=".pdf,.txt,.md,.doc,.docx"
+                      onChange={handleUploadDocument}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                {/* Uploaded Documents List */}
+                {isLoadingDocs ? (
+                  <div className="p-4 text-center text-slate-400 flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
+                    <span className="text-xs">Loading store knowledge base...</span>
+                  </div>
+                ) : aiDocuments.length === 0 ? (
+                  <div className="p-4 bg-white/80 border border-dashed border-indigo-200 rounded-xl text-center space-y-1">
+                    <FileText className="w-6 h-6 text-indigo-300 mx-auto" />
+                    <p className="text-xs font-bold text-slate-700">No documents uploaded yet</p>
+                    <p className="text-[10px] text-slate-400">
+                      Upload a PDF file (e.g. Return_Policy.pdf) to train AI with your store rules.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {aiDocuments.map((doc: any) => (
+                      <div
+                        key={doc.id}
+                        className="p-3 bg-white border border-slate-200/90 rounded-xl flex items-center justify-between shadow-2xs gap-3"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-8 h-8 rounded-lg bg-indigo-100/70 border border-indigo-200 flex items-center justify-center text-indigo-700 shrink-0">
+                            <FileText className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <h5 className="font-bold text-xs text-slate-900 truncate">
+                              {doc.fileName}
+                            </h5>
+                            <div className="flex items-center gap-2 text-[10px] text-slate-500 font-medium">
+                              <span>{(doc.fileSize / 1024).toFixed(1)} KB</span>
+                              <span>•</span>
+                              <span className="text-indigo-600 font-bold">{doc.chunkCount || 0} Vector Chunks</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-black ${
+                              doc.status === 'INDEXED'
+                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                : doc.status === 'PROCESSING'
+                                ? 'bg-amber-100 text-amber-800 animate-pulse'
+                                : 'bg-rose-100 text-rose-800'
+                            }`}
+                          >
+                            {doc.status === 'INDEXED' ? '✓ Indexed' : doc.status}
+                          </span>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteDocument(doc.id, doc.fileName)}
+                            disabled={deletingDocId === doc.id}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                            title="Delete document"
+                          >
+                            {deletingDocId === doc.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-600" />
+                            ) : (
+                              <Trash2 className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Multi-Tenant Privacy Callout */}
+                <div className="p-2.5 bg-indigo-100/50 border border-indigo-200/60 rounded-xl flex items-center gap-2 text-[10px] text-indigo-900 font-medium">
+                  <Shield className="w-3.5 h-3.5 text-indigo-700 shrink-0" />
+                  <span>
+                    <strong>100% Store Isolated:</strong> Documents uploaded here are indexed specifically for your store. Other merchants cannot access your data.
+                  </span>
+                </div>
               </div>
             </div>
 

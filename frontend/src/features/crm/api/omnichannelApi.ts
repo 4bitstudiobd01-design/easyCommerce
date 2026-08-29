@@ -29,6 +29,7 @@ export const omnichannelApi = createApi({
     'OmnichannelMessage',
     'OmnichannelAiConfig',
     'OmnichannelAiLog',
+    'OmnichannelAiDocument',
   ],
   endpoints: (builder) => ({
     // ─── Credentials Endpoints ─────────────────────────────────────────────
@@ -76,7 +77,23 @@ export const omnichannelApi = createApi({
         body: credentials ? { credentials } : {},
       }),
       invalidatesTags: ['OmnichannelCredential'],
-      transformResponse: (response: any) => extractData(response),
+      transformResponse: (response: any) => {
+        if (response?.data && typeof response.data === 'object' && response.data.success !== undefined) {
+          return response.data;
+        }
+        if (response && response.success !== undefined) {
+          return {
+            success: Boolean(response.success),
+            message: response.message || 'Connection verified successfully!',
+            data: response.data,
+          };
+        }
+        return {
+          success: true,
+          message: response?.message || 'Connection verified successfully!',
+          data: extractData(response),
+        };
+      },
     }),
 
     toggleChannelActive: builder.mutation<
@@ -192,6 +209,25 @@ export const omnichannelApi = createApi({
       transformResponse: (response: any) => extractData(response),
     }),
 
+    generateAiDraft: builder.mutation<
+      {
+        success: boolean;
+        reply: string;
+        model: string;
+        provider: string;
+        latencyMs: number;
+        tokensUsed: number;
+      },
+      { conversationId: string; promptOverride?: string; provider?: string; model?: string }
+    >({
+      query: ({ conversationId, promptOverride, provider, model }) => ({
+        url: `/ai/conversations/${conversationId}/suggest`,
+        method: 'POST',
+        body: { promptOverride, provider, model },
+      }),
+      transformResponse: (response: any) => extractData(response),
+    }),
+
     getAiLogs: builder.query<any[], { limit?: number } | void>({
       query: (params) => ({
         url: '/ai/logs',
@@ -202,6 +238,49 @@ export const omnichannelApi = createApi({
         const payload = extractData(response);
         return Array.isArray(payload) ? payload : [];
       },
+    }),
+
+    // ─── Multi-Tenant RAG Knowledge Base Documents ────────────────────────────
+    getAiDocuments: builder.query<any[], void>({
+      query: () => ({
+        url: '/ai/documents',
+      }),
+      providesTags: ['OmnichannelAiDocument'],
+      transformResponse: (response: any) => {
+        const payload = extractData(response);
+        return Array.isArray(payload) ? payload : [];
+      },
+    }),
+
+    uploadAiDocument: builder.mutation<any, FormData>({
+      query: (formData) => ({
+        url: '/ai/documents/upload',
+        method: 'POST',
+        body: formData,
+      }),
+      invalidatesTags: ['OmnichannelAiDocument'],
+      transformResponse: (response: any) => extractData(response),
+    }),
+
+    deleteAiDocument: builder.mutation<{ success: boolean; message: string }, string>({
+      query: (documentId) => ({
+        url: `/ai/documents/${documentId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['OmnichannelAiDocument'],
+      transformResponse: (response: any) => extractData(response),
+    }),
+
+    syncChannelConversations: builder.mutation<
+      { success: boolean; message: string; count?: number },
+      string
+    >({
+      query: (platform) => ({
+        url: `/chat/sync/${platform}`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['OmnichannelConversation', 'OmnichannelMessage'],
+      transformResponse: (response: any) => extractData(response),
     }),
   }),
 });
@@ -222,5 +301,10 @@ export const {
   useSaveAiConfigMutation,
   useTestAiConnectionMutation,
   useToggleConversationAiMutation,
+  useGenerateAiDraftMutation,
   useGetAiLogsQuery,
+  useGetAiDocumentsQuery,
+  useUploadAiDocumentMutation,
+  useDeleteAiDocumentMutation,
+  useSyncChannelConversationsMutation,
 } = omnichannelApi;

@@ -59,8 +59,6 @@ export class OmnichannelChatController {
       platform,
       search,
     );
-    this.chatService['logger']?.log?.(`[getConversations] tenantId=${ctx.tenantId} platform=${platform} results=${data.length}`);
-    console.log(`[getConversations] tenantId=${ctx.tenantId} platform=${platform} count=${data.length}`);
     return { success: true, data };
   }
 
@@ -129,5 +127,22 @@ export class OmnichannelChatController {
       ctx.storeId,
     );
     return { success: true, data };
+  }
+
+  @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
+  @Post('sync/:platform')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Sync historical conversations from channel API' })
+  async syncPlatform(
+    @CurrentUser('sub') userId: string,
+    @Param('platform') platform: string,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const ctx = await this.getMerchantTenantContext(userId, storeId);
+    return this.chatService.syncPlatformConversations(
+      ctx.tenantId,
+      platform,
+      ctx.storeId,
+    );
   }
 }

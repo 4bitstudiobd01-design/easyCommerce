@@ -19,11 +19,11 @@ export class SaveAiConfigDto {
   @ApiPropertyOptional({
     description: 'AI Provider',
     example: 'gemini',
-    enum: ['gemini', 'openai'],
+    enum: ['gemini', 'openai', 'claude', 'deepseek', 'groq'],
   })
   @IsString()
   @IsOptional()
-  @IsIn(['gemini', 'openai'])
+  @IsIn(['gemini', 'openai', 'claude', 'deepseek', 'groq'])
   provider?: AiProviderType;
 
   @ApiPropertyOptional({
@@ -86,11 +86,11 @@ export class TestAiConnectionDto {
   @ApiPropertyOptional({
     description: 'AI Provider',
     example: 'gemini',
-    enum: ['gemini', 'openai'],
+    enum: ['gemini', 'openai', 'claude', 'deepseek', 'groq'],
   })
   @IsString()
   @IsOptional()
-  @IsIn(['gemini', 'openai'])
+  @IsIn(['gemini', 'openai', 'claude', 'deepseek', 'groq'])
   provider?: AiProviderType;
 
   @ApiPropertyOptional({
