@@ -84,7 +84,6 @@ export const Sidebar = ({
     ecommerce: true,
     crm: isRouteInGroup('/dashboard/crm'),
     hrm: isRouteInGroup('/dashboard/hr'),
-    finance: isRouteInGroup('/dashboard/finance'),
     marketing: isRouteInGroup(['/dashboard/marketing', '/dashboard/analytics']),
   });
 
@@ -98,9 +97,6 @@ export const Sidebar = ({
     }
     if (isRouteInGroup('/dashboard/hr')) {
       setOpenGroups(prev => ({ ...prev, hrm: true }));
-    }
-    if (isRouteInGroup('/dashboard/finance')) {
-      setOpenGroups(prev => ({ ...prev, finance: true }));
     }
     if (isRouteInGroup(['/dashboard/marketing', '/dashboard/analytics'])) {
       setOpenGroups(prev => ({ ...prev, marketing: true }));
@@ -638,146 +634,20 @@ export const Sidebar = ({
             </div>
           )}
 
-          {/* 4. FINANCE ACCORDION */}
-          <AccordionHeader 
-            title="Finance" 
-            groupKey="finance" 
-            isOpen={openGroups.finance} 
-          />
-          {(isDesktopCollapsed || openGroups.finance) && (
-            <div className="space-y-0.5">
-              <Link
-                href="/dashboard/finance/overview"
-                className={navItemClass('/dashboard/finance/overview')}
-                onMouseEnter={(e) => handleTooltipEnter(e, "Overview")}
-                onFocus={(e) => handleTooltipEnter(e, "Overview")}
-                onMouseLeave={handleTooltipLeave}
-                onBlur={handleTooltipLeave}
-              >
-                <div className="flex items-center gap-2.5">
-                  <LayoutDashboard className={iconClass} strokeWidth={iconStroke} />
-                  {!isDesktopCollapsed && <span>Overview</span>}
-                </div>
-              </Link>
-              <Link
-                href="/dashboard/finance/transactions"
-                className={navItemClass('/dashboard/finance/transactions')}
-                onMouseEnter={(e) => handleTooltipEnter(e, "Transactions")}
-                onFocus={(e) => handleTooltipEnter(e, "Transactions")}
-                onMouseLeave={handleTooltipLeave}
-                onBlur={handleTooltipLeave}
-              >
-                <div className="flex items-center gap-2.5">
-                  <ArrowLeftRight className={iconClass} strokeWidth={iconStroke} />
-                  {!isDesktopCollapsed && <span>Transactions</span>}
-                </div>
-              </Link>
-              <Link
-                href="/dashboard/finance/income"
-                className={navItemClass('/dashboard/finance/income')}
-                onMouseEnter={(e) => handleTooltipEnter(e, "Income")}
-                onFocus={(e) => handleTooltipEnter(e, "Income")}
-                onMouseLeave={handleTooltipLeave}
-                onBlur={handleTooltipLeave}
-              >
-                <div className="flex items-center gap-2.5">
-                  <TrendingUp className={iconClass} strokeWidth={iconStroke} />
-                  {!isDesktopCollapsed && <span>Income</span>}
-                </div>
-              </Link>
-              <Link
-                href="/dashboard/finance/expenses"
-                className={navItemClass('/dashboard/finance/expenses')}
-                onMouseEnter={(e) => handleTooltipEnter(e, "Expenses")}
-                onFocus={(e) => handleTooltipEnter(e, "Expenses")}
-                onMouseLeave={handleTooltipLeave}
-                onBlur={handleTooltipLeave}
-              >
-                <div className="flex items-center gap-2.5">
-                  <TrendingDown className={iconClass} strokeWidth={iconStroke} />
-                  {!isDesktopCollapsed && <span>Expenses</span>}
-                </div>
-              </Link>
-              <Link
-                href="/dashboard/finance/invoices"
-                className={navItemClass('/dashboard/finance/invoices')}
-                onMouseEnter={(e) => handleTooltipEnter(e, "Invoices")}
-                onFocus={(e) => handleTooltipEnter(e, "Invoices")}
-                onMouseLeave={handleTooltipLeave}
-                onBlur={handleTooltipLeave}
-              >
-                <div className="flex items-center gap-2.5">
-                  <FileText className={iconClass} strokeWidth={iconStroke} />
-                  {!isDesktopCollapsed && <span>Invoices</span>}
-                </div>
-              </Link>
-              <Link
-                href="/dashboard/finance/bills"
-                className={navItemClass('/dashboard/finance/bills')}
-                onMouseEnter={(e) => handleTooltipEnter(e, "Bills")}
-                onFocus={(e) => handleTooltipEnter(e, "Bills")}
-                onMouseLeave={handleTooltipLeave}
-                onBlur={handleTooltipLeave}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Receipt className={iconClass} strokeWidth={iconStroke} />
-                  {!isDesktopCollapsed && <span>Bills</span>}
-                </div>
-              </Link>
-              <Link
-                href="/dashboard/finance/accounts"
-                className={navItemClass('/dashboard/finance/accounts')}
-                onMouseEnter={(e) => handleTooltipEnter(e, "Accounts")}
-                onFocus={(e) => handleTooltipEnter(e, "Accounts")}
-                onMouseLeave={handleTooltipLeave}
-                onBlur={handleTooltipLeave}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Landmark className={iconClass} strokeWidth={iconStroke} />
-                  {!isDesktopCollapsed && <span>Accounts</span>}
-                </div>
-              </Link>
-              <Link
-                href="/dashboard/finance/transfers"
-                className={navItemClass('/dashboard/finance/transfers')}
-                onMouseEnter={(e) => handleTooltipEnter(e, "Transfers")}
-                onFocus={(e) => handleTooltipEnter(e, "Transfers")}
-                onMouseLeave={handleTooltipLeave}
-                onBlur={handleTooltipLeave}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Scale className={iconClass} strokeWidth={iconStroke} />
-                  {!isDesktopCollapsed && <span>Transfers</span>}
-                </div>
-              </Link>
-              <Link
-                href="/dashboard/finance/reports"
-                className={navItemClass('/dashboard/finance/reports')}
-                onMouseEnter={(e) => handleTooltipEnter(e, "Reports")}
-                onFocus={(e) => handleTooltipEnter(e, "Reports")}
-                onMouseLeave={handleTooltipLeave}
-                onBlur={handleTooltipLeave}
-              >
-                <div className="flex items-center gap-2.5">
-                  <BarChart3 className={iconClass} strokeWidth={iconStroke} />
-                  {!isDesktopCollapsed && <span>Reports</span>}
-                </div>
-              </Link>
-              <Link
-                href="/dashboard/finance/settings"
-                className={navItemClass('/dashboard/finance/settings')}
-                onMouseEnter={(e) => handleTooltipEnter(e, "Settings")}
-                onFocus={(e) => handleTooltipEnter(e, "Settings")}
-                onMouseLeave={handleTooltipLeave}
-                onBlur={handleTooltipLeave}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Settings className={iconClass} strokeWidth={iconStroke} />
-                  {!isDesktopCollapsed && <span>Settings</span>}
-                </div>
-              </Link>
+          {/* 4. FINANCE (Single Top-Level Navigation Link) */}
+          <Link
+            href="/dashboard/finance/overview"
+            className={navItemClass('/dashboard/finance')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Finance")}
+            onFocus={(e) => handleTooltipEnter(e, "Finance")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <Landmark className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Finance</span>}
             </div>
-          )}
+          </Link>
 
           {/* 5. MARKETING & ANALYTICS ACCORDION */}
           <AccordionHeader 
