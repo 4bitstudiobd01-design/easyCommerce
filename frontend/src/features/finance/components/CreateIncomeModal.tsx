@@ -8,6 +8,7 @@ import {
   useCreateIncomeMutation,
   useGetAccountsQuery,
   useGetCategoriesQuery,
+  FinanceCategory,
 } from '../api/financeApi';
 
 interface Props {
@@ -31,6 +32,7 @@ export function CreateIncomeModal({ isOpen, onClose }: Props) {
   const [createIncome, { isLoading }] = useCreateIncomeMutation();
 
   const accounts = accountsData?.items || [];
+  const categoryList: FinanceCategory[] = Array.isArray(categories) ? categories : [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,8 +102,8 @@ export function CreateIncomeModal({ isOpen, onClose }: Props) {
               <option value="PRODUCT_SALES">Product Sales</option>
               <option value="SHIPPING_INCOME">Shipping Income</option>
               <option value="OTHER_INCOME">Other Income</option>
-              {categories
-                ?.filter(
+              {categoryList
+                .filter(
                   (c) =>
                     !['PRODUCT_SALES', 'SHIPPING_INCOME', 'OTHER_INCOME'].includes(c.code),
                 )

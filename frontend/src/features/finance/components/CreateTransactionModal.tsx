@@ -6,6 +6,7 @@ import { ArrowLeftRight } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import {
   FinanceTransactionType,
+  FinanceCategory,
   useCreateTransactionMutation,
   useGetAccountsQuery,
   useGetCategoriesQuery,
@@ -33,6 +34,7 @@ export function CreateTransactionModal({ isOpen, onClose }: Props) {
   const [createTransaction, { isLoading }] = useCreateTransactionMutation();
 
   const accounts = accountsData?.items || [];
+  const categoryList: FinanceCategory[] = Array.isArray(categories) ? categories : [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,7 +156,7 @@ export function CreateTransactionModal({ isOpen, onClose }: Props) {
               className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
             >
               <option value="">-- Select Category --</option>
-              {categories?.map((cat) => (
+              {categoryList.map((cat) => (
                 <option key={cat.id} value={cat.code}>
                   {cat.name} ({cat.type})
                 </option>

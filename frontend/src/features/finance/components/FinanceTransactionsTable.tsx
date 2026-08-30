@@ -18,6 +18,7 @@ import {
   useDeleteTransactionMutation,
   useGetAccountsQuery,
   useGetCategoriesQuery,
+  FinanceCategory,
 } from '../api/financeApi';
 import { CreateTransactionModal } from './CreateTransactionModal';
 
@@ -47,6 +48,7 @@ export function FinanceTransactionsTable() {
   const [deleteTransaction] = useDeleteTransactionMutation();
 
   const accounts = accountsData?.items || [];
+  const categoryList: FinanceCategory[] = Array.isArray(categories) ? categories : [];
   const transactions = data?.items || [];
   const totalPages = data?.totalPages || 1;
 
@@ -154,7 +156,7 @@ export function FinanceTransactionsTable() {
             className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white"
           >
             <option value="">All Categories</option>
-            {categories?.map((cat) => (
+            {categoryList.map((cat) => (
               <option key={cat.id} value={cat.code}>
                 {cat.name}
               </option>

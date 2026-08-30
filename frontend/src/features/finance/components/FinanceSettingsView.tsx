@@ -17,12 +17,15 @@ import {
   useUpdateFinanceSettingsMutation,
   useGetCategoriesQuery,
   useCreateCategoryMutation,
+  FinanceCategory,
   FinanceCategoryType,
 } from '../api/financeApi';
 
 export function FinanceSettingsView() {
   const { data: settings, isLoading, isFetching, refetch } = useGetFinanceSettingsQuery();
   const { data: categories, refetch: refetchCategories } = useGetCategoriesQuery();
+
+  const categoryList: FinanceCategory[] = Array.isArray(categories) ? categories : [];
 
   const [updateSettings, { isLoading: isUpdating }] = useUpdateFinanceSettingsMutation();
   const [createCategory, { isLoading: isCreatingCat }] = useCreateCategoryMutation();
@@ -357,10 +360,10 @@ export function FinanceSettingsView() {
           {/* Active Categories List */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <h3 className="text-sm font-bold text-slate-900 mb-3">
-              Active Categories ({categories?.length || 0})
+              Active Categories ({categoryList.length})
             </h3>
             <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-              {categories?.map((c) => (
+              {categoryList.map((c) => (
                 <div
                   key={c.id}
                   className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs"

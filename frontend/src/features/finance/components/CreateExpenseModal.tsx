@@ -8,6 +8,7 @@ import {
   useCreateExpenseMutation,
   useGetAccountsQuery,
   useGetCategoriesQuery,
+  FinanceCategory,
 } from '../api/financeApi';
 
 interface Props {
@@ -31,6 +32,7 @@ export function CreateExpenseModal({ isOpen, onClose }: Props) {
   const [createExpense, { isLoading }] = useCreateExpenseMutation();
 
   const accounts = accountsData?.items || [];
+  const categoryList: FinanceCategory[] = Array.isArray(categories) ? categories : [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,8 +108,8 @@ export function CreateExpenseModal({ isOpen, onClose }: Props) {
               <option value="UTILITIES">Utilities</option>
               <option value="SOFTWARE">Software & Tools</option>
               <option value="OTHER">Other Expenses</option>
-              {categories
-                ?.filter(
+              {categoryList
+                .filter(
                   (c) =>
                     ![
                       'COGS',
