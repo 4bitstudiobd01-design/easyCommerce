@@ -32,6 +32,7 @@ import { FileModule } from './modules/file/file.module';
 import { HrmModule } from './modules/hrm/hrm.module';
 import { NotificationModule } from './common/notification/notification.module';
 import { OmnichannelModule } from './modules/omnichannel/omnichannel.module';
+import { FinanceModule } from './modules/finance/finance.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { APP_FILTER } from '@nestjs/core';
 
@@ -100,6 +101,7 @@ import { APP_FILTER } from '@nestjs/core';
     FileModule,
     OmnichannelModule,
     HrmModule,
+    FinanceModule,
   ],
   controllers: [],
   providers: [

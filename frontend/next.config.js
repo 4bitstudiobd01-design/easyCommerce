@@ -1,15 +1,18 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
+  reactStrictMode: false,
   swcMinify: true,
   eslint: {
     ignoreDuringBuilds: true,
   },
+  typescript: {
+    ignoreBuildErrors: false,
+  },
   webpack: (config, { dev }) => {
     if (dev) {
-      config.watchOptions = {
-        poll: 800,
-        aggregateTimeout: 300,
+      // Use in-memory cache in development to eliminate Windows NTFS file lock conflicts
+      config.cache = {
+        type: 'memory',
       };
     }
     return config;
