@@ -12,6 +12,7 @@ import {
 import {
   useGetTransfersQuery,
   useGetAccountsQuery,
+  FinanceAccount,
 } from '../api/financeApi';
 import { CreateTransferModal } from './CreateTransferModal';
 
@@ -21,9 +22,13 @@ export function FinanceTransfersView() {
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
-  const transfers = data?.items || [];
-  const totalTransferred = data?.totalTransferred || 0;
-  const accounts = accountsData?.items || [];
+  const transfers: any[] = Array.isArray(data) ? data : (data as any)?.items || [];
+  const totalTransferred = Array.isArray(data)
+    ? data.reduce((sum: number, t: any) => sum + Number(t.amount || 0), 0)
+    : (data as any)?.totalTransferred || 0;
+  const accounts: FinanceAccount[] = Array.isArray(accountsData)
+    ? accountsData
+    : (accountsData as any)?.items || [];
 
   return (
     <div className="space-y-6">

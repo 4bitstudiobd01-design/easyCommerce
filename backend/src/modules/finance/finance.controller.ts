@@ -10,6 +10,7 @@ import {
   Headers,
   UseGuards,
   BadRequestException,
+  Req,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -48,6 +49,16 @@ import { GetProfitLossReportService } from './services/get-profit-loss-report.se
 import { GetCashFlowReportService } from './services/get-cash-flow-report.service';
 import { GetReceivablesReportService } from './services/get-receivables-report.service';
 import { GetPayablesReportService } from './services/get-payables-report.service';
+import { GetTrialBalanceReportService } from './services/get-trial-balance-report.service';
+import { GetBalanceSheetReportService } from './services/get-balance-sheet-report.service';
+import { GetTaxVatReportService } from './services/get-tax-vat-report.service';
+import { ListChartOfAccountsService } from './services/list-chart-of-accounts.service';
+import { CreateChartOfAccountService } from './services/create-chart-of-account.service';
+import { UpdateChartOfAccountService } from './services/update-chart-of-account.service';
+import { PostJournalEntryService } from './services/post-journal-entry.service';
+import { ListJournalEntriesService } from './services/list-journal-entries.service';
+import { GetGeneralLedgerService } from './services/get-general-ledger.service';
+import { PeriodLockService } from './services/period-lock.service';
 import {
   GetFinanceSettingsService,
   UpdateFinanceSettingsService,
@@ -80,6 +91,20 @@ import {
   ListBillsQueryDto,
   FinanceReportQueryDto,
 } from './dto/finance-query.dto';
+import {
+  CreateChartOfAccountDto,
+  UpdateChartOfAccountDto,
+  QueryChartOfAccountsDto,
+} from './dto/chart-of-accounts.dto';
+import {
+  CreateJournalEntryDto,
+  QueryJournalEntriesDto,
+} from './dto/journal-entry.dto';
+import {
+  GeneralLedgerQueryDto,
+  CreatePeriodLockDto,
+  QueryFinancialReportDto,
+} from './dto/financial-reports.dto';
 import {
   FinanceInvoiceStatusEnum,
   FinanceBillStatusEnum,
@@ -121,16 +146,26 @@ export class FinanceController {
     private readonly getCashFlowReportService: GetCashFlowReportService,
     private readonly getReceivablesReportService: GetReceivablesReportService,
     private readonly getPayablesReportService: GetPayablesReportService,
+    private readonly getTrialBalanceReportService: GetTrialBalanceReportService,
+    private readonly getBalanceSheetReportService: GetBalanceSheetReportService,
+    private readonly getTaxVatReportService: GetTaxVatReportService,
+    private readonly listChartOfAccountsService: ListChartOfAccountsService,
+    private readonly createChartOfAccountService: CreateChartOfAccountService,
+    private readonly updateChartOfAccountService: UpdateChartOfAccountService,
+    private readonly postJournalEntryService: PostJournalEntryService,
+    private readonly listJournalEntriesService: ListJournalEntriesService,
+    private readonly getGeneralLedgerService: GetGeneralLedgerService,
+    private readonly periodLockService: PeriodLockService,
     private readonly getFinanceSettingsService: GetFinanceSettingsService,
     private readonly updateFinanceSettingsService: UpdateFinanceSettingsService,
     private readonly listCategoriesService: ListCategoriesService,
     private readonly createCategoryService: CreateCategoryService,
   ) {}
 
-  private async getStoreContext(userId: string, storeIdHeader?: string) {
-    const store = await this.findStoreByUserService.execute(userId, storeIdHeader);
+  private async getStoreContext(userId: string, headerStoreId?: string) {
+    const store = await this.findStoreByUserService.execute(userId, headerStoreId);
     if (!store) {
-      throw new BadRequestException('Merchant store context not found.');
+      throw new BadRequestException('Store context could not be resolved for this merchant.');
     }
     return store;
   }
@@ -140,21 +175,120 @@ export class FinanceController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
   @RequirePermissions('finance:read', 'finance:manage')
-  @ApiOperation({ summary: 'Get finance overview KPIs and trend chart' })
+  @ApiOperation({ summary: 'Get finance overview summary and trends' })
   async getOverview(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') headerStoreId: string,
   ) {
     const store = await this.getStoreContext(userId, headerStoreId);
-    return this.getFinanceOverviewService.execute(store.id);
+    return this.getFinanceOverviewService.execute(store.tenantId, store.id);
   }
 
-  // ─── 2. TRANSACTIONS ───────────────────────────────────────────
+  // ─── 2. CHART OF ACCOUNTS ───────────────────────────────────────
+  @Get('chart-of-accounts')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('finance:read', 'finance:manage')
+  @ApiOperation({ summary: 'List Chart of Accounts' })
+  async listChartOfAccounts(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Query() query: QueryChartOfAccountsDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.listChartOfAccountsService.execute(store.tenantId, store.id, query);
+  }
+
+  @Post('chart-of-accounts')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('finance:accounts:manage', 'finance:manage')
+  @ApiOperation({ summary: 'Create custom Chart of Account' })
+  async createChartOfAccount(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Body() dto: CreateChartOfAccountDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.createChartOfAccountService.execute(store.tenantId, store.id, dto);
+  }
+
+  @Patch('chart-of-accounts/:id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('finance:accounts:manage', 'finance:manage')
+  @ApiOperation({ summary: 'Update Chart of Account' })
+  async updateChartOfAccount(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateChartOfAccountDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.updateChartOfAccountService.execute(store.id, id, dto);
+  }
+
+  // ─── 3. JOURNAL ENTRIES & DOUBLE-ENTRY LEDGER ───────────────────
+  @Get('journal-entries')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('finance:read', 'finance:manage')
+  @ApiOperation({ summary: 'List Journal Entries' })
+  async listJournalEntries(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Query() query: QueryJournalEntriesDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.listJournalEntriesService.execute(store.id, query);
+  }
+
+  @Post('journal-entries')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('finance:transactions:manage', 'finance:manage')
+  @ApiOperation({ summary: 'Post a manual balanced Double-Entry Journal Entry' })
+  async postJournalEntry(
+    @CurrentUser('sub') userId: string,
+    @CurrentUser('name') userName: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Body() dto: CreateJournalEntryDto,
+    @Req() req: any,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.postJournalEntryService.execute(
+      store.tenantId,
+      store.id,
+      dto,
+      {
+        userId,
+        userName,
+        ipAddress: req.ip || req.connection?.remoteAddress,
+        userAgent: req.headers['user-agent'],
+      },
+    );
+  }
+
+  @Get('general-ledger')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('finance:read', 'finance:manage')
+  @ApiOperation({ summary: 'Get General Ledger statement for an account' })
+  async getGeneralLedger(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Query() query: GeneralLedgerQueryDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.getGeneralLedgerService.execute(store.id, query);
+  }
+
+  // ─── 4. TRANSACTIONS ───────────────────────────────────────────
   @Get('transactions')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
   @RequirePermissions('finance:read', 'finance:manage')
-  @ApiOperation({ summary: 'List financial transactions with filters' })
+  @ApiOperation({ summary: 'List all finance transactions with filters' })
   async listTransactions(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') headerStoreId: string,
@@ -182,23 +316,22 @@ export class FinanceController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
   @RequirePermissions('finance:transactions:manage', 'finance:manage')
-  @ApiOperation({ summary: 'Delete transaction' })
+  @ApiOperation({ summary: 'Delete or void a transaction' })
   async deleteTransaction(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') headerStoreId: string,
     @Param('id') id: string,
   ) {
     const store = await this.getStoreContext(userId, headerStoreId);
-    await this.deleteTransactionService.execute(store.id, id);
-    return { success: true, message: 'Transaction deleted successfully.' };
+    return this.deleteTransactionService.execute(store.id, id);
   }
 
-  // ─── 3. INCOME ──────────────────────────────────────────────────
+  // ─── 5. INCOME & EXPENSES ──────────────────────────────────────
   @Get('income')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
   @RequirePermissions('finance:read', 'finance:manage')
-  @ApiOperation({ summary: 'List income streams and totals' })
+  @ApiOperation({ summary: 'List income transactions and revenue breakdowns' })
   async listIncome(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') headerStoreId: string,
@@ -212,7 +345,7 @@ export class FinanceController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
   @RequirePermissions('finance:transactions:manage', 'finance:manage')
-  @ApiOperation({ summary: 'Record manual income' })
+  @ApiOperation({ summary: 'Record manual income transaction' })
   async createIncome(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') headerStoreId: string,
@@ -222,12 +355,11 @@ export class FinanceController {
     return this.createIncomeService.execute(store.tenantId, store.id, userId, dto);
   }
 
-  // ─── 4. EXPENSES ────────────────────────────────────────────────
   @Get('expenses')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
   @RequirePermissions('finance:read', 'finance:manage')
-  @ApiOperation({ summary: 'List expenses and category breakdown' })
+  @ApiOperation({ summary: 'List expenses and category breakdowns' })
   async listExpenses(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') headerStoreId: string,
@@ -241,7 +373,7 @@ export class FinanceController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
   @RequirePermissions('finance:transactions:manage', 'finance:manage')
-  @ApiOperation({ summary: 'Record manual expense' })
+  @ApiOperation({ summary: 'Record business expense' })
   async createExpense(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') headerStoreId: string,
@@ -251,12 +383,12 @@ export class FinanceController {
     return this.createExpenseService.execute(store.tenantId, store.id, userId, dto);
   }
 
-  // ─── 5. INVOICES ────────────────────────────────────────────────
+  // ─── 6. INVOICES ───────────────────────────────────────────────
   @Get('invoices')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
   @RequirePermissions('finance:read', 'finance:manage')
-  @ApiOperation({ summary: 'List customer invoices' })
+  @ApiOperation({ summary: 'List invoices with pagination & status filter' })
   async listInvoices(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') headerStoreId: string,
@@ -270,7 +402,7 @@ export class FinanceController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
   @RequirePermissions('finance:invoices:manage', 'finance:manage')
-  @ApiOperation({ summary: 'Create customer invoice' })
+  @ApiOperation({ summary: 'Create a new invoice' })
   async createInvoice(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') headerStoreId: string,
@@ -313,7 +445,7 @@ export class FinanceController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
   @RequirePermissions('finance:invoices:manage', 'finance:manage')
-  @ApiOperation({ summary: 'Record payment against invoice' })
+  @ApiOperation({ summary: 'Record payment against an invoice' })
   async recordInvoicePayment(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') headerStoreId: string,
@@ -328,23 +460,22 @@ export class FinanceController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
   @RequirePermissions('finance:invoices:manage', 'finance:manage')
-  @ApiOperation({ summary: 'Delete invoice' })
+  @ApiOperation({ summary: 'Delete invoice (if unpaid)' })
   async deleteInvoice(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') headerStoreId: string,
     @Param('id') id: string,
   ) {
     const store = await this.getStoreContext(userId, headerStoreId);
-    await this.deleteInvoiceService.execute(store.id, id);
-    return { success: true, message: 'Invoice deleted successfully.' };
+    return this.deleteInvoiceService.execute(store.id, id);
   }
 
-  // ─── 6. BILLS ───────────────────────────────────────────────────
+  // ─── 7. BILLS ──────────────────────────────────────────────────
   @Get('bills')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
   @RequirePermissions('finance:read', 'finance:manage')
-  @ApiOperation({ summary: 'List supplier bills' })
+  @ApiOperation({ summary: 'List vendor bills' })
   async listBills(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') headerStoreId: string,
@@ -358,7 +489,7 @@ export class FinanceController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
   @RequirePermissions('finance:bills:manage', 'finance:manage')
-  @ApiOperation({ summary: 'Create supplier bill' })
+  @ApiOperation({ summary: 'Create vendor bill' })
   async createBill(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') headerStoreId: string,
@@ -401,7 +532,7 @@ export class FinanceController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
   @RequirePermissions('finance:bills:manage', 'finance:manage')
-  @ApiOperation({ summary: 'Record payment against bill' })
+  @ApiOperation({ summary: 'Record payment for a bill' })
   async recordBillPayment(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') headerStoreId: string,
@@ -416,23 +547,22 @@ export class FinanceController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
   @RequirePermissions('finance:bills:manage', 'finance:manage')
-  @ApiOperation({ summary: 'Delete bill' })
+  @ApiOperation({ summary: 'Delete bill (if unpaid)' })
   async deleteBill(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') headerStoreId: string,
     @Param('id') id: string,
   ) {
     const store = await this.getStoreContext(userId, headerStoreId);
-    await this.deleteBillService.execute(store.id, id);
-    return { success: true, message: 'Bill deleted successfully.' };
+    return this.deleteBillService.execute(store.id, id);
   }
 
-  // ─── 7. ACCOUNTS ────────────────────────────────────────────────
+  // ─── 8. ACCOUNTS & TRANSFERS ───────────────────────────────────
   @Get('accounts')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
   @RequirePermissions('finance:read', 'finance:manage')
-  @ApiOperation({ summary: 'List financial accounts' })
+  @ApiOperation({ summary: 'List payment & bank accounts' })
   async listAccounts(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') headerStoreId: string,
@@ -445,7 +575,7 @@ export class FinanceController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
   @RequirePermissions('finance:accounts:manage', 'finance:manage')
-  @ApiOperation({ summary: 'Create financial account' })
+  @ApiOperation({ summary: 'Create new bank or payment account' })
   async createAccount(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') headerStoreId: string,
@@ -459,7 +589,7 @@ export class FinanceController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
   @RequirePermissions('finance:accounts:manage', 'finance:manage')
-  @ApiOperation({ summary: 'Update financial account' })
+  @ApiOperation({ summary: 'Update financial account details' })
   async updateAccount(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') headerStoreId: string,
@@ -474,7 +604,7 @@ export class FinanceController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
   @RequirePermissions('finance:read', 'finance:manage')
-  @ApiOperation({ summary: 'Get account statement and transaction history' })
+  @ApiOperation({ summary: 'Get account statement with transaction ledger' })
   async getAccountStatement(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') headerStoreId: string,
@@ -484,12 +614,11 @@ export class FinanceController {
     return this.getAccountStatementService.execute(store.id, id);
   }
 
-  // ─── 8. TRANSFERS ───────────────────────────────────────────────
   @Get('transfers')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
   @RequirePermissions('finance:read', 'finance:manage')
-  @ApiOperation({ summary: 'List account transfers' })
+  @ApiOperation({ summary: 'List fund transfers between accounts' })
   async listTransfers(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') headerStoreId: string,
@@ -517,14 +646,42 @@ export class FinanceController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
   @RequirePermissions('finance:reports:read', 'finance:read', 'finance:manage')
-  @ApiOperation({ summary: 'Profit and Loss (P&L) Report' })
+  @ApiOperation({ summary: 'Profit and Loss (P&L) Report with period comparison' })
   async getProfitLossReport(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') headerStoreId: string,
-    @Query() query: FinanceReportQueryDto,
+    @Query() query: QueryFinancialReportDto,
   ) {
     const store = await this.getStoreContext(userId, headerStoreId);
     return this.getProfitLossReportService.execute(store.id, query);
+  }
+
+  @Get('reports/balance-sheet')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('finance:reports:read', 'finance:read', 'finance:manage')
+  @ApiOperation({ summary: 'Balance Sheet statement' })
+  async getBalanceSheetReport(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Query() query: QueryFinancialReportDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.getBalanceSheetReportService.execute(store.tenantId, store.id, query);
+  }
+
+  @Get('reports/trial-balance')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('finance:reports:read', 'finance:read', 'finance:manage')
+  @ApiOperation({ summary: 'Trial Balance report' })
+  async getTrialBalanceReport(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Query() query: QueryFinancialReportDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.getTrialBalanceReportService.execute(store.tenantId, store.id, query);
   }
 
   @Get('reports/cash-flow')
@@ -535,10 +692,24 @@ export class FinanceController {
   async getCashFlowReport(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') headerStoreId: string,
-    @Query() query: FinanceReportQueryDto,
+    @Query() query: QueryFinancialReportDto,
   ) {
     const store = await this.getStoreContext(userId, headerStoreId);
     return this.getCashFlowReportService.execute(store.id, query);
+  }
+
+  @Get('reports/tax-vat')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('finance:reports:read', 'finance:read', 'finance:manage')
+  @ApiOperation({ summary: 'Tax and VAT filing summary report' })
+  async getTaxVatReport(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Query() query: QueryFinancialReportDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.getTaxVatReportService.execute(store.id, query);
   }
 
   @Get('reports/receivables')
@@ -567,7 +738,50 @@ export class FinanceController {
     return this.getPayablesReportService.execute(store.id);
   }
 
-  // ─── 10. SETTINGS & CATEGORIES ─────────────────────────────────
+  // ─── 10. PERIOD CLOSING & LOCKS ────────────────────────────────
+  @Get('period-locks')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('finance:settings:manage', 'finance:manage')
+  @ApiOperation({ summary: 'List closed and locked accounting periods' })
+  async listPeriodLocks(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.periodLockService.list(store.id);
+  }
+
+  @Post('period-locks')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('finance:settings:manage', 'finance:manage')
+  @ApiOperation({ summary: 'Lock an accounting period' })
+  async lockPeriod(
+    @CurrentUser('sub') userId: string,
+    @CurrentUser('name') userName: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Body() dto: CreatePeriodLockDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.periodLockService.lockPeriod(store.tenantId, store.id, userId, userName, dto);
+  }
+
+  @Patch('period-locks/:id/unlock')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('finance:settings:manage', 'finance:manage')
+  @ApiOperation({ summary: 'Unlock an accounting period' })
+  async unlockPeriod(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') id: string,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.periodLockService.unlockPeriod(store.id, id);
+  }
+
+  // ─── 11. SETTINGS & CATEGORIES ─────────────────────────────────
   @Get('settings')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { FinanceTransactionEntity } from '../entities/finance-transaction.entity';
@@ -10,9 +10,12 @@ import {
   FinanceTransactionStatusEnum,
   FinanceSourceTypeEnum,
 } from '../enums/finance.enums';
+import { SyncModuleFinanceService } from './sync-module-finance.service';
 
 @Injectable()
 export class CreateTransactionService {
+  private readonly logger = new Logger(CreateTransactionService.name);
+
   constructor(
     @InjectRepository(FinanceTransactionEntity)
     private readonly transactionRepository: Repository<FinanceTransactionEntity>,
@@ -20,6 +23,7 @@ export class CreateTransactionService {
     private readonly accountRepository: Repository<FinanceAccountEntity>,
     @InjectRepository(FinanceCategoryEntity)
     private readonly categoryRepository: Repository<FinanceCategoryEntity>,
+    private readonly syncModuleFinanceService: SyncModuleFinanceService,
   ) {}
 
   async execute(
@@ -47,10 +51,15 @@ export class CreateTransactionService {
       category = await this.categoryRepository.findOne({
         where: { id: dto.categoryId, storeId },
       });
+    } else if (dto.categoryCode) {
+      category = await this.categoryRepository.findOne({
+        where: { code: dto.categoryCode, storeId },
+      });
     }
 
     const count = await this.transactionRepository.count({ where: { storeId } });
     const transactionNumber = `TXN-${String(count + 1).padStart(6, '0')}`;
+    const transactionDate = dto.transactionDate || new Date().toISOString().split('T')[0];
 
     const txn = this.transactionRepository.create({
       tenantId,
@@ -59,19 +68,19 @@ export class CreateTransactionService {
       type: dto.type,
       amount: String(dto.amount),
       currency: dto.currency || 'BDT',
-      transactionDate: dto.transactionDate,
-      accountId: dto.accountId,
-      toAccountId: dto.toAccountId,
-      categoryId: dto.categoryId || category?.id,
-      categoryCode: dto.categoryCode || category?.code,
-      description: dto.description,
-      reference: dto.reference,
+      transactionDate,
+      accountId: dto.accountId || null,
+      toAccountId: dto.toAccountId || null,
+      categoryId: dto.categoryId || category?.id || null,
+      categoryCode: dto.categoryCode || category?.code || 'OTHER',
+      description: dto.description || null,
+      reference: dto.reference || null,
       sourceType: dto.sourceType || FinanceSourceTypeEnum.MANUAL,
-      sourceId: dto.sourceId,
-      paymentMethod: dto.paymentMethod,
+      sourceId: dto.sourceId || null,
+      paymentMethod: dto.paymentMethod || null,
       status: dto.status || FinanceTransactionStatusEnum.COMPLETED,
-      receiptFileId: dto.receiptFileId,
-      createdByUserId: userId,
+      receiptFileId: dto.receiptFileId || null,
+      createdByUserId: userId || null,
     });
 
     const savedTxn = await this.transactionRepository.save(txn);
@@ -93,6 +102,36 @@ export class CreateTransactionService {
         account.currentBalance = String(dto.amount);
       }
       await this.accountRepository.save(account);
+    }
+
+    // Auto-sync into Double-Entry Journal Entry
+    try {
+      if (savedTxn.type === FinanceTransactionTypeEnum.EXPENSE) {
+        await this.syncModuleFinanceService.syncExpenseTransaction({
+          tenantId,
+          storeId,
+          transactionNumber: savedTxn.transactionNumber,
+          amount: dto.amount,
+          transactionDate,
+          categoryCode: savedTxn.categoryCode,
+          description: savedTxn.description,
+          paymentMethod: savedTxn.paymentMethod,
+          accountId: savedTxn.accountId,
+        });
+      } else if (savedTxn.type === FinanceTransactionTypeEnum.INCOME) {
+        await this.syncModuleFinanceService.syncIncomeTransaction({
+          tenantId,
+          storeId,
+          transactionNumber: savedTxn.transactionNumber,
+          amount: dto.amount,
+          transactionDate,
+          categoryCode: savedTxn.categoryCode,
+          description: savedTxn.description,
+          accountId: savedTxn.accountId,
+        });
+      }
+    } catch (err) {
+      this.logger.error(`Failed to auto-sync double entry for transaction ${savedTxn.transactionNumber}:`, err);
     }
 
     return savedTxn;

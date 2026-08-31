@@ -72,7 +72,10 @@ export const store = configureStore({
     [financeApi.reducerPath]: financeApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(
+    getDefaultMiddleware({
+      serializableCheck: false,
+      immutableCheck: false,
+    }).concat(
       authApi.middleware,
       tenantApi.middleware,
       catalogApi.middleware,

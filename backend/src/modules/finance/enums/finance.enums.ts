@@ -5,6 +5,51 @@ export enum FinanceAccountTypeEnum {
   DIGITAL_WALLET = 'DIGITAL_WALLET',
 }
 
+export enum FinanceAccountClassEnum {
+  ASSET = 'ASSET',
+  LIABILITY = 'LIABILITY',
+  EQUITY = 'EQUITY',
+  REVENUE = 'REVENUE',
+  EXPENSE = 'EXPENSE',
+}
+
+export enum FinanceNormalBalanceEnum {
+  DEBIT = 'DEBIT',
+  CREDIT = 'CREDIT',
+}
+
+export enum FinanceLineTypeEnum {
+  DEBIT = 'DEBIT',
+  CREDIT = 'CREDIT',
+}
+
+export enum FinanceJournalStatusEnum {
+  DRAFT = 'DRAFT',
+  POSTED = 'POSTED',
+  VOID = 'VOID',
+}
+
+export enum FinanceJournalEntryTypeEnum {
+  MANUAL = 'MANUAL',
+  ORDER = 'ORDER',
+  REFUND = 'REFUND',
+  INVOICE = 'INVOICE',
+  BILL = 'BILL',
+  PAYROLL = 'PAYROLL',
+  HR_EXPENSE = 'HR_EXPENSE',
+  TRANSFER = 'TRANSFER',
+  INVENTORY_ADJUSTMENT = 'INVENTORY_ADJUSTMENT',
+  PERIOD_CLOSING = 'PERIOD_CLOSING',
+}
+
+export enum FinancePartyTypeEnum {
+  CUSTOMER = 'CUSTOMER',
+  SUPPLIER = 'SUPPLIER',
+  EMPLOYEE = 'EMPLOYEE',
+  COURIER = 'COURIER',
+  NONE = 'NONE',
+}
+
 export enum FinanceTransactionTypeEnum {
   INCOME = 'INCOME',
   EXPENSE = 'EXPENSE',

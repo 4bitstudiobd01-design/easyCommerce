@@ -17,6 +17,13 @@ import {
   CreditCard,
   Wallet,
   Building2,
+  BookOpen,
+  DollarSign,
+  Package,
+  Users,
+  Megaphone,
+  Layers,
+  ArrowRight,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -27,6 +34,8 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
+  AreaChart,
+  Area,
 } from 'recharts';
 import {
   useGetFinanceOverviewQuery,
@@ -38,10 +47,28 @@ import { CreateExpenseModal } from './CreateExpenseModal';
 import { CreateTransferModal } from './CreateTransferModal';
 import { CreateInvoiceModal } from './CreateInvoiceModal';
 import { CreateBillModal } from './CreateBillModal';
+import { CreateJournalEntryModal } from './CreateJournalEntryModal';
 
 function formatMoney(amount: number | string) {
   const val = Number(amount || 0);
   return `৳${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function renderGrowthBadge(rate: number, isGoodWhenPositive: boolean = true) {
+  if (rate === 0) return null;
+  const isPositive = rate > 0;
+  const isGood = isGoodWhenPositive ? isPositive : !isPositive;
+
+  return (
+    <span
+      className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-black ${
+        isGood ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
+      }`}
+    >
+      {isPositive ? '+' : ''}
+      {rate.toFixed(1)}%
+    </span>
+  );
 }
 
 export function FinanceOverviewView() {
@@ -52,20 +79,24 @@ export function FinanceOverviewView() {
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   const [isBillOpen, setIsBillOpen] = useState(false);
+  const [isJournalOpen, setIsJournalOpen] = useState(false);
 
   const summary = data?.summary;
-  const accounts = data?.accounts || [];
-  const recentTransactions = data?.recentTransactions || [];
-  const chartData = data?.revenueVsExpenseTrend || [];
+  const growth = data?.growth;
+  const accounts: FinanceAccount[] = Array.isArray(data?.accounts) ? data.accounts : [];
+  const recentTransactions: FinanceTransaction[] = Array.isArray(data?.recentTransactions)
+    ? data.recentTransactions
+    : [];
+  const chartData = Array.isArray(data?.revenueVsExpenseTrend) ? data.revenueVsExpenseTrend : [];
 
   return (
     <div className="space-y-6">
       {/* Header & Quick Action Buttons */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
         <div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">Finance Overview</h1>
           <p className="text-xs text-slate-500 font-medium mt-0.5">
-            Monitor revenue, operational expenses, cash balances, receivables and payables
+            Real-time financial performance, profitability, cash positions, and double-entry health
           </p>
         </div>
 
@@ -78,6 +109,14 @@ export function FinanceOverviewView() {
             title="Refresh Data"
           >
             <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsJournalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition"
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            New Journal Entry
           </button>
           <button
             type="button"
@@ -122,117 +161,178 @@ export function FinanceOverviewView() {
         </div>
       </div>
 
-      {/* 6 Key Performance Indicator (KPI) Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      {/* Primary KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Revenue */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group hover:border-emerald-200 transition">
+        <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-emerald-300 transition">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Revenue</span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
-              <TrendingUp className="w-4 h-4" />
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Total Revenue</span>
+            <div className="flex items-center gap-1.5">
+              {growth && renderGrowthBadge(growth.revenueGrowth, true)}
+              <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <TrendingUp className="w-4 h-4" />
+              </div>
             </div>
           </div>
-          <p className="text-xl font-black text-slate-900 mt-2">
-            {isLoading ? '...' : formatMoney(summary?.totalRevenue || 0)}
-          </p>
-          <span className="text-[11px] font-semibold text-emerald-600 mt-1 inline-block">
-            Income & Sales
-          </span>
+          <p className="text-2xl font-black text-slate-900 mt-2">{formatMoney(summary?.totalRevenue || 0)}</p>
+          <div className="flex items-center justify-between text-xs text-slate-500 mt-1">
+            <span>Online Orders & Invoices</span>
+            <Link href="/dashboard/finance/income" className="font-bold text-emerald-600 hover:underline">
+              View Income →
+            </Link>
+          </div>
         </div>
 
         {/* Total Expenses */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group hover:border-rose-200 transition">
+        <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-rose-300 transition">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Expenses</span>
-            <div className="w-8 h-8 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center">
-              <TrendingDown className="w-4 h-4" />
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Total Expenses</span>
+            <div className="flex items-center gap-1.5">
+              {growth && renderGrowthBadge(growth.expenseGrowth, false)}
+              <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                <TrendingDown className="w-4 h-4" />
+              </div>
             </div>
           </div>
-          <p className="text-xl font-black text-slate-900 mt-2">
-            {isLoading ? '...' : formatMoney(summary?.totalExpenses || 0)}
-          </p>
-          <span className="text-[11px] font-semibold text-rose-600 mt-1 inline-block">
-            COGS & Operations
-          </span>
+          <p className="text-2xl font-black text-slate-900 mt-2">{formatMoney(summary?.totalExpenses || 0)}</p>
+          <div className="flex items-center justify-between text-xs text-slate-500 mt-1">
+            <span>COGS & Operating Expenses</span>
+            <Link href="/dashboard/finance/expenses" className="font-bold text-rose-600 hover:underline">
+              View Expenses →
+            </Link>
+          </div>
+        </div>
+
+        {/* Gross Profit */}
+        <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-indigo-300 transition">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Gross Profit</span>
+            <div className="flex items-center gap-1.5">
+              {growth && renderGrowthBadge(growth.grossProfitGrowth, true)}
+              <span className="text-[10px] font-black bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-200">
+                {summary?.grossMarginPercent || 0}% Margin
+              </span>
+            </div>
+          </div>
+          <p className="text-2xl font-black text-indigo-950 mt-2">{formatMoney(summary?.grossProfit || 0)}</p>
+          <div className="flex items-center justify-between text-xs text-slate-500 mt-1">
+            <span>Revenue minus COGS</span>
+            <Link href="/dashboard/finance/reports" className="font-bold text-indigo-600 hover:underline">
+              P&L Report →
+            </Link>
+          </div>
         </div>
 
         {/* Net Profit */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group hover:border-blue-200 transition">
+        <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-teal-300 transition">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Net Profit</span>
-            <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
-              <Scale className="w-4 h-4" />
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Net Profit</span>
+            <div className="flex items-center gap-1.5">
+              {growth && renderGrowthBadge(growth.netProfitGrowth, true)}
+              <span className="text-[10px] font-black bg-teal-50 text-teal-700 px-2 py-0.5 rounded-full border border-teal-200">
+                {summary?.netMarginPercent || 0}% Net
+              </span>
             </div>
           </div>
-          <p
-            className={`text-xl font-black mt-2 ${
-              Number(summary?.netProfit || 0) >= 0 ? 'text-blue-600' : 'text-rose-600'
-            }`}
-          >
-            {isLoading ? '...' : formatMoney(summary?.netProfit || 0)}
+          <p className={`text-2xl font-black mt-2 ${(summary?.netProfit || 0) >= 0 ? 'text-teal-700' : 'text-rose-700'}`}>
+            {formatMoney(summary?.netProfit || 0)}
           </p>
-          <span className="text-[11px] font-semibold text-slate-500 mt-1 inline-block">
-            Revenue - Expenses
-          </span>
+          <div className="flex items-center justify-between text-xs text-slate-500 mt-1">
+            <span>Bottom Line Net Profit</span>
+            <span className="text-[11px] font-bold text-slate-400">This Month</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Secondary Operational & Balance Sheet KPI Row */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+        {/* COGS */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+          <div className="flex items-center justify-between text-slate-400 mb-1">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider">COGS</span>
+            <Package className="w-3.5 h-3.5 text-amber-600" />
+          </div>
+          <p className="text-base font-black text-slate-900">{formatMoney(summary?.cogs || 0)}</p>
+          <span className="text-[10px] text-slate-400 font-medium">Product & Fulfillment</span>
         </div>
 
-        {/* Receivables */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group hover:border-amber-200 transition">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Receivables</span>
-            <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center">
-              <FileText className="w-4 h-4" />
-            </div>
+        {/* Inventory Stock Value */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+          <div className="flex items-center justify-between text-slate-400 mb-1">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider">Inventory Value</span>
+            <Layers className="w-3.5 h-3.5 text-cyan-600" />
           </div>
-          <p className="text-xl font-black text-slate-900 mt-2">
-            {isLoading ? '...' : formatMoney(summary?.totalReceivables || 0)}
-          </p>
-          <span className="text-[11px] font-semibold text-amber-600 mt-1 inline-block">
-            Pending Customer Invoices
-          </span>
+          <p className="text-base font-black text-slate-900">{formatMoney(summary?.inventoryCost || 0)}</p>
+          <Link href="/dashboard/inventory" className="text-[10px] text-cyan-600 font-bold hover:underline">
+            Stock Assets →
+          </Link>
         </div>
 
-        {/* Payables */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group hover:border-purple-200 transition">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Payables</span>
-            <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center">
-              <Receipt className="w-4 h-4" />
-            </div>
+        {/* Payroll */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+          <div className="flex items-center justify-between text-slate-400 mb-1">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider">Payroll</span>
+            <Users className="w-3.5 h-3.5 text-purple-600" />
           </div>
-          <p className="text-xl font-black text-slate-900 mt-2">
-            {isLoading ? '...' : formatMoney(summary?.totalPayables || 0)}
-          </p>
-          <span className="text-[11px] font-semibold text-purple-600 mt-1 inline-block">
-            Unpaid Vendor Bills
-          </span>
+          <p className="text-base font-black text-slate-900">{formatMoney(summary?.payrollCost || 0)}</p>
+          <span className="text-[10px] text-slate-400 font-medium">Staff Salaries</span>
         </div>
 
-        {/* Cash & Bank Balances */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group hover:border-teal-200 transition">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Cash/Bank</span>
-            <div className="w-8 h-8 rounded-lg bg-teal-100 text-teal-600 flex items-center justify-center">
-              <Landmark className="w-4 h-4" />
-            </div>
+        {/* Marketing */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+          <div className="flex items-center justify-between text-slate-400 mb-1">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider">Marketing</span>
+            <Megaphone className="w-3.5 h-3.5 text-rose-600" />
           </div>
-          <p className="text-xl font-black text-slate-900 mt-2">
-            {isLoading ? '...' : formatMoney(summary?.totalAccountBalance || 0)}
-          </p>
-          <span className="text-[11px] font-semibold text-teal-600 mt-1 inline-block">
-            Across {accounts.length} Active Accounts
-          </span>
+          <p className="text-base font-black text-slate-900">{formatMoney(summary?.marketingCost || 0)}</p>
+          <span className="text-[10px] text-slate-400 font-medium">Ads & Campaigns</span>
+        </div>
+
+        {/* Receivables (AR) */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+          <div className="flex items-center justify-between text-slate-400 mb-1">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider">Receivables</span>
+            <FileText className="w-3.5 h-3.5 text-blue-600" />
+          </div>
+          <p className="text-base font-black text-slate-900">{formatMoney(summary?.totalReceivables || 0)}</p>
+          <Link href="/dashboard/finance/invoices" className="text-[10px] text-blue-600 font-bold hover:underline">
+            Unpaid Invoices →
+          </Link>
+        </div>
+
+        {/* Payables (AP) */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+          <div className="flex items-center justify-between text-slate-400 mb-1">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider">Payables</span>
+            <Receipt className="w-3.5 h-3.5 text-amber-600" />
+          </div>
+          <p className="text-base font-black text-slate-900">{formatMoney(summary?.totalPayables || 0)}</p>
+          <Link href="/dashboard/finance/bills" className="text-[10px] text-amber-600 font-bold hover:underline">
+            Vendor Bills →
+          </Link>
+        </div>
+
+        {/* Total Cash/Bank */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+          <div className="flex items-center justify-between text-slate-400 mb-1">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider">Cash & Bank</span>
+            <Landmark className="w-3.5 h-3.5 text-teal-600" />
+          </div>
+          <p className="text-base font-black text-slate-900">{formatMoney(summary?.totalAccountBalance || 0)}</p>
+          <Link href="/dashboard/finance/accounts" className="text-[10px] text-teal-600 font-bold hover:underline">
+            {accounts.length} Active Accounts →
+          </Link>
         </div>
       </div>
 
       {/* Main Charts & Accounts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Revenue vs Expense Chart (2 cols) */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        {/* 6-Month Trend Chart */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-base font-bold text-slate-900">Revenue vs Expense Trend</h3>
-              <p className="text-xs text-slate-500">Monthly financial performance over the last 6 months</p>
+              <h2 className="text-base font-black text-slate-900">Revenue vs Expense Trend</h2>
+              <p className="text-xs text-slate-500 font-medium">Monthly financial performance over the last 6 months</p>
             </div>
             <Link
               href="/dashboard/finance/reports"
@@ -242,200 +342,103 @@ export function FinanceOverviewView() {
             </Link>
           </div>
 
-          <div className="h-72 w-full">
-            {chartData.length === 0 ? (
+          <div className="h-72 w-full pt-2">
+            {chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1e293b',
+                      borderRadius: '12px',
+                      color: '#ffffff',
+                      border: 'none',
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                    }}
+                    formatter={(value: any) => [`৳${Number(value).toLocaleString()}`, '']}
+                  />
+                  <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+                  <Bar dataKey="revenue" name="Revenue" fill="#10b981" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="expense" name="Expenses" fill="#f43f5e" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="profit" name="Net Profit" fill="#3b82f6" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
               <div className="h-full flex items-center justify-center text-slate-400 text-xs">
                 No transaction data available for trend analysis.
               </div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#64748b' }} stroke="#cbd5e1" />
-                  <YAxis tick={{ fontSize: 11, fill: '#64748b' }} stroke="#cbd5e1" />
-                  <Tooltip
-                    formatter={(val: any) => [`৳${Number(val || 0).toLocaleString()}`, '']}
-                    contentStyle={{
-                      backgroundColor: '#ffffff',
-                      borderRadius: '12px',
-                      border: '1px solid #e2e8f0',
-                      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                      fontSize: '12px',
-                    }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
-                  <Bar dataKey="revenue" name="Revenue" fill="#10b981" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="expense" name="Expense" fill="#f43f5e" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
             )}
           </div>
         </div>
 
-        {/* Account Balances Quick Card (1 col) */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-base font-bold text-slate-900">Financial Accounts</h3>
-                <p className="text-xs text-slate-500">Live balances per account</p>
-              </div>
-              <Link
-                href="/dashboard/finance/accounts"
-                className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline"
-              >
-                Manage →
-              </Link>
+        {/* Financial Accounts Widget */}
+        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-base font-black text-slate-900">Financial Accounts</h2>
+              <p className="text-xs text-slate-500 font-medium">Live balances per account</p>
             </div>
+            <Link
+              href="/dashboard/finance/accounts"
+              className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline"
+            >
+              Manage →
+            </Link>
+          </div>
 
+          <div className="space-y-3 flex-1 overflow-y-auto max-h-72">
             {accounts.length === 0 ? (
-              <div className="py-8 text-center bg-slate-50 rounded-xl border border-slate-200">
-                <p className="text-xs text-slate-500">No accounts configured yet.</p>
-                <Link
-                  href="/dashboard/finance/accounts"
-                  className="inline-block mt-2 text-xs font-bold text-blue-600 hover:underline"
+              <div className="py-10 text-center text-slate-400 text-xs">
+                No accounts configured yet.
+                <button
+                  type="button"
+                  onClick={() => setIsIncomeOpen(true)}
+                  className="block mx-auto mt-2 text-blue-600 font-bold hover:underline"
                 >
                   + Add First Account
-                </Link>
+                </button>
               </div>
             ) : (
-              <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
-                {accounts.map((acc) => (
-                  <div
-                    key={acc.id}
-                    className="p-3 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-200 flex items-center justify-between transition"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
-                        {acc.type === 'BANK' && <Building2 className="w-4 h-4" />}
-                        {acc.type === 'CASH' && <Wallet className="w-4 h-4" />}
-                        {acc.type === 'PAYMENT_GATEWAY' && <CreditCard className="w-4 h-4" />}
-                        {acc.type === 'DIGITAL_WALLET' && <Landmark className="w-4 h-4" />}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-slate-900 truncate">{acc.name}</p>
-                        <p className="text-[10px] text-slate-500 truncate">
-                          {acc.bankOrProviderName || acc.type.replace('_', ' ')}
-                        </p>
-                      </div>
+              accounts.map((acc) => (
+                <div
+                  key={acc.id}
+                  className="flex items-center justify-between p-3 bg-slate-50/70 hover:bg-slate-50 border border-slate-100 rounded-2xl transition"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-700 shadow-2xs">
+                      {acc.type === 'BANK' && <Building2 className="w-4 h-4 text-blue-600" />}
+                      {acc.type === 'CASH' && <Wallet className="w-4 h-4 text-emerald-600" />}
+                      {acc.type === 'PAYMENT_GATEWAY' && <CreditCard className="w-4 h-4 text-purple-600" />}
+                      {acc.type === 'DIGITAL_WALLET' && <DollarSign className="w-4 h-4 text-amber-600" />}
                     </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-xs font-bold text-slate-900 font-mono">
-                        ৳{Number(acc.currentBalance).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </p>
-                      {acc.isDefault && (
-                        <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
-                          Default
-                        </span>
-                      )}
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-slate-900">{acc.name}</span>
+                        {acc.isDefault && (
+                          <span className="text-[9px] font-black bg-blue-100 text-blue-700 px-1.5 py-0.2 rounded-md">
+                            Default
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[11px] text-slate-400 font-medium">
+                        {acc.bankOrProviderName || acc.type}
+                      </span>
                     </div>
                   </div>
-                ))}
-              </div>
+
+                  <div className="text-right">
+                    <span className="text-xs font-mono font-black text-slate-900">
+                      {formatMoney(acc.currentBalance)}
+                    </span>
+                  </div>
+                </div>
+              ))
             )}
           </div>
-
-          <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
-            <span className="font-semibold text-slate-500">Total Liquid Balance:</span>
-            <span className="font-bold text-slate-900 font-mono text-sm">
-              {formatMoney(summary?.totalAccountBalance || 0)}
-            </span>
-          </div>
         </div>
-      </div>
-
-      {/* Recent Transactions Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-          <div>
-            <h3 className="text-base font-bold text-slate-900">Recent Transactions</h3>
-            <p className="text-xs text-slate-500">Latest 10 transactions recorded in the system</p>
-          </div>
-          <Link
-            href="/dashboard/finance/transactions"
-            className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline"
-          >
-            View All Transactions →
-          </Link>
-        </div>
-
-        {recentTransactions.length === 0 ? (
-          <div className="p-12 text-center text-slate-500 text-xs">
-            No transactions found. Record your first income or expense to get started.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-600 uppercase">
-                <tr>
-                  <th className="px-6 py-3.5">Date</th>
-                  <th className="px-6 py-3.5">Txn #</th>
-                  <th className="px-6 py-3.5">Type</th>
-                  <th className="px-6 py-3.5">Category</th>
-                  <th className="px-6 py-3.5">Description</th>
-                  <th className="px-6 py-3.5">Account</th>
-                  <th className="px-6 py-3.5 text-right">Amount</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {recentTransactions.map((t) => {
-                  const isCredit = t.type === 'INCOME' || t.type === 'PAYMENT';
-                  const isTransfer = t.type === 'TRANSFER';
-                  const amt = Number(t.amount || 0);
-
-                  return (
-                    <tr key={t.id} className="hover:bg-slate-50 transition">
-                      <td className="px-6 py-3.5 text-xs text-slate-600 whitespace-nowrap">
-                        {t.transactionDate}
-                      </td>
-                      <td className="px-6 py-3.5 text-xs font-mono font-bold text-slate-900">
-                        {t.transactionNumber}
-                      </td>
-                      <td className="px-6 py-3.5">
-                        <span
-                          className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
-                            isCredit
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : isTransfer
-                              ? 'bg-slate-100 text-slate-800'
-                              : 'bg-rose-100 text-rose-800'
-                          }`}
-                        >
-                          {isCredit && <ArrowDownLeft className="w-3 h-3" />}
-                          {!isCredit && !isTransfer && <ArrowUpRight className="w-3 h-3" />}
-                          {isTransfer && <ArrowLeftRight className="w-3 h-3" />}
-                          {t.type}
-                        </span>
-                      </td>
-                      <td className="px-6 py-3.5 text-xs text-slate-700">
-                        <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md font-medium">
-                          {t.category?.name || t.categoryCode || '—'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-3.5 text-xs text-slate-600 max-w-xs truncate">
-                        {t.description || t.reference || '—'}
-                      </td>
-                      <td className="px-6 py-3.5 text-xs text-slate-700 font-medium">
-                        {t.account?.name || '—'}
-                      </td>
-                      <td
-                        className={`px-6 py-3.5 text-xs font-mono font-bold text-right ${
-                          isCredit
-                            ? 'text-emerald-600'
-                            : isTransfer
-                            ? 'text-slate-700'
-                            : 'text-rose-600'
-                        }`}
-                      >
-                        {isCredit ? '+' : isTransfer ? '' : '-'}৳{amt.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
       </div>
 
       {/* Modals */}
@@ -444,6 +447,7 @@ export function FinanceOverviewView() {
       <CreateTransferModal isOpen={isTransferOpen} onClose={() => setIsTransferOpen(false)} />
       <CreateInvoiceModal isOpen={isInvoiceOpen} onClose={() => setIsInvoiceOpen(false)} />
       <CreateBillModal isOpen={isBillOpen} onClose={() => setIsBillOpen(false)} />
+      <CreateJournalEntryModal isOpen={isJournalOpen} onClose={() => setIsJournalOpen(false)} />
     </div>
   );
 }

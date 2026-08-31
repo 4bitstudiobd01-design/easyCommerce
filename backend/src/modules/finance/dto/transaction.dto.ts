@@ -27,8 +27,8 @@ export class CreateFinanceTransactionDto {
   currency?: string;
 
   @IsString()
-  @IsNotEmpty()
-  transactionDate: string;
+  @IsOptional()
+  transactionDate?: string;
 
   @IsUUID()
   @IsOptional()
@@ -82,16 +82,16 @@ export class CreateIncomeDto {
   amount: number;
 
   @IsString()
-  @IsNotEmpty()
-  transactionDate: string;
+  @IsOptional()
+  transactionDate?: string;
 
   @IsUUID()
   @IsOptional()
   accountId?: string;
 
   @IsString()
-  @IsNotEmpty()
-  categoryCode: string;
+  @IsOptional()
+  categoryCode?: string;
 
   @IsString()
   @IsOptional()
@@ -113,16 +113,16 @@ export class CreateExpenseDto {
   amount: number;
 
   @IsString()
-  @IsNotEmpty()
-  transactionDate: string;
+  @IsOptional()
+  transactionDate?: string;
 
   @IsUUID()
   @IsOptional()
   accountId?: string;
 
   @IsString()
-  @IsNotEmpty()
-  categoryCode: string;
+  @IsOptional()
+  categoryCode?: string;
 
   @IsString()
   @IsOptional()

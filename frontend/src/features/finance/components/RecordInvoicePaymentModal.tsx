@@ -6,6 +6,7 @@ import { DollarSign } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import {
   FinanceInvoice,
+  FinanceAccount,
   useRecordInvoicePaymentMutation,
   useGetAccountsQuery,
 } from '../api/financeApi';
@@ -29,7 +30,9 @@ export function RecordInvoicePaymentModal({ isOpen, onClose, invoice }: Props) {
   const { data: accountsData } = useGetAccountsQuery();
   const [recordPayment, { isLoading }] = useRecordInvoicePaymentMutation();
 
-  const accounts = accountsData?.items || [];
+  const accounts: FinanceAccount[] = Array.isArray(accountsData)
+    ? accountsData
+    : (accountsData as any)?.items || [];
 
   React.useEffect(() => {
     if (invoice) {

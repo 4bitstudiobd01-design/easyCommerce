@@ -16,6 +16,7 @@ import {
 import {
   useGetExpensesQuery,
   useGetAccountsQuery,
+  FinanceAccount,
 } from '../api/financeApi';
 import { CreateExpenseModal } from './CreateExpenseModal';
 
@@ -39,7 +40,9 @@ export function FinanceExpensesView() {
   });
 
   const { data: accountsData } = useGetAccountsQuery();
-  const accounts = accountsData?.items || [];
+  const accounts: FinanceAccount[] = Array.isArray(accountsData)
+    ? accountsData
+    : (accountsData as any)?.items || [];
   const expenseList = data?.items || [];
   const summary = data?.summary;
   const breakdown = summary?.categoryBreakdown || {};

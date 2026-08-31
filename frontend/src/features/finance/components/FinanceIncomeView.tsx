@@ -15,6 +15,7 @@ import {
 import {
   useGetIncomeQuery,
   useGetAccountsQuery,
+  FinanceAccount,
 } from '../api/financeApi';
 import { CreateIncomeModal } from './CreateIncomeModal';
 
@@ -38,7 +39,9 @@ export function FinanceIncomeView() {
   });
 
   const { data: accountsData } = useGetAccountsQuery();
-  const accounts = accountsData?.items || [];
+  const accounts: FinanceAccount[] = Array.isArray(accountsData)
+    ? accountsData
+    : (accountsData as any)?.items || [];
   const incomeList = data?.items || [];
   const summary = data?.summary;
   const totalPages = data?.totalPages || 1;

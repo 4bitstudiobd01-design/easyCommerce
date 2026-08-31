@@ -24,8 +24,10 @@ export function FinanceAccountsView() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [statementAccountId, setStatementAccountId] = useState<string | null>(null);
 
-  const accounts = data?.items || [];
-  const totalBalance = data?.totalBalance || 0;
+  const accounts: FinanceAccount[] = Array.isArray(data) ? data : (data as any)?.items || [];
+  const totalBalance = Array.isArray(data)
+    ? data.reduce((sum, a) => sum + Number(a.currentBalance || 0), 0)
+    : (data as any)?.totalBalance || 0;
 
   return (
     <div className="space-y-6">

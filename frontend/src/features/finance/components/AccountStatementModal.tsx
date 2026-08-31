@@ -89,7 +89,7 @@ export function AccountStatementModal({ isOpen, onClose, accountId }: Props) {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {transactions.map((t) => {
+                      {transactions.map((t: any) => {
                         const isCredit =
                           t.type === 'INCOME' ||
                           t.type === 'PAYMENT' ||

@@ -14,6 +14,12 @@ import { FinanceBillEntity } from './entities/finance-bill.entity';
 import { FinanceBillItemEntity } from './entities/finance-bill-item.entity';
 import { FinanceTransferEntity } from './entities/finance-transfer.entity';
 import { FinanceSettingEntity } from './entities/finance-setting.entity';
+import { FinanceChartOfAccountEntity } from './entities/finance-chart-of-account.entity';
+import { FinanceJournalEntryEntity } from './entities/finance-journal-entry.entity';
+import { FinanceJournalLineEntity } from './entities/finance-journal-line.entity';
+import { FinancePeriodLockEntity } from './entities/finance-period-lock.entity';
+import { InventoryStockEntity } from '../inventory/entities/inventory-stock.entity';
+import { ProductEntity } from '../catalog/entities/product.entity';
 
 import { FinanceController } from './finance.controller';
 
@@ -48,6 +54,18 @@ import { GetProfitLossReportService } from './services/get-profit-loss-report.se
 import { GetCashFlowReportService } from './services/get-cash-flow-report.service';
 import { GetReceivablesReportService } from './services/get-receivables-report.service';
 import { GetPayablesReportService } from './services/get-payables-report.service';
+import { GetTrialBalanceReportService } from './services/get-trial-balance-report.service';
+import { GetBalanceSheetReportService } from './services/get-balance-sheet-report.service';
+import { GetTaxVatReportService } from './services/get-tax-vat-report.service';
+import { SeedDefaultChartOfAccountsService } from './services/seed-default-chart-of-accounts.service';
+import { ListChartOfAccountsService } from './services/list-chart-of-accounts.service';
+import { CreateChartOfAccountService } from './services/create-chart-of-account.service';
+import { UpdateChartOfAccountService } from './services/update-chart-of-account.service';
+import { PostJournalEntryService } from './services/post-journal-entry.service';
+import { ListJournalEntriesService } from './services/list-journal-entries.service';
+import { GetGeneralLedgerService } from './services/get-general-ledger.service';
+import { PeriodLockService } from './services/period-lock.service';
+import { SyncModuleFinanceService } from './services/sync-module-finance.service';
 import {
   GetFinanceSettingsService,
   UpdateFinanceSettingsService,
@@ -69,6 +87,12 @@ import {
       FinanceBillItemEntity,
       FinanceTransferEntity,
       FinanceSettingEntity,
+      FinanceChartOfAccountEntity,
+      FinanceJournalEntryEntity,
+      FinanceJournalLineEntity,
+      FinancePeriodLockEntity,
+      InventoryStockEntity,
+      ProductEntity,
     ]),
     StaffModule,
     TenantModule,
@@ -114,6 +138,18 @@ import {
     GetCashFlowReportService,
     GetReceivablesReportService,
     GetPayablesReportService,
+    GetTrialBalanceReportService,
+    GetBalanceSheetReportService,
+    GetTaxVatReportService,
+    SeedDefaultChartOfAccountsService,
+    ListChartOfAccountsService,
+    CreateChartOfAccountService,
+    UpdateChartOfAccountService,
+    PostJournalEntryService,
+    ListJournalEntriesService,
+    GetGeneralLedgerService,
+    PeriodLockService,
+    SyncModuleFinanceService,
     GetFinanceSettingsService,
     UpdateFinanceSettingsService,
     ListCategoriesService,
@@ -121,6 +157,8 @@ import {
   ],
   exports: [
     RecordSyncedFinanceTransactionService,
+    SyncModuleFinanceService,
+    PostJournalEntryService,
     GetFinanceOverviewService,
     GetProfitLossReportService,
   ],

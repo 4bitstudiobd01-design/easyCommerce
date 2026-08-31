@@ -2,13 +2,232 @@ import { createApi } from '@reduxjs/toolkit/query/react';
 import { createBaseQueryWithReauth } from '@/store/baseQueryWithReauth';
 
 export type FinanceAccountType = 'CASH' | 'BANK' | 'PAYMENT_GATEWAY' | 'DIGITAL_WALLET';
+export type FinanceAccountClass = 'ASSET' | 'LIABILITY' | 'EQUITY' | 'REVENUE' | 'EXPENSE';
+export type FinanceNormalBalance = 'DEBIT' | 'CREDIT';
+export type FinanceLineType = 'DEBIT' | 'CREDIT';
+export type FinanceJournalStatus = 'DRAFT' | 'POSTED' | 'VOID';
+export type FinanceJournalEntryType =
+  | 'MANUAL'
+  | 'ORDER'
+  | 'REFUND'
+  | 'INVOICE'
+  | 'BILL'
+  | 'PAYROLL'
+  | 'HR_EXPENSE'
+  | 'TRANSFER'
+  | 'INVENTORY_ADJUSTMENT'
+  | 'PERIOD_CLOSING';
+export type FinancePartyType = 'CUSTOMER' | 'SUPPLIER' | 'EMPLOYEE' | 'COURIER' | 'NONE';
+
 export type FinanceTransactionType = 'INCOME' | 'EXPENSE' | 'PAYMENT' | 'REFUND' | 'TRANSFER' | 'ADJUSTMENT';
 export type FinanceTransactionStatus = 'COMPLETED' | 'PENDING' | 'CANCELLED';
 export type FinanceCategoryType = 'INCOME' | 'EXPENSE';
 export type FinanceInvoiceStatus = 'DRAFT' | 'UNPAID' | 'PARTIALLY_PAID' | 'PAID' | 'OVERDUE' | 'VOID';
 export type FinanceBillStatus = 'DRAFT' | 'UNPAID' | 'PARTIALLY_PAID' | 'PAID' | 'OVERDUE' | 'VOID';
 export type FinanceTransferStatus = 'COMPLETED' | 'CANCELLED';
-export type FinanceSourceType = 'MANUAL' | 'ORDER' | 'INVOICE' | 'BILL' | 'HR_EXPENSE' | 'PAYROLL' | 'TRANSFER' | 'ADJUSTMENT';
+export type FinanceSourceType =
+  | 'MANUAL'
+  | 'ORDER'
+  | 'INVOICE'
+  | 'BILL'
+  | 'HR_EXPENSE'
+  | 'PAYROLL'
+  | 'TRANSFER'
+  | 'ADJUSTMENT';
+
+export interface FinanceChartOfAccount {
+  id: string;
+  tenantId: string;
+  storeId: string;
+  code: string;
+  name: string;
+  accountClass: FinanceAccountClass;
+  subType: string;
+  normalBalance: FinanceNormalBalance;
+  parentId?: string;
+  parent?: FinanceChartOfAccount;
+  currentBalance: string;
+  currency: string;
+  description?: string;
+  isSystem: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FinanceJournalLine {
+  id: string;
+  journalEntryId: string;
+  accountId: string;
+  account?: FinanceChartOfAccount;
+  accountCode: string;
+  accountName: string;
+  type: FinanceLineType;
+  amount: string;
+  description?: string;
+  partyType: FinancePartyType;
+  partyId?: string;
+  partyName?: string;
+  createdAt: string;
+}
+
+export interface FinanceJournalEntry {
+  id: string;
+  tenantId: string;
+  storeId: string;
+  entryNumber: string;
+  entryDate: string;
+  postingDate: string;
+  sourceType: FinanceJournalEntryType;
+  sourceId?: string;
+  sourceReference?: string;
+  description: string;
+  notes?: string;
+  totalDebit: string;
+  totalCredit: string;
+  isBalanced: boolean;
+  status: FinanceJournalStatus;
+  currency: string;
+  postedByUserId?: string;
+  postedByName?: string;
+  lines: FinanceJournalLine[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GeneralLedgerTransaction {
+  id: string;
+  entryDate: string;
+  entryNumber: string;
+  sourceType: string;
+  sourceReference?: string;
+  description: string;
+  partyType?: string;
+  partyName?: string;
+  debit: number;
+  credit: number;
+  runningBalance: number;
+}
+
+export interface GeneralLedgerStatement {
+  account: {
+    id: string;
+    code: string;
+    name: string;
+    accountClass: FinanceAccountClass;
+    subType: string;
+    normalBalance: FinanceNormalBalance;
+    currency: string;
+  };
+  dateRange: { startDate: string; endDate: string };
+  openingBalance: number;
+  closingBalance: number;
+  periodDebits: number;
+  periodCredits: number;
+  transactions: GeneralLedgerTransaction[];
+}
+
+export interface TrialBalanceAccountItem {
+  id: string;
+  code: string;
+  name: string;
+  accountClass: FinanceAccountClass;
+  subType: string;
+  normalBalance: FinanceNormalBalance;
+  totalDebits: number;
+  totalCredits: number;
+  debitBalance: number;
+  creditBalance: number;
+}
+
+export interface TrialBalanceReport {
+  dateRange: { startDate: string; endDate: string };
+  asOfDate: string;
+  isBalanced: boolean;
+  totalDebit: number;
+  totalCredit: number;
+  difference: number;
+  accounts: TrialBalanceAccountItem[];
+  currency: string;
+}
+
+export interface BalanceSheetReport {
+  asOfDate: string;
+  dateRange: { startDate: string; endDate: string };
+  assets: {
+    currentAssets: Array<{ id: string; code: string; name: string; balance: number }>;
+    totalCurrentAssets: number;
+    nonCurrentAssets: Array<{ id: string; code: string; name: string; balance: number }>;
+    totalNonCurrentAssets: number;
+    totalAssets: number;
+  };
+  liabilities: {
+    currentLiabilities: Array<{ id: string; code: string; name: string; balance: number }>;
+    totalCurrentLiabilities: number;
+    longTermLiabilities: Array<{ id: string; code: string; name: string; balance: number }>;
+    totalLongTermLiabilities: number;
+    totalLiabilities: number;
+  };
+  equity: {
+    equityItems: Array<{ id: string; code: string; name: string; balance: number }>;
+    baseEquity: number;
+    currentPeriodNetIncome: number;
+    totalEquity: number;
+  };
+  totalLiabilitiesAndEquity: number;
+  isBalanced: boolean;
+  difference: number;
+  currency: string;
+}
+
+export interface TaxVatReport {
+  dateRange: { startDate: string; endDate: string };
+  summary: {
+    totalTaxableSales: number;
+    outputVatCollected: number;
+    totalTaxablePurchases: number;
+    inputVatPaid: number;
+    netVatPayable: number;
+    currentTaxLiabilityBalance: number;
+  };
+  outputVatInvoices: Array<{
+    id: string;
+    number: string;
+    customerName: string;
+    date: string;
+    taxableAmount: number;
+    taxAmount: number;
+    totalAmount: number;
+    status: string;
+  }>;
+  inputVatBills: Array<{
+    id: string;
+    number: string;
+    supplierName: string;
+    date: string;
+    taxableAmount: number;
+    taxAmount: number;
+    totalAmount: number;
+    status: string;
+  }>;
+  currency: string;
+}
+
+export interface FinancePeriodLock {
+  id: string;
+  tenantId: string;
+  storeId: string;
+  periodName: string;
+  startDate: string;
+  endDate: string;
+  isLocked: boolean;
+  lockedAt: string;
+  lockedByUserId?: string;
+  lockedByName?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface FinanceAccount {
   id: string;
@@ -190,11 +409,25 @@ export interface FinanceOverview {
   summary: {
     totalRevenue: number;
     totalExpenses: number;
+    grossProfit: number;
+    grossMarginPercent: number;
     netProfit: number;
+    netMarginPercent: number;
+    cogs: number;
+    payrollCost: number;
+    marketingCost: number;
+    inventoryCost: number;
     totalReceivables: number;
     totalPayables: number;
     totalAccountBalance: number;
     currency: string;
+  };
+  growth: {
+    revenueGrowth: number;
+    expenseGrowth: number;
+    grossProfitGrowth: number;
+    netProfitGrowth: number;
+    cogsChange: number;
   };
   accounts: FinanceAccount[];
   recentTransactions: FinanceTransaction[];
@@ -204,6 +437,16 @@ export interface FinanceOverview {
     expense: number;
     profit: number;
   }>;
+}
+
+export interface AccountsResponse {
+  items: FinanceAccount[];
+  totalBalance: number;
+}
+
+export interface TransfersResponse {
+  items: FinanceTransfer[];
+  totalTransferred: number;
 }
 
 export interface PaginatedResponse<T> {
@@ -250,44 +493,117 @@ export interface BillsResponse extends PaginatedResponse<FinanceBill> {
 
 export interface ProfitLossReport {
   dateRange: { startDate: string; endDate: string };
-  revenue: {
-    productSales: number;
-    shippingIncome: number;
-    otherIncome: number;
-    totalRevenue: number;
+  previousDateRange?: { startDate: string; endDate: string };
+  current: {
+    revenue: {
+      productSales: number;
+      shippingIncome: number;
+      otherIncome: number;
+      salesDiscounts: number;
+      salesReturns: number;
+      grossRevenue: number;
+      totalRevenue: number;
+    };
+    cogs: {
+      productCost: number;
+      packaging: number;
+      gatewayFees: number;
+      shippingFees: number;
+      totalCogs: number;
+    };
+    grossProfit: number;
+    grossMarginPercent: number;
+    operatingExpenses: {
+      salary: number;
+      employeeBenefits: number;
+      marketing: number;
+      software: number;
+      rent: number;
+      utilities: number;
+      bankFees: number;
+      inventoryLoss: number;
+      other: number;
+      totalOperatingExpenses: number;
+    };
+    operatingProfit: number;
+    operatingMarginPercent: number;
+    netProfit: number;
+    netMarginPercent: number;
   };
-  cogs: number;
-  grossProfit: number;
-  grossMarginPercent: number;
-  operatingExpenses: {
-    marketing: number;
-    salary: number;
-    employeeExpenses: number;
-    rent: number;
-    utilities: number;
-    software: number;
-    shipping: number;
-    other: number;
-    totalOperatingExpenses: number;
+  previous?: {
+    revenue: {
+      productSales: number;
+      shippingIncome: number;
+      otherIncome: number;
+      salesDiscounts: number;
+      salesReturns: number;
+      grossRevenue: number;
+      totalRevenue: number;
+    };
+    cogs: {
+      productCost: number;
+      packaging: number;
+      gatewayFees: number;
+      shippingFees: number;
+      totalCogs: number;
+    };
+    grossProfit: number;
+    grossMarginPercent: number;
+    operatingExpenses: {
+      salary: number;
+      employeeBenefits: number;
+      marketing: number;
+      software: number;
+      rent: number;
+      utilities: number;
+      bankFees: number;
+      inventoryLoss: number;
+      other: number;
+      totalOperatingExpenses: number;
+    };
+    operatingProfit: number;
+    operatingMarginPercent: number;
+    netProfit: number;
+    netMarginPercent: number;
   };
-  netProfit: number;
-  netMarginPercent: number;
+  growth: {
+    revenueGrowth: number;
+    cogsGrowth: number;
+    grossProfitGrowth: number;
+    operatingExpensesGrowth: number;
+    netProfitGrowth: number;
+  };
   currency: string;
 }
 
 export interface CashFlowReport {
   dateRange: { startDate: string; endDate: string };
-  totalInflow: number;
-  totalOutflow: number;
-  netCashFlow: number;
-  currentTotalBalance: number;
+  operatingActivities: {
+    cashInflow: number;
+    cashOutflow: number;
+    netCashFlow: number;
+  };
+  investingActivities: {
+    cashInflow: number;
+    cashOutflow: number;
+    netCashFlow: number;
+  };
+  financingActivities: {
+    cashInflow: number;
+    cashOutflow: number;
+    netCashFlow: number;
+  };
+  summary: {
+    beginningCashBalance: number;
+    netChangeInCash: number;
+    endingCashBalance: number;
+  };
   accountsSummary: Array<{
     accountId: string;
     accountName: string;
     accountType: string;
-    inflow: number;
-    outflow: number;
-    netChange: number;
+    currentBalance: number;
+    isDefault: boolean;
   }>;
   currency: string;
 }
@@ -356,6 +672,9 @@ export const financeApi = createApi({
   baseQuery: createBaseQueryWithReauth(BASE_URL),
   tagTypes: [
     'FinanceOverview',
+    'FinanceChartOfAccounts',
+    'FinanceJournalEntries',
+    'FinanceGeneralLedger',
     'FinanceTransactions',
     'FinanceIncome',
     'FinanceExpenses',
@@ -366,6 +685,7 @@ export const financeApi = createApi({
     'FinanceReports',
     'FinanceSettings',
     'FinanceCategories',
+    'FinancePeriodLocks',
   ],
   endpoints: (builder) => ({
     getFinanceOverview: builder.query<FinanceOverview, void>({
@@ -373,6 +693,218 @@ export const financeApi = createApi({
       providesTags: ['FinanceOverview'],
     }),
 
+    // Chart of Accounts
+    getChartOfAccounts: builder.query<
+      { accounts: FinanceChartOfAccount[]; summary: any },
+      { accountClass?: string; search?: string; isActive?: boolean } | void
+    >({
+      query: (params) => ({
+        url: '/finance/chart-of-accounts',
+        params: params || {},
+      }),
+      providesTags: ['FinanceChartOfAccounts'],
+    }),
+
+    createChartOfAccount: builder.mutation<
+      FinanceChartOfAccount,
+      {
+        code: string;
+        name: string;
+        accountClass: FinanceAccountClass;
+        subType?: string;
+        normalBalance: FinanceNormalBalance;
+        parentId?: string;
+        description?: string;
+        startingBalance?: number;
+      }
+    >({
+      query: (body) => ({
+        url: '/finance/chart-of-accounts',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['FinanceChartOfAccounts', 'FinanceOverview'],
+    }),
+
+    updateChartOfAccount: builder.mutation<
+      FinanceChartOfAccount,
+      {
+        id: string;
+        name?: string;
+        subType?: string;
+        parentId?: string;
+        description?: string;
+        isActive?: boolean;
+      }
+    >({
+      query: ({ id, ...body }) => ({
+        url: `/finance/chart-of-accounts/${id}`,
+        method: 'PATCH',
+        body,
+      }),
+      invalidatesTags: ['FinanceChartOfAccounts'],
+    }),
+
+    // Journal Entries
+    getJournalEntries: builder.query<
+      { items: FinanceJournalEntry[]; total: number; page: number; limit: number; totalPages: number; summary: any },
+      {
+        sourceType?: string;
+        status?: string;
+        accountId?: string;
+        startDate?: string;
+        endDate?: string;
+        search?: string;
+        page?: number;
+        limit?: number;
+      } | void
+    >({
+      query: (params) => ({
+        url: '/finance/journal-entries',
+        params: params || {},
+      }),
+      providesTags: ['FinanceJournalEntries'],
+    }),
+
+    postJournalEntry: builder.mutation<
+      FinanceJournalEntry,
+      {
+        entryDate: string;
+        description: string;
+        sourceType?: FinanceJournalEntryType;
+        sourceId?: string;
+        sourceReference?: string;
+        notes?: string;
+        lines: Array<{
+          accountId: string;
+          type: FinanceLineType;
+          amount: number;
+          description?: string;
+          partyType?: FinancePartyType;
+          partyId?: string;
+          partyName?: string;
+        }>;
+      }
+    >({
+      query: (body) => ({
+        url: '/finance/journal-entries',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: [
+        'FinanceJournalEntries',
+        'FinanceChartOfAccounts',
+        'FinanceGeneralLedger',
+        'FinanceReports',
+        'FinanceOverview',
+      ],
+    }),
+
+    // General Ledger
+    getGeneralLedger: builder.query<
+      GeneralLedgerStatement,
+      { accountId: string; startDate?: string; endDate?: string; page?: number; limit?: number }
+    >({
+      query: (params) => ({
+        url: '/finance/general-ledger',
+        params,
+      }),
+      providesTags: ['FinanceGeneralLedger'],
+    }),
+
+    // Financial Reports
+    getTrialBalanceReport: builder.query<
+      TrialBalanceReport,
+      { period?: string; startDate?: string; endDate?: string } | void
+    >({
+      query: (params) => ({
+        url: '/finance/reports/trial-balance',
+        params: params || {},
+      }),
+      providesTags: ['FinanceReports'],
+    }),
+
+    getBalanceSheetReport: builder.query<
+      BalanceSheetReport,
+      { period?: string; startDate?: string; endDate?: string } | void
+    >({
+      query: (params) => ({
+        url: '/finance/reports/balance-sheet',
+        params: params || {},
+      }),
+      providesTags: ['FinanceReports'],
+    }),
+
+    getProfitLossReport: builder.query<
+      ProfitLossReport,
+      { period?: string; startDate?: string; endDate?: string; compareWith?: string } | void
+    >({
+      query: (params) => ({
+        url: '/finance/reports/profit-loss',
+        params: params || {},
+      }),
+      providesTags: ['FinanceReports'],
+    }),
+
+    getCashFlowReport: builder.query<
+      CashFlowReport,
+      { period?: string; startDate?: string; endDate?: string } | void
+    >({
+      query: (params) => ({
+        url: '/finance/reports/cash-flow',
+        params: params || {},
+      }),
+      providesTags: ['FinanceReports'],
+    }),
+
+    getTaxVatReport: builder.query<
+      TaxVatReport,
+      { period?: string; startDate?: string; endDate?: string } | void
+    >({
+      query: (params) => ({
+        url: '/finance/reports/tax-vat',
+        params: params || {},
+      }),
+      providesTags: ['FinanceReports'],
+    }),
+
+    getReceivablesReport: builder.query<ReceivablesReport, void>({
+      query: () => '/finance/reports/receivables',
+      providesTags: ['FinanceReports', 'FinanceInvoices'],
+    }),
+
+    getPayablesReport: builder.query<PayablesReport, void>({
+      query: () => '/finance/reports/payables',
+      providesTags: ['FinanceReports', 'FinanceBills'],
+    }),
+
+    // Period Closing Locks
+    getPeriodLocks: builder.query<FinancePeriodLock[], void>({
+      query: () => '/finance/period-locks',
+      providesTags: ['FinancePeriodLocks'],
+    }),
+
+    lockPeriod: builder.mutation<
+      FinancePeriodLock,
+      { periodName: string; startDate: string; endDate: string; notes?: string }
+    >({
+      query: (body) => ({
+        url: '/finance/period-locks',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['FinancePeriodLocks', 'FinanceJournalEntries'],
+    }),
+
+    unlockPeriod: builder.mutation<FinancePeriodLock, string>({
+      query: (id) => ({
+        url: `/finance/period-locks/${id}/unlock`,
+        method: 'PATCH',
+      }),
+      invalidatesTags: ['FinancePeriodLocks', 'FinanceJournalEntries'],
+    }),
+
+    // Transactions
     getTransactions: builder.query<
       PaginatedResponse<FinanceTransaction>,
       {
@@ -401,9 +933,9 @@ export const financeApi = createApi({
         type: FinanceTransactionType;
         amount: number;
         currency?: string;
-        transactionDate: string;
+        transactionDate?: string;
         accountId?: string;
-        toAccountId?: string;
+        categoryId?: string;
         categoryCode?: string;
         description?: string;
         reference?: string;
@@ -418,14 +950,14 @@ export const financeApi = createApi({
       invalidatesTags: [
         'FinanceTransactions',
         'FinanceOverview',
+        'FinanceAccounts',
         'FinanceIncome',
         'FinanceExpenses',
-        'FinanceAccounts',
         'FinanceReports',
       ],
     }),
 
-    deleteTransaction: builder.mutation<{ success: boolean; message: string }, string>({
+    deleteTransaction: builder.mutation<void, string>({
       query: (id) => ({
         url: `/finance/transactions/${id}`,
         method: 'DELETE',
@@ -433,19 +965,19 @@ export const financeApi = createApi({
       invalidatesTags: [
         'FinanceTransactions',
         'FinanceOverview',
+        'FinanceAccounts',
         'FinanceIncome',
         'FinanceExpenses',
-        'FinanceAccounts',
         'FinanceReports',
       ],
     }),
 
+    // Income & Expenses
     getIncome: builder.query<
       IncomeResponse,
       {
-        status?: string;
-        accountId?: string;
         categoryCode?: string;
+        accountId?: string;
         startDate?: string;
         endDate?: string;
         search?: string;
@@ -464,12 +996,12 @@ export const financeApi = createApi({
       FinanceTransaction,
       {
         amount: number;
-        transactionDate: string;
-        categoryCode: string;
+        categoryCode?: string;
         accountId?: string;
         description?: string;
         reference?: string;
         paymentMethod?: string;
+        transactionDate?: string;
       }
     >({
       query: (body) => ({
@@ -477,21 +1009,14 @@ export const financeApi = createApi({
         method: 'POST',
         body,
       }),
-      invalidatesTags: [
-        'FinanceIncome',
-        'FinanceTransactions',
-        'FinanceOverview',
-        'FinanceAccounts',
-        'FinanceReports',
-      ],
+      invalidatesTags: ['FinanceIncome', 'FinanceTransactions', 'FinanceOverview', 'FinanceAccounts', 'FinanceReports'],
     }),
 
     getExpenses: builder.query<
       ExpensesResponse,
       {
-        status?: string;
-        accountId?: string;
         categoryCode?: string;
+        accountId?: string;
         startDate?: string;
         endDate?: string;
         search?: string;
@@ -510,12 +1035,12 @@ export const financeApi = createApi({
       FinanceTransaction,
       {
         amount: number;
-        transactionDate: string;
         categoryCode: string;
         accountId?: string;
         description?: string;
         reference?: string;
         paymentMethod?: string;
+        transactionDate?: string;
         receiptFileId?: string;
       }
     >({
@@ -524,23 +1049,17 @@ export const financeApi = createApi({
         method: 'POST',
         body,
       }),
-      invalidatesTags: [
-        'FinanceExpenses',
-        'FinanceTransactions',
-        'FinanceOverview',
-        'FinanceAccounts',
-        'FinanceReports',
-      ],
+      invalidatesTags: ['FinanceExpenses', 'FinanceTransactions', 'FinanceOverview', 'FinanceAccounts', 'FinanceReports'],
     }),
 
+    // Invoices
     getInvoices: builder.query<
       InvoicesResponse,
       {
         status?: string;
-        customerId?: string;
+        search?: string;
         startDate?: string;
         endDate?: string;
-        search?: string;
         page?: number;
         limit?: number;
       }
@@ -552,17 +1071,24 @@ export const financeApi = createApi({
       providesTags: ['FinanceInvoices'],
     }),
 
+    getInvoice: builder.query<FinanceInvoice, string>({
+      query: (id) => `/finance/invoices/${id}`,
+      providesTags: (_res, _err, id) => [{ type: 'FinanceInvoices', id }],
+    }),
+
     createInvoice: builder.mutation<
       FinanceInvoice,
       {
         customerName: string;
+        customerId?: string;
         customerEmail?: string;
         customerPhone?: string;
         customerAddress?: string;
-        issueDate: string;
-        dueDate: string;
+        issueDate?: string;
+        dueDate?: string;
         discountAmount?: number;
-        currency?: string;
+        taxAmount?: number;
+        shippingFee?: number;
         notes?: string;
         terms?: string;
         items: Array<{
@@ -571,6 +1097,7 @@ export const financeApi = createApi({
           quantity: number;
           unitPrice: number;
           taxRate?: number;
+          productId?: string;
         }>;
       }
     >({
@@ -580,11 +1107,6 @@ export const financeApi = createApi({
         body,
       }),
       invalidatesTags: ['FinanceInvoices', 'FinanceOverview', 'FinanceReports'],
-    }),
-
-    getInvoice: builder.query<FinanceInvoice, string>({
-      query: (id) => `/finance/invoices/${id}`,
-      providesTags: ['FinanceInvoices'],
     }),
 
     updateInvoiceStatus: builder.mutation<FinanceInvoice, { id: string; status: FinanceInvoiceStatus }>({
@@ -601,9 +1123,9 @@ export const financeApi = createApi({
       {
         id: string;
         amount: number;
-        paymentDate: string;
         accountId?: string;
         paymentMethod?: string;
+        paymentDate?: string;
         reference?: string;
         notes?: string;
       }
@@ -615,15 +1137,14 @@ export const financeApi = createApi({
       }),
       invalidatesTags: [
         'FinanceInvoices',
-        'FinanceTransactions',
         'FinanceOverview',
-        'FinanceIncome',
         'FinanceAccounts',
+        'FinanceTransactions',
         'FinanceReports',
       ],
     }),
 
-    deleteInvoice: builder.mutation<{ success: boolean; message: string }, string>({
+    deleteInvoice: builder.mutation<void, string>({
       query: (id) => ({
         url: `/finance/invoices/${id}`,
         method: 'DELETE',
@@ -631,14 +1152,15 @@ export const financeApi = createApi({
       invalidatesTags: ['FinanceInvoices', 'FinanceOverview', 'FinanceReports'],
     }),
 
+    // Bills
     getBills: builder.query<
       BillsResponse,
       {
         status?: string;
         category?: string;
+        search?: string;
         startDate?: string;
         endDate?: string;
-        search?: string;
         page?: number;
         limit?: number;
       }
@@ -650,6 +1172,11 @@ export const financeApi = createApi({
       providesTags: ['FinanceBills'],
     }),
 
+    getBill: builder.query<FinanceBill, string>({
+      query: (id) => `/finance/bills/${id}`,
+      providesTags: (_res, _err, id) => [{ type: 'FinanceBills', id }],
+    }),
+
     createBill: builder.mutation<
       FinanceBill,
       {
@@ -657,9 +1184,11 @@ export const financeApi = createApi({
         supplierContact?: string;
         supplierEmail?: string;
         category?: string;
-        issueDate: string;
-        dueDate: string;
-        currency?: string;
+        issueDate?: string;
+        dueDate?: string;
+        discountAmount?: number;
+        taxAmount?: number;
+        shippingFee?: number;
         notes?: string;
         items: Array<{
           title: string;
@@ -678,11 +1207,6 @@ export const financeApi = createApi({
       invalidatesTags: ['FinanceBills', 'FinanceOverview', 'FinanceReports'],
     }),
 
-    getBill: builder.query<FinanceBill, string>({
-      query: (id) => `/finance/bills/${id}`,
-      providesTags: ['FinanceBills'],
-    }),
-
     updateBillStatus: builder.mutation<FinanceBill, { id: string; status: FinanceBillStatus }>({
       query: ({ id, status }) => ({
         url: `/finance/bills/${id}/status`,
@@ -697,9 +1221,9 @@ export const financeApi = createApi({
       {
         id: string;
         amount: number;
-        paymentDate: string;
         accountId?: string;
         paymentMethod?: string;
+        paymentDate?: string;
         reference?: string;
         notes?: string;
       }
@@ -711,15 +1235,14 @@ export const financeApi = createApi({
       }),
       invalidatesTags: [
         'FinanceBills',
-        'FinanceTransactions',
         'FinanceOverview',
-        'FinanceExpenses',
         'FinanceAccounts',
+        'FinanceTransactions',
         'FinanceReports',
       ],
     }),
 
-    deleteBill: builder.mutation<{ success: boolean; message: string }, string>({
+    deleteBill: builder.mutation<void, string>({
       query: (id) => ({
         url: `/finance/bills/${id}`,
         method: 'DELETE',
@@ -727,8 +1250,21 @@ export const financeApi = createApi({
       invalidatesTags: ['FinanceBills', 'FinanceOverview', 'FinanceReports'],
     }),
 
-    getAccounts: builder.query<{ items: FinanceAccount[]; totalBalance: number }, void>({
+    // Accounts
+    getAccounts: builder.query<AccountsResponse, void>({
       query: () => '/finance/accounts',
+      transformResponse: (response: any) => {
+        if (Array.isArray(response)) {
+          return {
+            items: response,
+            totalBalance: response.reduce((sum, a) => sum + Number(a.currentBalance || 0), 0),
+          };
+        }
+        return {
+          items: Array.isArray(response?.items) ? response.items : [],
+          totalBalance: Number(response?.totalBalance || 0),
+        };
+      },
       providesTags: ['FinanceAccounts'],
     }),
 
@@ -740,6 +1276,7 @@ export const financeApi = createApi({
         accountNumber?: string;
         bankOrProviderName?: string;
         startingBalance?: number;
+        currency?: string;
         isDefault?: boolean;
         notes?: string;
       }
@@ -752,7 +1289,19 @@ export const financeApi = createApi({
       invalidatesTags: ['FinanceAccounts', 'FinanceOverview'],
     }),
 
-    updateAccount: builder.mutation<FinanceAccount, { id: string; [key: string]: any }>({
+    updateAccount: builder.mutation<
+      FinanceAccount,
+      {
+        id: string;
+        name?: string;
+        type?: FinanceAccountType;
+        accountNumber?: string;
+        bankOrProviderName?: string;
+        isDefault?: boolean;
+        isActive?: boolean;
+        notes?: string;
+      }
+    >({
       query: ({ id, ...body }) => ({
         url: `/finance/accounts/${id}`,
         method: 'PATCH',
@@ -762,24 +1311,34 @@ export const financeApi = createApi({
     }),
 
     getAccountStatement: builder.query<
-      {
-        account: FinanceAccount;
-        transactions: FinanceTransaction[];
-        summary: {
-          startingBalance: number;
-          currentBalance: number;
-          totalInflow: number;
-          totalOutflow: number;
+      any,
+      string | { id: string; startDate?: string; endDate?: string }
+    >({
+      query: (arg) => {
+        const id = typeof arg === 'string' ? arg : arg.id;
+        const params = typeof arg === 'string' ? {} : { startDate: arg.startDate, endDate: arg.endDate };
+        return {
+          url: `/finance/accounts/${id}/statement`,
+          params,
         };
       },
-      string
-    >({
-      query: (id) => `/finance/accounts/${id}/statement`,
-      providesTags: ['FinanceAccounts', 'FinanceTransactions'],
     }),
 
-    getTransfers: builder.query<{ items: FinanceTransfer[]; totalTransferred: number }, void>({
+    // Transfers
+    getTransfers: builder.query<TransfersResponse, void>({
       query: () => '/finance/transfers',
+      transformResponse: (response: any) => {
+        if (Array.isArray(response)) {
+          return {
+            items: response,
+            totalTransferred: response.reduce((sum, t) => sum + Number(t.amount || 0), 0),
+          };
+        }
+        return {
+          items: Array.isArray(response?.items) ? response.items : [],
+          totalTransferred: Number(response?.totalTransferred || 0),
+        };
+      },
       providesTags: ['FinanceTransfers'],
     }),
 
@@ -790,7 +1349,7 @@ export const financeApi = createApi({
         toAccountId: string;
         amount: number;
         fee?: number;
-        transferDate: string;
+        transferDate?: string;
         reference?: string;
         notes?: string;
       }
@@ -800,46 +1359,10 @@ export const financeApi = createApi({
         method: 'POST',
         body,
       }),
-      invalidatesTags: [
-        'FinanceTransfers',
-        'FinanceAccounts',
-        'FinanceTransactions',
-        'FinanceOverview',
-      ],
+      invalidatesTags: ['FinanceTransfers', 'FinanceAccounts', 'FinanceOverview', 'FinanceTransactions', 'FinanceReports'],
     }),
 
-    getProfitLossReport: builder.query<
-      ProfitLossReport,
-      { period?: string; startDate?: string; endDate?: string }
-    >({
-      query: (params) => ({
-        url: '/finance/reports/profit-loss',
-        params,
-      }),
-      providesTags: ['FinanceReports'],
-    }),
-
-    getCashFlowReport: builder.query<
-      CashFlowReport,
-      { period?: string; startDate?: string; endDate?: string }
-    >({
-      query: (params) => ({
-        url: '/finance/reports/cash-flow',
-        params,
-      }),
-      providesTags: ['FinanceReports'],
-    }),
-
-    getReceivablesReport: builder.query<ReceivablesReport, void>({
-      query: () => '/finance/reports/receivables',
-      providesTags: ['FinanceReports', 'FinanceInvoices'],
-    }),
-
-    getPayablesReport: builder.query<PayablesReport, void>({
-      query: () => '/finance/reports/payables',
-      providesTags: ['FinanceReports', 'FinanceBills'],
-    }),
-
+    // Settings & Categories
     getFinanceSettings: builder.query<FinanceSettings, void>({
       query: () => '/finance/settings',
       providesTags: ['FinanceSettings'],
@@ -851,14 +1374,22 @@ export const financeApi = createApi({
         method: 'PATCH',
         body,
       }),
-      invalidatesTags: ['FinanceSettings', 'FinanceOverview'],
+      invalidatesTags: ['FinanceSettings'],
     }),
 
-    getCategories: builder.query<FinanceCategory[], { type?: FinanceCategoryType } | void>({
-      query: (params) => ({
-        url: '/finance/categories',
-        params: params || undefined,
-      }),
+    getCategories: builder.query<FinanceCategory[], { type?: FinanceCategoryType } | FinanceCategoryType | void>({
+      query: (arg) => {
+        let type: FinanceCategoryType | undefined;
+        if (typeof arg === 'string') {
+          type = arg;
+        } else if (arg && typeof arg === 'object' && 'type' in arg) {
+          type = arg.type;
+        }
+        return {
+          url: '/finance/categories',
+          params: type ? { type } : undefined,
+        };
+      },
       providesTags: ['FinanceCategories'],
     }),
 
@@ -884,6 +1415,22 @@ export const financeApi = createApi({
 
 export const {
   useGetFinanceOverviewQuery,
+  useGetChartOfAccountsQuery,
+  useCreateChartOfAccountMutation,
+  useUpdateChartOfAccountMutation,
+  useGetJournalEntriesQuery,
+  usePostJournalEntryMutation,
+  useGetGeneralLedgerQuery,
+  useGetTrialBalanceReportQuery,
+  useGetBalanceSheetReportQuery,
+  useGetProfitLossReportQuery,
+  useGetCashFlowReportQuery,
+  useGetTaxVatReportQuery,
+  useGetReceivablesReportQuery,
+  useGetPayablesReportQuery,
+  useGetPeriodLocksQuery,
+  useLockPeriodMutation,
+  useUnlockPeriodMutation,
   useGetTransactionsQuery,
   useCreateTransactionMutation,
   useDeleteTransactionMutation,
@@ -892,14 +1439,14 @@ export const {
   useGetExpensesQuery,
   useCreateExpenseMutation,
   useGetInvoicesQuery,
-  useCreateInvoiceMutation,
   useGetInvoiceQuery,
+  useCreateInvoiceMutation,
   useUpdateInvoiceStatusMutation,
   useRecordInvoicePaymentMutation,
   useDeleteInvoiceMutation,
   useGetBillsQuery,
-  useCreateBillMutation,
   useGetBillQuery,
+  useCreateBillMutation,
   useUpdateBillStatusMutation,
   useRecordBillPaymentMutation,
   useDeleteBillMutation,
@@ -909,10 +1456,6 @@ export const {
   useGetAccountStatementQuery,
   useGetTransfersQuery,
   useCreateTransferMutation,
-  useGetProfitLossReportQuery,
-  useGetCashFlowReportQuery,
-  useGetReceivablesReportQuery,
-  useGetPayablesReportQuery,
   useGetFinanceSettingsQuery,
   useUpdateFinanceSettingsMutation,
   useGetCategoriesQuery,

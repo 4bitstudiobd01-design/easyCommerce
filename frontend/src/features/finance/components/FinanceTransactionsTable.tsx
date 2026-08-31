@@ -19,6 +19,7 @@ import {
   useGetAccountsQuery,
   useGetCategoriesQuery,
   FinanceCategory,
+  FinanceAccount,
 } from '../api/financeApi';
 import { CreateTransactionModal } from './CreateTransactionModal';
 
@@ -47,7 +48,9 @@ export function FinanceTransactionsTable() {
   const { data: categories } = useGetCategoriesQuery();
   const [deleteTransaction] = useDeleteTransactionMutation();
 
-  const accounts = accountsData?.items || [];
+  const accounts: FinanceAccount[] = Array.isArray(accountsData)
+    ? accountsData
+    : (accountsData as any)?.items || [];
   const categoryList: FinanceCategory[] = Array.isArray(categories) ? categories : [];
   const transactions = data?.items || [];
   const totalPages = data?.totalPages || 1;

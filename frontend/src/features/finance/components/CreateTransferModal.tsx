@@ -7,6 +7,7 @@ import { Modal } from '@/components/ui/Modal';
 import {
   useCreateTransferMutation,
   useGetAccountsQuery,
+  FinanceAccount,
 } from '../api/financeApi';
 
 interface Props {
@@ -28,7 +29,9 @@ export function CreateTransferModal({ isOpen, onClose }: Props) {
   const { data: accountsData } = useGetAccountsQuery();
   const [createTransfer, { isLoading }] = useCreateTransferMutation();
 
-  const accounts = accountsData?.items || [];
+  const accounts: FinanceAccount[] = Array.isArray(accountsData)
+    ? accountsData
+    : (accountsData as any)?.items || [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

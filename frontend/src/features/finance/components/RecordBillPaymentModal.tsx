@@ -6,6 +6,7 @@ import { DollarSign } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import {
   FinanceBill,
+  FinanceAccount,
   useRecordBillPaymentMutation,
   useGetAccountsQuery,
 } from '../api/financeApi';
@@ -29,7 +30,9 @@ export function RecordBillPaymentModal({ isOpen, onClose, bill }: Props) {
   const { data: accountsData } = useGetAccountsQuery();
   const [recordPayment, { isLoading }] = useRecordBillPaymentMutation();
 
-  const accounts = accountsData?.items || [];
+  const accounts: FinanceAccount[] = Array.isArray(accountsData)
+    ? accountsData
+    : (accountsData as any)?.items || [];
 
   React.useEffect(() => {
     if (bill) {
