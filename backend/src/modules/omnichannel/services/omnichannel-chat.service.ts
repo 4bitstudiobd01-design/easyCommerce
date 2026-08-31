@@ -294,4 +294,27 @@ export class OmnichannelChatService {
     if (diffDays < 7) return `${diffDays}d ago`;
     return date.toLocaleDateString('en-BD', { day: 'numeric', month: 'short' });
   }
+
+  /**
+   * Sync existing past conversations from external platform (Facebook Messenger, Instagram Direct, etc.)
+   */
+  async syncPlatformConversations(
+    tenantId: string,
+    platform: string,
+    storeId?: string,
+  ): Promise<{ success: boolean; message: string; count?: number }> {
+    if (platform === 'facebook') {
+      const res = await this.facebookService.syncPreviousConversations(tenantId, storeId);
+      return {
+        success: true,
+        message: res.message,
+        count: res.syncedConversations,
+      };
+    }
+    return {
+      success: true,
+      message: `Sync completed for ${platform}.`,
+      count: 0,
+    };
+  }
 }

@@ -21,9 +21,15 @@ import {
   Zap,
   X,
   RotateCcw,
+  AlertTriangle,
+  Search,
+  ShoppingBag,
+  Package,
+  MessageSquare,
 } from 'lucide-react';
 import { LeadStageDropdown } from './LeadStageDropdown';
 import { formatCrmDate } from '../../utils/formatDate';
+import { getFollowUpInfo } from '../../utils/followUpHelper';
 
 interface LeadsKanbanBoardProps {
   leads: Lead[];
@@ -175,13 +181,14 @@ export const LeadsKanbanBoard: React.FC<LeadsKanbanBoardProps> = ({
   onClearFollowUp,
   onSelectLead,
 }) => {
-  const [boardLayout, setBoardLayout] = useState<'FIT' | 'LANES' | 'GRID'>('FIT');
+  const [boardLayout, setBoardLayout] = useState<'LANES' | 'GRID' | 'FIT'>('LANES');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Pointer-based drag state
   const [draggingLeadId, setDraggingLeadId] = useState<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<LeadStageType | null>(null);
   const draggingRef = useRef<string | null>(null);
-  const ghostWidthRef = useRef<number>(240);
+  const ghostWidthRef = useRef<number>(260);
   const isDraggingRef = useRef(false);
   const startPosRef = useRef<{ x: number; y: number } | null>(null);
 
@@ -189,7 +196,21 @@ export const LeadsKanbanBoard: React.FC<LeadsKanbanBoardProps> = ({
   const columnRefs = useRef<Map<LeadStageType, HTMLDivElement>>(new Map());
   const boardContainerRef = useRef<HTMLDivElement>(null);
 
-  const getLeadsByStage = (stage: LeadStageType) => leads.filter((l) => l.stage === stage);
+  const filteredLeads = leads.filter((l) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    return (
+      l.name?.toLowerCase().includes(q) ||
+      l.phone?.toLowerCase().includes(q) ||
+      l.companyName?.toLowerCase().includes(q) ||
+      l.email?.toLowerCase().includes(q) ||
+      l.notes?.toLowerCase().includes(q) ||
+      l.followUpNote?.toLowerCase().includes(q) ||
+      l.tags?.some((t) => t.toLowerCase().includes(q))
+    );
+  });
+
+  const getLeadsByStage = (stage: LeadStageType) => filteredLeads.filter((l) => l.stage === stage);
   const getStageTotalValue = (stage: LeadStageType) =>
     getLeadsByStage(stage).reduce((sum, l) => sum + Number(l.estimatedValue || 0), 0);
 
@@ -210,26 +231,31 @@ export const LeadsKanbanBoard: React.FC<LeadsKanbanBoardProps> = ({
     return null;
   }, []);
 
-  // Auto-scroll the board while dragging near edges (LANES mode)
+  // Auto-scroll the board while dragging near edges
   const autoScrollRef = useRef<number | null>(null);
   const mouseRef = useRef<{ x: number; y: number } | null>(null);
 
   const performAutoScroll = useCallback(() => {
-    if (!boardContainerRef.current || !mouseRef.current || boardLayout !== 'LANES') return;
+    if (!boardContainerRef.current || !mouseRef.current) return;
     const container = boardContainerRef.current;
     const rect = container.getBoundingClientRect();
     const { x: mx } = mouseRef.current;
-    const edge = 120;
-    const maxSpeed = 20;
+    const edge = 200; // Wider edge detection threshold
+    const maxSpeed = 45; // Fast and fluid scroll rate
+
     if (mx > rect.right - edge) {
       const dist = mx - (rect.right - edge);
-      container.scrollLeft += Math.min(maxSpeed, Math.round((dist / edge) * maxSpeed));
+      const ratio = Math.min(1, Math.max(0.1, dist / edge));
+      const speed = Math.round(12 + Math.pow(ratio, 1.3) * (maxSpeed - 12));
+      container.scrollLeft += speed;
     } else if (mx < rect.left + edge) {
       const dist = (rect.left + edge) - mx;
-      container.scrollLeft -= Math.min(maxSpeed, Math.round((dist / edge) * maxSpeed));
+      const ratio = Math.min(1, Math.max(0.1, dist / edge));
+      const speed = Math.round(12 + Math.pow(ratio, 1.3) * (maxSpeed - 12));
+      container.scrollLeft -= speed;
     }
     autoScrollRef.current = requestAnimationFrame(performAutoScroll);
-  }, [boardLayout]);
+  }, []);
 
   const stopAutoScroll = useCallback(() => {
     if (autoScrollRef.current !== null) {
@@ -249,8 +275,8 @@ export const LeadsKanbanBoard: React.FC<LeadsKanbanBoardProps> = ({
       const over = getStageAtPoint(e.clientX, e.clientY);
       setDragOverStage(over);
 
-      // Start auto-scroll loop
-      if (boardLayout === 'LANES' && autoScrollRef.current === null) {
+      // Start auto-scroll loop whenever dragging
+      if (autoScrollRef.current === null) {
         autoScrollRef.current = requestAnimationFrame(performAutoScroll);
       }
     };
@@ -261,7 +287,16 @@ export const LeadsKanbanBoard: React.FC<LeadsKanbanBoardProps> = ({
 
       const over = getStageAtPoint(e.clientX, e.clientY);
       if (over && draggingRef.current) {
-        onStageChange(draggingRef.current, over);
+        if (over === 'WON' && onOpenConvertModal) {
+          const leadToConvert = leads.find((l) => l.id === draggingRef.current);
+          if (leadToConvert) {
+            onOpenConvertModal(leadToConvert);
+          } else {
+            onStageChange(draggingRef.current, over);
+          }
+        } else {
+          onStageChange(draggingRef.current, over);
+        }
       }
 
       removeGhost();
@@ -284,35 +319,42 @@ export const LeadsKanbanBoard: React.FC<LeadsKanbanBoardProps> = ({
       document.removeEventListener('pointercancel', onUp);
       stopAutoScroll();
     };
-  }, [getStageAtPoint, onStageChange, boardLayout, performAutoScroll, stopAutoScroll]);
+  }, [getStageAtPoint, onStageChange, performAutoScroll, stopAutoScroll]);
 
   const handleCardPointerDown = (e: React.PointerEvent<HTMLDivElement>, lead: Lead) => {
     // Only start drag on left button; also ignore clicks on buttons inside the card
     if (e.button !== 0) return;
     const target = e.target as HTMLElement;
-    if (target.closest('button') || target.closest('[data-no-drag]')) return;
+    if (
+      target.closest('button') ||
+      target.closest('a') ||
+      target.closest('select') ||
+      target.closest('input') ||
+      target.closest('[data-no-drag]')
+    ) {
+      return;
+    }
 
-    startPosRef.current = { x: e.clientX, y: e.clientY };
     const cardEl = e.currentTarget;
+    const startX = e.clientX;
+    const startY = e.clientY;
     ghostWidthRef.current = cardEl.offsetWidth;
+    startPosRef.current = { x: startX, y: startY };
+    isDraggingRef.current = false;
 
-    // Small threshold before confirming drag (avoids accidental drags on click)
     const onTentativeMove = (me: PointerEvent) => {
-      const dx = me.clientX - (startPosRef.current?.x ?? me.clientX);
-      const dy = me.clientY - (startPosRef.current?.y ?? me.clientY);
-      if (Math.sqrt(dx * dx + dy * dy) > 5) {
-        document.removeEventListener('pointermove', onTentativeMove);
-        document.removeEventListener('pointerup', onCancel);
-        // Start actual drag
+      const dx = Math.abs(me.clientX - startX);
+      const dy = Math.abs(me.clientY - startY);
+      if (!isDraggingRef.current && (dx > 4 || dy > 4)) {
         isDraggingRef.current = true;
         draggingRef.current = lead.id;
         setDraggingLeadId(lead.id);
+        createGhost(cardEl, me.clientX, me.clientY);
         document.body.style.userSelect = 'none';
         document.body.style.cursor = 'grabbing';
-        createGhost(cardEl, me.clientX, me.clientY);
-        mouseRef.current = { x: me.clientX, y: me.clientY };
       }
     };
+
     const onCancel = () => {
       document.removeEventListener('pointermove', onTentativeMove);
       document.removeEventListener('pointerup', onCancel);
@@ -326,7 +368,10 @@ export const LeadsKanbanBoard: React.FC<LeadsKanbanBoardProps> = ({
 
   const handleScrollLanes = (direction: 'left' | 'right') => {
     if (boardContainerRef.current) {
-      boardContainerRef.current.scrollBy({ left: direction === 'left' ? -350 : 350, behavior: 'smooth' });
+      boardContainerRef.current.scrollBy({
+        left: direction === 'left' ? -480 : 480,
+        behavior: 'smooth',
+      });
     }
   };
 
@@ -337,37 +382,90 @@ export const LeadsKanbanBoard: React.FC<LeadsKanbanBoardProps> = ({
         <div className="flex flex-wrap items-center gap-2.5 text-xs font-semibold text-slate-500">
           <span className="font-extrabold text-slate-800">All 6 Pipeline Stages</span>
           <span>•</span>
-          <span>{leads.length} Total Leads</span>
+          <span>
+            {searchQuery.trim()
+              ? `${filteredLeads.length} of ${leads.length} Leads`
+              : `${leads.length} Total Leads`}
+          </span>
           <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-200/70 rounded-lg font-bold text-[11px]">
             <Sparkles className="w-3 h-3 text-blue-600" />
             Drag cards between columns
           </span>
         </div>
 
-        <div className="flex items-center gap-2 self-start lg:self-auto">
-          {boardLayout === 'LANES' && (
-            <div className="flex items-center gap-1 bg-white border border-slate-200 p-1 rounded-xl shadow-2xs">
-              <button onClick={() => handleScrollLanes('left')} className="p-1 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg">
-                <ChevronLeft className="w-4 h-4" />
+        <div className="flex items-center gap-2.5 flex-wrap self-start lg:self-auto">
+          {/* Real-Time Search Box */}
+          <div className="flex items-center gap-1.5 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200 shadow-2xs text-xs">
+            <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="সার্চ করুন (নাম, ফোন, কোম্পানি)..."
+              className="bg-transparent text-slate-800 placeholder:text-slate-400 font-medium text-xs focus:outline-none w-44 sm:w-56"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="p-0.5 text-slate-400 hover:text-slate-600 rounded"
+                title="Clear search"
+              >
+                <X className="w-3 h-3" />
               </button>
-              <button onClick={() => handleScrollLanes('right')} className="p-1 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg">
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          )}
+            )}
+          </div>
 
+          {/* Quick Scroll Buttons */}
+          <div className="flex items-center gap-1 bg-white border border-slate-200 p-1 rounded-xl shadow-2xs">
+            <button
+              type="button"
+              onClick={() => handleScrollLanes('left')}
+              className="p-1 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+              title="Scroll Left"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleScrollLanes('right')}
+              className="p-1 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+              title="Scroll Right"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Layout Mode Switcher */}
           <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/80">
-            {(['FIT', 'LANES', 'GRID'] as const).map((mode) => (
+            {(['LANES', 'GRID', 'FIT'] as const).map((mode) => (
               <button
                 key={mode}
                 onClick={() => setBoardLayout(mode)}
                 className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                  boardLayout === mode ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                  boardLayout === mode
+                    ? 'bg-white text-slate-900 shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
-                {mode === 'FIT' && <><Maximize2 className="w-3.5 h-3.5" /><span>Fit All 6</span></>}
-                {mode === 'LANES' && <><Columns3 className="w-3.5 h-3.5" /><span>Swimlanes</span></>}
-                {mode === 'GRID' && <><Grid2X2 className="w-3.5 h-3.5" /><span>Grid</span></>}
+                {mode === 'LANES' && (
+                  <>
+                    <Columns3 className="w-3.5 h-3.5" />
+                    <span>Swimlanes</span>
+                  </>
+                )}
+                {mode === 'GRID' && (
+                  <>
+                    <Grid2X2 className="w-3.5 h-3.5" />
+                    <span>Grid</span>
+                  </>
+                )}
+                {mode === 'FIT' && (
+                  <>
+                    <Maximize2 className="w-3.5 h-3.5" />
+                    <span>Compact</span>
+                  </>
+                )}
               </button>
             ))}
           </div>
@@ -399,15 +497,15 @@ export const LeadsKanbanBoard: React.FC<LeadsKanbanBoardProps> = ({
         </div>
       )}
 
-      {/* Column Grid */}
+      {/* Column Grid / Scrollable Swimlanes */}
       <div
         ref={boardContainerRef}
         className={
-          boardLayout === 'FIT'
-            ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 w-full items-start'
-            : boardLayout === 'LANES'
-            ? 'flex gap-4 overflow-x-auto pb-4 items-stretch min-w-full'
-            : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 w-full'
+          boardLayout === 'LANES'
+            ? 'flex gap-4 overflow-x-auto pb-6 pt-1 items-start w-full min-w-0 [scrollbar-width:auto] [&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar-track]:bg-slate-100 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:hover:bg-slate-400 [&::-webkit-scrollbar-thumb]:rounded-full'
+            : boardLayout === 'GRID'
+            ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 w-full'
+            : 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 w-full items-start'
         }
       >
         {STAGES.map((col) => {
@@ -422,11 +520,17 @@ export const LeadsKanbanBoard: React.FC<LeadsKanbanBoardProps> = ({
                 if (el) columnRefs.current.set(col.id, el);
                 else columnRefs.current.delete(col.id);
               }}
-              className={`flex flex-col h-[680px] rounded-2xl border transition-all duration-150 overflow-hidden ${
+              className={`flex flex-col h-[740px] rounded-2xl border transition-all duration-150 overflow-hidden ${
                 isOver
                   ? col.dropHighlight
                   : `${col.containerBg} ${col.containerBorder} shadow-2xs`
-              } ${boardLayout === 'LANES' ? 'w-[300px] min-w-[300px] shrink-0' : 'w-full'}`}
+              } ${
+                boardLayout === 'LANES'
+                  ? 'w-[320px] min-w-[320px] shrink-0'
+                  : boardLayout === 'GRID'
+                  ? 'w-full'
+                  : 'w-full'
+              }`}
             >
               {/* Accent Bar */}
               <div className={`h-1.5 w-full ${col.accentBar}`} />
@@ -436,9 +540,11 @@ export const LeadsKanbanBoard: React.FC<LeadsKanbanBoardProps> = ({
                 <div className="flex items-center gap-1.5 min-w-0">
                   <span className={`w-2.5 h-2.5 rounded-full ${col.dotColor} shrink-0`} />
                   <h3 className="font-black text-xs text-slate-900 uppercase tracking-tight truncate">
-                    {boardLayout === 'FIT' ? col.shortLabel : col.label}
+                    {col.label}
                   </h3>
-                  <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black border shrink-0 ${col.badgeBg} ${col.badgeText} ${col.badgeBorder}`}>
+                  <span
+                    className={`px-1.5 py-0.5 rounded-full text-[10px] font-black border shrink-0 ${col.badgeBg} ${col.badgeText} ${col.badgeBorder}`}
+                  >
                     {colLeads.length}
                   </span>
                 </div>
@@ -513,56 +619,85 @@ export const LeadsKanbanBoard: React.FC<LeadsKanbanBoardProps> = ({
                           ) : null}
                         </div>
 
-                        {/* Notes */}
+                        {/* Multi-Staff Notes / Inquiries Preview */}
                         {lead.notes && (
-                          <p className="text-[11px] text-slate-600 line-clamp-2 bg-slate-50 p-1.5 rounded-lg border border-slate-100/90 leading-relaxed">
-                            {lead.notes}
-                          </p>
+                          <div className="space-y-1">
+                            <p className="text-[11px] text-slate-600 line-clamp-2 bg-slate-50 p-1.5 rounded-lg border border-slate-100/90 leading-relaxed">
+                              {lead.notes}
+                            </p>
+                            {lead.inquiries && lead.inquiries.length > 1 && (
+                              <div className="flex items-center justify-between text-[10px] text-blue-700 bg-blue-50/70 px-1.5 py-0.5 rounded border border-blue-100 font-bold">
+                                <span className="flex items-center gap-1">
+                                  <MessageSquare className="w-2.5 h-2.5" />
+                                  <span>{lead.inquiries.length} টি টিম ডিসকাশন নোট</span>
+                                </span>
+                                <span className="text-[9px] text-blue-600 font-medium">
+                                  +{lead.inquiries.length - 1} আরও
+                                </span>
+                              </div>
+                            )}
+                          </div>
                         )}
 
                         {/* Follow-up pill or Set Time shortcut */}
                         {lead.nextFollowUpAt ? (
-                          <div
-                            data-no-drag
-                            className={`p-1.5 rounded-lg border flex items-center justify-between text-xs transition-all ${
-                              new Date(lead.nextFollowUpAt) < new Date()
-                                ? 'bg-red-50 border-red-200 text-red-800'
-                                : 'bg-amber-50 border-amber-200 text-amber-900'
-                            }`}
-                          >
-                            <div
-                              onClick={() => onOpenScheduleFollowUp(lead)}
-                              className="flex items-center gap-1 text-[10px] font-bold min-w-0 flex-1 cursor-pointer hover:opacity-80"
-                              title="ক্লিক করে সময় পরিবর্তন করুন"
-                            >
-                              <Clock className="w-3 h-3 text-amber-600 shrink-0" />
-                              <span className="truncate">
-                                {new Date(lead.nextFollowUpAt) < new Date() ? '⚠️ Due: ' : '⏰ '}
-                                {formatCrmDate(lead.nextFollowUpAt, { showTime: true })}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1 shrink-0 ml-1.5">
-                              <button
-                                type="button"
-                                onClick={() => onOpenScheduleFollowUp(lead)}
-                                className="text-[10px] text-amber-700 hover:text-amber-900 font-bold px-1 py-0.5 hover:bg-amber-100/80 rounded transition-colors"
-                                title="পরিবর্তন করুন (Edit)"
+                          (() => {
+                            const info = getFollowUpInfo(lead.nextFollowUpAt, lead.stage);
+                            return (
+                              <div
+                                data-no-drag
+                                className={`p-1.5 rounded-lg border flex items-center justify-between text-xs transition-all ${
+                                  info.isMissed
+                                    ? 'bg-rose-50 border-rose-300 text-rose-900 ring-1 ring-rose-200/60'
+                                    : info.isToday
+                                    ? 'bg-amber-50 border-amber-300 text-amber-950'
+                                    : info.isTomorrow
+                                    ? 'bg-blue-50 border-blue-200 text-blue-950'
+                                    : 'bg-slate-50 border-slate-200 text-slate-800'
+                                }`}
                               >
-                                Edit
-                              </button>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onClearFollowUp && onClearFollowUp(lead.id);
-                                }}
-                                className="p-0.5 text-slate-400 hover:text-red-600 hover:bg-red-100/80 rounded transition-colors"
-                                title="সময় রিসেট / মুছে ফেলুন (Reset / Remove Time)"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            </div>
-                          </div>
+                                <div
+                                  onClick={() => onOpenScheduleFollowUp(lead)}
+                                  className="flex items-center gap-1 text-[10px] font-bold min-w-0 flex-1 cursor-pointer hover:opacity-80"
+                                  title="ক্লিক করে সময় পরিবর্তন করুন"
+                                >
+                                  {info.isMissed ? (
+                                    <AlertTriangle className="w-3 h-3 text-rose-600 shrink-0 animate-pulse" />
+                                  ) : (
+                                    <Clock className="w-3 h-3 text-amber-600 shrink-0" />
+                                  )}
+                                  <span className="truncate">
+                                    {info.isMissed ? `🔴 Missed: ${info.label}` : `⏰ ${info.formattedDate}`}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0 ml-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => onOpenScheduleFollowUp(lead)}
+                                    className={`text-[10px] font-bold px-1 py-0.5 rounded transition-colors ${
+                                      info.isMissed
+                                        ? 'text-rose-700 hover:text-rose-900 hover:bg-rose-100'
+                                        : 'text-amber-700 hover:text-amber-900 hover:bg-amber-100/80'
+                                    }`}
+                                    title="পরিবর্তন করুন (Edit)"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onClearFollowUp && onClearFollowUp(lead.id);
+                                    }}
+                                    className="p-0.5 text-slate-400 hover:text-red-600 hover:bg-red-100/80 rounded transition-colors"
+                                    title="সময় রিসেট / মুছে ফেলুন (Reset / Remove Time)"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })()
                         ) : (
                           <button
                             type="button"
@@ -573,6 +708,26 @@ export const LeadsKanbanBoard: React.FC<LeadsKanbanBoardProps> = ({
                             <Clock className="w-3 h-3 text-slate-400 group-hover:text-amber-600" />
                             <span>+ কথা বলার সময় সেট করুন</span>
                           </button>
+                        )}
+
+                        {/* Purchased Products / Orders Summary */}
+                        {lead.orders && lead.orders.length > 0 && (
+                          <div className="p-1.5 bg-emerald-50/90 border border-emerald-200/90 rounded-lg text-[10px] space-y-0.5">
+                            <div className="flex items-center justify-between font-black text-emerald-950">
+                              <span className="flex items-center gap-1">
+                                <ShoppingBag className="w-3 h-3 text-emerald-600" />
+                                <span>ক্রয়কৃত পণ্য ({lead.orders.reduce((acc, o) => acc + (o.items?.length || 1), 0)}টি)</span>
+                              </span>
+                              <span className="font-mono text-[9px] text-emerald-700 font-bold">
+                                #{lead.orders[0].orderNumber}
+                              </span>
+                            </div>
+                            {lead.orders[0].items && lead.orders[0].items.length > 0 && (
+                              <p className="text-slate-600 truncate font-semibold text-[10px]">
+                                {lead.orders[0].items.map((it) => `${it.productTitle} (x${it.quantity})`).join(', ')}
+                              </p>
+                            )}
+                          </div>
                         )}
 
                         {/* Value + source */}
@@ -630,7 +785,13 @@ export const LeadsKanbanBoard: React.FC<LeadsKanbanBoardProps> = ({
                             )}
                             <LeadStageDropdown
                               currentStage={lead.stage}
-                              onStageChange={(newStage) => onStageChange(lead.id, newStage)}
+                              onStageChange={(newStage) => {
+                                if (newStage === 'WON' && onOpenConvertModal) {
+                                  onOpenConvertModal(lead);
+                                } else {
+                                  onStageChange(lead.id, newStage);
+                                }
+                              }}
                             />
                           </div>
                         </div>

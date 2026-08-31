@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
+import { FinanceModule } from '../finance/finance.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -105,6 +106,7 @@ import { InviteEmployeeSelfServiceService } from './services/invite-employee-sel
     // Provides GetMyPermissionsService, the source of truth PermissionsGuard uses to
     // resolve an owner's/staff member's effective hr:* permissions for this store.
     StaffModule,
+    FinanceModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

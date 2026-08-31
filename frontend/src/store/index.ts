@@ -34,6 +34,7 @@ import { omnichannelApi } from '@/features/crm/api/omnichannelApi';
 import { hrmApi } from '@/features/hrm/api/hrmApi';
 import { accountingApi } from '@/features/accounting/api/accountingApi';
 import { purchaseApi } from '@/features/purchase/api/purchaseApi';
+import { financeApi } from '@/features/finance/api/financeApi';
 
 export const store = configureStore({
   reducer: {
@@ -72,6 +73,7 @@ export const store = configureStore({
     [hrmApi.reducerPath]: hrmApi.reducer,
     [accountingApi.reducerPath]: accountingApi.reducer,
     [purchaseApi.reducerPath]: purchaseApi.reducer,
+    [financeApi.reducerPath]: financeApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -101,6 +103,7 @@ export const store = configureStore({
       hrmApi.middleware,
       accountingApi.middleware,
       purchaseApi.middleware,
+      financeApi.middleware,
     ),
 });
 

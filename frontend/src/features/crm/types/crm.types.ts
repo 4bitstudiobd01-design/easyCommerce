@@ -78,6 +78,42 @@ export interface Customer360 {
 export type LeadStageType = 'NEW' | 'CONTACTED' | 'QUALIFIED' | 'PROPOSAL_SENT' | 'WON' | 'LOST';
 export type LeadSourceType = 'WEBSITE' | 'WHATSAPP' | 'FACEBOOK' | 'INSTAGRAM' | 'PHONE_CALL' | 'STORE_INQUIRY' | 'MANUAL';
 
+export interface LeadOrderItem {
+  id: string;
+  productId?: string | null;
+  productTitle: string;
+  sku?: string;
+  productImageUrl?: string | null;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+}
+
+export interface LeadOrder {
+  id: string;
+  orderNumber: string;
+  customerId?: string;
+  customerName: string;
+  customerPhone: string;
+  grandTotal: number;
+  subtotal: number;
+  deliveryFee?: number;
+  orderStatus: string;
+  paymentStatus: string;
+  paymentMethod: string;
+  createdAt: string;
+  items?: LeadOrderItem[];
+}
+
+export interface LeadInquiryItem {
+  id: string;
+  authorName: string;
+  authorRole?: string;
+  authorId?: string;
+  note: string;
+  createdAt: string;
+}
+
 export interface Lead {
   id: string;
   tenantId: string;
@@ -93,12 +129,14 @@ export interface Lead {
   assignedStaffId?: string;
   assignedStaffName?: string;
   notes?: string;
+  inquiries?: LeadInquiryItem[];
   tags: string[];
   convertedCustomerId?: string;
   lostReason?: string;
   nextFollowUpAt?: string | null;
   followUpNote?: string;
   followUpStatus?: 'PENDING' | 'COMPLETED' | 'OVERDUE';
+  orders?: LeadOrder[];
   createdAt: string;
   updatedAt: string;
 }

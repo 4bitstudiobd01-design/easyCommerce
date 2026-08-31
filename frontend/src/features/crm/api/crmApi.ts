@@ -174,7 +174,41 @@ export const crmApi = createApi({
       transformResponse: (response: any) => response?.data ?? response,
     }),
 
-    convertLeadToCustomer: builder.mutation<Customer360, { leadId: string; createInitialOrder?: boolean }>({
+    addLeadInquiry: builder.mutation<Lead, { id: string; note: string; authorName?: string; authorRole?: string; authorId?: string }>({
+      query: ({ id, ...body }) => ({
+        url: `/leads/${id}/inquiries`,
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['CrmLead'],
+      transformResponse: (response: any) => response?.data ?? response,
+    }),
+
+    deleteLeadInquiry: builder.mutation<Lead, { id: string; inquiryId: string }>({
+      query: ({ id, inquiryId }) => ({
+        url: `/leads/${id}/inquiries/${inquiryId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['CrmLead'],
+      transformResponse: (response: any) => response?.data ?? response,
+    }),
+
+    convertLeadToCustomer: builder.mutation<
+      Customer360,
+      {
+        leadId: string;
+        wonAmount?: number;
+        createInitialOrder?: boolean;
+        paymentMethod?: string;
+        items?: Array<{
+          productId?: string;
+          productTitle: string;
+          quantity: number;
+          unitPrice: number;
+          totalPrice?: number;
+        }>;
+      }
+    >({
       query: ({ leadId, ...body }) => ({
         url: `/leads/${leadId}/convert`,
         method: 'POST',
@@ -347,6 +381,8 @@ export const {
   useUpdateLeadStageMutation,
   useScheduleLeadFollowUpMutation,
   useUpdateLeadDetailsMutation,
+  useAddLeadInquiryMutation,
+  useDeleteLeadInquiryMutation,
   useConvertLeadToCustomerMutation,
   useGetCrmSegmentsQuery,
   useGetSegmentCustomersQuery,

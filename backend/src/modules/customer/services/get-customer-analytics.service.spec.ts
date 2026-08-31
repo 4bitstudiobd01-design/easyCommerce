@@ -3,9 +3,14 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { GetCustomerAnalyticsService } from './get-customer-analytics.service';
 import { CustomerEntity } from '../entities/customer.entity';
 
+import { LeadEntity } from '../entities/lead.entity';
+import { DataSource } from 'typeorm';
+
 describe('GetCustomerAnalyticsService', () => {
   let service: GetCustomerAnalyticsService;
   let customerRepository: any;
+  let leadRepository: any;
+  let dataSource: any;
 
   const mockTenantId = 'tenant-1';
 
@@ -51,12 +56,35 @@ describe('GetCustomerAnalyticsService', () => {
       },
     };
 
+    leadRepository = {
+      count: jest.fn().mockResolvedValue(6),
+      createQueryBuilder: jest.fn().mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        getRawOne: jest.fn().mockResolvedValue({ totalValue: '450000' }),
+      }),
+    };
+
+    dataSource = {
+      query: customerRepository.manager.query,
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         GetCustomerAnalyticsService,
         {
           provide: getRepositoryToken(CustomerEntity),
           useValue: customerRepository,
+        },
+        {
+          provide: getRepositoryToken(LeadEntity),
+          useValue: leadRepository,
+        },
+        {
+          provide: DataSource,
+          useValue: dataSource,
         },
       ],
     }).compile();

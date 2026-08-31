@@ -1,7 +1,7 @@
 import { Injectable, Optional, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
-import { CustomerEntity, CustomerStatusEnum } from '../entities/customer.entity';
+import { CustomerEntity, CustomerStatusEnum, CustomerAccountTypeEnum } from '../entities/customer.entity';
 import { CustomerSegmentEntity } from '../entities/customer-segment.entity';
 import { CustomerListDto, ALLOWED_CUSTOMER_SORT_FIELDS } from '../dto/customer-list.dto';
 import { roundMoney } from '../utils/money.util';
@@ -34,6 +34,11 @@ export class ListCustomersService {
     // Status filter
     if (dto.status) {
       query.andWhere('c.status = :status', { status: dto.status });
+    }
+
+    // Account Type filter (REGISTERED vs GUEST)
+    if (dto.accountType) {
+      query.andWhere('c.accountType = :accountType', { accountType: dto.accountType });
     }
 
     // Source filter
@@ -293,8 +298,13 @@ export class ListCustomersService {
         lastOrderAt: null,
       };
 
+      const hasAccount = Boolean(cust.hasAccount);
+      const accountType = hasAccount ? CustomerAccountTypeEnum.REGISTERED : CustomerAccountTypeEnum.GUEST;
+
       return {
         ...cust,
+        hasAccount,
+        accountType,
         ordersCount: stats.ordersCount,
         totalSpent: stats.totalSpent,
         lastOrderAt: stats.lastOrderAt,

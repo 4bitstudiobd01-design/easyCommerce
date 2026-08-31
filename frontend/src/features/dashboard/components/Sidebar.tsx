@@ -41,6 +41,11 @@ import {
   Home,
   FileText,
   BookOpen,
+  Landmark,
+  TrendingUp,
+  TrendingDown,
+  Scale,
+  ArrowLeftRight,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -70,7 +75,8 @@ export const Sidebar = ({
     if (path === '/dashboard' && pathname === '/dashboard') return true;
     if (path === '/dashboard/accounting' && pathname === '/dashboard/accounting') return true;
     if (path === '/dashboard/purchase' && pathname === '/dashboard/purchase') return true;
-    if (path !== '/dashboard' && path !== '/dashboard/accounting' && path !== '/dashboard/purchase' && pathname.startsWith(path)) return true;
+    if (path === '/dashboard/finance' && pathname.startsWith('/dashboard/finance')) return true;
+    if (path !== '/dashboard' && path !== '/dashboard/accounting' && path !== '/dashboard/purchase' && path !== '/dashboard/finance' && pathname.startsWith(path)) return true;
     return false;
   };
 
@@ -770,14 +776,14 @@ export const Sidebar = ({
               <Link
                 href="/dashboard/hr/expenses"
                 className={navItemClass('/dashboard/hr/expenses')}
-                onMouseEnter={(e) => handleTooltipEnter(e, "Expenses")}
-                onFocus={(e) => handleTooltipEnter(e, "Expenses")}
+                onMouseEnter={(e) => handleTooltipEnter(e, "Employee Expenses")}
+                onFocus={(e) => handleTooltipEnter(e, "Employee Expenses")}
                 onMouseLeave={handleTooltipLeave}
                 onBlur={handleTooltipLeave}
               >
                 <div className="flex items-center gap-2.5">
                   <Receipt className={iconClass} strokeWidth={iconStroke} />
-                  {!isDesktopCollapsed && <span>Expenses</span>}
+                  {!isDesktopCollapsed && <span>Employee Expenses</span>}
                 </div>
               </Link>
               <Link
@@ -895,7 +901,22 @@ export const Sidebar = ({
             </div>
           )}
 
-          {/* 6. MARKETING & ANALYTICS ACCORDION */}
+          {/* 6. FINANCE (Single Top-Level Navigation Link) */}
+          <Link
+            href="/dashboard/finance/overview"
+            className={navItemClass('/dashboard/finance')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Finance")}
+            onFocus={(e) => handleTooltipEnter(e, "Finance")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <Landmark className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Finance</span>}
+            </div>
+          </Link>
+
+          {/* 7. MARKETING & ANALYTICS ACCORDION */}
           <AccordionHeader 
             title="Marketing & Growth" 
             groupKey="marketing" 

@@ -11,6 +11,7 @@ import { StockAdjustmentAction } from '../../inventory/dto/adjust-stock.dto';
 import { ApplyCouponService } from '../../coupon/services/apply-coupon.service';
 import { FindOrCreateCustomerService } from '../../customer/services/find-or-create-customer.service';
 import { CustomerSourceEnum } from '../../customer/entities/customer.entity';
+import { LeadEntity, LeadStageEnum } from '../../customer/entities/lead.entity';
 import { GenerateOrderNumberService } from './generate-order-number.service';
 import { OrderCalculationService } from './order-calculation.service';
 import { StoreEntity } from '../../tenant/entities/store.entity';
@@ -31,6 +32,8 @@ export class CreateManualOrderService {
     private readonly orderRepository: Repository<OrderEntity>,
     @InjectRepository(ProductEntity)
     private readonly productRepository: Repository<ProductEntity>,
+    @InjectRepository(LeadEntity)
+    private readonly leadRepository: Repository<LeadEntity>,
     @InjectDataSource()
     private readonly dataSource: DataSource,
     private readonly adjustStockService: AdjustStockService,
@@ -233,6 +236,39 @@ export class CreateManualOrderService {
       });
       await manager.save(history);
     });
+
+    // Auto-convert matching open CRM leads to WON
+    try {
+      const rawPhone = dto.customerPhone?.replace(/\D/g, '').slice(-10);
+      const rawEmail = dto.customerEmail?.trim().toLowerCase();
+
+      const leads = await this.leadRepository.find({
+        where: { tenantId },
+      });
+
+      for (const lead of leads) {
+        const leadPhone = lead.phone?.replace(/\D/g, '').slice(-10);
+        const leadEmail = lead.email?.trim().toLowerCase();
+
+        const isPhoneMatch = Boolean(rawPhone && leadPhone && rawPhone === leadPhone);
+        const isEmailMatch = Boolean(rawEmail && leadEmail && rawEmail === leadEmail);
+        const isCustomerMatch = Boolean(customer?.id && lead.convertedCustomerId === customer.id);
+
+        if (isPhoneMatch || isEmailMatch || isCustomerMatch) {
+          if (lead.stage !== LeadStageEnum.WON) {
+            lead.stage = LeadStageEnum.WON;
+          }
+          lead.estimatedValue = Number(savedOrder!.grandTotal);
+          lead.convertedCustomerId = customer?.id || lead.convertedCustomerId;
+          lead.followUpStatus = 'COMPLETED';
+          lead.nextFollowUpAt = null;
+          lead.followUpNote = undefined;
+          await this.leadRepository.save(lead);
+        }
+      }
+    } catch {
+      // Non-blocking lead conversion
+    }
 
     return savedOrder!;
   }

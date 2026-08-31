@@ -34,6 +34,7 @@ import { AccountingModule } from './modules/accounting/accounting.module';
 import { PurchaseModule } from './modules/purchase/purchase.module';
 import { NotificationModule } from './common/notification/notification.module';
 import { OmnichannelModule } from './modules/omnichannel/omnichannel.module';
+import { FinanceModule } from './modules/finance/finance.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { APP_FILTER } from '@nestjs/core';
 
@@ -52,9 +53,10 @@ import { APP_FILTER } from '@nestjs/core';
           port: config.get<number>('REDIS_PORT', 6379),
           // Local dev without Redis running: fail fast instead of retrying forever,
           // so boot doesn't hang. Queue-backed features (email/SMS) just won't fire.
-          retryStrategy: () => null,
+          maxRetriesPerRequest: null,
+          enableOfflineQueue: false,
           enableReadyCheck: false,
-          maxRetriesPerRequest: 1,
+          retryStrategy: () => null,
         },
         defaultJobOptions: {
           attempts: 3,
@@ -103,6 +105,7 @@ import { APP_FILTER } from '@nestjs/core';
     HrmModule,
     AccountingModule,
     PurchaseModule,
+    FinanceModule,
   ],
   controllers: [],
   providers: [

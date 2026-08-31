@@ -49,7 +49,16 @@ export type StaffPermissionType =
   | 'accounting:manage'
   | 'accounting:settings:manage'
   | 'purchases:read'
-  | 'purchases:manage';
+  | 'purchases:manage'
+  | 'finance:read'
+  | 'finance:manage'
+  | 'finance:transactions:manage'
+  | 'finance:invoices:manage'
+  | 'finance:bills:manage'
+  | 'finance:accounts:manage'
+  | 'finance:transfers:manage'
+  | 'finance:reports:read'
+  | 'finance:settings:manage';
 
 @Entity('staff_members')
 export class StaffMemberEntity {

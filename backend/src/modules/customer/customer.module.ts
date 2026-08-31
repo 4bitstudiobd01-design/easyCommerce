@@ -10,6 +10,7 @@ import { CustomerActivityEntity } from './entities/customer-activity.entity';
 import { CustomerSegmentEntity } from './entities/customer-segment.entity';
 import { LeadEntity } from './entities/lead.entity';
 import { OrderEntity } from '../order/entities/order.entity';
+import { OrderItemEntity } from '../order/entities/order-item.entity';
 import { CustomerController } from './customer.controller';
 import { TenantModule } from '../tenant/tenant.module';
 
@@ -52,6 +53,9 @@ import { ConvertLeadToCustomerService } from './services/convert-lead-to-custome
 import { SeedLeadsService } from './services/seed-leads.service';
 import { SeedCustomersService } from './services/seed-customers.service';
 import { ListStoreActivitiesService } from './services/list-store-activities.service';
+import { AddLeadInquiryService } from './services/add-lead-inquiry.service';
+import { DeleteLeadInquiryService } from './services/delete-lead-inquiry.service';
+import { UserEntity } from '../user/entities/user.entity';
 
 @Module({
   imports: [
@@ -63,6 +67,8 @@ import { ListStoreActivitiesService } from './services/list-store-activities.ser
       CustomerSegmentEntity,
       LeadEntity,
       OrderEntity,
+      OrderItemEntity,
+      UserEntity,
     ]),
     TenantModule,
     JwtModule.registerAsync({
@@ -107,6 +113,8 @@ import { ListStoreActivitiesService } from './services/list-store-activities.ser
     UpdateLeadDetailsService,
     ScheduleLeadFollowUpService,
     ConvertLeadToCustomerService,
+    AddLeadInquiryService,
+    DeleteLeadInquiryService,
     SeedLeadsService,
     SeedCustomersService,
     ListStoreActivitiesService,
@@ -143,6 +151,8 @@ import { ListStoreActivitiesService } from './services/list-store-activities.ser
     UpdateLeadDetailsService,
     ScheduleLeadFollowUpService,
     ConvertLeadToCustomerService,
+    AddLeadInquiryService,
+    DeleteLeadInquiryService,
     SeedLeadsService,
     SeedCustomersService,
     TypeOrmModule,

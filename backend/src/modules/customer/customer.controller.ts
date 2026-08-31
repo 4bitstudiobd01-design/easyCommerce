@@ -51,12 +51,15 @@ import { UpdateLeadStageService } from './services/update-lead-stage.service';
 import { UpdateLeadDetailsService } from './services/update-lead-details.service';
 import { ScheduleLeadFollowUpService } from './services/schedule-lead-follow-up.service';
 import { ConvertLeadToCustomerService } from './services/convert-lead-to-customer.service';
+import { AddLeadInquiryService } from './services/add-lead-inquiry.service';
+import { DeleteLeadInquiryService } from './services/delete-lead-inquiry.service';
 import { SeedLeadsService } from './services/seed-leads.service';
 import { SeedCustomersService } from './services/seed-customers.service';
 import { ListStoreActivitiesService } from './services/list-store-activities.service';
 import { RecordCustomerActivityService } from './services/record-customer-activity.service';
 import { LogCustomerActivityService } from './services/log-customer-activity.service';
 
+import { AddLeadInquiryDto } from './dto/add-lead-inquiry.dto';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { UpdateCustomerStatusDto } from './dto/update-customer-status.dto';
@@ -109,6 +112,8 @@ export class CustomerController {
     private readonly updateLeadDetailsService: UpdateLeadDetailsService,
     private readonly scheduleLeadFollowUpService: ScheduleLeadFollowUpService,
     private readonly convertLeadToCustomerService: ConvertLeadToCustomerService,
+    private readonly addLeadInquiryService: AddLeadInquiryService,
+    private readonly deleteLeadInquiryService: DeleteLeadInquiryService,
     private readonly seedLeadsService: SeedLeadsService,
     private readonly seedCustomersService: SeedCustomersService,
     private readonly listStoreActivitiesService: ListStoreActivitiesService,
@@ -471,10 +476,53 @@ export class CustomerController {
   async convertLead(
     @CurrentUser('sub') userId: string,
     @Param('id') id: string,
+    @Body()
+    body?: {
+      wonAmount?: number;
+      createInitialOrder?: boolean;
+      paymentMethod?: string;
+      items?: any[];
+    },
     @Headers('x-store-id') storeId?: string,
   ) {
     const ctx = await this.getMerchantTenantContext(userId, storeId);
-    return this.convertLeadToCustomerService.execute(id, ctx.tenantId, ctx.storeId);
+    return this.convertLeadToCustomerService.execute(
+      id,
+      ctx.tenantId,
+      ctx.storeId,
+      body?.wonAmount,
+      body?.createInitialOrder,
+      body?.paymentMethod,
+      body?.items,
+    );
+  }
+
+  @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
+  @Post('leads/:id/inquiries')
+  @ApiOperation({ summary: 'Add a new staff/manager inquiry note to the lead' })
+  @ApiResponse({ status: 200, description: 'Inquiry note added successfully' })
+  async addLeadInquiry(
+    @CurrentUser('sub') userId: string,
+    @Param('id') id: string,
+    @Body() dto: AddLeadInquiryDto,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const ctx = await this.getMerchantTenantContext(userId, storeId);
+    return this.addLeadInquiryService.execute(id, ctx.tenantId, userId, dto);
+  }
+
+  @Roles(UserRoleEnum.STORE_OWNER, UserRoleEnum.STORE_STAFF)
+  @Delete('leads/:id/inquiries/:inquiryId')
+  @ApiOperation({ summary: 'Delete an inquiry note from the lead' })
+  @ApiResponse({ status: 200, description: 'Inquiry note deleted successfully' })
+  async deleteLeadInquiry(
+    @CurrentUser('sub') userId: string,
+    @Param('id') id: string,
+    @Param('inquiryId') inquiryId: string,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const ctx = await this.getMerchantTenantContext(userId, storeId);
+    return this.deleteLeadInquiryService.execute(id, ctx.tenantId, inquiryId);
   }
 
   // --- CUSTOMER PROFILE ENDPOINTS (parameterized routes AFTER named routes) ---
