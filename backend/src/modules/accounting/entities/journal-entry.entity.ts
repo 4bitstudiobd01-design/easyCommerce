@@ -27,6 +27,8 @@ export enum JournalSourceEnum {
   PAYMENT = 'PAYMENT',
   INVENTORY = 'INVENTORY',
   OPENING_BALANCE = 'OPENING_BALANCE',
+  PURCHASE = 'PURCHASE',
+  SUPPLIER_PAYMENT = 'SUPPLIER_PAYMENT',
 }
 
 @Entity('acc_journal_entries')

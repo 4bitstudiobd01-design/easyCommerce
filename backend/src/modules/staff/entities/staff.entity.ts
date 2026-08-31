@@ -47,7 +47,9 @@ export type StaffPermissionType =
   | 'hr:notices:manage'
   | 'accounting:read'
   | 'accounting:manage'
-  | 'accounting:settings:manage';
+  | 'accounting:settings:manage'
+  | 'purchases:read'
+  | 'purchases:manage';
 
 @Entity('staff_members')
 export class StaffMemberEntity {

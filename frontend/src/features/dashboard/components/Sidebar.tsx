@@ -12,6 +12,7 @@ import {
   Package,
   FolderTree,
   Users,
+  UserCheck,
   Truck,
   Settings,
   Store as StoreIcon,
@@ -68,7 +69,8 @@ export const Sidebar = ({
   const isActive = (path: string) => {
     if (path === '/dashboard' && pathname === '/dashboard') return true;
     if (path === '/dashboard/accounting' && pathname === '/dashboard/accounting') return true;
-    if (path !== '/dashboard' && path !== '/dashboard/accounting' && pathname.startsWith(path)) return true;
+    if (path === '/dashboard/purchase' && pathname === '/dashboard/purchase') return true;
+    if (path !== '/dashboard' && path !== '/dashboard/accounting' && path !== '/dashboard/purchase' && pathname.startsWith(path)) return true;
     return false;
   };
 
@@ -80,6 +82,7 @@ export const Sidebar = ({
   // Collapsible Accordion Groups
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     ecommerce: true,
+    purchase: isRouteInGroup('/dashboard/purchase'),
     crm: isRouteInGroup('/dashboard/crm'),
     hrm: isRouteInGroup('/dashboard/hr'),
     accounting: isRouteInGroup('/dashboard/accounting'),
@@ -101,6 +104,9 @@ export const Sidebar = ({
   useEffect(() => {
     if (isRouteInGroup(['/dashboard/orders', '/dashboard/products', '/dashboard/categories', '/dashboard/customers', '/dashboard/inventory', '/dashboard/logistics', '/dashboard/abandoned-carts', '/dashboard/themes'])) {
       setOpenGroups(prev => ({ ...prev, ecommerce: true }));
+    }
+    if (isRouteInGroup('/dashboard/purchase')) {
+      setOpenGroups(prev => ({ ...prev, purchase: true }));
     }
     if (isRouteInGroup('/dashboard/crm')) {
       setOpenGroups(prev => ({ ...prev, crm: true }));
@@ -497,7 +503,70 @@ export const Sidebar = ({
             </div>
           )}
 
-          {/* 2. CRM & OMNICHANNEL ACCORDION */}
+          {/* 2. PURCHASE ACCORDION */}
+          <AccordionHeader 
+            title="Purchase" 
+            groupKey="purchase" 
+            isOpen={openGroups.purchase} 
+          />
+          {(isDesktopCollapsed || openGroups.purchase) && (
+            <div className="space-y-0.5">
+              <Link 
+                href="/dashboard/purchase" 
+                className={navItemClass('/dashboard/purchase')}
+                onMouseEnter={(e) => handleTooltipEnter(e, "Overview")}
+                onFocus={(e) => handleTooltipEnter(e, "Overview")}
+                onMouseLeave={handleTooltipLeave}
+                onBlur={handleTooltipLeave}
+              >
+                <div className="flex items-center gap-2.5">
+                  <BarChart3 className={iconClass} strokeWidth={iconStroke} />
+                  {!isDesktopCollapsed && <span>Overview</span>}
+                </div>
+              </Link>
+              <Link 
+                href="/dashboard/purchase/suppliers" 
+                className={navItemClass('/dashboard/purchase/suppliers')}
+                onMouseEnter={(e) => handleTooltipEnter(e, "Suppliers")}
+                onFocus={(e) => handleTooltipEnter(e, "Suppliers")}
+                onMouseLeave={handleTooltipLeave}
+                onBlur={handleTooltipLeave}
+              >
+                <div className="flex items-center gap-2.5">
+                  <UserCheck className={iconClass} strokeWidth={iconStroke} />
+                  {!isDesktopCollapsed && <span>Suppliers</span>}
+                </div>
+              </Link>
+              <Link 
+                href="/dashboard/purchase/purchase-orders" 
+                className={navItemClass('/dashboard/purchase/purchase-orders')}
+                onMouseEnter={(e) => handleTooltipEnter(e, "Purchase Orders")}
+                onFocus={(e) => handleTooltipEnter(e, "Purchase Orders")}
+                onMouseLeave={handleTooltipLeave}
+                onBlur={handleTooltipLeave}
+              >
+                <div className="flex items-center gap-2.5">
+                  <FileText className={iconClass} strokeWidth={iconStroke} />
+                  {!isDesktopCollapsed && <span>Purchase Orders</span>}
+                </div>
+              </Link>
+              <Link 
+                href="/dashboard/purchase/purchases" 
+                className={navItemClass('/dashboard/purchase/purchases')}
+                onMouseEnter={(e) => handleTooltipEnter(e, "Purchases")}
+                onFocus={(e) => handleTooltipEnter(e, "Purchases")}
+                onMouseLeave={handleTooltipLeave}
+                onBlur={handleTooltipLeave}
+              >
+                <div className="flex items-center gap-2.5">
+                  <ShoppingCart className={iconClass} strokeWidth={iconStroke} />
+                  {!isDesktopCollapsed && <span>Purchases</span>}
+                </div>
+              </Link>
+            </div>
+          )}
+
+          {/* 3. CRM & OMNICHANNEL ACCORDION */}
           <AccordionHeader 
             title="CRM & Growth" 
             groupKey="crm" 
@@ -599,7 +668,7 @@ export const Sidebar = ({
             </div>
           )}
 
-          {/* 3. HUMAN RESOURCES ACCORDION */}
+          {/* 4. HUMAN RESOURCES ACCORDION */}
           <AccordionHeader 
             title="Human Resources" 
             groupKey="hrm" 
@@ -753,7 +822,7 @@ export const Sidebar = ({
             </div>
           )}
 
-          {/* 4. ACCOUNTING ACCORDION */}
+          {/* 5. ACCOUNTING ACCORDION */}
           <AccordionHeader 
             title="Accounting" 
             groupKey="accounting" 
@@ -826,7 +895,7 @@ export const Sidebar = ({
             </div>
           )}
 
-          {/* 5. MARKETING & ANALYTICS ACCORDION */}
+          {/* 6. MARKETING & ANALYTICS ACCORDION */}
           <AccordionHeader 
             title="Marketing & Growth" 
             groupKey="marketing" 
@@ -863,7 +932,7 @@ export const Sidebar = ({
             </div>
           )}
 
-          {/* 5. STORE SETTINGS (Always accessible) */}
+          {/* 7. STORE SETTINGS (Always accessible) */}
           {!isDesktopCollapsed && (
             <div className="px-3 pb-1 pt-4 text-[10px] font-bold uppercase tracking-wider text-slate-500">
               Configuration

@@ -12,7 +12,9 @@ export type JournalSource =
   | 'ORDER'
   | 'PAYMENT'
   | 'INVENTORY'
-  | 'OPENING_BALANCE';
+  | 'OPENING_BALANCE'
+  | 'PURCHASE'
+  | 'SUPPLIER_PAYMENT';
 export type ExpensePaymentMethod =
   | 'CASH'
   | 'BANK_TRANSFER'
