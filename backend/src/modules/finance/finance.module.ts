@@ -20,6 +20,13 @@ import { FinanceJournalLineEntity } from './entities/finance-journal-line.entity
 import { FinancePeriodLockEntity } from './entities/finance-period-lock.entity';
 import { InventoryStockEntity } from '../inventory/entities/inventory-stock.entity';
 import { ProductEntity } from '../catalog/entities/product.entity';
+import { PayrollRunEntity } from '../hrm/entities/payroll-run.entity';
+import { PayslipEntity } from '../hrm/entities/payslip.entity';
+import { EmployeeEntity } from '../hrm/entities/employee.entity';
+import { DepartmentEntity } from '../hrm/entities/department.entity';
+import { UserEntity } from '../user/entities/user.entity';
+import { StaffMemberEntity } from '../staff/entities/staff.entity';
+import { FileEntity } from '../file/entities/file.entity';
 
 import { FinanceController } from './finance.controller';
 
@@ -32,6 +39,7 @@ import { ListIncomeService } from './services/list-income.service';
 import { CreateIncomeService } from './services/create-income.service';
 import { ListExpensesService } from './services/list-expenses.service';
 import { CreateExpenseService } from './services/create-expense.service';
+import { UpdateExpenseService } from './services/update-expense.service';
 import { ListInvoicesService } from './services/list-invoices.service';
 import { CreateInvoiceService } from './services/create-invoice.service';
 import { GetInvoiceService } from './services/get-invoice.service';
@@ -58,6 +66,8 @@ import { GetTrialBalanceReportService } from './services/get-trial-balance-repor
 import { GetBalanceSheetReportService } from './services/get-balance-sheet-report.service';
 import { GetTaxVatReportService } from './services/get-tax-vat-report.service';
 import { SeedDefaultChartOfAccountsService } from './services/seed-default-chart-of-accounts.service';
+import { SeedRealisticFinanceDataService } from './services/seed-realistic-finance-data.service';
+import { ExportFinanceDataService } from './services/export-finance-data.service';
 import { ListChartOfAccountsService } from './services/list-chart-of-accounts.service';
 import { CreateChartOfAccountService } from './services/create-chart-of-account.service';
 import { UpdateChartOfAccountService } from './services/update-chart-of-account.service';
@@ -74,6 +84,10 @@ import {
   ListCategoriesService,
   CreateCategoryService,
 } from './services/finance-category.service';
+import { GetSalaryPaymentSummaryService } from './services/get-salary-payment-summary.service';
+import { ListSalaryPaymentRunsService } from './services/list-salary-payment-runs.service';
+import { GetSalaryPaymentRunDetailService } from './services/get-salary-payment-run-detail.service';
+import { DisburseSalaryPaymentService } from './services/disburse-salary-payment.service';
 
 @Module({
   imports: [
@@ -93,6 +107,13 @@ import {
       FinancePeriodLockEntity,
       InventoryStockEntity,
       ProductEntity,
+      PayrollRunEntity,
+      PayslipEntity,
+      EmployeeEntity,
+      DepartmentEntity,
+      UserEntity,
+      StaffMemberEntity,
+      FileEntity,
     ]),
     StaffModule,
     TenantModule,
@@ -116,6 +137,7 @@ import {
     CreateIncomeService,
     ListExpensesService,
     CreateExpenseService,
+    UpdateExpenseService,
     ListInvoicesService,
     CreateInvoiceService,
     GetInvoiceService,
@@ -142,6 +164,7 @@ import {
     GetBalanceSheetReportService,
     GetTaxVatReportService,
     SeedDefaultChartOfAccountsService,
+    SeedRealisticFinanceDataService,
     ListChartOfAccountsService,
     CreateChartOfAccountService,
     UpdateChartOfAccountService,
@@ -154,13 +177,23 @@ import {
     UpdateFinanceSettingsService,
     ListCategoriesService,
     CreateCategoryService,
+    GetSalaryPaymentSummaryService,
+    ListSalaryPaymentRunsService,
+    GetSalaryPaymentRunDetailService,
+    DisburseSalaryPaymentService,
+    ExportFinanceDataService,
   ],
   exports: [
     RecordSyncedFinanceTransactionService,
+    SeedRealisticFinanceDataService,
+    ExportFinanceDataService,
     SyncModuleFinanceService,
     PostJournalEntryService,
     GetFinanceOverviewService,
     GetProfitLossReportService,
+    GetSalaryPaymentSummaryService,
+    ListSalaryPaymentRunsService,
+    DisburseSalaryPaymentService,
   ],
 })
 export class FinanceModule {}

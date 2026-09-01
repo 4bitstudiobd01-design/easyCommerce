@@ -91,10 +91,10 @@ export class ListIncomeService {
       limit,
       totalPages: Math.ceil(total / limit),
       summary: {
-        totalIncome,
-        totalProductSales,
-        totalShippingIncome,
-        totalOtherIncome,
+        totalIncome: Math.round(totalIncome * 100) / 100,
+        totalProductSales: Math.round(totalProductSales * 100) / 100,
+        totalShippingIncome: Math.round(totalShippingIncome * 100) / 100,
+        totalOtherIncome: Math.round(totalOtherIncome * 100) / 100,
       },
     };
   }

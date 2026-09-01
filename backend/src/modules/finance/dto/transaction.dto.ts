@@ -140,3 +140,39 @@ export class CreateExpenseDto {
   @IsOptional()
   receiptFileId?: string;
 }
+
+export class UpdateExpenseDto {
+  @IsNumber()
+  @Type(() => Number)
+  @IsOptional()
+  amount?: number;
+
+  @IsString()
+  @IsOptional()
+  transactionDate?: string;
+
+  @IsUUID()
+  @IsOptional()
+  accountId?: string;
+
+  @IsString()
+  @IsOptional()
+  categoryCode?: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsString()
+  @IsOptional()
+  reference?: string;
+
+  @IsString()
+  @IsOptional()
+  paymentMethod?: string;
+
+  @IsUUID()
+  @IsOptional()
+  receiptFileId?: string;
+}
+

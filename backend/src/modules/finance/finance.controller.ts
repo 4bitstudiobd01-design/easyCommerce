@@ -27,6 +27,7 @@ import { ListIncomeService } from './services/list-income.service';
 import { CreateIncomeService } from './services/create-income.service';
 import { ListExpensesService } from './services/list-expenses.service';
 import { CreateExpenseService } from './services/create-expense.service';
+import { UpdateExpenseService } from './services/update-expense.service';
 import { ListInvoicesService } from './services/list-invoices.service';
 import { CreateInvoiceService } from './services/create-invoice.service';
 import { GetInvoiceService } from './services/get-invoice.service';
@@ -67,6 +68,11 @@ import {
   ListCategoriesService,
   CreateCategoryService,
 } from './services/finance-category.service';
+import { GetSalaryPaymentSummaryService } from './services/get-salary-payment-summary.service';
+import { ListSalaryPaymentRunsService } from './services/list-salary-payment-runs.service';
+import { GetSalaryPaymentRunDetailService } from './services/get-salary-payment-run-detail.service';
+import { DisburseSalaryPaymentService } from './services/disburse-salary-payment.service';
+import { ExportFinanceDataService, ExportFinanceQueryDto } from './services/export-finance-data.service';
 
 import { CreateFinanceAccountDto, UpdateFinanceAccountDto } from './dto/account.dto';
 import { CreateFinanceCategoryDto } from './dto/category.dto';
@@ -74,6 +80,7 @@ import {
   CreateFinanceTransactionDto,
   CreateIncomeDto,
   CreateExpenseDto,
+  UpdateExpenseDto,
 } from './dto/transaction.dto';
 import {
   CreateFinanceInvoiceDto,
@@ -106,6 +113,14 @@ import {
   QueryFinancialReportDto,
 } from './dto/financial-reports.dto';
 import {
+  DisburseSalaryPaymentDto,
+  BulkDisburseSalaryPaymentDto,
+  ListSalaryPaymentRunsQueryDto,
+  QuerySalaryPaymentSummaryDto,
+  ListSalaryPaymentEmployeesQueryDto,
+  SalaryPaymentSummaryResponseDto,
+} from './dto/salary-payment.dto';
+import {
   FinanceInvoiceStatusEnum,
   FinanceBillStatusEnum,
   FinanceCategoryTypeEnum,
@@ -124,6 +139,7 @@ export class FinanceController {
     private readonly createIncomeService: CreateIncomeService,
     private readonly listExpensesService: ListExpensesService,
     private readonly createExpenseService: CreateExpenseService,
+    private readonly updateExpenseService: UpdateExpenseService,
     private readonly listInvoicesService: ListInvoicesService,
     private readonly createInvoiceService: CreateInvoiceService,
     private readonly getInvoiceService: GetInvoiceService,
@@ -160,6 +176,11 @@ export class FinanceController {
     private readonly updateFinanceSettingsService: UpdateFinanceSettingsService,
     private readonly listCategoriesService: ListCategoriesService,
     private readonly createCategoryService: CreateCategoryService,
+    private readonly getSalaryPaymentSummaryService: GetSalaryPaymentSummaryService,
+    private readonly listSalaryPaymentRunsService: ListSalaryPaymentRunsService,
+    private readonly getSalaryPaymentRunDetailService: GetSalaryPaymentRunDetailService,
+    private readonly disburseSalaryPaymentService: DisburseSalaryPaymentService,
+    private readonly exportFinanceDataService: ExportFinanceDataService,
   ) {}
 
   private async getStoreContext(userId: string, headerStoreId?: string) {
@@ -170,18 +191,45 @@ export class FinanceController {
     return store;
   }
 
-  // ─── 1. OVERVIEW ────────────────────────────────────────────────
+  // ─── 1. OVERVIEW & EXPORT ───────────────────────────────────────
   @Get('overview')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
   @RequirePermissions('finance:read', 'finance:manage')
-  @ApiOperation({ summary: 'Get finance overview summary and trends' })
+  @ApiOperation({ summary: 'Get finance overview summary, dynamic monthly calculations, and trends' })
   async getOverview(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') headerStoreId: string,
+    @Query('month') month?: number,
+    @Query('year') year?: number,
   ) {
     const store = await this.getStoreContext(userId, headerStoreId);
-    return this.getFinanceOverviewService.execute(store.tenantId, store.id);
+    return this.getFinanceOverviewService.execute(store.tenantId, store.id, {
+      month: month ? Number(month) : undefined,
+      year: year ? Number(year) : undefined,
+    });
+  }
+
+  @Get('export/transactions')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('finance:read', 'finance:manage')
+  @ApiOperation({ summary: 'Export financial transactions to Google Sheets/Excel compatible CSV' })
+  async exportTransactions(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Query('month') month?: number,
+    @Query('year') year?: number,
+    @Query('type') type?: string,
+    @Query('categoryCode') categoryCode?: string,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.exportFinanceDataService.generateTransactionsCsv(store.id, {
+      month: month ? Number(month) : undefined,
+      year: year ? Number(year) : undefined,
+      type,
+      categoryCode,
+    });
   }
 
   // ─── 2. CHART OF ACCOUNTS ───────────────────────────────────────
@@ -366,7 +414,7 @@ export class FinanceController {
     @Query() query: ListTransactionsQueryDto,
   ) {
     const store = await this.getStoreContext(userId, headerStoreId);
-    return this.listExpensesService.execute(store.id, query);
+    return this.listExpensesService.execute(store.tenantId, store.id, query);
   }
 
   @Post('expenses')
@@ -381,6 +429,35 @@ export class FinanceController {
   ) {
     const store = await this.getStoreContext(userId, headerStoreId);
     return this.createExpenseService.execute(store.tenantId, store.id, userId, dto);
+  }
+
+  @Patch('expenses/:id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('finance:transactions:manage', 'finance:manage')
+  @ApiOperation({ summary: 'Update business expense' })
+  async updateExpense(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateExpenseDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.updateExpenseService.execute(store.id, id, userId, dto);
+  }
+
+  @Delete('expenses/:id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('finance:transactions:manage', 'finance:manage')
+  @ApiOperation({ summary: 'Delete business expense' })
+  async deleteExpense(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') id: string,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.deleteTransactionService.execute(store.id, id, userId);
   }
 
   // ─── 6. INVOICES ───────────────────────────────────────────────
@@ -835,5 +912,78 @@ export class FinanceController {
   ) {
     const store = await this.getStoreContext(userId, headerStoreId);
     return this.createCategoryService.execute(store.tenantId, store.id, dto);
+  }
+
+  // ─── 11. SALARY PAYMENTS & DISBURSEMENTS ────────────────────────
+  @Get('salaries/summary')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('finance:read', 'finance:manage')
+  @ApiOperation({ summary: 'Get overall and month-wise salary payments summary KPIs' })
+  @ApiResponse({ status: 200, type: SalaryPaymentSummaryResponseDto })
+  async getSalaryPaymentSummary(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Query() query: QuerySalaryPaymentSummaryDto,
+  ): Promise<SalaryPaymentSummaryResponseDto> {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.getSalaryPaymentSummaryService.execute(store.id, query);
+  }
+
+  @Get('salaries/runs')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('finance:read', 'finance:manage')
+  @ApiOperation({ summary: 'List approved payroll runs for salary payments' })
+  async listSalaryPaymentRuns(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Query() query: ListSalaryPaymentRunsQueryDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.listSalaryPaymentRunsService.execute(store.id, query);
+  }
+
+  @Get('salaries/runs/:id/employees')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('finance:read', 'finance:manage')
+  @ApiOperation({ summary: 'Get employee payslip disbursement list for a payroll run' })
+  async getSalaryPaymentRunDetail(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') runId: string,
+    @Query() query: ListSalaryPaymentEmployeesQueryDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.getSalaryPaymentRunDetailService.execute(store.id, runId, query);
+  }
+
+  @Post('salaries/disburse')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('finance:transactions:manage', 'finance:manage')
+  @ApiOperation({ summary: 'Disburse cash payment for a single employee payslip' })
+  async disburseSingleSalary(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Body() dto: DisburseSalaryPaymentDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.disburseSalaryPaymentService.disburseSingle(store.tenantId, store.id, userId, dto);
+  }
+
+  @Post('salaries/disburse-bulk')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('finance:transactions:manage', 'finance:manage')
+  @ApiOperation({ summary: 'Bulk disburse cash payments for multiple or all unpaid employees in a run' })
+  async disburseBulkSalary(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Body() dto: BulkDisburseSalaryPaymentDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.disburseSalaryPaymentService.disburseBulk(store.tenantId, store.id, userId, dto);
   }
 }

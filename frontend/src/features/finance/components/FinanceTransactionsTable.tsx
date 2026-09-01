@@ -12,10 +12,12 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
+  Download,
 } from 'lucide-react';
 import {
   useGetTransactionsQuery,
   useDeleteTransactionMutation,
+  useExportFinanceTransactionsMutation,
   useGetAccountsQuery,
   useGetCategoriesQuery,
   FinanceCategory,
@@ -47,6 +49,7 @@ export function FinanceTransactionsTable() {
   const { data: accountsData } = useGetAccountsQuery();
   const { data: categories } = useGetCategoriesQuery();
   const [deleteTransaction] = useDeleteTransactionMutation();
+  const [exportTransactions, { isLoading: isExporting }] = useExportFinanceTransactionsMutation();
 
   const accounts: FinanceAccount[] = Array.isArray(accountsData)
     ? accountsData
@@ -77,6 +80,36 @@ export function FinanceTransactionsTable() {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            disabled={isExporting}
+            onClick={async () => {
+              try {
+                const res = await exportTransactions({
+                  type: type || undefined,
+                  categoryCode: categoryCode || undefined,
+                }).unwrap();
+                if (res?.csv) {
+                  const blob = new Blob([res.csv], { type: 'text/csv;charset=utf-8;' });
+                  const url = URL.createObjectURL(blob);
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.setAttribute('download', res.filename || 'finance_transactions.csv');
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  URL.revokeObjectURL(url);
+                }
+              } catch (err: any) {
+                toast.error(err?.data?.message || 'Failed to export CSV.');
+              }
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl border border-slate-200 transition disabled:opacity-50"
+            title="Download CSV"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-600" />
+            <span>{isExporting ? 'Exporting...' : 'Export CSV'}</span>
+          </button>
           <button
             type="button"
             onClick={() => refetch()}

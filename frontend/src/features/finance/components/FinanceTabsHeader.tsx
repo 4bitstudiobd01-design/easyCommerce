@@ -5,16 +5,16 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
-  FolderTree,
-  BookOpen,
   Receipt,
   ArrowLeftRight,
   TrendingUp,
   TrendingDown,
+  Banknote,
   FileText,
   Landmark,
   Scale,
   BarChart3,
+  History,
   Settings,
 } from 'lucide-react';
 
@@ -24,24 +24,6 @@ const FINANCE_TABS = [
     href: '/dashboard/finance/overview',
     matchHref: ['/dashboard/finance/overview', '/dashboard/finance'],
     icon: LayoutDashboard,
-  },
-  {
-    name: 'Chart of Accounts',
-    href: '/dashboard/finance/chart-of-accounts',
-    matchHref: ['/dashboard/finance/chart-of-accounts'],
-    icon: FolderTree,
-  },
-  {
-    name: 'Journal',
-    href: '/dashboard/finance/journal',
-    matchHref: ['/dashboard/finance/journal'],
-    icon: BookOpen,
-  },
-  {
-    name: 'General Ledger',
-    href: '/dashboard/finance/ledger',
-    matchHref: ['/dashboard/finance/ledger'],
-    icon: Receipt,
   },
   {
     name: 'Transactions',
@@ -60,6 +42,12 @@ const FINANCE_TABS = [
     href: '/dashboard/finance/expenses',
     matchHref: ['/dashboard/finance/expenses'],
     icon: TrendingDown,
+  },
+  {
+    name: 'Salary Payments',
+    href: '/dashboard/finance/salaries',
+    matchHref: ['/dashboard/finance/salaries'],
+    icon: Banknote,
   },
   {
     name: 'Invoices',
@@ -90,6 +78,12 @@ const FINANCE_TABS = [
     href: '/dashboard/finance/reports',
     matchHref: ['/dashboard/finance/reports'],
     icon: BarChart3,
+  },
+  {
+    name: 'History',
+    href: '/dashboard/finance/history',
+    matchHref: ['/dashboard/finance/history'],
+    icon: History,
   },
   {
     name: 'Settings',

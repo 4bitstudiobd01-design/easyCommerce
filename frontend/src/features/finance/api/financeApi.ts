@@ -284,7 +284,19 @@ export interface FinanceTransaction {
   paymentMethod?: string;
   status: FinanceTransactionStatus;
   receiptFileId?: string;
+  receiptFile?: {
+    id: string;
+    url: string;
+    fileName?: string;
+    mimeType?: string;
+    sizeInBytes?: number | string;
+  };
   createdByUserId?: string;
+  createdByUser?: {
+    id: string;
+    fullName?: string;
+    email?: string;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -405,6 +417,14 @@ export interface FinanceSettings {
   updatedAt: string;
 }
 
+export interface CategoryExpenseBreakdownItem {
+  code: string;
+  name: string;
+  color: string;
+  amount: number;
+  percentage: number;
+}
+
 export interface FinanceOverview {
   summary: {
     totalRevenue: number;
@@ -415,12 +435,24 @@ export interface FinanceOverview {
     netMarginPercent: number;
     cogs: number;
     payrollCost: number;
+    shippingCost?: number;
     marketingCost: number;
+    rentCost?: number;
+    utilitiesCost?: number;
+    softwareCost?: number;
+    packagingCost?: number;
+    equipmentCost?: number;
+    maintenanceCost?: number;
+    adminCost?: number;
+    otherCost?: number;
     inventoryCost: number;
     totalReceivables: number;
     totalPayables: number;
     totalAccountBalance: number;
     currency: string;
+    selectedMonth?: number;
+    selectedYear?: number;
+    periodLabel?: string;
   };
   growth: {
     revenueGrowth: number;
@@ -429,6 +461,7 @@ export interface FinanceOverview {
     netProfitGrowth: number;
     cogsChange: number;
   };
+  categoryBreakdown?: CategoryExpenseBreakdownItem[];
   accounts: FinanceAccount[];
   recentTransactions: FinanceTransaction[];
   revenueVsExpenseTrend: Array<{
@@ -663,6 +696,99 @@ export interface PayablesReport {
   currency: string;
 }
 
+export type SalaryPaymentStatus = 'UNPAID' | 'PAID';
+export type SalaryPaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'MOBILE_BANKING' | 'CHEQUE';
+export type PayrollPaymentStatus = 'UNPAID' | 'PARTIALLY_PAID' | 'PAID';
+
+export interface SalaryPaymentSummary {
+  totalPayrollExpense: number;
+  totalSalaryPayable: number;
+  totalSalaryPaid: number;
+  totalSalaryRemaining: number;
+  totalEmployeesPaid: number;
+  totalEmployeesUnpaid: number;
+  totalApprovedRuns: number;
+}
+
+export interface SalaryPaymentRun {
+  id: string;
+  month: number;
+  year: number;
+  status: 'DRAFT' | 'FINALIZED' | 'PAID';
+  paymentStatus: PayrollPaymentStatus;
+  totalGrossAmount: string;
+  totalDeductions: string;
+  totalNetAmount: string;
+  totalPaidAmount: string;
+  remainingAmount: string;
+  totalEmployees: number;
+  paidEmployeesCount: number;
+  unpaidEmployeesCount: number;
+  finalizedAt?: string;
+  approvedByUserId?: string;
+  paidAt?: string;
+  createdAt: string;
+}
+
+export interface SalaryPaymentEmployee {
+  payslipId: string;
+  employeeId: string;
+  employeeCode: string;
+  fullName: string;
+  email?: string;
+  phone?: string;
+  departmentId?: string;
+  departmentName: string;
+  designation?: string;
+  basicSalary: string;
+  houseRentAllowance: string;
+  medicalAllowance: string;
+  conveyanceAllowance: string;
+  otherAllowance: string;
+  grossSalary: string;
+  providentFundDeduction: string;
+  taxDeduction: string;
+  totalDeductions: string;
+  netSalary: string;
+  paidAmount: string;
+  paymentStatus: SalaryPaymentStatus;
+  paymentMethod?: SalaryPaymentMethod;
+  paidAt?: string;
+  paidByUserId?: string;
+  paymentReference?: string;
+}
+
+export interface SalaryPaymentRunDetail {
+  run: SalaryPaymentRun;
+  employees: SalaryPaymentEmployee[];
+}
+
+export interface DisburseSalaryPaymentRequest {
+  payslipId: string;
+  paymentMethod?: SalaryPaymentMethod;
+  accountId?: string;
+  paymentDate?: string;
+  paymentReference?: string;
+}
+
+export interface BulkDisburseSalaryPaymentRequest {
+  payrollRunId: string;
+  payslipIds?: string[];
+  paymentMethod?: SalaryPaymentMethod;
+  accountId?: string;
+  paymentDate?: string;
+  paymentReference?: string;
+}
+
+export interface DisburseSalaryPaymentResponse {
+  success: boolean;
+  message: string;
+  disbursedCount: number;
+  totalDisbursedAmount: number;
+  payrollRunId: string;
+  payrollPaymentStatus: PayrollPaymentStatus;
+}
+
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   (process.env.NEXT_PUBLIC_API_BASE_URL ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1` : 'http://localhost:5000/api/v1');
@@ -686,11 +812,31 @@ export const financeApi = createApi({
     'FinanceSettings',
     'FinanceCategories',
     'FinancePeriodLocks',
+    'FinanceSalaryPayments',
   ],
   endpoints: (builder) => ({
-    getFinanceOverview: builder.query<FinanceOverview, void>({
-      query: () => '/finance/overview',
-      providesTags: ['FinanceOverview'],
+    getFinanceOverview: builder.query<FinanceOverview, { month?: number; year?: number } | void>({
+      query: (params) => ({
+        url: '/finance/overview',
+        params: params || undefined,
+      }),
+      transformResponse: (response: any) => {
+        return response?.data !== undefined ? response.data : response;
+      },
+      providesTags: ['FinanceOverview', 'FinanceTransactions', 'FinanceAccounts'],
+    }),
+
+    exportFinanceTransactions: builder.mutation<
+      { filename: string; csv: string },
+      { month?: number; year?: number; type?: string; categoryCode?: string } | void
+    >({
+      query: (params) => ({
+        url: '/finance/export/transactions',
+        params: params || undefined,
+      }),
+      transformResponse: (response: any) => {
+        return response?.data !== undefined ? response.data : response;
+      },
     }),
 
     // Chart of Accounts
@@ -702,6 +848,9 @@ export const financeApi = createApi({
         url: '/finance/chart-of-accounts',
         params: params || {},
       }),
+      transformResponse: (response: any) => {
+        return response?.data !== undefined ? response.data : response;
+      },
       providesTags: ['FinanceChartOfAccounts'],
     }),
 
@@ -763,6 +912,9 @@ export const financeApi = createApi({
         url: '/finance/journal-entries',
         params: params || {},
       }),
+      transformResponse: (response: any) => {
+        return response?.data !== undefined ? response.data : response;
+      },
       providesTags: ['FinanceJournalEntries'],
     }),
 
@@ -809,6 +961,9 @@ export const financeApi = createApi({
         url: '/finance/general-ledger',
         params,
       }),
+      transformResponse: (response: any) => {
+        return response?.data !== undefined ? response.data : response;
+      },
       providesTags: ['FinanceGeneralLedger'],
     }),
 
@@ -821,6 +976,9 @@ export const financeApi = createApi({
         url: '/finance/reports/trial-balance',
         params: params || {},
       }),
+      transformResponse: (response: any) => {
+        return response?.data !== undefined ? response.data : response;
+      },
       providesTags: ['FinanceReports'],
     }),
 
@@ -832,6 +990,9 @@ export const financeApi = createApi({
         url: '/finance/reports/balance-sheet',
         params: params || {},
       }),
+      transformResponse: (response: any) => {
+        return response?.data !== undefined ? response.data : response;
+      },
       providesTags: ['FinanceReports'],
     }),
 
@@ -843,6 +1004,9 @@ export const financeApi = createApi({
         url: '/finance/reports/profit-loss',
         params: params || {},
       }),
+      transformResponse: (response: any) => {
+        return response?.data !== undefined ? response.data : response;
+      },
       providesTags: ['FinanceReports'],
     }),
 
@@ -854,6 +1018,9 @@ export const financeApi = createApi({
         url: '/finance/reports/cash-flow',
         params: params || {},
       }),
+      transformResponse: (response: any) => {
+        return response?.data !== undefined ? response.data : response;
+      },
       providesTags: ['FinanceReports'],
     }),
 
@@ -865,22 +1032,34 @@ export const financeApi = createApi({
         url: '/finance/reports/tax-vat',
         params: params || {},
       }),
+      transformResponse: (response: any) => {
+        return response?.data !== undefined ? response.data : response;
+      },
       providesTags: ['FinanceReports'],
     }),
 
     getReceivablesReport: builder.query<ReceivablesReport, void>({
       query: () => '/finance/reports/receivables',
+      transformResponse: (response: any) => {
+        return response?.data !== undefined ? response.data : response;
+      },
       providesTags: ['FinanceReports', 'FinanceInvoices'],
     }),
 
     getPayablesReport: builder.query<PayablesReport, void>({
       query: () => '/finance/reports/payables',
+      transformResponse: (response: any) => {
+        return response?.data !== undefined ? response.data : response;
+      },
       providesTags: ['FinanceReports', 'FinanceBills'],
     }),
 
     // Period Closing Locks
     getPeriodLocks: builder.query<FinancePeriodLock[], void>({
       query: () => '/finance/period-locks',
+      transformResponse: (response: any) => {
+        return response?.data !== undefined ? response.data : response;
+      },
       providesTags: ['FinancePeriodLocks'],
     }),
 
@@ -924,6 +1103,9 @@ export const financeApi = createApi({
         url: '/finance/transactions',
         params,
       }),
+      transformResponse: (response: any) => {
+        return response?.data !== undefined ? response.data : response;
+      },
       providesTags: ['FinanceTransactions'],
     }),
 
@@ -989,6 +1171,9 @@ export const financeApi = createApi({
         url: '/finance/income',
         params,
       }),
+      transformResponse: (response: any) => {
+        return response?.data !== undefined ? response.data : response;
+      },
       providesTags: ['FinanceIncome'],
     }),
 
@@ -1017,6 +1202,7 @@ export const financeApi = createApi({
       {
         categoryCode?: string;
         accountId?: string;
+        sourceType?: string;
         startDate?: string;
         endDate?: string;
         search?: string;
@@ -1028,7 +1214,10 @@ export const financeApi = createApi({
         url: '/finance/expenses',
         params,
       }),
-      providesTags: ['FinanceExpenses'],
+      transformResponse: (response: any) => {
+        return response?.data !== undefined ? response.data : response;
+      },
+      providesTags: ['FinanceExpenses', 'FinanceOverview', 'FinanceTransactions'],
     }),
 
     createExpense: builder.mutation<
@@ -1052,6 +1241,108 @@ export const financeApi = createApi({
       invalidatesTags: ['FinanceExpenses', 'FinanceTransactions', 'FinanceOverview', 'FinanceAccounts', 'FinanceReports'],
     }),
 
+    updateExpense: builder.mutation<
+      FinanceTransaction,
+      {
+        id: string;
+        amount?: number;
+        categoryCode?: string;
+        accountId?: string;
+        description?: string;
+        reference?: string;
+        paymentMethod?: string;
+        transactionDate?: string;
+        receiptFileId?: string;
+      }
+    >({
+      query: ({ id, ...body }) => ({
+        url: `/finance/expenses/${id}`,
+        method: 'PATCH',
+        body,
+      }),
+      invalidatesTags: ['FinanceExpenses', 'FinanceTransactions', 'FinanceOverview', 'FinanceAccounts', 'FinanceReports'],
+    }),
+
+    deleteExpense: builder.mutation<void, string>({
+      query: (id) => ({
+        url: `/finance/expenses/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['FinanceExpenses', 'FinanceTransactions', 'FinanceOverview', 'FinanceAccounts', 'FinanceReports'],
+    }),
+
+    uploadReceiptFile: builder.mutation<
+      { id: string; url: string; fileName: string; mimeType: string },
+      { file: File }
+    >({
+      queryFn: async ({ file }) => {
+        try {
+          const token =
+            typeof window !== 'undefined'
+              ? localStorage.getItem('bitcommerce_token')
+              : null;
+          const storeId =
+            typeof window !== 'undefined'
+              ? localStorage.getItem('bitcommerce_active_store_id') ||
+                localStorage.getItem('bitcommerce_store_id')
+              : null;
+
+          const apiBase =
+            process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('fileableType', 'DOCUMENT');
+          formData.append(
+            'fileType',
+            file.type.includes('pdf') ? 'DOCUMENT' : 'IMAGE',
+          );
+
+          const headers: HeadersInit = {};
+          if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+          }
+          if (storeId) {
+            headers['x-store-id'] = storeId;
+          }
+
+          const response = await fetch(`${apiBase}/files/upload-single`, {
+            method: 'POST',
+            headers,
+            body: formData,
+          });
+
+          if (!response.ok) {
+            const errBody = await response.json().catch(() => ({}));
+            return {
+              error: {
+                status: response.status,
+                data: errBody,
+              },
+            };
+          }
+
+          const body = await response.json();
+          const data = body?.data || body;
+          return {
+            data: {
+              id: data.id,
+              url: data.url,
+              fileName: data.fileName || file.name,
+              mimeType: data.mimeType || file.type,
+            },
+          };
+        } catch (err: any) {
+          return {
+            error: {
+              status: 500,
+              data: { message: err?.message || 'Failed to upload receipt file' },
+            },
+          };
+        }
+      },
+    }),
+
     // Invoices
     getInvoices: builder.query<
       InvoicesResponse,
@@ -1068,11 +1359,17 @@ export const financeApi = createApi({
         url: '/finance/invoices',
         params,
       }),
+      transformResponse: (response: any) => {
+        return response?.data !== undefined ? response.data : response;
+      },
       providesTags: ['FinanceInvoices'],
     }),
 
     getInvoice: builder.query<FinanceInvoice, string>({
       query: (id) => `/finance/invoices/${id}`,
+      transformResponse: (response: any) => {
+        return response?.data !== undefined ? response.data : response;
+      },
       providesTags: (_res, _err, id) => [{ type: 'FinanceInvoices', id }],
     }),
 
@@ -1169,11 +1466,17 @@ export const financeApi = createApi({
         url: '/finance/bills',
         params,
       }),
+      transformResponse: (response: any) => {
+        return response?.data !== undefined ? response.data : response;
+      },
       providesTags: ['FinanceBills'],
     }),
 
     getBill: builder.query<FinanceBill, string>({
       query: (id) => `/finance/bills/${id}`,
+      transformResponse: (response: any) => {
+        return response?.data !== undefined ? response.data : response;
+      },
       providesTags: (_res, _err, id) => [{ type: 'FinanceBills', id }],
     }),
 
@@ -1365,6 +1668,9 @@ export const financeApi = createApi({
     // Settings & Categories
     getFinanceSettings: builder.query<FinanceSettings, void>({
       query: () => '/finance/settings',
+      transformResponse: (response: any) => {
+        return response?.data !== undefined ? response.data : response;
+      },
       providesTags: ['FinanceSettings'],
     }),
 
@@ -1390,6 +1696,10 @@ export const financeApi = createApi({
           params: type ? { type } : undefined,
         };
       },
+      transformResponse: (response: any) => {
+        const raw = response?.data !== undefined ? response.data : response;
+        return Array.isArray(raw) ? raw : Array.isArray(raw?.items) ? raw.items : [];
+      },
       providesTags: ['FinanceCategories'],
     }),
 
@@ -1409,6 +1719,97 @@ export const financeApi = createApi({
         body,
       }),
       invalidatesTags: ['FinanceCategories'],
+    }),
+
+    // Salary Payments & Disbursements
+    getSalaryPaymentSummary: builder.query<SalaryPaymentSummary, { year?: number; month?: number } | void>({
+      query: (params) => ({
+        url: '/finance/salaries/summary',
+        params: params || undefined,
+      }),
+      transformResponse: (response: any) => {
+        const data = response?.data !== undefined ? response.data : response;
+        return data || {
+          totalPayrollExpense: 0,
+          totalSalaryPayable: 0,
+          totalSalaryPaid: 0,
+          totalSalaryRemaining: 0,
+          totalEmployeesPaid: 0,
+          totalEmployeesUnpaid: 0,
+          totalApprovedRuns: 0,
+        };
+      },
+      providesTags: ['FinanceSalaryPayments', 'FinanceOverview'],
+    }),
+
+    getSalaryPaymentRuns: builder.query<SalaryPaymentRun[], { year?: number; month?: number; status?: string } | void>({
+      query: (params) => ({
+        url: '/finance/salaries/runs',
+        params: params || undefined,
+      }),
+      transformResponse: (response: any) => {
+        const data = response?.data !== undefined ? response.data : response;
+        if (Array.isArray(data)) return data;
+        if (Array.isArray(data?.items)) return data.items;
+        return [];
+      },
+      providesTags: ['FinanceSalaryPayments'],
+    }),
+
+    getSalaryPaymentRunDetail: builder.query<
+      SalaryPaymentRunDetail,
+      { runId: string; departmentId?: string; paymentStatus?: string; search?: string }
+    >({
+      query: ({ runId, ...params }) => ({
+        url: `/finance/salaries/runs/${runId}/employees`,
+        params,
+      }),
+      transformResponse: (response: any) => {
+        const data = response?.data !== undefined ? response.data : response;
+        return {
+          run: data?.run || null,
+          employees: Array.isArray(data?.employees) ? data.employees : [],
+        };
+      },
+      providesTags: ['FinanceSalaryPayments'],
+    }),
+
+    disburseSalaryPayment: builder.mutation<DisburseSalaryPaymentResponse, DisburseSalaryPaymentRequest>({
+      query: (body) => ({
+        url: '/finance/salaries/disburse',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response: any) => {
+        return response?.data !== undefined ? response.data : response;
+      },
+      invalidatesTags: [
+        'FinanceSalaryPayments',
+        'FinanceTransactions',
+        'FinanceAccounts',
+        'FinanceOverview',
+        'FinanceReports',
+        'FinanceExpenses',
+      ],
+    }),
+
+    disburseSalaryPaymentBulk: builder.mutation<DisburseSalaryPaymentResponse, BulkDisburseSalaryPaymentRequest>({
+      query: (body) => ({
+        url: '/finance/salaries/disburse-bulk',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response: any) => {
+        return response?.data !== undefined ? response.data : response;
+      },
+      invalidatesTags: [
+        'FinanceSalaryPayments',
+        'FinanceTransactions',
+        'FinanceAccounts',
+        'FinanceOverview',
+        'FinanceReports',
+        'FinanceExpenses',
+      ],
     }),
   }),
 });
@@ -1438,6 +1839,9 @@ export const {
   useCreateIncomeMutation,
   useGetExpensesQuery,
   useCreateExpenseMutation,
+  useUpdateExpenseMutation,
+  useDeleteExpenseMutation,
+  useUploadReceiptFileMutation,
   useGetInvoicesQuery,
   useGetInvoiceQuery,
   useCreateInvoiceMutation,
@@ -1460,4 +1864,10 @@ export const {
   useUpdateFinanceSettingsMutation,
   useGetCategoriesQuery,
   useCreateCategoryMutation,
+  useGetSalaryPaymentSummaryQuery,
+  useGetSalaryPaymentRunsQuery,
+  useGetSalaryPaymentRunDetailQuery,
+  useDisburseSalaryPaymentMutation,
+  useDisburseSalaryPaymentBulkMutation,
+  useExportFinanceTransactionsMutation,
 } = financeApi;

@@ -21,6 +21,8 @@ export class ListTransactionsService {
       .leftJoinAndSelect('txn.account', 'account')
       .leftJoinAndSelect('txn.toAccount', 'toAccount')
       .leftJoinAndSelect('txn.category', 'category')
+      .leftJoinAndSelect('txn.createdByUser', 'createdByUser')
+      .leftJoinAndSelect('txn.receiptFile', 'receiptFile')
       .where('txn.storeId = :storeId', { storeId });
 
     if (query.type) {

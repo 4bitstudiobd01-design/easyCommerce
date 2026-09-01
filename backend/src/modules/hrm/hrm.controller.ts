@@ -87,7 +87,9 @@ import { GetPayrollRunService } from './services/get-payroll-run.service';
 import { FinalizePayrollRunService } from './services/finalize-payroll-run.service';
 import { MarkPayrollRunPaidService } from './services/mark-payroll-run-paid.service';
 import { DeletePayrollRunService } from './services/delete-payroll-run.service';
+import { SeedPayrollDemoDataService } from './services/seed-payroll-demo-data.service';
 import { SetSalaryStructureDto, GeneratePayrollRunDto, ListPayrollRunsQueryDto } from './dto/payroll.dto';
+import { SeedPayrollDemoDataResponseDto } from './dto/seed-payroll-demo-data-response.dto';
 import { GetTaxSlabsService } from './services/get-tax-slabs.service';
 import { SetTaxSlabsService } from './services/set-tax-slabs.service';
 import { EstimateTaxService } from './services/estimate-tax.service';
@@ -155,6 +157,7 @@ export class HrmController {
     private readonly finalizePayrollRunService: FinalizePayrollRunService,
     private readonly markPayrollRunPaidService: MarkPayrollRunPaidService,
     private readonly deletePayrollRunService: DeletePayrollRunService,
+    private readonly seedPayrollDemoDataService: SeedPayrollDemoDataService,
     private readonly getTaxSlabsService: GetTaxSlabsService,
     private readonly setTaxSlabsService: SetTaxSlabsService,
     private readonly estimateTaxService: EstimateTaxService,
@@ -860,7 +863,7 @@ export class HrmController {
   @ApiResponse({ status: 200, description: 'Employee + salary structure rows' })
   async listSalaryStructures(@CurrentUser('sub') userId: string, @Headers('x-store-id') headerStoreId: string) {
     const store = await this.getStoreContext(userId, headerStoreId);
-    return this.listSalaryStructuresService.execute(store.id);
+    return this.listSalaryStructuresService.execute(store.tenantId, store.id, userId);
   }
 
   @Put('payroll/salary-structures/:employeeId')
@@ -877,6 +880,20 @@ export class HrmController {
   ) {
     const store = await this.getStoreContext(userId, headerStoreId);
     return this.setSalaryStructureService.execute(store.tenantId, store.id, employeeId, dto);
+  }
+
+  @Post('payroll/seed-demo-data')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:payroll:manage')
+  @ApiOperation({ summary: 'Seed realistic demo payroll runs, payslips, employees, and salary structures' })
+  @ApiResponse({ status: 200, description: 'Payroll demo data seeded', type: SeedPayrollDemoDataResponseDto })
+  async seedPayrollDemoData(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+  ): Promise<SeedPayrollDemoDataResponseDto> {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.seedPayrollDemoDataService.execute(store.tenantId, store.id, userId);
   }
 
   @Post('payroll/runs')
@@ -906,7 +923,7 @@ export class HrmController {
     @Query() query: ListPayrollRunsQueryDto,
   ) {
     const store = await this.getStoreContext(userId, headerStoreId);
-    return this.listPayrollRunsService.execute(store.id, query);
+    return this.listPayrollRunsService.execute(store.tenantId, store.id, query, userId);
   }
 
   @Get('payroll/runs/:id')
@@ -936,7 +953,7 @@ export class HrmController {
     @Param('id') runId: string,
   ) {
     const store = await this.getStoreContext(userId, headerStoreId);
-    return this.finalizePayrollRunService.execute(store.id, runId);
+    return this.finalizePayrollRunService.execute(store.id, runId, userId);
   }
 
   @Post('payroll/runs/:id/mark-paid')

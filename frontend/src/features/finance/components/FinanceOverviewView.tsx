@@ -24,6 +24,16 @@ import {
   Megaphone,
   Layers,
   ArrowRight,
+  Calendar,
+  Download,
+  Truck,
+  Building,
+  Zap,
+  Cpu,
+  Box,
+  Wrench,
+  ShieldCheck,
+  PieChart as PieChartIcon,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -39,6 +49,7 @@ import {
 } from 'recharts';
 import {
   useGetFinanceOverviewQuery,
+  useExportFinanceTransactionsMutation,
   FinanceTransaction,
   FinanceAccount,
 } from '../api/financeApi';
@@ -48,6 +59,11 @@ import { CreateTransferModal } from './CreateTransferModal';
 import { CreateInvoiceModal } from './CreateInvoiceModal';
 import { CreateBillModal } from './CreateBillModal';
 import { CreateJournalEntryModal } from './CreateJournalEntryModal';
+
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
 
 function formatMoney(amount: number | string) {
   const val = Number(amount || 0);
@@ -72,7 +88,19 @@ function renderGrowthBadge(rate: number, isGoodWhenPositive: boolean = true) {
 }
 
 export function FinanceOverviewView() {
-  const { data, isLoading, refetch, isFetching } = useGetFinanceOverviewQuery();
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1; // 1-12
+
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+  const [selectedMonth, setSelectedMonth] = useState<number>(currentMonth);
+
+  const { data, isLoading, refetch, isFetching } = useGetFinanceOverviewQuery({
+    year: selectedYear,
+    month: selectedMonth === 0 ? undefined : selectedMonth,
+  });
+
+  const [exportTransactions, { isLoading: isExporting }] = useExportFinanceTransactionsMutation();
 
   const [isIncomeOpen, setIsIncomeOpen] = useState(false);
   const [isExpenseOpen, setIsExpenseOpen] = useState(false);
@@ -83,80 +111,139 @@ export function FinanceOverviewView() {
 
   const summary = data?.summary;
   const growth = data?.growth;
+  const categoryBreakdown = data?.categoryBreakdown || [];
   const accounts: FinanceAccount[] = Array.isArray(data?.accounts) ? data.accounts : [];
   const recentTransactions: FinanceTransaction[] = Array.isArray(data?.recentTransactions)
     ? data.recentTransactions
     : [];
   const chartData = Array.isArray(data?.revenueVsExpenseTrend) ? data.revenueVsExpenseTrend : [];
 
+  const monthLabel = selectedMonth > 0 ? MONTH_NAMES[selectedMonth - 1] : 'All Year';
+
+  const handleExportCsv = async () => {
+    try {
+      const res = await exportTransactions({
+        year: selectedYear,
+        month: selectedMonth === 0 ? undefined : selectedMonth,
+      }).unwrap();
+
+      if (res?.csv) {
+        const blob = new Blob([res.csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', res.filename || `finance_transactions_${selectedYear}_${selectedMonth}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
+    } catch (err: any) {
+      alert(err?.data?.message || 'Failed to export CSV.');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header & Quick Action Buttons */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-xs">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Finance Overview</h1>
-          <p className="text-xs text-slate-500 font-medium mt-0.5">
-            Real-time financial performance, profitability, cash positions, and double-entry health
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Finance Overview</h1>
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
+              <Calendar className="w-3 h-3 text-blue-600" />
+              <span>{monthLabel} {selectedYear}</span>
+            </span>
+          </div>
+          <p className="text-xs text-slate-500 font-medium mt-1">
+            Real-time monthly revenue, operating expenses, cash positions, and accounting reconciliation.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Filter Controls & Actions */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Month Dropdown */}
+          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl shadow-2xs">
+            <Calendar className="w-3.5 h-3.5 text-slate-400" />
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Month:</label>
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(Number(e.target.value))}
+              className="bg-transparent text-xs font-bold text-slate-800 focus:outline-hidden cursor-pointer"
+            >
+              <option value={0}>All Year ({selectedYear})</option>
+              {MONTH_NAMES.map((m, idx) => (
+                <option key={idx + 1} value={idx + 1}>
+                  {m} {idx + 1 === currentMonth && selectedYear === currentYear ? '⭐ (Current)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Year Dropdown */}
+          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl shadow-2xs">
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Year:</label>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className="bg-transparent text-xs font-bold text-slate-800 focus:outline-hidden cursor-pointer"
+            >
+              <option value={2026}>2026</option>
+              <option value={2025}>2025</option>
+              <option value={2024}>2024</option>
+            </select>
+          </div>
+
+          {/* Export to CSV / Google Sheets */}
+          <button
+            type="button"
+            disabled={isExporting}
+            onClick={handleExportCsv}
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl border border-slate-200 transition shadow-2xs cursor-pointer disabled:opacity-50"
+            title="Download Google Sheets/Excel compatible CSV"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-600" />
+            <span>{isExporting ? 'Exporting...' : 'Export CSV'}</span>
+          </button>
+
           <button
             type="button"
             onClick={() => refetch()}
             disabled={isFetching}
-            className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition"
+            className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition shadow-2xs cursor-pointer"
             title="Refresh Data"
           >
             <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
           </button>
-          <button
-            type="button"
-            onClick={() => setIsJournalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition"
-          >
-            <BookOpen className="w-3.5 h-3.5" />
-            New Journal Entry
-          </button>
+
+          <div className="h-6 w-px bg-slate-200 hidden sm:block" />
+
+          {/* Quick Create Buttons */}
           <button
             type="button"
             onClick={() => setIsIncomeOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition"
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
-            New Income
+            <span>Income</span>
           </button>
+
           <button
             type="button"
             onClick={() => setIsExpenseOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-sm transition"
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
-            New Expense
+            <span>Expense</span>
           </button>
+
           <button
             type="button"
             onClick={() => setIsTransferOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl shadow-sm transition"
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
           >
             <ArrowLeftRight className="w-3.5 h-3.5" />
-            Transfer
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsInvoiceOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-sm transition"
-          >
-            <FileText className="w-3.5 h-3.5" />
-            Invoice
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsBillOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-sm transition"
-          >
-            <Receipt className="w-3.5 h-3.5" />
-            Bill
+            <span>Transfer Fund</span>
           </button>
         </div>
       </div>
@@ -176,7 +263,7 @@ export function FinanceOverviewView() {
           </div>
           <p className="text-2xl font-black text-slate-900 mt-2">{formatMoney(summary?.totalRevenue || 0)}</p>
           <div className="flex items-center justify-between text-xs text-slate-500 mt-1">
-            <span>Online Orders & Invoices</span>
+            <span>Online Orders & Delivery</span>
             <Link href="/dashboard/finance/income" className="font-bold text-emerald-600 hover:underline">
               View Income →
             </Link>
@@ -196,7 +283,7 @@ export function FinanceOverviewView() {
           </div>
           <p className="text-2xl font-black text-slate-900 mt-2">{formatMoney(summary?.totalExpenses || 0)}</p>
           <div className="flex items-center justify-between text-xs text-slate-500 mt-1">
-            <span>COGS & Operating Expenses</span>
+            <span>COGS, Payroll & Overheads</span>
             <Link href="/dashboard/finance/expenses" className="font-bold text-rose-600 hover:underline">
               View Expenses →
             </Link>
@@ -224,230 +311,415 @@ export function FinanceOverviewView() {
         </div>
 
         {/* Net Profit */}
-        <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-teal-300 transition">
+        <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-blue-300 transition">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Net Profit</span>
             <div className="flex items-center gap-1.5">
               {growth && renderGrowthBadge(growth.netProfitGrowth, true)}
-              <span className="text-[10px] font-black bg-teal-50 text-teal-700 px-2 py-0.5 rounded-full border border-teal-200">
+              <span className="text-[10px] font-black bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200">
                 {summary?.netMarginPercent || 0}% Net
               </span>
             </div>
           </div>
-          <p className={`text-2xl font-black mt-2 ${(summary?.netProfit || 0) >= 0 ? 'text-teal-700' : 'text-rose-700'}`}>
+          <p className={`text-2xl font-black mt-2 ${(summary?.netProfit || 0) >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
             {formatMoney(summary?.netProfit || 0)}
           </p>
           <div className="flex items-center justify-between text-xs text-slate-500 mt-1">
             <span>Bottom Line Net Profit</span>
-            <span className="text-[11px] font-bold text-slate-400">This Month</span>
+            <span className="text-[11px] font-semibold text-slate-400">For {monthLabel}</span>
           </div>
         </div>
       </div>
 
-      {/* Secondary Operational & Balance Sheet KPI Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+      {/* Operating Expense Breakdown & Cost Centers Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {/* COGS */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
-          <div className="flex items-center justify-between text-slate-400 mb-1">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider">COGS</span>
-            <Package className="w-3.5 h-3.5 text-amber-600" />
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase">
+            <span>COGS</span>
+            <Package className="w-3.5 h-3.5 text-amber-500" />
           </div>
-          <p className="text-base font-black text-slate-900">{formatMoney(summary?.cogs || 0)}</p>
-          <span className="text-[10px] text-slate-400 font-medium">Product & Fulfillment</span>
-        </div>
-
-        {/* Inventory Stock Value */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
-          <div className="flex items-center justify-between text-slate-400 mb-1">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider">Inventory Value</span>
-            <Layers className="w-3.5 h-3.5 text-cyan-600" />
-          </div>
-          <p className="text-base font-black text-slate-900">{formatMoney(summary?.inventoryCost || 0)}</p>
-          <Link href="/dashboard/inventory" className="text-[10px] text-cyan-600 font-bold hover:underline">
-            Stock Assets →
-          </Link>
+          <p className="text-base font-black text-slate-900 mt-1">{formatMoney(summary?.cogs || 0)}</p>
+          <span className="text-[10px] text-slate-500 block mt-0.5">Product Procurement</span>
         </div>
 
         {/* Payroll */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
-          <div className="flex items-center justify-between text-slate-400 mb-1">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider">Payroll</span>
-            <Users className="w-3.5 h-3.5 text-purple-600" />
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase">
+            <span>Payroll</span>
+            <Users className="w-3.5 h-3.5 text-pink-500" />
           </div>
-          <p className="text-base font-black text-slate-900">{formatMoney(summary?.payrollCost || 0)}</p>
-          <span className="text-[10px] text-slate-400 font-medium">Staff Salaries</span>
+          <p className="text-base font-black text-slate-900 mt-1">{formatMoney(summary?.payrollCost || 0)}</p>
+          <Link href="/dashboard/finance/salaries" className="text-[10px] font-bold text-pink-600 hover:underline block mt-0.5">
+            Staff Salaries →
+          </Link>
+        </div>
+
+        {/* Shipping & Courier */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase">
+            <span>Courier</span>
+            <Truck className="w-3.5 h-3.5 text-lime-600" />
+          </div>
+          <p className="text-base font-black text-slate-900 mt-1">{formatMoney(summary?.shippingCost || 0)}</p>
+          <span className="text-[10px] text-slate-500 block mt-0.5">Steadfast & Pathao</span>
         </div>
 
         {/* Marketing */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
-          <div className="flex items-center justify-between text-slate-400 mb-1">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider">Marketing</span>
-            <Megaphone className="w-3.5 h-3.5 text-rose-600" />
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase">
+            <span>Marketing</span>
+            <Megaphone className="w-3.5 h-3.5 text-amber-500" />
           </div>
-          <p className="text-base font-black text-slate-900">{formatMoney(summary?.marketingCost || 0)}</p>
-          <span className="text-[10px] text-slate-400 font-medium">Ads & Campaigns</span>
+          <p className="text-base font-black text-slate-900 mt-1">{formatMoney(summary?.marketingCost || 0)}</p>
+          <span className="text-[10px] text-slate-500 block mt-0.5">Meta & Google Ads</span>
         </div>
 
-        {/* Receivables (AR) */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
-          <div className="flex items-center justify-between text-slate-400 mb-1">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider">Receivables</span>
+        {/* Rent & Facilities */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase">
+            <span>Rent</span>
+            <Building className="w-3.5 h-3.5 text-teal-600" />
+          </div>
+          <p className="text-base font-black text-slate-900 mt-1">{formatMoney(summary?.rentCost || 0)}</p>
+          <span className="text-[10px] text-slate-500 block mt-0.5">Shop & Warehouse</span>
+        </div>
+
+        {/* Utilities & Internet */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase">
+            <span>Utilities</span>
+            <Zap className="w-3.5 h-3.5 text-orange-500" />
+          </div>
+          <p className="text-base font-black text-slate-900 mt-1">{formatMoney(summary?.utilitiesCost || 0)}</p>
+          <span className="text-[10px] text-slate-500 block mt-0.5">DESCO, WASA & Net</span>
+        </div>
+      </div>
+
+      {/* Second Row of Balance Sheet Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase">
+            <span>Inventory Value</span>
+            <Layers className="w-3.5 h-3.5 text-cyan-600" />
+          </div>
+          <p className="text-lg font-black text-slate-900 mt-1">{formatMoney(summary?.inventoryCost || 0)}</p>
+          <span className="text-[10px] text-slate-500 block mt-0.5">Stock Asset Valuation</span>
+        </div>
+
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase">
+            <span>Receivables</span>
             <FileText className="w-3.5 h-3.5 text-blue-600" />
           </div>
-          <p className="text-base font-black text-slate-900">{formatMoney(summary?.totalReceivables || 0)}</p>
-          <Link href="/dashboard/finance/invoices" className="text-[10px] text-blue-600 font-bold hover:underline">
+          <p className="text-lg font-black text-blue-600 mt-1">{formatMoney(summary?.totalReceivables || 0)}</p>
+          <Link href="/dashboard/finance/invoices" className="text-[10px] font-bold text-blue-600 hover:underline block mt-0.5">
             Unpaid Invoices →
           </Link>
         </div>
 
-        {/* Payables (AP) */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
-          <div className="flex items-center justify-between text-slate-400 mb-1">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider">Payables</span>
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase">
+            <span>Payables</span>
             <Receipt className="w-3.5 h-3.5 text-amber-600" />
           </div>
-          <p className="text-base font-black text-slate-900">{formatMoney(summary?.totalPayables || 0)}</p>
-          <Link href="/dashboard/finance/bills" className="text-[10px] text-amber-600 font-bold hover:underline">
-            Vendor Bills →
+          <p className="text-lg font-black text-amber-600 mt-1">{formatMoney(summary?.totalPayables || 0)}</p>
+          <Link href="/dashboard/finance/bills" className="text-[10px] font-bold text-amber-600 hover:underline block mt-0.5">
+            Vendor Bills & Salaries →
           </Link>
         </div>
 
-        {/* Total Cash/Bank */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
-          <div className="flex items-center justify-between text-slate-400 mb-1">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider">Cash & Bank</span>
-            <Landmark className="w-3.5 h-3.5 text-teal-600" />
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase">
+            <span>Cash & Bank</span>
+            <Landmark className="w-3.5 h-3.5 text-emerald-600" />
           </div>
-          <p className="text-base font-black text-slate-900">{formatMoney(summary?.totalAccountBalance || 0)}</p>
-          <Link href="/dashboard/finance/accounts" className="text-[10px] text-teal-600 font-bold hover:underline">
+          <p className="text-lg font-black text-emerald-700 mt-1">{formatMoney(summary?.totalAccountBalance || 0)}</p>
+          <Link href="/dashboard/finance/accounts" className="text-[10px] font-bold text-emerald-600 hover:underline block mt-0.5">
             {accounts.length} Active Accounts →
           </Link>
         </div>
       </div>
 
-      {/* Main Charts & Accounts Grid */}
+      {/* Main Analysis Row: 6-Month Trend & Category Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* 6-Month Trend Chart */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-4">
+        {/* 6-Month Monthly Trend Chart */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-base font-black text-slate-900">Revenue vs Expense Trend</h2>
-              <p className="text-xs text-slate-500 font-medium">Monthly financial performance over the last 6 months</p>
+              <h2 className="text-base font-bold text-slate-900">Revenue vs Expense Trend</h2>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                Monthly financial performance, operating expenses, and net margins across 6 months
+              </p>
             </div>
-            <Link
-              href="/dashboard/finance/reports"
-              className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline"
-            >
+            <Link href="/dashboard/finance/reports" className="text-xs font-bold text-blue-600 hover:underline">
               Full Reports →
             </Link>
           </div>
 
-          <div className="h-72 w-full pt-2">
+          <div className="h-[280px] w-full pt-4">
             {chartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
+                    </linearGradient>
+                    <linearGradient id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.2} />
+                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis dataKey="month" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis
+                    stroke="#94a3b8"
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(val) => `৳${(val / 1000).toFixed(0)}k`}
+                  />
                   <Tooltip
+                    formatter={(val: any) => [`৳${Number(val).toLocaleString()}`, '']}
                     contentStyle={{
                       backgroundColor: '#1e293b',
-                      borderRadius: '12px',
-                      color: '#ffffff',
+                      borderRadius: '16px',
+                      color: '#fff',
                       border: 'none',
                       fontSize: '12px',
-                      fontWeight: 'bold',
+                      boxShadow: '0 10px 25px -5px rgba(0,0,0,0.3)',
                     }}
-                    formatter={(value: any) => [`৳${Number(value).toLocaleString()}`, '']}
                   />
-                  <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
-                  <Bar dataKey="revenue" name="Revenue" fill="#10b981" radius={[6, 6, 0, 0]} />
-                  <Bar dataKey="expense" name="Expenses" fill="#f43f5e" radius={[6, 6, 0, 0]} />
-                  <Bar dataKey="profit" name="Net Profit" fill="#3b82f6" radius={[6, 6, 0, 0]} />
-                </BarChart>
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                  <Area
+                    type="monotone"
+                    dataKey="revenue"
+                    name="Revenue"
+                    stroke="#10b981"
+                    strokeWidth={2.5}
+                    fillOpacity={1}
+                    fill="url(#revenueGrad)"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="expense"
+                    name="Expenses"
+                    stroke="#ef4444"
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#expenseGrad)"
+                  />
+                </AreaChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-full flex items-center justify-center text-slate-400 text-xs">
+              <div className="h-full flex items-center justify-center text-xs text-slate-400 font-medium">
                 No transaction data available for trend analysis.
               </div>
             )}
           </div>
         </div>
 
-        {/* Financial Accounts Widget */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col">
-          <div className="flex items-center justify-between mb-4">
+        {/* Expense Category Breakdown Widget */}
+        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-base font-black text-slate-900">Financial Accounts</h2>
-              <p className="text-xs text-slate-500 font-medium">Live balances per account</p>
+              <h2 className="text-base font-bold text-slate-900">Expense Breakdown</h2>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">By cost category for {monthLabel}</p>
             </div>
-            <Link
-              href="/dashboard/finance/accounts"
-              className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline"
-            >
-              Manage →
-            </Link>
+            <PieChartIcon className="w-4 h-4 text-slate-400" />
           </div>
 
-          <div className="space-y-3 flex-1 overflow-y-auto max-h-72">
-            {accounts.length === 0 ? (
-              <div className="py-10 text-center text-slate-400 text-xs">
-                No accounts configured yet.
-                <button
-                  type="button"
-                  onClick={() => setIsIncomeOpen(true)}
-                  className="block mx-auto mt-2 text-blue-600 font-bold hover:underline"
-                >
-                  + Add First Account
-                </button>
-              </div>
-            ) : (
-              accounts.map((acc) => (
-                <div
-                  key={acc.id}
-                  className="flex items-center justify-between p-3 bg-slate-50/70 hover:bg-slate-50 border border-slate-100 rounded-2xl transition"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-700 shadow-2xs">
-                      {acc.type === 'BANK' && <Building2 className="w-4 h-4 text-blue-600" />}
-                      {acc.type === 'CASH' && <Wallet className="w-4 h-4 text-emerald-600" />}
-                      {acc.type === 'PAYMENT_GATEWAY' && <CreditCard className="w-4 h-4 text-purple-600" />}
-                      {acc.type === 'DIGITAL_WALLET' && <DollarSign className="w-4 h-4 text-amber-600" />}
+          <div className="space-y-3 pt-2">
+            {categoryBreakdown.length > 0 ? (
+              categoryBreakdown.slice(0, 6).map((cat) => (
+                <div key={cat.code} className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
+                      <span className="font-semibold text-slate-800">{cat.name}</span>
                     </div>
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold text-slate-900">{acc.name}</span>
-                        {acc.isDefault && (
-                          <span className="text-[9px] font-black bg-blue-100 text-blue-700 px-1.5 py-0.2 rounded-md">
-                            Default
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-[11px] text-slate-400 font-medium">
-                        {acc.bankOrProviderName || acc.type}
-                      </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold text-slate-900">৳{cat.amount.toLocaleString()}</span>
+                      <span className="text-[10px] text-slate-400 font-medium">({cat.percentage}%)</span>
                     </div>
                   </div>
-
-                  <div className="text-right">
-                    <span className="text-xs font-mono font-black text-slate-900">
-                      {formatMoney(acc.currentBalance)}
-                    </span>
+                  <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${cat.percentage}%`,
+                        backgroundColor: cat.color,
+                      }}
+                    />
                   </div>
                 </div>
               ))
+            ) : (
+              <div className="py-12 text-center text-xs text-slate-400 font-medium">
+                No expense breakdown recorded for this period.
+              </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Modals */}
-      <CreateIncomeModal isOpen={isIncomeOpen} onClose={() => setIsIncomeOpen(false)} />
-      <CreateExpenseModal isOpen={isExpenseOpen} onClose={() => setIsExpenseOpen(false)} />
-      <CreateTransferModal isOpen={isTransferOpen} onClose={() => setIsTransferOpen(false)} />
-      <CreateInvoiceModal isOpen={isInvoiceOpen} onClose={() => setIsInvoiceOpen(false)} />
-      <CreateBillModal isOpen={isBillOpen} onClose={() => setIsBillOpen(false)} />
-      <CreateJournalEntryModal isOpen={isJournalOpen} onClose={() => setIsJournalOpen(false)} />
+      {/* Bottom Row: Financial Accounts & Recent Transactions */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Financial Accounts Widget */}
+        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-bold text-slate-900">Financial Accounts</h2>
+            <Link href="/dashboard/finance/accounts" className="text-xs font-bold text-blue-600 hover:underline">
+              Manage →
+            </Link>
+          </div>
+
+          <div className="space-y-3">
+            {accounts.length > 0 ? (
+              accounts.map((acc) => {
+                const isCash = acc.type === 'CASH';
+                const isBank = acc.type === 'BANK';
+                const isWallet = acc.type === 'DIGITAL_WALLET';
+
+                return (
+                  <div
+                    key={acc.id}
+                    className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between hover:bg-slate-100/70 transition"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold ${
+                          isCash
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : isBank
+                            ? 'bg-blue-100 text-blue-800'
+                            : isWallet
+                            ? 'bg-pink-100 text-pink-800'
+                            : 'bg-purple-100 text-purple-800'
+                        }`}
+                      >
+                        {isCash ? '💵' : isBank ? '🏦' : isWallet ? '📱' : '💳'}
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-slate-900 block leading-tight">{acc.name}</span>
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          {acc.accountNumber ? `A/C: ${acc.accountNumber}` : acc.bankOrProviderName || acc.type}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xs font-black text-slate-900 block">{formatMoney(acc.currentBalance)}</span>
+                      <span className="text-[10px] text-emerald-600 font-semibold">Active</span>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="py-8 text-center text-xs text-slate-400 font-medium">
+                No accounts configured yet.
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Recent 10 Transactions Table */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-bold text-slate-900">Recent Transactions</h2>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                Audit trail across Orders, Purchases, Salaries & Expenses
+              </p>
+            </div>
+            <Link href="/dashboard/finance/transactions" className="text-xs font-bold text-blue-600 hover:underline">
+              View All Transactions →
+            </Link>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-slate-600">
+              <thead className="bg-slate-50 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                <tr>
+                  <th className="px-4 py-3">Date</th>
+                  <th className="px-4 py-3">Description</th>
+                  <th className="px-3 py-3">Source</th>
+                  <th className="px-3 py-3">Category</th>
+                  <th className="px-3 py-3">Recorded By</th>
+                  <th className="px-4 py-3 text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {recentTransactions.length > 0 ? (
+                  recentTransactions.map((t) => {
+                    const isIncome = t.type === 'INCOME';
+                    const creatorName =
+                      t.createdByUser?.fullName || t.createdByUser?.email || 'System Auto';
+                    const creatorId =
+                      t.createdByUser?.id || t.createdByUserId || 'SYS';
+
+                    return (
+                      <tr key={t.id} className="hover:bg-slate-50/70 transition">
+                        <td className="px-4 py-3 font-medium text-slate-500 text-[11px] whitespace-nowrap">
+                          {t.transactionDate}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="font-bold text-slate-900 block truncate max-w-[200px]">{t.description}</span>
+                          <span className="text-[10px] text-slate-400 font-mono">{t.transactionNumber}</span>
+                        </td>
+                        <td className="px-3 py-3">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                            {t.sourceType || 'MANUAL'}
+                          </span>
+                        </td>
+                        <td className="px-3 py-3">
+                          <span className="text-xs text-slate-700 font-medium">
+                            {t.category?.name || t.categoryCode || 'General'}
+                          </span>
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[9px] font-black text-slate-600 shrink-0">
+                              {creatorName[0].toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <span className="font-semibold text-slate-900 block truncate text-[11px] max-w-[100px]" title={creatorName}>
+                                {creatorName}
+                              </span>
+                              <span className="text-[9px] text-slate-400 font-mono block">
+                                ID: {creatorId.substring(0, 8)}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-right whitespace-nowrap">
+                          <span className={`font-black text-xs ${isIncome ? 'text-emerald-600' : 'text-slate-900'}`}>
+                            {isIncome ? '+' : '-'}৳{Number(t.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-xs text-slate-400 font-medium">
+                      No recent transactions recorded.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* Action Modals */}
+      {isIncomeOpen && <CreateIncomeModal isOpen={isIncomeOpen} onClose={() => setIsIncomeOpen(false)} />}
+      {isExpenseOpen && <CreateExpenseModal isOpen={isExpenseOpen} onClose={() => setIsExpenseOpen(false)} />}
+      {isTransferOpen && <CreateTransferModal isOpen={isTransferOpen} onClose={() => setIsTransferOpen(false)} />}
+      {isInvoiceOpen && <CreateInvoiceModal isOpen={isInvoiceOpen} onClose={() => setIsInvoiceOpen(false)} />}
+      {isBillOpen && <CreateBillModal isOpen={isBillOpen} onClose={() => setIsBillOpen(false)} />}
+      {isJournalOpen && <CreateJournalEntryModal isOpen={isJournalOpen} onClose={() => setIsJournalOpen(false)} />}
     </div>
   );
 }

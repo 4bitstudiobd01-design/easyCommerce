@@ -124,6 +124,8 @@ export interface InvoiceData {
   storeName: string;
   storePhone: string;
   storeAddress: string;
+  storeLogo?: string;
+  storeDomain?: string;
   amountPaid: number;
   balanceDue: number;
   generatedAt: string;
