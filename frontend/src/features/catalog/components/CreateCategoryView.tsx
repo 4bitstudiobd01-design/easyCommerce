@@ -262,8 +262,8 @@ export function CreateCategoryView() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 w-full pb-16">
-      {/* 1. HEADER ROW — sticky so title/actions stay visible while the form scrolls */}
-      <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm -mx-4 sm:-mx-6 md:-mx-8 px-4 sm:px-6 md:px-8 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100">
+      {/* 1. HEADER ROW */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
             Create Category
