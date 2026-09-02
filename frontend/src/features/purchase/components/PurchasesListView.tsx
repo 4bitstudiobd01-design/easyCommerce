@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import {
   ShoppingCart,
   Package,
@@ -107,7 +108,7 @@ export function PurchasesListView() {
   const { data: stats } = useGetBillStatsQuery();
 
   const [createBill, { isLoading: isCreating }] = useCreateBillMutation();
-  const [deleteBill] = useDeleteBillMutation();
+  const [deleteBill, { isLoading: isDeletingBill }] = useDeleteBillMutation();
 
   const bills = data?.items ?? [];
   const total = data?.total ?? 0;
@@ -177,12 +178,19 @@ export function PurchasesListView() {
     }
   };
 
-  const removeBill = async (b: BillListItem) => {
+  const [billPendingDelete, setBillPendingDelete] = useState<BillListItem | null>(null);
+
+  const removeBill = (b: BillListItem) => {
     setActiveMenuId(null);
-    if (!window.confirm(`Delete purchase ${b.billNumber}?`)) return;
+    setBillPendingDelete(b);
+  };
+
+  const confirmRemoveBill = async () => {
+    if (!billPendingDelete) return;
     try {
-      const res = await deleteBill(b.id).unwrap();
+      const res = await deleteBill(billPendingDelete.id).unwrap();
       toast.success(res.message ?? 'Purchase deleted.');
+      setBillPendingDelete(null);
     } catch (err) {
       toast.error(
         (err as { data?: { message?: string } })?.data?.message ??
@@ -743,6 +751,20 @@ export function PurchasesListView() {
       {paymentBill && (
         <RecordPaymentModal bill={paymentBill} onClose={() => setPaymentBill(null)} />
       )}
+
+      <ConfirmDialog
+        isOpen={billPendingDelete !== null}
+        onClose={() => setBillPendingDelete(null)}
+        onConfirm={confirmRemoveBill}
+        title="Delete Purchase"
+        message={
+          <>
+            Delete purchase <strong>{billPendingDelete?.billNumber}</strong>?
+          </>
+        }
+        confirmLabel="Delete"
+        isLoading={isDeletingBill}
+      />
     </div>
   );
 }

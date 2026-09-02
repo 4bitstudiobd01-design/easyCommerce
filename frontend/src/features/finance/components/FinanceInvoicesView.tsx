@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import {
   FileText,
   Plus,
@@ -55,17 +56,23 @@ export function FinanceInvoicesView() {
     limit: 20,
   });
 
-  const [deleteInvoice] = useDeleteInvoiceMutation();
+  const [deleteInvoice, { isLoading: isDeletingInvoice }] = useDeleteInvoiceMutation();
+  const [invoiceIdPendingDelete, setInvoiceIdPendingDelete] = useState<string | null>(null);
 
   const invoices = data?.items || [];
   const summary = data?.summary;
   const totalPages = data?.totalPages || 1;
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this invoice?')) return;
+  const handleDelete = (id: string) => {
+    setInvoiceIdPendingDelete(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!invoiceIdPendingDelete) return;
     try {
-      await deleteInvoice(id).unwrap();
+      await deleteInvoice(invoiceIdPendingDelete).unwrap();
       toast.success('Invoice deleted.');
+      setInvoiceIdPendingDelete(null);
     } catch (err: any) {
       toast.error(err?.data?.message || 'Failed to delete invoice.');
     }
@@ -332,6 +339,16 @@ export function FinanceInvoicesView() {
         isOpen={!!paymentInvoice}
         onClose={() => setPaymentInvoice(null)}
         invoice={paymentInvoice}
+      />
+
+      <ConfirmDialog
+        isOpen={invoiceIdPendingDelete !== null}
+        onClose={() => setInvoiceIdPendingDelete(null)}
+        onConfirm={confirmDelete}
+        title="Delete Invoice"
+        message="Are you sure you want to delete this invoice?"
+        confirmLabel="Delete"
+        isLoading={isDeletingInvoice}
       />
     </div>
   );

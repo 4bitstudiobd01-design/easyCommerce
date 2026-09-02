@@ -16,6 +16,7 @@ import {
   Database,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import {
   useGetShipmentsQuery,
   useGetShipmentSummaryQuery,
@@ -207,7 +208,7 @@ export const ShipmentsView = () => {
 
   const { data: couriers } = useGetCourierProvidersQuery();
 
-  const [cancelShipment] = useCancelShipmentMutation();
+  const [cancelShipment, { isLoading: isCancellingShipment }] = useCancelShipmentMutation();
   const [syncShipment] = useSyncShipmentMutation();
   const [seedDemoData, { isLoading: isSeeding }] = useSeedShipmentDemoDataMutation();
 
@@ -303,15 +304,18 @@ export const ShipmentsView = () => {
     }
   };
 
-  const handleCancelShipment = async (shipment: Shipment) => {
-    const confirmed = window.confirm(
-      `Cancel shipment ${shipment.shipmentNumber}? The courier booking will be cancelled.`,
-    );
-    if (!confirmed) return;
+  const [shipmentPendingCancel, setShipmentPendingCancel] = useState<Shipment | null>(null);
 
+  const handleCancelShipment = (shipment: Shipment) => {
+    setShipmentPendingCancel(shipment);
+  };
+
+  const confirmCancelShipment = async () => {
+    if (!shipmentPendingCancel) return;
     try {
-      await cancelShipment({ id: shipment.id }).unwrap();
-      toast.success(`${shipment.shipmentNumber} cancelled.`);
+      await cancelShipment({ id: shipmentPendingCancel.id }).unwrap();
+      toast.success(`${shipmentPendingCancel.shipmentNumber} cancelled.`);
+      setShipmentPendingCancel(null);
     } catch (err) {
       const message =
         (err as { data?: { message?: string } })?.data?.message ??
@@ -848,6 +852,22 @@ export const ShipmentsView = () => {
         isOpen={createDrawerMode !== null}
         mode={createDrawerMode ?? 'single'}
         onClose={() => setCreateDrawerMode(null)}
+      />
+
+      <ConfirmDialog
+        isOpen={shipmentPendingCancel !== null}
+        onClose={() => setShipmentPendingCancel(null)}
+        onConfirm={confirmCancelShipment}
+        title="Cancel Shipment"
+        message={
+          <>
+            Cancel shipment <strong>{shipmentPendingCancel?.shipmentNumber}</strong>? The courier
+            booking will be cancelled.
+          </>
+        }
+        confirmLabel="Cancel Shipment"
+        cancelLabel="Keep Shipment"
+        isLoading={isCancellingShipment}
       />
     </div>
   );

@@ -47,6 +47,7 @@ import {
   CategoryStatus,
   ProductStatus,
 } from '../api/catalogApi';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface CategoryDetailsViewProps {
   categoryId: string;
@@ -87,20 +88,17 @@ export function CategoryDetailsView({ categoryId }: CategoryDetailsViewProps) {
   );
 
   const [deleteCategory, { isLoading: isDeleting }] = useDeleteCategoryMutation();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const handleDelete = async () => {
+  const handleConfirmDelete = async () => {
     if (!category) return;
-    const confirmed = window.confirm(
-      `Are you sure you want to delete category "${category.name}"? Products assigned to this category will be unlinked safely.`,
-    );
-    if (!confirmed) return;
-
     try {
       await deleteCategory(categoryId).unwrap();
       toast.success(`Category "${category.name}" deleted successfully.`);
       router.push('/dashboard/categories');
     } catch (err: any) {
       toast.error(err?.data?.message || 'Failed to delete category.');
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -360,7 +358,7 @@ export function CategoryDetailsView({ categoryId }: CategoryDetailsViewProps) {
                   type="button"
                   onClick={() => {
                     setShowMoreMenu(false);
-                    handleDelete();
+                    setShowDeleteConfirm(true);
                   }}
                   disabled={isDeleting}
                   className="w-full text-left flex items-center gap-2 px-3.5 py-2 hover:bg-rose-50 text-rose-600 font-medium disabled:opacity-50"
@@ -885,6 +883,21 @@ export function CategoryDetailsView({ categoryId }: CategoryDetailsViewProps) {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Category"
+        message={
+          <>
+            Are you sure you want to delete <strong>&quot;{category.name}&quot;</strong>? This only
+            works if it has no products or subcategories.
+          </>
+        }
+        confirmLabel="Delete"
+        isLoading={isDeleting}
+      />
     </div>
   );
 }

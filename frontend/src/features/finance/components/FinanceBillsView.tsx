@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import {
   Receipt,
   Plus,
@@ -57,17 +58,23 @@ export function FinanceBillsView() {
     limit: 20,
   });
 
-  const [deleteBill] = useDeleteBillMutation();
+  const [deleteBill, { isLoading: isDeletingBill }] = useDeleteBillMutation();
+  const [billIdPendingDelete, setBillIdPendingDelete] = useState<string | null>(null);
 
   const bills = data?.items || [];
   const summary = data?.summary;
   const totalPages = data?.totalPages || 1;
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this bill?')) return;
+  const handleDelete = (id: string) => {
+    setBillIdPendingDelete(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!billIdPendingDelete) return;
     try {
-      await deleteBill(id).unwrap();
+      await deleteBill(billIdPendingDelete).unwrap();
       toast.success('Bill deleted.');
+      setBillIdPendingDelete(null);
     } catch (err: any) {
       toast.error(err?.data?.message || 'Failed to delete bill.');
     }
@@ -360,6 +367,16 @@ export function FinanceBillsView() {
         isOpen={!!paymentBill}
         onClose={() => setPaymentBill(null)}
         bill={paymentBill}
+      />
+
+      <ConfirmDialog
+        isOpen={billIdPendingDelete !== null}
+        onClose={() => setBillIdPendingDelete(null)}
+        onConfirm={confirmDelete}
+        title="Delete Bill"
+        message="Are you sure you want to delete this bill?"
+        confirmLabel="Delete"
+        isLoading={isDeletingBill}
       />
     </div>
   );

@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import {
   FileText,
   Clock,
@@ -105,7 +106,7 @@ export function PurchaseOrdersView() {
 
   const [createPurchaseOrder, { isLoading: isCreating }] =
     useCreatePurchaseOrderMutation();
-  const [cancelPurchaseOrder] = useCancelPurchaseOrderMutation();
+  const [cancelPurchaseOrder, { isLoading: isCancellingPo }] = useCancelPurchaseOrderMutation();
 
   const orders = data?.items ?? [];
   const total = data?.total ?? 0;
@@ -158,12 +159,19 @@ export function PurchaseOrdersView() {
     }
   };
 
-  const cancelPo = async (id: string) => {
+  const [poIdPendingCancel, setPoIdPendingCancel] = useState<string | null>(null);
+
+  const cancelPo = (id: string) => {
     setActiveMenuId(null);
-    if (!window.confirm('Cancel this purchase order?')) return;
+    setPoIdPendingCancel(id);
+  };
+
+  const confirmCancelPo = async () => {
+    if (!poIdPendingCancel) return;
     try {
-      await cancelPurchaseOrder(id).unwrap();
+      await cancelPurchaseOrder(poIdPendingCancel).unwrap();
       toast.success('Purchase order cancelled.');
+      setPoIdPendingCancel(null);
     } catch (err) {
       toast.error(
         (err as { data?: { message?: string } })?.data?.message ??
@@ -703,6 +711,17 @@ export function PurchaseOrdersView() {
           onClose={() => setReceivePoId(null)}
         />
       )}
+
+      <ConfirmDialog
+        isOpen={poIdPendingCancel !== null}
+        onClose={() => setPoIdPendingCancel(null)}
+        onConfirm={confirmCancelPo}
+        title="Cancel Purchase Order"
+        message="Cancel this purchase order?"
+        confirmLabel="Cancel PO"
+        cancelLabel="Keep PO"
+        isLoading={isCancellingPo}
+      />
     </div>
   );
 }

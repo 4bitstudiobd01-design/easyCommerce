@@ -21,6 +21,7 @@ import {
   FinanceCategory,
 } from '../api/financeApi';
 import { CreateTransactionModal } from './CreateTransactionModal';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 export function FinanceTransactionsTable() {
   const [type, setType] = useState('');
@@ -45,18 +46,24 @@ export function FinanceTransactionsTable() {
 
   const { data: accountsData } = useGetAccountsQuery();
   const { data: categories } = useGetCategoriesQuery();
-  const [deleteTransaction] = useDeleteTransactionMutation();
+  const [deleteTransaction, { isLoading: isDeletingTransaction }] = useDeleteTransactionMutation();
+  const [transactionIdPendingDelete, setTransactionIdPendingDelete] = useState<string | null>(null);
 
   const accounts = accountsData?.items || [];
   const categoryList: FinanceCategory[] = Array.isArray(categories) ? categories : [];
   const transactions = data?.items || [];
   const totalPages = data?.totalPages || 1;
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this transaction?')) return;
+  const handleDelete = (id: string) => {
+    setTransactionIdPendingDelete(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!transactionIdPendingDelete) return;
     try {
-      await deleteTransaction(id).unwrap();
+      await deleteTransaction(transactionIdPendingDelete).unwrap();
       toast.success('Transaction deleted.');
+      setTransactionIdPendingDelete(null);
     } catch (err: any) {
       toast.error(err?.data?.message || 'Failed to delete transaction.');
     }
@@ -319,6 +326,16 @@ export function FinanceTransactionsTable() {
       </div>
 
       <CreateTransactionModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
+
+      <ConfirmDialog
+        isOpen={transactionIdPendingDelete !== null}
+        onClose={() => setTransactionIdPendingDelete(null)}
+        onConfirm={confirmDelete}
+        title="Delete Transaction"
+        message="Are you sure you want to delete this transaction?"
+        confirmLabel="Delete"
+        isLoading={isDeletingTransaction}
+      />
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import {
   Users,
   DollarSign,
@@ -92,7 +93,7 @@ export function SuppliersView() {
 
   const [createSupplier, { isLoading: isCreating }] = useCreateSupplierMutation();
   const [updateSupplier, { isLoading: isUpdating }] = useUpdateSupplierMutation();
-  const [deleteSupplier] = useDeleteSupplierMutation();
+  const [deleteSupplier, { isLoading: isDeletingSupplier }] = useDeleteSupplierMutation();
 
   const suppliers = data?.items ?? [];
   const total = data?.total ?? 0;
@@ -155,12 +156,19 @@ export function SuppliersView() {
     }
   };
 
-  const remove = async (s: SupplierListItem) => {
+  const [supplierPendingDelete, setSupplierPendingDelete] = useState<SupplierListItem | null>(null);
+
+  const remove = (s: SupplierListItem) => {
     setActiveMenuId(null);
-    if (!window.confirm(`Delete supplier "${s.name}"?`)) return;
+    setSupplierPendingDelete(s);
+  };
+
+  const confirmRemove = async () => {
+    if (!supplierPendingDelete) return;
     try {
-      const res = await deleteSupplier(s.id).unwrap();
+      const res = await deleteSupplier(supplierPendingDelete.id).unwrap();
       toast.success(res.message ?? 'Supplier deleted.');
+      setSupplierPendingDelete(null);
     } catch (err) {
       const message =
         (err as { data?: { message?: string } })?.data?.message ??
@@ -615,6 +623,20 @@ export function SuppliersView() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={supplierPendingDelete !== null}
+        onClose={() => setSupplierPendingDelete(null)}
+        onConfirm={confirmRemove}
+        title="Delete Supplier"
+        message={
+          <>
+            Delete supplier <strong>&quot;{supplierPendingDelete?.name}&quot;</strong>?
+          </>
+        }
+        confirmLabel="Delete"
+        isLoading={isDeletingSupplier}
+      />
     </div>
   );
 }
