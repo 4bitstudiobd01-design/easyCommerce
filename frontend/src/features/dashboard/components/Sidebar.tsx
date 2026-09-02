@@ -74,7 +74,7 @@ export const Sidebar = ({
   const isActive = (path: string) => {
     if (path === '/dashboard' && pathname === '/dashboard') return true;
     if (path === '/dashboard/accounting' && pathname === '/dashboard/accounting') return true;
-    if (path === '/dashboard/purchase' && pathname === '/dashboard/purchase') return true;
+    if (path === '/dashboard/purchase' && pathname.startsWith('/dashboard/purchase')) return true;
     if (path === '/dashboard/finance' && pathname.startsWith('/dashboard/finance')) return true;
     if (path !== '/dashboard' && path !== '/dashboard/accounting' && path !== '/dashboard/purchase' && path !== '/dashboard/finance' && pathname.startsWith(path)) return true;
     return false;
@@ -88,7 +88,6 @@ export const Sidebar = ({
   // Collapsible Accordion Groups
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     ecommerce: true,
-    purchase: isRouteInGroup('/dashboard/purchase'),
     crm: isRouteInGroup('/dashboard/crm'),
     hrm: isRouteInGroup('/dashboard/hr'),
     accounting: isRouteInGroup('/dashboard/accounting'),
@@ -108,11 +107,8 @@ export const Sidebar = ({
 
   // Auto-expand active group when route changes
   useEffect(() => {
-    if (isRouteInGroup(['/dashboard/orders', '/dashboard/products', '/dashboard/categories', '/dashboard/customers', '/dashboard/inventory', '/dashboard/logistics', '/dashboard/abandoned-carts', '/dashboard/themes'])) {
+    if (isRouteInGroup(['/dashboard/orders', '/dashboard/products', '/dashboard/categories', '/dashboard/customers', '/dashboard/inventory', '/dashboard/purchase', '/dashboard/logistics', '/dashboard/abandoned-carts', '/dashboard/themes'])) {
       setOpenGroups(prev => ({ ...prev, ecommerce: true }));
-    }
-    if (isRouteInGroup('/dashboard/purchase')) {
-      setOpenGroups(prev => ({ ...prev, purchase: true }));
     }
     if (isRouteInGroup('/dashboard/crm')) {
       setOpenGroups(prev => ({ ...prev, crm: true }));
@@ -467,6 +463,19 @@ export const Sidebar = ({
                   {!isDesktopCollapsed && <span>Inventory</span>}
                 </div>
               </Link>
+              <Link
+                href="/dashboard/purchase"
+                className={navItemClass('/dashboard/purchase')}
+                onMouseEnter={(e) => handleTooltipEnter(e, "Purchase")}
+                onFocus={(e) => handleTooltipEnter(e, "Purchase")}
+                onMouseLeave={handleTooltipLeave}
+                onBlur={handleTooltipLeave}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Receipt className={iconClass} strokeWidth={iconStroke} />
+                  {!isDesktopCollapsed && <span>Purchase</span>}
+                </div>
+              </Link>
               <Link 
                 href="/dashboard/logistics" 
                 className={navItemClass('/dashboard/logistics')}
@@ -504,69 +513,6 @@ export const Sidebar = ({
                 <div className="flex items-center gap-2.5">
                   <MonitorSmartphone className={iconClass} strokeWidth={iconStroke} />
                   {!isDesktopCollapsed && <span>Storefront Themes</span>}
-                </div>
-              </Link>
-            </div>
-          )}
-
-          {/* 2. PURCHASE ACCORDION */}
-          <AccordionHeader 
-            title="Purchase" 
-            groupKey="purchase" 
-            isOpen={openGroups.purchase} 
-          />
-          {(isDesktopCollapsed || openGroups.purchase) && (
-            <div className="space-y-0.5">
-              <Link 
-                href="/dashboard/purchase" 
-                className={navItemClass('/dashboard/purchase')}
-                onMouseEnter={(e) => handleTooltipEnter(e, "Overview")}
-                onFocus={(e) => handleTooltipEnter(e, "Overview")}
-                onMouseLeave={handleTooltipLeave}
-                onBlur={handleTooltipLeave}
-              >
-                <div className="flex items-center gap-2.5">
-                  <BarChart3 className={iconClass} strokeWidth={iconStroke} />
-                  {!isDesktopCollapsed && <span>Overview</span>}
-                </div>
-              </Link>
-              <Link 
-                href="/dashboard/purchase/suppliers" 
-                className={navItemClass('/dashboard/purchase/suppliers')}
-                onMouseEnter={(e) => handleTooltipEnter(e, "Suppliers")}
-                onFocus={(e) => handleTooltipEnter(e, "Suppliers")}
-                onMouseLeave={handleTooltipLeave}
-                onBlur={handleTooltipLeave}
-              >
-                <div className="flex items-center gap-2.5">
-                  <UserCheck className={iconClass} strokeWidth={iconStroke} />
-                  {!isDesktopCollapsed && <span>Suppliers</span>}
-                </div>
-              </Link>
-              <Link 
-                href="/dashboard/purchase/purchase-orders" 
-                className={navItemClass('/dashboard/purchase/purchase-orders')}
-                onMouseEnter={(e) => handleTooltipEnter(e, "Purchase Orders")}
-                onFocus={(e) => handleTooltipEnter(e, "Purchase Orders")}
-                onMouseLeave={handleTooltipLeave}
-                onBlur={handleTooltipLeave}
-              >
-                <div className="flex items-center gap-2.5">
-                  <FileText className={iconClass} strokeWidth={iconStroke} />
-                  {!isDesktopCollapsed && <span>Purchase Orders</span>}
-                </div>
-              </Link>
-              <Link 
-                href="/dashboard/purchase/purchases" 
-                className={navItemClass('/dashboard/purchase/purchases')}
-                onMouseEnter={(e) => handleTooltipEnter(e, "Purchases")}
-                onFocus={(e) => handleTooltipEnter(e, "Purchases")}
-                onMouseLeave={handleTooltipLeave}
-                onBlur={handleTooltipLeave}
-              >
-                <div className="flex items-center gap-2.5">
-                  <ShoppingCart className={iconClass} strokeWidth={iconStroke} />
-                  {!isDesktopCollapsed && <span>Purchases</span>}
                 </div>
               </Link>
             </div>

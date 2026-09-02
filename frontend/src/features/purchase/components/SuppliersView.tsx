@@ -208,6 +208,8 @@ export function SuppliersView() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-1.5 text-xs font-semibold mb-1">
+            <span className="text-slate-500">E-Commerce</span>
+            <span className="text-slate-400">›</span>
             <Link href="/dashboard/purchase" className="text-blue-600 hover:underline">
               Purchase
             </Link>
@@ -420,14 +422,14 @@ export function SuppliersView() {
                           {activeMenuId === s.id && (
                             <div className="absolute right-0 top-8 z-30 w-44 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 text-left text-xs font-semibold">
                               <Link
-                                href="/dashboard/purchase/purchase-orders"
+                                href="/dashboard/purchase?tab=purchase-orders"
                                 className="flex items-center gap-2 px-3.5 py-2 text-slate-700 hover:bg-slate-50"
                               >
                                 <FileText className="w-3.5 h-3.5 text-slate-400" />
                                 <span>Create PO</span>
                               </Link>
                               <Link
-                                href="/dashboard/purchase/purchases"
+                                href="/dashboard/purchase?tab=purchases"
                                 className="flex items-center gap-2 px-3.5 py-2 text-slate-700 hover:bg-slate-50"
                               >
                                 <DollarSign className="w-3.5 h-3.5 text-slate-400" />
