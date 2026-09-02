@@ -80,6 +80,17 @@ export class PostJournalEntryService {
       );
     }
 
+    // 2.5. Idempotency Check: if sourceId and sourceType already have an entry, return it
+    if (dto.sourceType && dto.sourceId) {
+      const existing = await this.journalEntryRepository.findOne({
+        where: { storeId, sourceType: dto.sourceType, sourceId: dto.sourceId },
+        relations: ['lines'],
+      });
+      if (existing) {
+        return existing;
+      }
+    }
+
     // 3. Generate sequential Entry Number (JE-YYYYMMDD-XXXX)
     const dateCompact = dto.entryDate.replace(/-/g, '');
     const countToday = await this.journalEntryRepository.count({

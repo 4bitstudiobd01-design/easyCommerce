@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Repository } from 'typeorm';
 import { ProductEntity } from '../../catalog/entities/product.entity';
@@ -19,6 +19,7 @@ import { AllocatePurchaseNumberService } from './allocate-purchase-number.servic
 import { PurchasePostingHelper } from './purchase-posting.helper';
 import { RecordSupplierPaymentService } from './record-supplier-payment.service';
 import { fromCents, toCents } from './purchase-money.util';
+import { SyncModuleFinanceService } from '../../finance/services/sync-module-finance.service';
 
 /**
  * Records a supplier bill with product line items and, unless the store has auto-post
@@ -48,6 +49,8 @@ export class CreateBillService {
     private readonly postJournalEntryService: PostJournalEntryService,
     private readonly recordSupplierPaymentService: RecordSupplierPaymentService,
     private readonly dataSource: DataSource,
+    @Optional()
+    private readonly syncModuleFinanceService?: SyncModuleFinanceService,
   ) {}
 
   async execute(
@@ -210,6 +213,31 @@ export class CreateBillService {
           method: dto.paymentMethod,
           paidFromAccountId: dto.paidFromAccountId,
         }, userId);
+      }
+    }
+
+    if (this.syncModuleFinanceService) {
+      try {
+        await this.syncModuleFinanceService.syncPurchaseBill({
+          tenantId,
+          storeId,
+          billId: bill.id,
+          billNumber: bill.billNumber,
+          supplierId: supplier.id,
+          supplierName: supplier.name,
+          billDate: dto.billDate,
+          dueDate: dto.dueDate,
+          subtotal: Number(bill.subtotal),
+          totalAmount: Number(bill.totalAmount),
+          items: bill.lines?.map((l) => ({
+            productName: (l as any).productName || 'Purchased Inventory item',
+            quantity: l.quantity,
+            unitCost: Number(l.unitCost),
+            totalCost: Number(l.lineTotal),
+          })),
+        });
+      } catch (err) {
+        console.error('Failed to sync purchase bill to Finance:', err);
       }
     }
 

@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
-import { OrderEntity, OrderStatusEnum, PaymentStatusEnum } from '../entities/order.entity';
+import { OrderEntity, OrderStatusEnum, PaymentStatusEnum, PaymentMethodEnum } from '../entities/order.entity';
 import { OrderStatusHistoryEntity } from '../entities/order-status-history.entity';
 import { UpdateOrderStatusDto } from '../dto/update-order-status.dto';
 import { TriggerOrderStatusSmsService } from '../../sms/services/trigger-order-status-sms.service';
@@ -9,6 +9,8 @@ import { ConsignmentEntity } from '../../logistics/entities/consignment.entity';
 import { OrderStateService } from './order-state.service';
 import { AdjustStockService } from '../../inventory/services/adjust-stock.service';
 import { StockAdjustmentAction } from '../../inventory/dto/adjust-stock.dto';
+import { SyncModuleFinanceService } from '../../finance/services/sync-module-finance.service';
+import { StoreEntity } from '../../tenant/entities/store.entity';
 
 @Injectable()
 export class UpdateOrderStatusService {
@@ -21,6 +23,8 @@ export class UpdateOrderStatusService {
     private readonly orderStateService: OrderStateService,
     private readonly adjustStockService: AdjustStockService,
     private readonly dataSource: DataSource,
+    @Optional()
+    private readonly syncModuleFinanceService?: SyncModuleFinanceService,
   ) {}
 
   async execute(id: string, tenantId: string, userId: string, dto: UpdateOrderStatusDto): Promise<OrderEntity> {
@@ -108,6 +112,60 @@ export class UpdateOrderStatusService {
       });
     } catch (err) {
       // Non-blocking SMS trigger
+    }
+
+    // 5. Automatic Finance / Accounts Sync
+    if (this.syncModuleFinanceService) {
+      try {
+        const store = await this.dataSource
+          .getRepository(StoreEntity)
+          .findOne({ where: { tenantId: savedOrder!.tenantId } });
+        const resolvedStoreId = store?.id || savedOrder!.tenantId;
+
+        const estCogs = savedOrder!.items
+          ? savedOrder!.items.reduce(
+              (sum, item) => sum + Number((item as any).costPrice || 0) * (item.quantity || 1),
+              0,
+            )
+          : 0;
+
+        if (dto.orderStatus === OrderStatusEnum.DELIVERED) {
+          if (savedOrder!.paymentMethod === PaymentMethodEnum.COD) {
+            await this.syncModuleFinanceService.syncOrderCodDelivered({
+              tenantId: savedOrder!.tenantId,
+              storeId: resolvedStoreId,
+              orderId: savedOrder!.id,
+              orderNumber: savedOrder!.orderNumber,
+              customerName: savedOrder!.customerName || 'Customer',
+              courierName: consignment?.courierProvider || 'Courier',
+              subtotal: Number(savedOrder!.subtotal || 0),
+              shippingFee: Number(savedOrder!.deliveryFee || 0),
+              discount: Number(savedOrder!.discountAmount || 0),
+              taxAmount: 0,
+              grandTotal: Number(savedOrder!.grandTotal || 0),
+              estimatedCogs: estCogs > 0 ? estCogs : undefined,
+            });
+          } else {
+            await this.syncModuleFinanceService.syncOrderPaid({
+              tenantId: savedOrder!.tenantId,
+              storeId: resolvedStoreId,
+              orderId: savedOrder!.id,
+              orderNumber: savedOrder!.orderNumber,
+              customerName: savedOrder!.customerName || 'Customer',
+              subtotal: Number(savedOrder!.subtotal || 0),
+              shippingFee: Number(savedOrder!.deliveryFee || 0),
+              discount: Number(savedOrder!.discountAmount || 0),
+              taxAmount: 0,
+              grandTotal: Number(savedOrder!.grandTotal || 0),
+              estimatedCogs: estCogs > 0 ? estCogs : undefined,
+              paymentMethod: savedOrder!.paymentMethod,
+            });
+          }
+        }
+      } catch (err) {
+        // Non-blocking finance sync logging
+        console.error('Failed to sync delivered order to Finance:', err);
+      }
     }
 
     return savedOrder!;

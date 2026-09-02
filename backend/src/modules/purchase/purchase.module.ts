@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -17,6 +17,7 @@ import { TenantModule } from '../tenant/tenant.module';
 import { StaffModule } from '../staff/staff.module';
 import { AccountingModule } from '../accounting/accounting.module';
 import { InventoryModule } from '../inventory/inventory.module';
+import { FinanceModule } from '../finance/finance.module';
 
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -78,6 +79,7 @@ import { SeedPurchaseDemoDataService } from './services/seed-purchase-demo-data.
     StaffModule,
     AccountingModule,
     InventoryModule,
+    forwardRef(() => FinanceModule),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
