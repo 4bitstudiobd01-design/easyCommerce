@@ -122,6 +122,11 @@ export function CategoryManagementApp() {
 
   const isFiltered = searchTerm !== '' || statusFilter !== 'ALL';
 
+  // Reordering (drag handle + up/down arrows) is only reliable when the rows shown are
+  // exactly one sibling set in sortOrder — no search/status filter, sorted by sortOrder,
+  // and no pagination splitting the siblings across pages.
+  const canReorder = !isFiltered && sortBy === 'sortOrder' && sortOrder === 'ASC' && meta.totalPages <= 1;
+
   // Breadcrumb navigation: drill into a category's subcategories
   const handleNavigate = (categoryId: string, categoryName: string) => {
     setBreadcrumbs((prev) => [...prev, { id: categoryId, name: categoryName }]);
@@ -437,6 +442,7 @@ export function CategoryManagementApp() {
         selectedIds={selectedIds}
         onSelectRow={handleSelectRow}
         onSelectAll={handleSelectAll}
+        canReorder={canReorder}
       />
 
       {/* 5. SERVER-SIDE PAGINATION TOOLBAR */}

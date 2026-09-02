@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -34,8 +34,6 @@ import {
   Gift,
   Camera,
   Home,
-  Laptop,
-  SlidersHorizontal,
   Table,
   Code,
   X,
@@ -48,7 +46,7 @@ import {
   CategoryStatus,
 } from '../api/catalogApi';
 
-type SectionTab = 'general' | 'seo' | 'display' | 'options';
+type SectionTab = 'general' | 'seo' | 'display';
 
 interface EditCategoryViewProps {
   categoryId: string;
@@ -81,8 +79,46 @@ export function EditCategoryView({ categoryId }: EditCategoryViewProps) {
   const { data: existingCategories = [] } = useGetCategoriesQuery();
   const [updateCategory, { isLoading: isSubmitting }] = useUpdateCategoryMutation();
 
-  // Navigation Tab State
+  // Active section is derived from scroll position (for sidebar highlight),
+  // sidebar clicks scroll the page to the matching section instead of switching tabs.
   const [activeSection, setActiveSection] = useState<SectionTab>('general');
+  const sectionRefs = {
+    general: useRef<HTMLDivElement>(null),
+    seo: useRef<HTMLDivElement>(null),
+    display: useRef<HTMLDivElement>(null),
+  };
+
+  const scrollToSection = (section: SectionTab) => {
+    setActiveSection(section);
+    sectionRefs[section].current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  // Keep the sidebar highlight in sync when the user scrolls the page manually,
+  // not just when they click a sidebar item.
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+        if (visible) {
+          const section = (Object.keys(sectionRefs) as SectionTab[]).find(
+            (key) => sectionRefs[key].current === visible.target,
+          );
+          if (section) setActiveSection(section);
+        }
+      },
+      { rootMargin: '-100px 0px -70% 0px', threshold: 0 },
+    );
+
+    (Object.keys(sectionRefs) as SectionTab[]).forEach((key) => {
+      const el = sectionRefs[key].current;
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // General Form State
   const [name, setName] = useState('');
@@ -205,7 +241,7 @@ export function EditCategoryView({ categoryId }: EditCategoryViewProps) {
     e.preventDefault();
     if (!validate()) {
       toast.error('Please resolve validation errors before saving.');
-      setActiveSection('general');
+      scrollToSection('general');
       return;
     }
 
@@ -279,7 +315,7 @@ export function EditCategoryView({ categoryId }: EditCategoryViewProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-7xl mx-auto pb-16">
+    <form onSubmit={handleSubmit} className="space-y-6 w-full pb-16">
       {/* 1. HEADER ROW */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -339,11 +375,11 @@ export function EditCategoryView({ categoryId }: EditCategoryViewProps) {
 
       {/* 2. MAIN LAYOUT: SIDEBAR TABS (LEFT) + WHITE FORM CONTAINER (RIGHT) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* LEFT VERTICAL NAVIGATION TABS */}
-        <div className="lg:col-span-3 space-y-2">
+        {/* LEFT VERTICAL NAVIGATION TABS — sticky so it stays visible while the form scrolls */}
+        <div className="lg:col-span-2 space-y-2 lg:sticky lg:top-24 self-start">
           <button
             type="button"
-            onClick={() => setActiveSection('general')}
+            onClick={() => scrollToSection('general')}
             className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-xs transition-all text-left ${
               activeSection === 'general'
                 ? 'bg-blue-50 text-blue-600 font-bold shadow-xs'
@@ -362,7 +398,7 @@ export function EditCategoryView({ categoryId }: EditCategoryViewProps) {
 
           <button
             type="button"
-            onClick={() => setActiveSection('seo')}
+            onClick={() => scrollToSection('seo')}
             className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-xs transition-all text-left ${
               activeSection === 'seo'
                 ? 'bg-blue-50 text-blue-600 font-bold shadow-xs'
@@ -381,7 +417,7 @@ export function EditCategoryView({ categoryId }: EditCategoryViewProps) {
 
           <button
             type="button"
-            onClick={() => setActiveSection('display')}
+            onClick={() => scrollToSection('display')}
             className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-xs transition-all text-left ${
               activeSection === 'display'
                 ? 'bg-blue-50 text-blue-600 font-bold shadow-xs'
@@ -397,32 +433,12 @@ export function EditCategoryView({ categoryId }: EditCategoryViewProps) {
             </div>
             <span>Display</span>
           </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSection('options')}
-            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-xs transition-all text-left ${
-              activeSection === 'options'
-                ? 'bg-blue-50 text-blue-600 font-bold shadow-xs'
-                : 'text-slate-600 hover:bg-slate-100/70 hover:text-slate-900'
-            }`}
-          >
-            <div
-              className={`w-7 h-7 rounded-lg flex items-center justify-center ${
-                activeSection === 'options' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'
-              }`}
-            >
-              <SlidersHorizontal className="w-4 h-4" />
-            </div>
-            <span>More Options</span>
-          </button>
         </div>
 
-        {/* RIGHT MAIN WHITE CARD FORM CONTAINER */}
-        <div className="lg:col-span-9 bg-white rounded-2xl border border-slate-100 shadow-sm p-6 sm:p-8">
-          {/* GENERAL TAB CONTENT */}
-          {activeSection === 'general' && (
-            <div className="space-y-6">
+        {/* RIGHT MAIN WHITE CARD FORM CONTAINER — all sections stacked, scrollable in one page */}
+        <div className="lg:col-span-10 bg-white rounded-2xl border border-slate-100 shadow-sm divide-y divide-slate-100">
+          {/* GENERAL SECTION */}
+          <div ref={sectionRefs.general} className="space-y-6 p-6 sm:p-8 scroll-mt-24">
               <h2 className="text-sm font-bold text-slate-900">General Information</h2>
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -614,12 +630,10 @@ export function EditCategoryView({ categoryId }: EditCategoryViewProps) {
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+          </div>
 
-          {/* SEO TAB CONTENT */}
-          {activeSection === 'seo' && (
-            <div className="space-y-6">
+          {/* SEO SECTION */}
+          <div ref={sectionRefs.seo} className="space-y-6 p-6 sm:p-8 scroll-mt-24">
               <h2 className="text-sm font-bold text-slate-900">Search Engine Optimization (SEO)</h2>
 
               <div className="space-y-4 max-w-2xl">
@@ -680,12 +694,10 @@ export function EditCategoryView({ categoryId }: EditCategoryViewProps) {
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+          </div>
 
-          {/* DISPLAY TAB CONTENT */}
-          {activeSection === 'display' && (
-            <div className="space-y-6">
+          {/* DISPLAY SECTION */}
+          <div ref={sectionRefs.display} className="space-y-6 p-6 sm:p-8 scroll-mt-24">
               <h2 className="text-sm font-bold text-slate-900">Display & Storefront Visibility</h2>
 
               <div className="space-y-4 max-w-2xl text-xs">
@@ -752,22 +764,7 @@ export function EditCategoryView({ categoryId }: EditCategoryViewProps) {
                   <p className="text-[11px] text-slate-400">Lower numbers appear first among sibling categories.</p>
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* MORE OPTIONS TAB CONTENT */}
-          {activeSection === 'options' && (
-            <div className="space-y-6">
-              <h2 className="text-sm font-bold text-slate-900">Advanced Options</h2>
-              <div className="p-6 rounded-xl border border-dashed border-slate-200 text-center space-y-2">
-                <SlidersHorizontal className="w-8 h-8 text-slate-400 mx-auto" />
-                <p className="text-xs font-semibold text-slate-700">Additional Settings</p>
-                <p className="text-[11px] text-slate-400 max-w-sm mx-auto">
-                  Custom category tags, attributes, and automation rules can be configured here once activated.
-                </p>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       </div>
     </form>

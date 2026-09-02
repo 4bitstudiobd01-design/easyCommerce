@@ -53,6 +53,8 @@ export interface NetProfitMetrics {
   netProfit: number;
   profitMarginPercentage: number;
   totalCompletedOrdersCount: number;
+  itemsMissingCostPriceCount: number;
+  productsMissingCostPriceCount: number;
 }
 
 export interface NewVsReturningTrendPoint {

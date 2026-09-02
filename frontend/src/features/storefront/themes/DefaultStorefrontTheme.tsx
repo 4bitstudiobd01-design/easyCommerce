@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { Product } from '@/features/catalog/api/catalogApi';
+import { useGetPublicStoreCategoriesQuery } from '../api/storefrontApi';
 import { ShopEaseNavbar } from '../components/ShopEaseNavbar';
 import { ShopEaseHero } from '../components/ShopEaseHero';
 import { ShopEaseCategories } from '../components/ShopEaseCategories';
@@ -57,17 +58,29 @@ export const DefaultStorefrontTheme = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // Extract real category names for navbar and filter
+  // Merchant-ordered categories from the real catalog (sorted by the admin's sortOrder).
+  const { data: merchantCategories } = useGetPublicStoreCategoriesQuery(
+    { slug },
+    { skip: !slug },
+  );
+
+  // Category names for navbar and filter — merchant's admin-defined order takes
+  // priority; falls back to the explicit `categories` prop, then product-derived names.
   const categoryNames = useMemo(() => {
+    if (merchantCategories && merchantCategories.length > 0) {
+      return merchantCategories.map((c) => c.name);
+    }
     if (categories && categories.length > 0) return categories;
     const fromProducts = Array.from(
       new Set(products.map((p) => p.category?.name).filter(Boolean))
     ) as string[];
     return fromProducts;
-  }, [categories, products]);
+  }, [merchantCategories, categories, products]);
 
-  // Extract structured real categories with images for the category slider/grid
-  const structuredCategories = useMemo(() => {
+  // Fallback: derive categories from loaded products (used only when the merchant
+  // category API has nothing yet, e.g. preview mode with no real slug, or a store
+  // with zero storefront-visible categories configured).
+  const categoriesFromProducts = useMemo(() => {
     const map = new Map<string, { id: string; name: string; imageUrl: string }>();
     products.forEach((p) => {
       if (p.category?.name && !map.has(p.category.name)) {
@@ -84,6 +97,19 @@ export const DefaultStorefrontTheme = ({
     });
     return Array.from(map.values());
   }, [products]);
+
+  // Structured categories with images for the category slider/grid — merchant's
+  // admin-defined order takes priority over the product-derived fallback.
+  const structuredCategories = useMemo(() => {
+    if (merchantCategories && merchantCategories.length > 0) {
+      return merchantCategories.map((c) => ({
+        id: c.id,
+        name: c.name,
+        imageUrl: c.image || 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=300',
+      }));
+    }
+    return categoriesFromProducts;
+  }, [merchantCategories, categoriesFromProducts]);
 
   // Use only live store products
   const allProducts: ShopEaseProduct[] = useMemo(() => {

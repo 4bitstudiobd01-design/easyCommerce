@@ -95,6 +95,7 @@ import { ListProductsService } from './services/list-products.service';
 import { FindProductByIdService } from './services/find-product-by-id.service';
 import { FindPublicStoreProductsService, PublicStoreProductsResponse } from './services/find-public-store-products.service';
 import { FindPublicStoreProductBySlugService, PublicStoreProductResponse } from './services/find-public-store-product-by-slug.service';
+import { FindPublicStoreCategoriesService, PublicStoreCategory } from './services/find-public-store-categories.service';
 import { HomepageSection } from './enums/homepage-section.enum';
 import { FindStoreByUserService } from '../tenant/services/find-store-by-user.service';
 import { CreateReviewService } from './services/create-review.service';
@@ -201,6 +202,7 @@ export class CatalogController {
     private readonly findProductByIdService: FindProductByIdService,
     private readonly findPublicStoreProductsService: FindPublicStoreProductsService,
     private readonly findPublicStoreProductBySlugService: FindPublicStoreProductBySlugService,
+    private readonly findPublicStoreCategoriesService: FindPublicStoreCategoriesService,
     private readonly findStoreByUserService: FindStoreByUserService,
     private readonly createReviewService: CreateReviewService,
     private readonly listProductReviewsService: ListProductReviewsService,
@@ -243,6 +245,14 @@ export class CatalogController {
     @Param('productSlug') productSlug: string,
   ): Promise<PublicStoreProductResponse> {
     return this.findPublicStoreProductBySlugService.execute(slug, productSlug);
+  }
+
+  @Get('public/store/:slug/categories')
+  @ApiOperation({ summary: 'Get storefront-visible categories for a store, in merchant-defined order' })
+  @ApiResponse({ status: 200, description: 'Active, storefront-visible categories sorted by sortOrder' })
+  @ApiResponse({ status: 404, description: 'Store not found' })
+  async getPublicStoreCategories(@Param('slug') slug: string): Promise<PublicStoreCategory[]> {
+    return this.findPublicStoreCategoriesService.execute(slug);
   }
 
   @Post('products/:id/reviews')

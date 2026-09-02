@@ -85,6 +85,7 @@ import { ListProductsService } from './services/list-products.service';
 import { FindProductByIdService } from './services/find-product-by-id.service';
 import { FindPublicStoreProductsService } from './services/find-public-store-products.service';
 import { FindPublicStoreProductBySlugService } from './services/find-public-store-product-by-slug.service';
+import { FindPublicStoreCategoriesService } from './services/find-public-store-categories.service';
 import { ProductSlugService } from './services/product-slug.service';
 import { ProductFeedService } from './services/product-feed.service';
 import { CreateReviewService } from './services/create-review.service';
@@ -192,6 +193,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     FindProductByIdService,
     FindPublicStoreProductsService,
     FindPublicStoreProductBySlugService,
+    FindPublicStoreCategoriesService,
     ProductSlugService,
     ProductFeedService,
     CreateReviewService,
@@ -258,6 +260,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     FindProductByIdService,
     FindPublicStoreProductsService,
     FindPublicStoreProductBySlugService,
+    FindPublicStoreCategoriesService,
     ProductSlugService,
     ProductFeedService,
     CreateReviewService,

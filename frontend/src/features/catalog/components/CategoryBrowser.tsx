@@ -13,9 +13,18 @@ import {
   Plus,
   AlertCircle,
   Home,
+  GripVertical,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { CategoryStatus, CategoryListItem, useDeleteCategoryMutation } from '../api/catalogApi';
+import {
+  CategoryStatus,
+  CategoryListItem,
+  useDeleteCategoryMutation,
+  useReorderCategoryMutation,
+  useUpdateCategoryMutation,
+} from '../api/catalogApi';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface BreadcrumbEntry {
@@ -34,6 +43,8 @@ interface CategoryBrowserProps {
   selectedIds: Set<string>;
   onSelectRow: (id: string) => void;
   onSelectAll: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  /** Reordering (drag handle + up/down) only makes sense on the unfiltered, sortOrder-sorted view. */
+  canReorder: boolean;
 }
 
 export function CategoryBrowser({
@@ -47,9 +58,42 @@ export function CategoryBrowser({
   selectedIds,
   onSelectRow,
   onSelectAll,
+  canReorder,
 }: CategoryBrowserProps) {
   const [deleteCategory, { isLoading: isDeleting }] = useDeleteCategoryMutation();
   const [categoryPendingDelete, setCategoryPendingDelete] = useState<CategoryListItem | null>(null);
+  const [reorderCategory, { isLoading: isReordering }] = useReorderCategoryMutation();
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+  const [updateCategory] = useUpdateCategoryMutation();
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  const handleStatusChange = async (cat: CategoryListItem, status: CategoryStatus) => {
+    if (status === cat.status) return;
+    setUpdatingId(cat.id);
+    try {
+      await updateCategory({ id: cat.id, data: { status } }).unwrap();
+      toast.success(`"${cat.name}" is now ${status.toLowerCase()}.`);
+    } catch (err: any) {
+      toast.error(err?.data?.message || 'Failed to update category status.');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const handleToggleStorefront = async (cat: CategoryListItem) => {
+    setUpdatingId(cat.id);
+    try {
+      await updateCategory({ id: cat.id, data: { showInStorefront: !cat.showInStorefront } }).unwrap();
+      toast.success(cat.showInStorefront ? 'Hidden from storefront' : 'Now visible on storefront');
+    } catch (err: any) {
+      toast.error(err?.data?.message || 'Failed to update storefront visibility.');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const currentParentId = breadcrumbs[breadcrumbs.length - 1].id;
 
   const handleConfirmDelete = async () => {
     if (!categoryPendingDelete) return;
@@ -62,33 +106,81 @@ export function CategoryBrowser({
     }
   };
 
-  const renderStatusBadge = (status: CategoryStatus) => {
-    switch (status) {
-      case 'ACTIVE':
-        return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5" />
-            Active
-          </span>
-        );
-      case 'DRAFT':
-        return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200/60">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5" />
-            Draft
-          </span>
-        );
-      case 'ARCHIVED':
-        return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 mr-1.5" />
-            Archived
-          </span>
-        );
-      default:
-        return <span>{status}</span>;
+  const moveSibling = async (cat: CategoryListItem, direction: 'up' | 'down') => {
+    const index = categories.findIndex((c) => c.id === cat.id);
+    const swapIndex = direction === 'up' ? index - 1 : index + 1;
+    if (swapIndex < 0 || swapIndex >= categories.length) return;
+
+    try {
+      await reorderCategory({
+        categoryId: cat.id,
+        newParentId: currentParentId,
+        newSortOrder: swapIndex,
+      }).unwrap();
+    } catch (err: any) {
+      toast.error(err?.data?.message || 'Failed to reorder category.');
     }
   };
+
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    if (!canReorder || isReordering) {
+      e.preventDefault();
+      return;
+    }
+    setDraggedId(id);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', id);
+  };
+
+  const handleDragOver = (e: React.DragEvent, targetId: string) => {
+    if (!canReorder || !draggedId || draggedId === targetId) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDropTargetId(targetId);
+  };
+
+  const handleDragLeave = () => setDropTargetId(null);
+
+  const handleDrop = async (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    const sourceId = draggedId;
+    setDraggedId(null);
+    setDropTargetId(null);
+    if (!sourceId || sourceId === targetId) return;
+
+    const targetIndex = categories.findIndex((c) => c.id === targetId);
+    if (targetIndex < 0) return;
+
+    try {
+      await reorderCategory({
+        categoryId: sourceId,
+        newParentId: currentParentId,
+        newSortOrder: targetIndex,
+      }).unwrap();
+    } catch (err: any) {
+      toast.error(err?.data?.message || 'Failed to reorder category.');
+    }
+  };
+
+  const STATUS_SELECT_CLASSES: Record<CategoryStatus, string> = {
+    ACTIVE: 'bg-emerald-50 text-emerald-700 border-emerald-200/60',
+    DRAFT: 'bg-amber-50 text-amber-700 border-amber-200/60',
+    ARCHIVED: 'bg-slate-100 text-slate-600 border-slate-200',
+  };
+
+  const renderStatusDropdown = (cat: CategoryListItem) => (
+    <select
+      value={cat.status}
+      disabled={updatingId === cat.id}
+      onChange={(e) => handleStatusChange(cat, e.target.value as CategoryStatus)}
+      className={`text-[11px] font-semibold rounded-md border px-2 py-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed ${STATUS_SELECT_CLASSES[cat.status]}`}
+      aria-label={`Change status for ${cat.name}`}
+    >
+      <option value="ACTIVE">Active</option>
+      <option value="DRAFT">Draft</option>
+      <option value="ARCHIVED">Archived</option>
+    </select>
+  );
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return '—';
@@ -153,10 +245,12 @@ export function CategoryBrowser({
                   className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                 />
               </th>
+              {canReorder && <th className="w-8 px-2 py-3" />}
               <th className="px-4 py-3">Category</th>
               <th className="px-4 py-3 text-center">Subcategories</th>
               <th className="px-4 py-3 text-center">Products</th>
               <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3 text-center">Storefront</th>
               <th className="px-4 py-3">Updated</th>
               <th className="px-4 py-3 text-right">Actions</th>
             </tr>
@@ -187,6 +281,9 @@ export function CategoryBrowser({
                   <td className="px-4 py-3.5">
                     <div className="h-5 w-16 bg-slate-200 rounded-md" />
                   </td>
+                  <td className="px-4 py-3.5 text-center">
+                    <div className="h-5 w-9 bg-slate-200 rounded-full mx-auto" />
+                  </td>
                   <td className="px-4 py-3.5">
                     <div className="h-3.5 w-20 bg-slate-200 rounded" />
                   </td>
@@ -197,7 +294,7 @@ export function CategoryBrowser({
               ))
             ) : isError ? (
               <tr>
-                <td colSpan={7} className="px-6 py-12 text-center text-slate-500 space-y-2">
+                <td colSpan={canReorder ? 9 : 8} className="px-6 py-12 text-center text-slate-500 space-y-2">
                   <AlertCircle className="w-8 h-8 text-amber-500 mx-auto" />
                   <p className="text-sm font-bold text-slate-900">Failed to load categories</p>
                   <p className="text-xs text-slate-400">Please check your store connection and try again.</p>
@@ -212,7 +309,7 @@ export function CategoryBrowser({
               </tr>
             ) : categories.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-6 py-16 text-center space-y-3">
+                <td colSpan={canReorder ? 9 : 8} className="px-6 py-16 text-center space-y-3">
                   <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mx-auto">
                     <FolderTree className="w-6 h-6" />
                   </div>
@@ -240,12 +337,55 @@ export function CategoryBrowser({
                 </td>
               </tr>
             ) : (
-              categories.map((cat) => {
+              categories.map((cat, index) => {
                 const isSelected = selectedIds.has(cat.id);
                 const hasChildren = cat.subcategoriesCount > 0;
+                const isDropTarget = canReorder && dropTargetId === cat.id && draggedId !== cat.id;
 
                 return (
-                  <tr key={cat.id} className={`hover:bg-slate-50/80 transition-colors ${isSelected ? 'bg-blue-50/40' : ''}`}>
+                  <tr
+                    key={cat.id}
+                    onDragOver={(e) => handleDragOver(e, cat.id)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, cat.id)}
+                    className={`hover:bg-slate-50/80 transition-colors ${isSelected ? 'bg-blue-50/40' : ''} ${
+                      draggedId === cat.id ? 'opacity-40' : ''
+                    } ${isDropTarget ? 'bg-blue-100/60 ring-2 ring-blue-500 ring-inset' : ''}`}
+                  >
+                    {canReorder && (
+                      <td className="px-2 py-3.5 text-center">
+                        <div className="flex flex-col items-center gap-0.5">
+                          <div
+                            draggable={!isReordering}
+                            onDragStart={(e) => handleDragStart(e, cat.id)}
+                            className="p-0.5 text-slate-300 hover:text-slate-600 rounded cursor-grab active:cursor-grabbing hover:bg-slate-100 transition-colors"
+                            title="Drag to reorder"
+                          >
+                            <GripVertical className="w-3.5 h-3.5" />
+                          </div>
+                          <div className="flex flex-col gap-0.5">
+                            <button
+                              type="button"
+                              onClick={() => moveSibling(cat, 'up')}
+                              disabled={index === 0 || isReordering}
+                              className="p-0.5 text-slate-300 hover:text-blue-600 hover:bg-blue-50 rounded disabled:opacity-30 disabled:hover:text-slate-300 disabled:hover:bg-transparent transition-colors"
+                              title="Move up"
+                            >
+                              <ArrowUp className="w-3 h-3" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => moveSibling(cat, 'down')}
+                              disabled={index === categories.length - 1 || isReordering}
+                              className="p-0.5 text-slate-300 hover:text-blue-600 hover:bg-blue-50 rounded disabled:opacity-30 disabled:hover:text-slate-300 disabled:hover:bg-transparent transition-colors"
+                              title="Move down"
+                            >
+                              <ArrowDown className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                    )}
                     <td className="px-4 py-3.5 text-center">
                       <input
                         type="checkbox"
@@ -315,7 +455,28 @@ export function CategoryBrowser({
                     </td>
 
                     {/* Status */}
-                    <td className="px-4 py-3.5">{renderStatusBadge(cat.status)}</td>
+                    <td className="px-4 py-3.5">{renderStatusDropdown(cat)}</td>
+
+                    {/* Storefront visibility toggle */}
+                    <td className="px-4 py-3.5 text-center">
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={!!cat.showInStorefront}
+                        aria-label={`${cat.showInStorefront ? 'Hide' : 'Show'} ${cat.name} on storefront`}
+                        disabled={updatingId === cat.id}
+                        onClick={() => handleToggleStorefront(cat)}
+                        className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                          cat.showInStorefront ? 'bg-blue-600' : 'bg-slate-200'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
+                            cat.showInStorefront ? 'translate-x-[18px]' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </td>
 
                     {/* Updated */}
                     <td className="px-4 py-3.5 text-slate-500 text-[11px] font-medium whitespace-nowrap">
