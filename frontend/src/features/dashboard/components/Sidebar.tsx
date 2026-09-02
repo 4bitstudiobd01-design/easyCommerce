@@ -12,6 +12,7 @@ import {
   Package,
   FolderTree,
   Users,
+  UserCheck,
   Truck,
   Settings,
   Store as StoreIcon,
@@ -43,6 +44,8 @@ import {
   Scale,
   FileText,
   ArrowLeftRight,
+  Home,
+  BookOpen,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -70,7 +73,9 @@ export const Sidebar = ({
 
   const isActive = (path: string) => {
     if (path === '/dashboard' && pathname === '/dashboard') return true;
-    if (path !== '/dashboard' && pathname.startsWith(path)) return true;
+    if (path === '/dashboard/accounting' && pathname === '/dashboard/accounting') return true;
+    if (path === '/dashboard/purchase' && pathname === '/dashboard/purchase') return true;
+    if (path !== '/dashboard' && path !== '/dashboard/accounting' && path !== '/dashboard/purchase' && pathname.startsWith(path)) return true;
     return false;
   };
 
@@ -82,21 +87,52 @@ export const Sidebar = ({
   // Collapsible Accordion Groups
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     ecommerce: true,
+    purchase: isRouteInGroup('/dashboard/purchase'),
     crm: isRouteInGroup('/dashboard/crm'),
     hrm: isRouteInGroup('/dashboard/hr'),
+    accounting: isRouteInGroup('/dashboard/accounting'),
     marketing: isRouteInGroup(['/dashboard/marketing', '/dashboard/analytics']),
   });
+
+  const [openSubGroups, setOpenSubGroups] = useState<Record<string, boolean>>({
+    transactions: isRouteInGroup('/dashboard/accounting/transactions'),
+    accounts: isRouteInGroup('/dashboard/accounting/accounts'),
+    reports: isRouteInGroup('/dashboard/accounting/reports'),
+    accountingSettings: isRouteInGroup('/dashboard/accounting/settings'),
+  });
+
+  const toggleSubGroup = (subKey: string) => {
+    setOpenSubGroups(prev => ({ ...prev, [subKey]: !prev[subKey] }));
+  };
 
   // Auto-expand active group when route changes
   useEffect(() => {
     if (isRouteInGroup(['/dashboard/orders', '/dashboard/products', '/dashboard/categories', '/dashboard/customers', '/dashboard/inventory', '/dashboard/logistics', '/dashboard/abandoned-carts', '/dashboard/themes'])) {
       setOpenGroups(prev => ({ ...prev, ecommerce: true }));
     }
+    if (isRouteInGroup('/dashboard/purchase')) {
+      setOpenGroups(prev => ({ ...prev, purchase: true }));
+    }
     if (isRouteInGroup('/dashboard/crm')) {
       setOpenGroups(prev => ({ ...prev, crm: true }));
     }
     if (isRouteInGroup('/dashboard/hr')) {
       setOpenGroups(prev => ({ ...prev, hrm: true }));
+    }
+    if (isRouteInGroup('/dashboard/accounting')) {
+      setOpenGroups(prev => ({ ...prev, accounting: true }));
+    }
+    if (isRouteInGroup('/dashboard/accounting/transactions')) {
+      setOpenSubGroups(prev => ({ ...prev, transactions: true }));
+    }
+    if (isRouteInGroup('/dashboard/accounting/accounts')) {
+      setOpenSubGroups(prev => ({ ...prev, accounts: true }));
+    }
+    if (isRouteInGroup('/dashboard/accounting/reports')) {
+      setOpenSubGroups(prev => ({ ...prev, reports: true }));
+    }
+    if (isRouteInGroup('/dashboard/accounting/settings')) {
+      setOpenSubGroups(prev => ({ ...prev, accountingSettings: true }));
     }
     if (isRouteInGroup(['/dashboard/marketing', '/dashboard/analytics'])) {
       setOpenGroups(prev => ({ ...prev, marketing: true }));
@@ -180,6 +216,100 @@ export const Sidebar = ({
           }`}
         />
       </button>
+    );
+  };
+
+  const subNavItemClass = (path: string) => {
+    const active = isActive(path);
+    const baseClasses = `flex items-center gap-2 px-3 py-1.5 transition-colors group rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 text-[12.5px]`;
+    const activeClasses = active
+      ? 'bg-blue-600 text-white font-semibold shadow-sm shadow-blue-600/20'
+      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 font-medium';
+    return `${baseClasses} ${activeClasses}`;
+  };
+
+  const SubAccordion = ({
+    title,
+    icon: SubIcon,
+    subKey,
+    isOpen,
+    routes,
+    items,
+  }: {
+    title: string;
+    icon: React.ElementType;
+    subKey: string;
+    isOpen: boolean;
+    routes: string[];
+    items: { label: string; href: string }[];
+  }) => {
+    const isGroupActive = routes.some(r => pathname.startsWith(r));
+
+    if (isDesktopCollapsed) {
+      return (
+        <Link
+          href={items[0]?.href || '/dashboard/accounting'}
+          className={navItemClass(items[0]?.href || '')}
+          onMouseEnter={(e) => handleTooltipEnter(e, title)}
+          onFocus={(e) => handleTooltipEnter(e, title)}
+          onMouseLeave={handleTooltipLeave}
+          onBlur={handleTooltipLeave}
+        >
+          <div className="flex items-center gap-2.5">
+            <SubIcon className={iconClass} strokeWidth={iconStroke} />
+          </div>
+        </Link>
+      );
+    }
+
+    return (
+      <div className="space-y-0.5">
+        <button
+          type="button"
+          onClick={() => toggleSubGroup(subKey)}
+          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[13px] transition-colors ${
+            isGroupActive
+              ? 'text-white font-semibold'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 font-medium'
+          }`}
+        >
+          <div className="flex items-center gap-2.5">
+            <SubIcon className={iconClass} strokeWidth={iconStroke} />
+            <span>{title}</span>
+          </div>
+          <ChevronDown
+            className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
+              isOpen ? 'rotate-180 text-white' : ''
+            }`}
+          />
+        </button>
+
+        {isOpen && (
+          <div className="pl-6 pr-1 space-y-0.5 mt-0.5">
+            {items.map((item) => {
+              const active = isActive(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={subNavItemClass(item.href)}
+                  onMouseEnter={(e) => handleTooltipEnter(e, `${title}: ${item.label}`)}
+                  onFocus={(e) => handleTooltipEnter(e, `${title}: ${item.label}`)}
+                  onMouseLeave={handleTooltipLeave}
+                  onBlur={handleTooltipLeave}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                      active ? 'bg-white shadow-sm' : 'bg-slate-500'
+                    }`}
+                  />
+                  <span className="truncate">{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </div>
     );
   };
 
@@ -378,7 +508,70 @@ export const Sidebar = ({
             </div>
           )}
 
-          {/* 2. CRM & OMNICHANNEL ACCORDION */}
+          {/* 2. PURCHASE ACCORDION */}
+          <AccordionHeader 
+            title="Purchase" 
+            groupKey="purchase" 
+            isOpen={openGroups.purchase} 
+          />
+          {(isDesktopCollapsed || openGroups.purchase) && (
+            <div className="space-y-0.5">
+              <Link 
+                href="/dashboard/purchase" 
+                className={navItemClass('/dashboard/purchase')}
+                onMouseEnter={(e) => handleTooltipEnter(e, "Overview")}
+                onFocus={(e) => handleTooltipEnter(e, "Overview")}
+                onMouseLeave={handleTooltipLeave}
+                onBlur={handleTooltipLeave}
+              >
+                <div className="flex items-center gap-2.5">
+                  <BarChart3 className={iconClass} strokeWidth={iconStroke} />
+                  {!isDesktopCollapsed && <span>Overview</span>}
+                </div>
+              </Link>
+              <Link 
+                href="/dashboard/purchase/suppliers" 
+                className={navItemClass('/dashboard/purchase/suppliers')}
+                onMouseEnter={(e) => handleTooltipEnter(e, "Suppliers")}
+                onFocus={(e) => handleTooltipEnter(e, "Suppliers")}
+                onMouseLeave={handleTooltipLeave}
+                onBlur={handleTooltipLeave}
+              >
+                <div className="flex items-center gap-2.5">
+                  <UserCheck className={iconClass} strokeWidth={iconStroke} />
+                  {!isDesktopCollapsed && <span>Suppliers</span>}
+                </div>
+              </Link>
+              <Link 
+                href="/dashboard/purchase/purchase-orders" 
+                className={navItemClass('/dashboard/purchase/purchase-orders')}
+                onMouseEnter={(e) => handleTooltipEnter(e, "Purchase Orders")}
+                onFocus={(e) => handleTooltipEnter(e, "Purchase Orders")}
+                onMouseLeave={handleTooltipLeave}
+                onBlur={handleTooltipLeave}
+              >
+                <div className="flex items-center gap-2.5">
+                  <FileText className={iconClass} strokeWidth={iconStroke} />
+                  {!isDesktopCollapsed && <span>Purchase Orders</span>}
+                </div>
+              </Link>
+              <Link 
+                href="/dashboard/purchase/purchases" 
+                className={navItemClass('/dashboard/purchase/purchases')}
+                onMouseEnter={(e) => handleTooltipEnter(e, "Purchases")}
+                onFocus={(e) => handleTooltipEnter(e, "Purchases")}
+                onMouseLeave={handleTooltipLeave}
+                onBlur={handleTooltipLeave}
+              >
+                <div className="flex items-center gap-2.5">
+                  <ShoppingCart className={iconClass} strokeWidth={iconStroke} />
+                  {!isDesktopCollapsed && <span>Purchases</span>}
+                </div>
+              </Link>
+            </div>
+          )}
+
+          {/* 3. CRM & OMNICHANNEL ACCORDION */}
           <AccordionHeader 
             title="CRM & Growth" 
             groupKey="crm" 
@@ -480,7 +673,7 @@ export const Sidebar = ({
             </div>
           )}
 
-          {/* 3. HUMAN RESOURCES ACCORDION */}
+          {/* 4. HUMAN RESOURCES ACCORDION */}
           <AccordionHeader 
             title="Human Resources" 
             groupKey="hrm" 
@@ -649,7 +842,80 @@ export const Sidebar = ({
             </div>
           </Link>
 
-          {/* 5. MARKETING & ANALYTICS ACCORDION */}
+          {/* 5. ACCOUNTING ACCORDION */}
+          <AccordionHeader 
+            title="Accounting" 
+            groupKey="accounting" 
+            isOpen={openGroups.accounting} 
+          />
+          {(isDesktopCollapsed || openGroups.accounting) && (
+            <div className="space-y-0.5">
+              <Link
+                href="/dashboard/accounting"
+                className={navItemClass('/dashboard/accounting')}
+                onMouseEnter={(e) => handleTooltipEnter(e, "Overview")}
+                onFocus={(e) => handleTooltipEnter(e, "Overview")}
+                onMouseLeave={handleTooltipLeave}
+                onBlur={handleTooltipLeave}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Home className={iconClass} strokeWidth={iconStroke} />
+                  {!isDesktopCollapsed && <span>Overview</span>}
+                </div>
+              </Link>
+
+              <SubAccordion
+                title="Transactions"
+                icon={FileText}
+                subKey="transactions"
+                isOpen={openSubGroups.transactions}
+                routes={['/dashboard/accounting/transactions']}
+                items={[
+                  { label: 'Journal Entries', href: '/dashboard/accounting/transactions/journal-entries' },
+                  { label: 'Expenses', href: '/dashboard/accounting/transactions/expenses' },
+                ]}
+              />
+
+              <SubAccordion
+                title="Accounts"
+                icon={BookOpen}
+                subKey="accounts"
+                isOpen={openSubGroups.accounts}
+                routes={['/dashboard/accounting/accounts']}
+                items={[
+                  { label: 'Chart of Accounts', href: '/dashboard/accounting/accounts/chart-of-accounts' },
+                  { label: 'Ledger', href: '/dashboard/accounting/accounts/ledger' },
+                ]}
+              />
+
+              <SubAccordion
+                title="Reports"
+                icon={BarChart3}
+                subKey="reports"
+                isOpen={openSubGroups.reports}
+                routes={['/dashboard/accounting/reports']}
+                items={[
+                  { label: 'Profit & Loss', href: '/dashboard/accounting/reports/profit-loss' },
+                  { label: 'Balance Sheet', href: '/dashboard/accounting/reports/balance-sheet' },
+                ]}
+              />
+
+              <SubAccordion
+                title="Settings"
+                icon={Settings}
+                subKey="accountingSettings"
+                isOpen={openSubGroups.accountingSettings}
+                routes={['/dashboard/accounting/settings']}
+                items={[
+                  { label: 'General', href: '/dashboard/accounting/settings/general' },
+                  { label: 'Account Mapping', href: '/dashboard/accounting/settings/account-mapping' },
+                  { label: 'Numbering', href: '/dashboard/accounting/settings/numbering' },
+                ]}
+              />
+            </div>
+          )}
+
+          {/* 6. MARKETING & ANALYTICS ACCORDION */}
           <AccordionHeader 
             title="Marketing & Growth" 
             groupKey="marketing" 
@@ -686,7 +952,7 @@ export const Sidebar = ({
             </div>
           )}
 
-          {/* 5. STORE SETTINGS (Always accessible) */}
+          {/* 7. STORE SETTINGS (Always accessible) */}
           {!isDesktopCollapsed && (
             <div className="px-3 pb-1 pt-4 text-[10px] font-bold uppercase tracking-wider text-slate-500">
               Configuration
