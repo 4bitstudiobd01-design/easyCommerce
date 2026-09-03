@@ -15,7 +15,9 @@ import {
   useBulkDeleteVariantsMutation,
   ProductVariant,
   AttributeDefinition,
+  VariantOptionMeta,
 } from '@/features/catalog/api/catalogApi';
+import type { PendingVariant } from '@/features/catalog/hooks/useProductForm';
 import {
   Layers,
   Sliders,
@@ -46,13 +48,30 @@ type PendingConfirm =
   | { kind: 'bulk-delete-variants'; count: number };
 
 interface ProductVariantMatrixProps {
+  /** Present in edit mode — variants are then read/written against the database. */
   productId?: string;
   hasVariants: boolean;
   onHasVariantsChange: (val: boolean) => void;
+  /** Edit mode: the product's saved variants. */
   existingVariants?: ProductVariant[];
+  /** Create mode: variant combinations held in form state until the product is saved. */
+  pendingVariants?: PendingVariant[];
+  onPendingVariantsChange?: (variants: PendingVariant[]) => void;
   basePrice?: number;
+  compareAtPrice?: number;
   currencySymbol?: string;
-  onEnsureSaved?: () => Promise<string | null>;
+}
+
+// Rows the table renders — either real ProductVariant (edit) or a synthetic view
+// over a PendingVariant (create). id is a stable local key in create mode.
+interface VariantRow {
+  id: string;
+  title: string;
+  sku?: string;
+  price?: number;
+  compareAtPrice?: number;
+  isEnabled: boolean;
+  options: VariantOptionMeta[];
 }
 
 // Common preset options for instant 1-click creation
@@ -89,10 +108,14 @@ export function ProductVariantMatrix({
   hasVariants,
   onHasVariantsChange,
   existingVariants = [],
+  pendingVariants = [],
+  onPendingVariantsChange,
   basePrice = 0,
+  compareAtPrice,
   currencySymbol = '৳',
-  onEnsureSaved,
 }: ProductVariantMatrixProps) {
+  // No productId => a brand-new product; variants live in form state, not the DB.
+  const isCreateMode = !productId;
   const { data: allAttributes = [], refetch: refetchAttributes } = useGetAttributesQuery();
   const [createAttribute, { isLoading: isCreatingAttr }] = useCreateAttributeMutation();
   const [updateAttribute, { isLoading: isUpdatingAttr }] = useUpdateAttributeMutation();
@@ -342,23 +365,82 @@ export function ProductVariantMatrix({
     }
   };
 
+  // Builds the selected attribute -> option[] map into an array the Cartesian
+  // helper can walk, resolving ids to the attribute/option records.
+  const buildSelectedAxes = () => {
+    const keys = Object.keys(selectedDimensions);
+    return keys
+      .map((attrId) => {
+        const attr = variantAttributes.find((a) => a.id === attrId);
+        if (!attr) return null;
+        const opts = (attr.options || []).filter((o) => selectedDimensions[attrId].includes(o.id!));
+        return { attr, opts };
+      })
+      .filter((x): x is { attr: AttributeDefinition; opts: NonNullable<AttributeDefinition['options']> } => !!x && x.opts.length > 0);
+  };
+
   // Generate Matrix
   const handleGenerate = async () => {
-    let targetProductId = productId;
-    if (!targetProductId && onEnsureSaved) {
-      targetProductId = (await onEnsureSaved()) || undefined;
-    }
-
-    if (!targetProductId) {
-      return;
-    }
-
     const keys = Object.keys(selectedDimensions);
     if (keys.length === 0) {
       toast.error('Select at least one variant attribute option.');
       return;
     }
 
+    // --- Create mode: compute combinations locally, keep them in form state ---
+    if (isCreateMode) {
+      const axes = buildSelectedAxes();
+      if (axes.length === 0) {
+        toast.error('Select at least one option for a variant attribute.');
+        return;
+      }
+
+      // Cartesian product of the selected option sets.
+      let combos: { attr: AttributeDefinition; opt: NonNullable<AttributeDefinition['options']>[number] }[][] = [[]];
+      for (const axis of axes) {
+        const next: typeof combos = [];
+        for (const combo of combos) {
+          for (const opt of axis.opts) {
+            next.push([...combo, { attr: axis.attr, opt }]);
+          }
+        }
+        combos = next;
+      }
+
+      if (combos.length > 200) {
+        toast.error(`That produces ${combos.length} variants — the limit is 200. Select fewer options.`);
+        return;
+      }
+
+      const built: PendingVariant[] = combos.map((combo) => {
+        const options: VariantOptionMeta[] = combo.map((c) => ({
+          attributeId: c.attr.id,
+          attributeName: c.attr.name,
+          optionId: c.opt.id!,
+          optionLabel: c.opt.label || c.opt.value,
+          value: c.opt.value,
+        }));
+        const combinationKey = combo
+          .map((c) => `${(c.attr.key || c.attr.name).toLowerCase()}:${c.opt.value.toLowerCase()}`)
+          .join('|');
+        const title = combo.map((c) => c.opt.label || c.opt.value).join(' / ');
+        return {
+          title,
+          combinationKey,
+          sku: undefined,
+          price: basePrice > 0 ? basePrice : undefined,
+          compareAtPrice: compareAtPrice && compareAtPrice > 0 ? compareAtPrice : undefined,
+          isEnabled: true,
+          options,
+        };
+      });
+
+      onPendingVariantsChange?.(built);
+      toast.success(`${built.length} variant${built.length === 1 ? '' : 's'} ready — they'll be saved with the product.`);
+      return;
+    }
+
+    // --- Edit mode: the product exists, generate against the database ---
     const payloadDimensions = keys.map((attrId) => ({
       attributeId: attrId,
       optionIds: selectedDimensions[attrId],
@@ -366,7 +448,7 @@ export function ProductVariantMatrix({
 
     try {
       const variants = await generateVariants({
-        productId: targetProductId,
+        productId: productId!,
         dimensions: payloadDimensions,
       }).unwrap();
 
@@ -378,10 +460,27 @@ export function ProductVariantMatrix({
 
   // Save Single Variant Row
   const handleSaveVariantRow = async (variantId: string) => {
-    if (!productId) return;
     const patch = variantBuffer[variantId];
     if (!patch) return;
 
+    // Create mode: no product yet — just update the pending variant in form state.
+    if (isCreateMode) {
+      patchPendingVariant(variantId, {
+        sku: patch.sku,
+        price: patch.price,
+        compareAtPrice: patch.compareAtPrice,
+        isEnabled: patch.isEnabled,
+      });
+      setVariantBuffer((prev) => {
+        const copy = { ...prev };
+        delete copy[variantId];
+        return copy;
+      });
+      toast.success('Variant updated.');
+      return;
+    }
+
+    if (!productId) return;
     try {
       await updateVariant({
         productId,
@@ -402,6 +501,11 @@ export function ProductVariantMatrix({
 
   // Perform a single variant deletion once confirmed in the dialog.
   const performDeleteSingleVariant = async (variantId: string, variantTitle: string) => {
+    if (isCreateMode) {
+      removePendingVariant(variantId);
+      toast.success(`Variant "${variantTitle}" removed.`);
+      return;
+    }
     if (!productId) return;
     try {
       await deleteProductVariant({ productId, variantId }).unwrap();
@@ -415,7 +519,17 @@ export function ProductVariantMatrix({
   // Delete every selected variant in one transactional request, so a mid-way
   // failure cannot leave half the selection removed.
   const performBulkDeleteVariants = async () => {
-    if (!productId || selectedVariantIds.length === 0) return;
+    if (selectedVariantIds.length === 0) return;
+    if (isCreateMode) {
+      const next = pendingVariants.filter(
+        (v, i) => !selectedVariantIds.includes(v.combinationKey || `pending-${i}`),
+      );
+      onPendingVariantsChange?.(next);
+      toast.success(`${selectedVariantIds.length} variants removed.`);
+      setSelectedVariantIds([]);
+      return;
+    }
+    if (!productId) return;
     try {
       const res = await bulkDeleteVariants({ productId, variantIds: selectedVariantIds }).unwrap();
       toast.success(res.message || `${selectedVariantIds.length} variants deleted.`);
@@ -442,7 +556,28 @@ export function ProductVariantMatrix({
 
   // Bulk Apply
   const handleBulkApply = async (actionType: 'PRICE' | 'COMPARE_PRICE' | 'ENABLE' | 'DISABLE') => {
-    if (!productId || selectedVariantIds.length === 0) return;
+    if (selectedVariantIds.length === 0) return;
+
+    // Create mode: apply to the pending variants in form state.
+    if (isCreateMode) {
+      const next = pendingVariants.map((v, i) => {
+        const key = v.combinationKey || `pending-${i}`;
+        if (!selectedVariantIds.includes(key)) return v;
+        if (actionType === 'PRICE' && bulkPrice !== '') return { ...v, price: Number(bulkPrice) };
+        if (actionType === 'COMPARE_PRICE' && bulkComparePrice !== '') return { ...v, compareAtPrice: Number(bulkComparePrice) };
+        if (actionType === 'ENABLE') return { ...v, isEnabled: true };
+        if (actionType === 'DISABLE') return { ...v, isEnabled: false };
+        return v;
+      });
+      onPendingVariantsChange?.(next);
+      toast.success(`${selectedVariantIds.length} variants updated.`);
+      setSelectedVariantIds([]);
+      setBulkPrice('');
+      setBulkComparePrice('');
+      return;
+    }
+
+    if (!productId) return;
 
     try {
       const patch: any = {
@@ -470,11 +605,48 @@ export function ProductVariantMatrix({
     }
   };
 
+  // Unified row list for the table. Edit mode reads the DB variants; create mode
+  // maps the in-form pending variants (keyed by combinationKey / index).
+  const rows: VariantRow[] = isCreateMode
+    ? pendingVariants.map((v, i) => ({
+        id: v.combinationKey || `pending-${i}`,
+        title: v.title,
+        sku: v.sku,
+        price: v.price,
+        compareAtPrice: v.compareAtPrice,
+        isEnabled: v.isEnabled,
+        options: v.options,
+      }))
+    : existingVariants.map((v) => ({
+        id: v.id,
+        title: v.title,
+        sku: v.sku,
+        price: v.price,
+        compareAtPrice: v.compareAtPrice,
+        isEnabled: v.isEnabled,
+        options: v.options,
+      }));
+
+  // Mutates one pending variant in place (create mode) and lifts it to the parent.
+  const patchPendingVariant = (rowId: string, patch: Partial<PendingVariant>) => {
+    const next = pendingVariants.map((v, i) => {
+      const key = v.combinationKey || `pending-${i}`;
+      return key === rowId ? { ...v, ...patch } : v;
+    });
+    onPendingVariantsChange?.(next);
+  };
+
+  const removePendingVariant = (rowId: string) => {
+    const next = pendingVariants.filter((v, i) => (v.combinationKey || `pending-${i}`) !== rowId);
+    onPendingVariantsChange?.(next);
+    setSelectedVariantIds((prev) => prev.filter((id) => id !== rowId));
+  };
+
   const toggleSelectAllVariants = () => {
-    if (selectedVariantIds.length === existingVariants.length) {
+    if (selectedVariantIds.length === rows.length) {
       setSelectedVariantIds([]);
     } else {
-      setSelectedVariantIds(existingVariants.map((v) => v.id));
+      setSelectedVariantIds(rows.map((v) => v.id));
     }
   };
 
@@ -597,7 +769,7 @@ export function ProductVariantMatrix({
                           placeholder="e.g. Size, Color, Storage, Material"
                           value={newAttrName}
                           onChange={(e) => setNewAttrName(e.target.value)}
-                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
+                          className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                         />
                       </div>
 
@@ -611,7 +783,7 @@ export function ProductVariantMatrix({
                           placeholder="e.g.&#10;Small&#10;Medium&#10;Large&#10;XL"
                           value={newAttrOptionsText}
                           onChange={(e) => setNewAttrOptionsText(e.target.value)}
-                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
+                          className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                         />
                       </div>
                     </div>
@@ -680,7 +852,7 @@ export function ProductVariantMatrix({
                         type="text"
                         value={editAttrName}
                         onChange={(e) => setEditAttrName(e.target.value)}
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-600 transition-all"
+                        className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                       />
                     </div>
 
@@ -692,7 +864,7 @@ export function ProductVariantMatrix({
                         rows={4}
                         value={editAttrOptionsText}
                         onChange={(e) => setEditAttrOptionsText(e.target.value)}
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-600 transition-all"
+                        className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                       />
                     </div>
                   </div>
@@ -901,6 +1073,11 @@ export function ProductVariantMatrix({
                 <strong className="text-blue-700 font-extrabold text-sm">
                   {cartesianCount} variant{cartesianCount === 1 ? '' : 's'}
                 </strong>
+                {isCreateMode && (
+                  <span className="block text-[10.5px] text-slate-400 mt-0.5">
+                    Saved with the product — no need to save first.
+                  </span>
+                )}
               </div>
 
               <button
@@ -910,17 +1087,19 @@ export function ProductVariantMatrix({
                 className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-600/20 transition-all flex items-center justify-center gap-2 active:scale-95"
               >
                 {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                <span>Generate {cartesianCount > 0 ? `${cartesianCount} ` : ''}Variants Matrix</span>
+                <span>
+                  {isCreateMode ? 'Build' : 'Generate'} {cartesianCount > 0 ? `${cartesianCount} ` : ''}Variants Matrix
+                </span>
               </button>
             </div>
           </div>
 
           {/* Generated Variants Table */}
-          {existingVariants.length > 0 && (
+          {rows.length > 0 && (
             <div className="space-y-3 pt-2">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-800">
-                  Variant Matrix ({existingVariants.length} Active Variants)
+                  Variant Matrix ({rows.length} Variant{rows.length === 1 ? "" : "s"})
                 </h3>
 
                 <button
@@ -942,7 +1121,7 @@ export function ProductVariantMatrix({
                       onClick={toggleSelectAllVariants}
                       className="text-blue-700 underline text-[11px]"
                     >
-                      {selectedVariantIds.length === existingVariants.length ? 'Deselect All' : 'Select All Variants'}
+                      {selectedVariantIds.length === rows.length ? 'Deselect All' : 'Select All Variants'}
                     </button>
                   </div>
 
@@ -1030,7 +1209,7 @@ export function ProductVariantMatrix({
                           type="checkbox"
                           checked={
                             selectedVariantIds.length > 0 &&
-                            selectedVariantIds.length === existingVariants.length
+                            selectedVariantIds.length === rows.length
                           }
                           onChange={toggleSelectAllVariants}
                           className="rounded text-blue-600 border-slate-300"
@@ -1045,7 +1224,7 @@ export function ProductVariantMatrix({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {existingVariants.map((variant) => {
+                    {rows.map((variant) => {
                       const patch = variantBuffer[variant.id] || {};
                       const isRowSelected = selectedVariantIds.includes(variant.id);
                       const currentPrice = patch.price !== undefined ? patch.price : variant.price;

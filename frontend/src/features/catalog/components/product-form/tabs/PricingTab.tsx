@@ -52,7 +52,7 @@ export function PricingTab({ form }: PricingTabProps) {
       {/* 3 Price Input Fields */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
             Selling Price ({currencySymbol}) <span className="text-rose-500">*</span>
           </label>
           <input
@@ -62,13 +62,13 @@ export function PricingTab({ form }: PricingTabProps) {
             value={basePrice}
             onChange={(e) => setBasePrice(e.target.value !== '' ? Number(e.target.value) : '')}
             placeholder="0.00"
-            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm font-bold placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+            className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
           />
           <p className="text-[10px] text-slate-400 mt-1">Customer base selling price</p>
         </div>
 
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
             Compare-at ({currencySymbol})
           </label>
           <input
@@ -78,7 +78,7 @@ export function PricingTab({ form }: PricingTabProps) {
             value={compareAtPrice}
             onChange={(e) => setCompareAtPrice(e.target.value !== '' ? Number(e.target.value) : '')}
             placeholder="0.00"
-            className={`w-full px-3.5 py-2.5 bg-slate-50 border rounded-xl text-slate-900 text-sm font-semibold placeholder:text-slate-400 focus:outline-none focus:ring-2 ${
+            className={`w-full px-3.5 py-2 bg-white border rounded-lg text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 ${
               compareAtBelowSelling
                 ? 'border-amber-400 focus:ring-amber-500/20 focus:border-amber-500'
                 : 'border-slate-200 focus:ring-blue-500/20 focus:border-blue-500'
@@ -95,7 +95,7 @@ export function PricingTab({ form }: PricingTabProps) {
         </div>
 
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center justify-between">
+          <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center justify-between">
             <span>Cost Price ({currencySymbol})</span>
             <span className="text-[10px] text-slate-400 font-normal">Internal</span>
           </label>
@@ -106,7 +106,7 @@ export function PricingTab({ form }: PricingTabProps) {
             value={costPrice}
             onChange={(e) => setCostPrice(e.target.value !== '' ? Number(e.target.value) : '')}
             placeholder="0.00"
-            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm font-semibold placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+            className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
           />
           <p className="text-[10px] text-slate-400 mt-1">Merchant cost per unit</p>
         </div>
@@ -129,13 +129,13 @@ export function PricingTab({ form }: PricingTabProps) {
       {/* Tax Settings */}
       <div className="pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
             Tax Classification
           </label>
           <select
             value={taxCategory}
             onChange={(e) => setTaxCategory(e.target.value as TaxCategory)}
-            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+            className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
           >
             <option value="STANDARD_VAT">Standard VAT (15%)</option>
             <option value="REDUCED">Reduced Rate (5%)</option>
@@ -145,7 +145,7 @@ export function PricingTab({ form }: PricingTabProps) {
         </div>
 
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
             Tax Rate (%)
           </label>
           <input
@@ -153,8 +153,8 @@ export function PricingTab({ form }: PricingTabProps) {
             min="0"
             max="100"
             value={taxRate}
-            onChange={(e) => setTaxRate(Number(e.target.value))}
-            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+            onChange={(e) => setTaxRate(Number(e.target.value) || 0)}
+            className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
           />
         </div>
 
@@ -182,13 +182,13 @@ export function PricingTab({ form }: PricingTabProps) {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
               Discount Type
             </label>
             <select
               value={discountType}
               onChange={(e) => setDiscountType(e.target.value as ProductDiscountType)}
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
             >
               <option value="NONE">No Discount</option>
               <option value="PERCENTAGE">Percentage (%) Off</option>
@@ -198,7 +198,7 @@ export function PricingTab({ form }: PricingTabProps) {
 
           {discountType !== 'NONE' && (
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                 Discount Value {discountType === 'PERCENTAGE' ? '(%)' : `(${currencySymbol})`}
               </label>
               <input
@@ -208,7 +208,7 @@ export function PricingTab({ form }: PricingTabProps) {
                 value={discountValue}
                 onChange={(e) => setDiscountValue(e.target.value !== '' ? Number(e.target.value) : '')}
                 placeholder={discountType === 'PERCENTAGE' ? '10' : '200'}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
               />
             </div>
           )}
@@ -217,26 +217,26 @@ export function PricingTab({ form }: PricingTabProps) {
         {discountType !== 'NONE' && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                 Schedule Start Datetime (Optional)
               </label>
               <input
                 type="datetime-local"
                 value={discountStartsAt}
                 onChange={(e) => setDiscountStartsAt(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                 Schedule End Datetime (Optional)
               </label>
               <input
                 type="datetime-local"
                 value={discountEndsAt}
                 onChange={(e) => setDiscountEndsAt(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
               />
             </div>
           </div>

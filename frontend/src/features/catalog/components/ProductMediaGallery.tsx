@@ -266,14 +266,14 @@ export function ProductMediaGallery({
       {/* Input URL Dropzone Form */}
       {showInputForm && (
         <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-xl space-y-3">
-          <label className="block text-xs font-bold text-slate-700">Image Web URL</label>
+          <label className="block text-xs font-semibold text-slate-700">Image Web URL</label>
           <div className="flex items-center gap-2">
             <input
               type="url"
               value={imageUrlInput}
               onChange={(e) => setImageUrlInput(e.target.value)}
               placeholder="https://images.unsplash.com/photo-1521572267360-ee0c2909d518"
-              className="flex-1 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="flex-1 px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
             />
             <button
               type="button"

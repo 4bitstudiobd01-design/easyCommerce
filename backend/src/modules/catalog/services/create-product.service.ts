@@ -4,6 +4,7 @@ import { Repository, In } from 'typeorm';
 import { ProductEntity } from '../entities/product.entity';
 import { CategoryEntity } from '../entities/category.entity';
 import { ProductImageEntity } from '../entities/product-image.entity';
+import { ProductVariantEntity } from '../entities/product-variant.entity';
 import { CollectionEntity } from '../entities/collection.entity';
 import { InventoryStockEntity } from '../../inventory/entities/inventory-stock.entity';
 import { InventoryMovementEntity } from '../../inventory/entities/inventory-movement.entity';
@@ -25,6 +26,8 @@ export class CreateProductService {
     private readonly categoryRepository: Repository<CategoryEntity>,
     @InjectRepository(ProductImageEntity)
     private readonly imageRepository: Repository<ProductImageEntity>,
+    @InjectRepository(ProductVariantEntity)
+    private readonly variantRepository: Repository<ProductVariantEntity>,
     @InjectRepository(CollectionEntity)
     private readonly collectionRepository: Repository<CollectionEntity>,
     @InjectRepository(InventoryStockEntity)
@@ -223,11 +226,49 @@ export class CreateProductService {
     }
 
     // A product without variants keeps its price/SKU/stock on the product row itself
-    // (basePrice, sku, inventory_stocks). Real variants are only created when the
-    // merchant explicitly generates them from the Variants tab, which also flips
-    // hasVariants to true. Auto-creating a hidden "default variant" here left every
-    // plain product reporting one phantom variant in the details page, exports and
-    // analytics, so it is not done anymore.
+    // (basePrice, sku, inventory_stocks). No hidden "default variant" is created.
+    //
+    // When the merchant configured variants in the form, the frontend computes the
+    // option combinations locally and sends them here, so a new product no longer
+    // has to be saved first just to attach variants. Each variant also gets its own
+    // inventory stock row (referenced by id, no FK cascade).
+    if (hasVariants && dto.variants && dto.variants.length > 0) {
+      for (const v of dto.variants) {
+        const trimmedVariantSku = v.sku ? v.sku.trim() : undefined;
+        const savedVariant = await this.variantRepository.save(
+          this.variantRepository.create({
+            title: v.title,
+            sku: trimmedVariantSku || undefined,
+            combinationKey: v.combinationKey || undefined,
+            options: (v.options || []).map((o) => ({
+              attributeId: o.attributeId,
+              attributeName: o.attributeName,
+              optionId: o.optionId,
+              optionLabel: o.optionLabel,
+              value: o.value,
+            })),
+            price: v.price ?? savedProduct.basePrice,
+            compareAtPrice: v.compareAtPrice ?? savedProduct.compareAtPrice,
+            costPrice: v.costPrice ?? savedProduct.costPrice,
+            isEnabled: v.isEnabled !== undefined ? v.isEnabled : true,
+            productId: savedProduct.id,
+            tenantId,
+          }),
+        );
+
+        await this.inventoryStockRepository.save(
+          this.inventoryStockRepository.create({
+            productId: savedProduct.id,
+            variantId: savedVariant.id,
+            warehouseId,
+            quantityOnHand: 0,
+            quantityReserved: 0,
+            reorderPoint: savedProduct.lowStockThreshold || 10,
+            tenantId,
+          }),
+        );
+      }
+    }
 
     // Create product gallery images if provided
     if (dto.images && dto.images.length > 0) {

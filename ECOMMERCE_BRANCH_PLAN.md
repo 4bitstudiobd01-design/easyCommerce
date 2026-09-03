@@ -327,3 +327,94 @@ clarity), আর technical soundness — তিনটাই বিবেচন�
     merchant-choice আগে (`getCategoryIcon`), নাহলে পুরনো keyword-guess fallback।
     main + দুই sub-call-এ `category.icon` / `sub.icon` পাস। unused `Folder` সরানো।
   Verify: frontend `npx tsc --noEmit` ✅ ০ error।
+- 2026-09-04 — Product create/update ফর্মের সব input/label category ফর্মের হালকা,
+  পরিষ্কার স্টাইলে আনা হলো (user: "category form er input gula koto sundor")।
+  Normalized: label `text-xs font-semibold text-slate-700 mb-1.5` (uppercase/tracking
+  সরানো); input/select/textarea `w-full px-3.5 py-2 bg-white border border-slate-200
+  rounded-lg text-xs font-medium text-slate-900 focus:ring-2 focus:ring-blue-500/20
+  focus:border-blue-500` (আগে `bg-slate-50` grey, `rounded-xl`, `px-4 py-3`, `text-sm
+  font-bold/semibold`, কোথাও `focus:ring-blue-600`)। select-এ `cursor-pointer`, number
+  input থেকে সরানো। ফাইল: `product-form/tabs/{GeneralTab,OrganizationTab,PricingTab,
+  InventoryTab}.tsx`, `ProductFulfillmentConfig.tsx`, `ProductVariantMatrix.tsx`,
+  `ProductMediaGallery.tsx` (URL input)। কার্ড/সেকশন layout, sidebar nav, বাটন
+  অপরিবর্তিত। Verify: frontend `npx tsc --noEmit` ✅ ০ error।
+- 2026-09-04 — Variant combination সীমা 100 → 200 (`generate-product-variants.
+  service.ts` `MAX_VARIANT_COMBINATIONS`), সংশ্লিষ্ট spec 11×11→15×15। User-এর ৫-axis
+  ১২৫ variant এখন পাস। Backend build ✅, `jest src/modules/catalog` ✅ ২২৪/২২৪।
+- 2026-09-04 — `ensureProductSaved` (Variants ট্যাবের "Generate Matrix" বাটন যখন
+  প্রোডাক্ট এখনো save হয়নি) draft-create payload-এ ভুল ফিল্ড `price` পাঠাত → backend
+  `forbidNonWhitelisted` → "property price should not exist"। `price` → `basePrice`।
+  useProductForm.ts এক লাইন। tsc ✅।
+- 2026-09-04 — Product create/edit-এর **Live Preview modal বড় ও fully functional**
+  করা হলো (`ProductLivePreviewModal.tsx` পুনর্লিখিত):
+  • আকার: `max-w-5xl h-[92vh]` → `max-w-[95rem] h-[95vh]`; desktop canvas
+    `max-w-4xl` → `max-w-6xl`; column gap বাড়ানো। Mobile `max-w-[420px]` অপরিবর্তিত।
+  • Variant পিকার: হার্ডকোড "Color: Black/Navy/Maroon" + "Size: S/M/L/XL/XXL" সরিয়ে
+    আসল generated variant থেকে `getVariantAttributeOptions` / `resolveVariant`
+    (`@/features/storefront/utils/resolveProductVariant` reuse)। variant সিলেক্ট করলে
+    দাম/compare-at/SKU সেই variant-এর দেখায়। সব option সিলেক্ট না হলে Add to Cart
+    disable + warning। create mode-এ variant এখনো generate হয়নি কিন্তু hasVariants
+    টিক → "Variant options will show here once you generate..." নোট।
+  • Stock: সবসময়-"In Stock" সরিয়ে আসল লজিক — `trackInventory=false` → In Stock;
+    edit mode `sourceProduct.stockInfo.available` / create mode `initialStock` অনুযায়ী
+    In Stock / "Only N left" (≤ threshold) / Out of Stock; `allowBackorder` হলে
+    "Available on Backorder"। Out of stock + no backorder → Add to Cart/Buy Now
+    disable + rose badge + note।
+  • Tax: `taxRate > 0` হলে দামের নিচে "Price includes X% VAT" (`isTaxInclusive`) বা
+    "+ X% VAT at checkout"।
+  • "Buy Now" outline বাটন যোগ (real storefront প্যাটার্ন)।
+  • SKU না থাকলে "SKU-DEFAULT" fallback সরিয়ে পুরো SKU লাইন লুকানো।
+  Verify: frontend `npx tsc --noEmit` ✅ ০ error।
+- 2026-09-04 — Preview modal থেকে storefront header (logo/search/Sign In/cart mock,
+  ~৬০ লাইন) সরানো হলো — preview এখন সরাসরি breadcrumb + product page দিয়ে শুরু।
+  unused import `Search`/`User`/`ChevronDown` cleanup। tsc ✅।
+- 2026-09-04 — **Bug: product edit save-এ "property initialStock/images should not
+  exist" + "taxRate must be a number / cannot be negative"।** Root cause:
+  `useProductForm` একই submit payload create ও update দুটোতেই পাঠায়, কিন্তু
+  `UpdateProductDto`-তে `initialStock` ও `images` নেই (`CreateProductDto`-তে আছে) —
+  backend `forbidNonWhitelisted` reject করে। taxRate: input ফিল্ড clear করলে
+  `Number('')`/`Number('-')` → NaN → JSON-এ `null` → backend "not a number"।
+  Fix (frontend শুধু):
+  • `useProductForm.ts` submit payload — `initialStock` ও `images` এখন
+    `...(isEditMode ? {} : {...})` দিয়ে শুধু create mode-এ যায়। (edit-এ stock
+    Inventory পেজ থেকে, gallery image `ProductMediaGallery` live `addMedia` করে।)
+  • `taxRate`/`lowStockThreshold` payload-এ `Number.isFinite(x) ? x : 0` guard।
+  • `PricingTab.tsx` + `InventoryTab.tsx` — `onChange` এ `Number(e.target.value)
+    || 0` (NaN → 0)।
+  backend অপরিবর্তিত। Verify: frontend `npx tsc --noEmit` ✅ ০ error।
+- 2026-09-04 — **Variant generate করতে গেলে নেপথ্যে অসম্পূর্ণ product save হয়ে যেত
+  (URL edit mode-এ লাফ দিত) — অযৌক্তিক। Fix: create mode-এ variant form state-এ
+  রাখা, product save-এর সাথে একসাথে পাঠানো।**
+  Backend:
+  • নতুন DTO `create-product-variant-input.dto.ts` (`CreateProductVariantInputDto` +
+    `VariantOptionInputDto`)। `CreateProductDto`-তে `variants?: [...]` যোগ।
+  • `create-product.service.ts` — `hasVariants && dto.variants?.length` হলে প্রতিটা
+    variant row + তার inventory stock row তৈরি (generate-service-এর মতো লজিক, dimensions
+    না — সরাসরি resolved list)। `ProductVariantEntity` repo inject।
+  • spec: create-product-এ variant-array কেস যোগ; fulfillment/product-inventory spec-এ
+    constructor-এ variantRepo mock যোগ।
+  Frontend:
+  • `useProductForm.ts` — নতুন `PendingVariant` টাইপ + `pendingVariants` state।
+    submit payload-এ `variants` (create mode only)। `ensureProductSaved` সম্পূর্ণ
+    সরানো (আর URL edit mode-এ লাফ দেয় না)।
+  • `ProductVariantMatrix.tsx` — `isCreateMode = !productId`। "Build Matrix" চাপলে
+    create mode-এ Cartesian combination **locally** হিসাব (২০০ ছাদ) → `onPendingVariantsChange`;
+    edit mode-এ আগের মতো DB `generateVariants`। variant table unified `rows`
+    (create=pending, edit=DB)। inline save/delete/bulk-apply/bulk-delete সব create
+    mode-এ form-state mutation, edit mode-এ API। `onEnsureSaved` prop সরানো।
+  • `VariantsTab.tsx` — নতুন props পাস; detail পেজ `[id]/page.tsx` থেকে `onEnsureSaved`
+    সরানো।
+  • `ProductLivePreviewModal.tsx` — create mode-এ variant preview `pendingVariants`
+    থেকে (আগে edit mode-এ শুধু dেখাত)।
+  Verify: backend `npm run build` ✅, `jest src/modules/catalog` ✅ ২২৪/২২৪ (create-product
+  ১১/১১); frontend `npx tsc --noEmit` ✅ ০ error।
+- 2026-09-04 — **Bug: edit product-এ image upload হয় না, save করলে details পেজে ছবি
+  খালি।** Root cause: `MediaTab.tsx` `ProductMediaGallery`-কে **`productId` prop দিত
+  না** (edit mode-এও), তাই gallery-র `isRemote = Boolean(productId)` সবসময় false —
+  upload হলে ফাইল আপলোড হতো কিন্তু `addMedia({productId,url})` কল হতো না, শুধু
+  in-memory `localImages`-এ যেত। আর edit submit payload থেকে `images` সম্প্রতি
+  সরানো হয়েছে ("images should not exist" fix), তাই ছবি কোথাও persist হতো না।
+  Fix: `MediaTab.tsx` — edit mode-এ `productId={editId || undefined}` পাস। এখন gallery
+  `isRemote` true হয় → upload-এর পর সাথে সাথে `addMedia` করে DB-তে যায়,
+  `useGetProductMediaQuery` (tag invalidation-এ) auto-refresh করে দেখায়, "Save
+  Changes"-এর দরকারও পড়ে না ছবির জন্য। backend অপরিবর্তিত। tsc ✅।

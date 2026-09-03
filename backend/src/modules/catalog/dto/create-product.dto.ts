@@ -14,6 +14,7 @@ import {
   ServiceDurationUnit,
 } from '../enums/fulfillment.enum';
 import { AddProductMediaDto } from './add-product-media.dto';
+import { CreateProductVariantInputDto } from './create-product-variant-input.dto';
 
 export class CreateProductDto {
   @ApiProperty({ example: "Men's Premium Cotton Shirt", description: 'Product name' })
@@ -63,6 +64,17 @@ export class CreateProductDto {
   @IsOptional()
   @IsBoolean()
   hasVariants?: boolean;
+
+  @ApiProperty({
+    type: [CreateProductVariantInputDto],
+    description: 'Resolved variant rows to create with the product (combinations computed client-side)',
+    required: false,
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateProductVariantInputDto)
+  variants?: CreateProductVariantInputDto[];
 
   @ApiProperty({ example: true, description: 'Track stock inventory for product', required: false })
   @IsOptional()

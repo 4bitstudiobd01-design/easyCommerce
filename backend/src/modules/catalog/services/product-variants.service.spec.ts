@@ -34,7 +34,7 @@ describe('Product Variants Services (Chunk 9)', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('should throw BadRequestException if generated combinations exceed safety limit of 100', async () => {
+    it('should throw BadRequestException if generated combinations exceed the safety limit', async () => {
       const productRepo = {
         findOne: jest.fn().mockResolvedValue({ id: 'prod-1', tenantId: 'tenant-1', basePrice: 1000 }),
       };
@@ -46,9 +46,9 @@ describe('Product Variants Services (Chunk 9)', () => {
         ]),
       };
 
-      // Create 11 options for each attribute -> 11 * 11 = 121 combinations (> 100)
-      const options1 = Array.from({ length: 11 }, (_, i) => ({ id: `o1-${i}`, value: `V1-${i}`, label: `L1-${i}` }));
-      const options2 = Array.from({ length: 11 }, (_, i) => ({ id: `o2-${i}`, value: `V2-${i}`, label: `L2-${i}` }));
+      // 15 options for each attribute -> 15 * 15 = 225 combinations (> 200 limit)
+      const options1 = Array.from({ length: 15 }, (_, i) => ({ id: `o1-${i}`, value: `V1-${i}`, label: `L1-${i}` }));
+      const options2 = Array.from({ length: 15 }, (_, i) => ({ id: `o2-${i}`, value: `V2-${i}`, label: `L2-${i}` }));
 
       const optionRepo = {
         find: jest.fn().mockImplementation(({ where }) => {

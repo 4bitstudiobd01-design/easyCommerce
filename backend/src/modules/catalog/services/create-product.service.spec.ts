@@ -5,6 +5,7 @@ import { CreateProductService } from './create-product.service';
 import { ProductEntity } from '../entities/product.entity';
 import { CategoryEntity } from '../entities/category.entity';
 import { ProductImageEntity } from '../entities/product-image.entity';
+import { ProductVariantEntity } from '../entities/product-variant.entity';
 import { CollectionEntity } from '../entities/collection.entity';
 import { InventoryStockEntity } from '../../inventory/entities/inventory-stock.entity';
 import { InventoryMovementEntity } from '../../inventory/entities/inventory-movement.entity';
@@ -17,6 +18,7 @@ describe('CreateProductService', () => {
   let service: CreateProductService;
   let productRepo: any;
   let imageRepo: any;
+  let variantRepo: any;
   let stockRepo: any;
   let movementRepo: any;
   let warehouseRepo: any;
@@ -41,6 +43,11 @@ describe('CreateProductService', () => {
     imageRepo = {
       create: jest.fn().mockImplementation((dto) => ({ id: 'img-1', ...dto })),
       save: jest.fn().mockImplementation((entity) => Promise.resolve(entity)),
+    };
+
+    variantRepo = {
+      create: jest.fn().mockImplementation((dto) => ({ id: 'var-1', ...dto })),
+      save: jest.fn().mockImplementation((entity) => Promise.resolve({ id: 'var-1', ...entity })),
     };
 
     stockRepo = {
@@ -82,6 +89,10 @@ describe('CreateProductService', () => {
         {
           provide: getRepositoryToken(ProductImageEntity),
           useValue: imageRepo,
+        },
+        {
+          provide: getRepositoryToken(ProductVariantEntity),
+          useValue: variantRepo,
         },
         {
           provide: getRepositoryToken(CollectionEntity),
@@ -185,6 +196,41 @@ describe('CreateProductService', () => {
 
     expect(productRepo.create).toHaveBeenCalledWith(
       expect.objectContaining({ hasVariants: false }),
+    );
+    expect(variantRepo.save).not.toHaveBeenCalled();
+  });
+
+  it('should create the supplied variant rows (and their stock) when hasVariants is set', async () => {
+    await service.execute(mockTenantId, {
+      name: 'T-Shirt',
+      hasVariants: true,
+      variants: [
+        {
+          title: 'Black / L',
+          combinationKey: 'color:black|size:l',
+          price: 1200,
+          isEnabled: true,
+          options: [
+            { attributeId: 'a1', attributeName: 'Color', optionId: 'o1', optionLabel: 'Black', value: 'black' },
+            { attributeId: 'a2', attributeName: 'Size', optionId: 'o2', optionLabel: 'L', value: 'l' },
+          ],
+        },
+        {
+          title: 'Black / M',
+          combinationKey: 'color:black|size:m',
+          price: 1200,
+          isEnabled: true,
+          options: [
+            { attributeId: 'a1', attributeName: 'Color', optionId: 'o1', optionLabel: 'Black', value: 'black' },
+            { attributeId: 'a2', attributeName: 'Size', optionId: 'o3', optionLabel: 'M', value: 'm' },
+          ],
+        },
+      ],
+    } as any);
+
+    expect(variantRepo.save).toHaveBeenCalledTimes(2);
+    expect(variantRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Black / L', price: 1200, combinationKey: 'color:black|size:l' }),
     );
   });
 

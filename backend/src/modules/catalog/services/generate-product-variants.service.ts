@@ -8,7 +8,10 @@ import { AttributeOptionEntity } from '../entities/attribute-option.entity';
 import { InventoryStockEntity } from '../../inventory/entities/inventory-stock.entity';
 import { GenerateProductVariantsDto } from '../dto/generate-product-variants.dto';
 
-const MAX_VARIANT_COMBINATIONS = 100;
+// Upper bound on how many variant rows one generate call may create. Kept as a
+// guard against a runaway Cartesian product (each combination also writes an
+// inventory_stocks row), but raised so realistic multi-axis catalogues fit.
+const MAX_VARIANT_COMBINATIONS = 200;
 
 @Injectable()
 export class GenerateProductVariantsService {

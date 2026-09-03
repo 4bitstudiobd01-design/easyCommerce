@@ -23,9 +23,27 @@ import {
   ServiceDeliveryType,
   ServiceDurationUnit,
   HomepageSection,
+  VariantOptionMeta,
 } from '@/features/catalog/api/catalogApi';
 import { useGetMyStoreQuery } from '@/features/tenant/api/tenantApi';
 import { toast } from 'sonner';
+
+/**
+ * A variant combination the merchant configured on a brand-new product, held in
+ * form state (not the database) until the product itself is saved. The Cartesian
+ * combinations are computed client-side so a new product no longer has to be
+ * saved just to attach variants.
+ */
+export interface PendingVariant {
+  title: string;
+  combinationKey?: string;
+  sku?: string;
+  price?: number;
+  compareAtPrice?: number;
+  costPrice?: number;
+  isEnabled: boolean;
+  options: VariantOptionMeta[];
+}
 
 /**
  * Owns every field of the product create/edit/duplicate form plus the submit
@@ -82,6 +100,9 @@ export function useProductForm() {
 
   // Inventory & Stock State
   const [hasVariants, setHasVariants] = useState<boolean>(false);
+  // Variant combinations configured on a not-yet-saved product. Sent with the
+  // create payload; ignored in edit mode (there variants live in the DB).
+  const [pendingVariants, setPendingVariants] = useState<PendingVariant[]>([]);
   const [sku, setSku] = useState('');
   const [barcode, setBarcode] = useState('');
   const [trackInventory, setTrackInventory] = useState<boolean>(true);
@@ -326,12 +347,13 @@ export function useProductForm() {
         barcode: barcode.trim() || undefined,
         trackInventory,
         allowBackorder,
-        lowStockThreshold,
-        initialStock: initialStock !== '' ? Number(initialStock) : undefined,
+        lowStockThreshold: Number.isFinite(lowStockThreshold) ? lowStockThreshold : 0,
         basePrice: numericBasePrice,
         compareAtPrice: numericCompareAt > 0 ? numericCompareAt : undefined,
         costPrice: numericCostPrice > 0 ? numericCostPrice : undefined,
-        taxRate,
+        // A cleared tax field can leave taxRate as NaN, which the backend rejects
+        // as "not a number". Coerce it back to 0 here.
+        taxRate: Number.isFinite(taxRate) ? taxRate : 0,
         isTaxInclusive,
         taxCategory,
         discountType,
@@ -342,7 +364,18 @@ export function useProductForm() {
         brandId: brandId || undefined,
         collectionIds: selectedCollectionIds.length > 0 ? selectedCollectionIds : undefined,
         homepageSections: homepageSections.length > 0 ? homepageSections : undefined,
-        images: localImages.length > 0 ? localImages : undefined,
+        // initialStock, images and variants only apply when creating. On edit,
+        // stock is managed from the Inventory page, gallery images are attached
+        // live by ProductMediaGallery, and variants live in the DB — the update
+        // DTO does not accept any of them.
+        ...(isEditMode
+          ? {}
+          : {
+              initialStock: initialStock !== '' ? Number(initialStock) : undefined,
+              images: localImages.length > 0 ? localImages : undefined,
+              variants:
+                hasVariants && pendingVariants.length > 0 ? pendingVariants : undefined,
+            }),
         shippingRequired,
         weight: weight !== '' ? Number(weight) : undefined,
         weightUnit,
@@ -392,48 +425,6 @@ export function useProductForm() {
         ? 'Failed to update product. Please review your input and try again.'
         : 'Failed to create product. Please review your input and try again.';
       setErrorMsg(err?.data?.message || fallback);
-    }
-  };
-
-  const ensureProductSaved = async (): Promise<string | null> => {
-    if (!name.trim()) {
-      toast.error('Please enter a Product Name in the General section above.');
-      const nameInput = document.getElementById('product-name');
-      if (nameInput) {
-        nameInput.focus();
-        nameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-      return null;
-    }
-
-    if (editId) {
-      return editId;
-    }
-
-    try {
-      const payload: any = {
-        name: name.trim(),
-        description: description.trim() || undefined,
-        slug: customSlug.trim() || undefined,
-        productType,
-        status: 'DRAFT',
-        hasVariants: true,
-        trackInventory,
-        allowBackorder,
-        sku: sku.trim() || undefined,
-        price: numericBasePrice > 0 ? numericBasePrice : undefined,
-        compareAtPrice: numericCompareAt > 0 ? numericCompareAt : undefined,
-        categoryId: categoryId || undefined,
-        brandId: brandId || undefined,
-      };
-
-      const saved = await createProduct(payload).unwrap();
-      toast.success('Product draft created.');
-      router.replace(`/dashboard/products/create?edit=${saved.id}`);
-      return saved.id;
-    } catch (err: any) {
-      toast.error(err?.data?.message || 'Failed to initialize product.');
-      return null;
     }
   };
 
@@ -487,6 +478,7 @@ export function useProductForm() {
 
     // inventory
     hasVariants, setHasVariants,
+    pendingVariants, setPendingVariants,
     sku, setSku,
     barcode, setBarcode,
     trackInventory, setTrackInventory,
@@ -536,7 +528,6 @@ export function useProductForm() {
 
     // submit
     handleFormSubmit,
-    ensureProductSaved,
   };
 }
 

@@ -574,7 +574,6 @@ export default function ProductDetailsPage() {
             existingVariants={product.variants || []}
             basePrice={basePrice}
             currencySymbol={currencySymbol}
-            onEnsureSaved={async () => product.id}
           />
         )}
 

@@ -13,6 +13,7 @@ describe('Product Inventory, SKU & Stock Management Services', () => {
       };
       const categoryRepo = { findOne: jest.fn().mockResolvedValue(null) };
       const imageRepo = { create: jest.fn(), save: jest.fn() };
+      const variantRepo = { create: jest.fn().mockImplementation((v) => v), save: jest.fn().mockImplementation((v) => Promise.resolve({ id: "var-1", ...v })) };
       const collectionRepo = { find: jest.fn() };
       const stockRepo = { create: jest.fn(), save: jest.fn() };
       const movementRepo = { create: jest.fn(), save: jest.fn() };
@@ -23,6 +24,7 @@ describe('Product Inventory, SKU & Stock Management Services', () => {
         productRepo as any,
         categoryRepo as any,
         imageRepo as any,
+        variantRepo as any,
         collectionRepo as any,
         stockRepo as any,
         movementRepo as any,
@@ -51,6 +53,7 @@ describe('Product Inventory, SKU & Stock Management Services', () => {
       };
       const categoryRepo = { findOne: jest.fn().mockResolvedValue(null) };
       const imageRepo = { create: jest.fn(), save: jest.fn() };
+      const variantRepo = { create: jest.fn().mockImplementation((v) => v), save: jest.fn().mockImplementation((v) => Promise.resolve({ id: "var-1", ...v })) };
       const collectionRepo = { find: jest.fn() };
       const stockRepo = { create: jest.fn(), save: jest.fn() };
       const movementRepo = { create: jest.fn(), save: jest.fn() };
@@ -61,6 +64,7 @@ describe('Product Inventory, SKU & Stock Management Services', () => {
         productRepo as any,
         categoryRepo as any,
         imageRepo as any,
+        variantRepo as any,
         collectionRepo as any,
         stockRepo as any,
         movementRepo as any,
