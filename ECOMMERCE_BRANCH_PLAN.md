@@ -464,3 +464,15 @@ clarity), আর technical soundness — তিনটাই বিবেচন�
   (Spotlight badge + নাম + দাম + "Shop Now" → product পেজ) একই carousel-এ, একসাথে
   rotate, shared dots। banner-only / product-only / দুটোই — সব কেস এক code path।
   Verify: frontend `npx tsc --noEmit` ✅ ০ error।
+- 2026-09-04 — **Purchase → Purchase Orders ট্যাব: (১) line editor Product/Variant
+  column সরু হয়ে চেপে যেত, (২) PO create "Could not create" error।**
+  Fix (frontend, `LineItemEditor.tsx` + `PurchaseOrdersView.tsx`):
+  • Table `table-fixed` + width: Product 40%, Variant 22%, Qty w-20, cost w-28;
+    `min-w-[720px]`; select-এ `truncate`।
+  • `toLineInputs` — `variantId` খালি স্ট্রিং হলে payload-এ পাঠানো হয় না
+    (`...(l.variantId ? {variantId} : {})`)। আগে `''` যেত → backend `@IsUUID()` fail
+    → 400 → "Could not create" (সবচেয়ে সম্ভাব্য মূল কারণ)। `unitCost` double-Number
+    guard।
+  • `lineItemsValid` — `unitCost > 0` চাও (আগে `>= 0`; DTO `@IsPositive()`)।
+  • submit catch — class-validator `message` string[] হলে প্রথম reason দেখায়।
+  Verify: frontend `npx tsc --noEmit` ✅ ০ error। backend অপরিবর্তিত।

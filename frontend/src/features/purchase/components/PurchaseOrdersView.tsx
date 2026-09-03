@@ -136,7 +136,7 @@ export function PurchaseOrdersView() {
   const submitPo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!poCanSave) {
-      toast.error('Choose a supplier and add at least one valid line item.');
+      toast.error('Choose a supplier, and give every line a product, quantity and unit cost.');
       return;
     }
     try {
@@ -152,10 +152,10 @@ export function PurchaseOrdersView() {
       setIsNewPoOpen(false);
       resetPoForm();
     } catch (err) {
-      toast.error(
-        (err as { data?: { message?: string } })?.data?.message ??
-          'Could not create the purchase order.',
-      );
+      // class-validator returns message as string[] — surface the first real reason.
+      const data = (err as { data?: { message?: string | string[] } })?.data;
+      const reason = Array.isArray(data?.message) ? data?.message[0] : data?.message;
+      toast.error(reason || 'Could not create the purchase order.');
     }
   };
 
@@ -581,7 +581,7 @@ export function PurchaseOrdersView() {
 
       {isNewPoOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-xl border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col">
+          <div className="bg-white rounded-2xl w-full max-w-4xl shadow-xl border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col">
             <div className="p-5 border-b border-slate-100 flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-slate-900">New Purchase Order</h3>

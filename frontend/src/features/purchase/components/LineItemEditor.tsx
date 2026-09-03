@@ -105,14 +105,14 @@ export function LineItemEditor({ value, onChange }: LineItemEditorProps) {
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-slate-200">
-        <table className="min-w-full text-sm">
+        <table className="w-full min-w-[720px] text-sm table-fixed">
           <thead className="bg-slate-50 text-xs uppercase text-slate-500">
             <tr>
-              <th className="px-3 py-2 text-left font-medium">Product</th>
-              <th className="px-3 py-2 text-left font-medium">Variant</th>
-              <th className="px-3 py-2 text-right font-medium w-24">Qty</th>
-              <th className="px-3 py-2 text-right font-medium w-32">Unit cost</th>
-              <th className="px-3 py-2 text-right font-medium w-32">Line total</th>
+              <th className="px-3 py-2 text-left font-medium w-[40%]">Product</th>
+              <th className="px-3 py-2 text-left font-medium w-[22%]">Variant</th>
+              <th className="px-3 py-2 text-right font-medium w-20">Qty</th>
+              <th className="px-3 py-2 text-right font-medium w-28">Unit cost</th>
+              <th className="px-3 py-2 text-right font-medium w-28">Line total</th>
               <th className="px-3 py-2 w-10" />
             </tr>
           </thead>
@@ -136,7 +136,7 @@ export function LineItemEditor({ value, onChange }: LineItemEditorProps) {
                     <select
                       value={line.productId}
                       onChange={(e) => applyProduct(line.key, e.target.value)}
-                      className="w-full rounded-md border border-slate-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      className="w-full max-w-full truncate rounded-md border border-slate-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
                     >
                       <option value="">
                         {line.productId ? line.productName : 'Select a product'}
@@ -160,9 +160,9 @@ export function LineItemEditor({ value, onChange }: LineItemEditorProps) {
                         onChange={(e) =>
                           applyVariant(line.key, product!, e.target.value)
                         }
-                        className="w-full rounded-md border border-slate-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
+                        className="w-full max-w-full truncate rounded-md border border-slate-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
                       >
-                        <option value="">Base</option>
+                        <option value="">Base (no variant)</option>
                         {variants.map((v) => (
                           <option key={v.id} value={v.id}>
                             {v.title || v.sku || 'Variant'}
@@ -243,11 +243,11 @@ export function LineItemEditor({ value, onChange }: LineItemEditorProps) {
   );
 }
 
-/** True when every line references a product and has a positive quantity. */
+/** True when every line references a product, a positive quantity and a positive unit cost. */
 export function lineItemsValid(lines: LineItemDraft[]): boolean {
   return (
     lines.length > 0 &&
-    lines.every((l) => l.productId && l.quantity >= 1 && l.unitCost >= 0)
+    lines.every((l) => l.productId && l.quantity >= 1 && Number(l.unitCost) > 0)
   );
 }
 
@@ -255,8 +255,9 @@ export function lineItemsValid(lines: LineItemDraft[]): boolean {
 export function toLineInputs(lines: LineItemDraft[]) {
   return lines.map((l) => ({
     productId: l.productId,
-    variantId: l.variantId,
+    // Only send a variantId when it's a real id — an empty string fails @IsUUID.
+    ...(l.variantId ? { variantId: l.variantId } : {}),
     quantity: l.quantity,
-    unitCost: Number(l.unitCost.toFixed(2)),
+    unitCost: Number(Number(l.unitCost).toFixed(2)),
   }));
 }
