@@ -44,7 +44,6 @@ describe('Product Shipping & Fulfillment Services (Chunk 10)', () => {
       };
 
       const categoryRepo = { findOne: jest.fn().mockResolvedValue(null) };
-      const variantRepo = { create: jest.fn(), save: jest.fn() };
       const imageRepo = { create: jest.fn(), save: jest.fn() };
       const collectionRepo = { find: jest.fn().mockResolvedValue([]) };
       const stockRepo = { create: jest.fn(), save: jest.fn().mockResolvedValue({ id: 's-1' }) };
@@ -55,7 +54,6 @@ describe('Product Shipping & Fulfillment Services (Chunk 10)', () => {
       const service = new CreateProductService(
         productRepo as any,
         categoryRepo as any,
-        variantRepo as any,
         imageRepo as any,
         collectionRepo as any,
         stockRepo as any,
@@ -101,7 +99,6 @@ describe('Product Shipping & Fulfillment Services (Chunk 10)', () => {
       };
 
       const categoryRepo = { findOne: jest.fn().mockResolvedValue(null) };
-      const variantRepo = { create: jest.fn(), save: jest.fn() };
       const imageRepo = { create: jest.fn(), save: jest.fn() };
       const collectionRepo = { find: jest.fn().mockResolvedValue([]) };
       const stockRepo = { create: jest.fn(), save: jest.fn().mockResolvedValue({ id: 's-2' }) };
@@ -112,7 +109,6 @@ describe('Product Shipping & Fulfillment Services (Chunk 10)', () => {
       const service = new CreateProductService(
         productRepo as any,
         categoryRepo as any,
-        variantRepo as any,
         imageRepo as any,
         collectionRepo as any,
         stockRepo as any,
@@ -149,7 +145,6 @@ describe('Product Shipping & Fulfillment Services (Chunk 10)', () => {
       };
 
       const categoryRepo = { findOne: jest.fn().mockResolvedValue(null) };
-      const variantRepo = { create: jest.fn(), save: jest.fn() };
       const imageRepo = { create: jest.fn(), save: jest.fn() };
       const collectionRepo = { find: jest.fn().mockResolvedValue([]) };
       const stockRepo = { create: jest.fn(), save: jest.fn().mockResolvedValue({ id: 's-3' }) };
@@ -160,7 +155,6 @@ describe('Product Shipping & Fulfillment Services (Chunk 10)', () => {
       const service = new CreateProductService(
         productRepo as any,
         categoryRepo as any,
-        variantRepo as any,
         imageRepo as any,
         collectionRepo as any,
         stockRepo as any,

@@ -8,7 +8,6 @@ import {
   ChevronLeft,
   ChevronDown,
   FolderTree,
-  Folder,
   ArrowLeft,
   Edit,
   Trash2,
@@ -47,6 +46,7 @@ import {
   CategoryStatus,
   ProductStatus,
 } from '../api/catalogApi';
+import { getCategoryIcon } from '../utils/categoryIcons';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface CategoryDetailsViewProps {
@@ -127,7 +127,12 @@ export function CategoryDetailsView({ categoryId }: CategoryDetailsViewProps) {
     }
   };
 
-  const getCategoryIconComponent = (name: string, slug: string) => {
+  const getCategoryIconComponent = (name: string, slug: string, iconId?: string | null) => {
+    // Honour the icon the merchant explicitly picked in the form; only fall back to
+    // guessing from the name/slug when none was chosen.
+    if (iconId) {
+      return getCategoryIcon(iconId);
+    }
     const lower = (name + ' ' + slug).toLowerCase();
     if (
       lower.includes('fashion') ||
@@ -273,7 +278,7 @@ export function CategoryDetailsView({ categoryId }: CategoryDetailsViewProps) {
   const productsList = productsResponse?.data || [];
   const productsMeta = productsResponse?.meta || { total: 0, totalPages: 1, page: 1, limit: 10 };
 
-  const CategoryIcon = getCategoryIconComponent(category.name, category.slug);
+  const CategoryIcon = getCategoryIconComponent(category.name, category.slug, category.icon);
 
   const topProducts = productsList.slice(0, 3);
 
@@ -531,7 +536,7 @@ export function CategoryDetailsView({ categoryId }: CategoryDetailsViewProps) {
               {subcategories.length > 0 ? (
                 <div className="space-y-3.5">
                   {subcategories.slice(0, 3).map((sub: any) => {
-                    const SubIcon = getCategoryIconComponent(sub.name, sub.slug);
+                    const SubIcon = getCategoryIconComponent(sub.name, sub.slug, sub.icon);
                     return (
                       <div key={sub.id} className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
@@ -780,7 +785,7 @@ export function CategoryDetailsView({ categoryId }: CategoryDetailsViewProps) {
           {subcategories.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {subcategories.map((sub: any) => {
-                const SubIcon = getCategoryIconComponent(sub.name, sub.slug);
+                const SubIcon = getCategoryIconComponent(sub.name, sub.slug, sub.icon);
                 return (
                   <div
                     key={sub.id}

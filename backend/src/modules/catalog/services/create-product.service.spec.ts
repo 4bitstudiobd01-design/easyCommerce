@@ -4,7 +4,6 @@ import { BadRequestException } from '@nestjs/common';
 import { CreateProductService } from './create-product.service';
 import { ProductEntity } from '../entities/product.entity';
 import { CategoryEntity } from '../entities/category.entity';
-import { ProductVariantEntity } from '../entities/product-variant.entity';
 import { ProductImageEntity } from '../entities/product-image.entity';
 import { CollectionEntity } from '../entities/collection.entity';
 import { InventoryStockEntity } from '../../inventory/entities/inventory-stock.entity';
@@ -17,7 +16,6 @@ import { ProductStatus } from '../enums/product-status.enum';
 describe('CreateProductService', () => {
   let service: CreateProductService;
   let productRepo: any;
-  let variantRepo: any;
   let imageRepo: any;
   let stockRepo: any;
   let movementRepo: any;
@@ -38,11 +36,6 @@ describe('CreateProductService', () => {
         status: ProductStatus.DRAFT,
         tenantId: mockTenantId,
       })),
-    };
-
-    variantRepo = {
-      create: jest.fn().mockImplementation((dto) => ({ id: 'var-1', ...dto })),
-      save: jest.fn().mockImplementation((entity) => Promise.resolve(entity)),
     };
 
     imageRepo = {
@@ -85,10 +78,6 @@ describe('CreateProductService', () => {
               return Promise.resolve({ id: where?.id || 'cat-1', tenantId: where?.tenantId || mockTenantId, name: 'Mock Cat' });
             }),
           },
-        },
-        {
-          provide: getRepositoryToken(ProductVariantEntity),
-          useValue: variantRepo,
         },
         {
           provide: getRepositoryToken(ProductImageEntity),
@@ -143,6 +132,7 @@ describe('CreateProductService', () => {
       name: 'E-Book PDF',
       productType: ProductType.DIGITAL,
       status: ProductStatus.ACTIVE,
+      basePrice: 499,
     };
 
     await service.execute(mockTenantId, dto);
@@ -155,6 +145,46 @@ describe('CreateProductService', () => {
         isPublished: true,
         tenantId: mockTenantId,
       }),
+    );
+  });
+
+  it('should reject publishing a non-variant product without a selling price', async () => {
+    await expect(
+      service.execute(mockTenantId, { name: 'No Price Product', status: ProductStatus.ACTIVE }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('should reject a compare-at price that is not above the selling price', async () => {
+    await expect(
+      service.execute(mockTenantId, { name: 'Bad Compare', basePrice: 1000, compareAtPrice: 900 }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('should accept a compare-at price above the selling price', async () => {
+    await expect(
+      service.execute(mockTenantId, { name: 'Good Compare', basePrice: 1000, compareAtPrice: 1500 }),
+    ).resolves.toBeDefined();
+  });
+
+  it('should allow publishing a variant product without a product-level price', async () => {
+    const dto = {
+      name: 'T-Shirt',
+      status: ProductStatus.ACTIVE,
+      hasVariants: true,
+    };
+
+    await service.execute(mockTenantId, dto);
+
+    expect(productRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'T-Shirt', hasVariants: true, status: ProductStatus.ACTIVE }),
+    );
+  });
+
+  it('should not create any product variant on plain product creation', async () => {
+    await service.execute(mockTenantId, { name: 'Plain Product', basePrice: 100 });
+
+    expect(productRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ hasVariants: false }),
     );
   });
 

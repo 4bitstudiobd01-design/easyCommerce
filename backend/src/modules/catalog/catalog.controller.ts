@@ -58,6 +58,7 @@ import { GenerateProductVariantsService } from './services/generate-product-vari
 import { UpdateProductVariantService } from './services/update-product-variant.service';
 import { DeleteProductVariantService } from './services/delete-product-variant.service';
 import { BulkUpdateVariantsService } from './services/bulk-update-variants.service';
+import { BulkDeleteVariantsService } from './services/bulk-delete-variants.service';
 
 import { CreateShippingProfileService, ListShippingProfilesService, CreateShippingProfileDto } from './services/shipping-profile.service';
 
@@ -123,6 +124,7 @@ import { SetProductAttributeValuesDto } from './dto/set-product-attribute-values
 import { GenerateProductVariantsDto } from './dto/generate-product-variants.dto';
 import { UpdateProductVariantDto } from './dto/update-product-variant.dto';
 import { BulkUpdateVariantsDto } from './dto/bulk-update-variants.dto';
+import { BulkDeleteVariantsDto } from './dto/bulk-delete-variants.dto';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductListDto } from './dto/product-list.dto';
@@ -183,6 +185,7 @@ export class CatalogController {
     private readonly updateProductVariantService: UpdateProductVariantService,
     private readonly deleteProductVariantService: DeleteProductVariantService,
     private readonly bulkUpdateVariantsService: BulkUpdateVariantsService,
+    private readonly bulkDeleteVariantsService: BulkDeleteVariantsService,
     private readonly createShippingProfileService: CreateShippingProfileService,
     private readonly listShippingProfilesService: ListShippingProfilesService,
     private readonly bulkUpdateProductStatusService: BulkUpdateProductStatusService,
@@ -447,6 +450,21 @@ export class CatalogController {
   ): Promise<ProductVariantEntity[]> {
     const tenantId = await this.getMerchantTenantId(userId, storeId);
     return this.bulkUpdateVariantsService.execute(productId, tenantId, dto);
+  }
+
+  @Post('products/:id/variants/bulk-delete')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete several variants of a product in one transaction' })
+  @RequirePermissions('products:write')
+  async bulkDeleteVariants(
+    @CurrentUser('sub') userId: string,
+    @Param('id') productId: string,
+    @Body() dto: BulkDeleteVariantsDto,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
+    return this.bulkDeleteVariantsService.execute(productId, tenantId, dto.variantIds);
   }
 
   @Patch('products/:id/variants/:variantId')

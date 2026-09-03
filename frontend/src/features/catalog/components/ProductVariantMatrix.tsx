@@ -12,6 +12,7 @@ import {
   useUpdateVariantMutation,
   useDeleteProductVariantMutation,
   useBulkUpdateVariantsMutation,
+  useBulkDeleteVariantsMutation,
   ProductVariant,
   AttributeDefinition,
 } from '@/features/catalog/api/catalogApi';
@@ -33,9 +34,16 @@ import {
   Wand2,
   Trash2,
   Edit2,
-  AlertTriangle,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+
+// One place for whichever destructive variant/attribute action is awaiting
+// confirmation, so all three share the themed ConfirmDialog instead of window.confirm.
+type PendingConfirm =
+  | { kind: 'delete-attribute'; attr: AttributeDefinition }
+  | { kind: 'delete-variant'; variantId: string; variantTitle: string }
+  | { kind: 'bulk-delete-variants'; count: number };
 
 interface ProductVariantMatrixProps {
   productId?: string;
@@ -96,6 +104,10 @@ export function ProductVariantMatrix({
   const [updateVariant, { isLoading: isUpdatingVariant }] = useUpdateVariantMutation();
   const [deleteProductVariant, { isLoading: isDeletingVariant }] = useDeleteProductVariantMutation();
   const [bulkUpdateVariants, { isLoading: isBulkUpdating }] = useBulkUpdateVariantsMutation();
+  const [bulkDeleteVariants, { isLoading: isBulkDeleting }] = useBulkDeleteVariantsMutation();
+
+  // Whichever destructive action is waiting for the user to confirm in the dialog.
+  const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm | null>(null);
 
   // Filter only attributes where isVariantOption = true
   const variantAttributes = useMemo(
@@ -255,12 +267,8 @@ export function ProductVariantMatrix({
     }
   };
 
-  // Handle Delete Attribute
-  const handleDeleteAttribute = async (attr: AttributeDefinition) => {
-    if (!confirm(`Are you sure you want to delete attribute "${attr.name}" and all its options?`)) {
-      return;
-    }
-
+  // Perform the attribute deletion once confirmed in the dialog.
+  const performDeleteAttribute = async (attr: AttributeDefinition) => {
     try {
       await deleteAttribute(attr.id).unwrap();
       toast.success(`Attribute "${attr.name}" deleted`);
@@ -392,11 +400,9 @@ export function ProductVariantMatrix({
     }
   };
 
-  // Delete Single Variant
-  const handleDeleteSingleVariant = async (variantId: string, variantTitle: string) => {
+  // Perform a single variant deletion once confirmed in the dialog.
+  const performDeleteSingleVariant = async (variantId: string, variantTitle: string) => {
     if (!productId) return;
-    if (!confirm(`Delete variant "${variantTitle}"?`)) return;
-
     try {
       await deleteProductVariant({ productId, variantId }).unwrap();
       toast.success(`Variant "${variantTitle}" deleted.`);
@@ -406,21 +412,33 @@ export function ProductVariantMatrix({
     }
   };
 
-  // Bulk Delete Variants
-  const handleBulkDeleteVariants = async () => {
+  // Delete every selected variant in one transactional request, so a mid-way
+  // failure cannot leave half the selection removed.
+  const performBulkDeleteVariants = async () => {
     if (!productId || selectedVariantIds.length === 0) return;
-    if (!confirm(`Are you sure you want to delete ${selectedVariantIds.length} selected variants?`)) return;
-
     try {
-      for (const variantId of selectedVariantIds) {
-        await deleteProductVariant({ productId, variantId }).unwrap();
-      }
-      toast.success(`${selectedVariantIds.length} variants deleted.`);
+      const res = await bulkDeleteVariants({ productId, variantIds: selectedVariantIds }).unwrap();
+      toast.success(res.message || `${selectedVariantIds.length} variants deleted.`);
       setSelectedVariantIds([]);
     } catch (err: any) {
-      toast.error(err?.data?.message || 'Failed to delete some variants.');
+      toast.error(err?.data?.message || 'Failed to delete the selected variants.');
     }
   };
+
+  // Runs whichever destructive action the ConfirmDialog is currently gating.
+  const handleConfirmedAction = async () => {
+    if (!pendingConfirm) return;
+    if (pendingConfirm.kind === 'delete-attribute') {
+      await performDeleteAttribute(pendingConfirm.attr);
+    } else if (pendingConfirm.kind === 'delete-variant') {
+      await performDeleteSingleVariant(pendingConfirm.variantId, pendingConfirm.variantTitle);
+    } else if (pendingConfirm.kind === 'bulk-delete-variants') {
+      await performBulkDeleteVariants();
+    }
+    setPendingConfirm(null);
+  };
+
+  const confirmBusy = isDeletingAttr || isDeletingVariant || isBulkDeleting;
 
   // Bulk Apply
   const handleBulkApply = async (actionType: 'PRICE' | 'COMPARE_PRICE' | 'ENABLE' | 'DISABLE') => {
@@ -683,7 +701,7 @@ export function ProductVariantMatrix({
                   <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50">
                     <button
                       type="button"
-                      onClick={() => handleDeleteAttribute(editingAttribute)}
+                      onClick={() => setPendingConfirm({ kind: 'delete-attribute', attr: editingAttribute })}
                       className="text-xs font-bold text-red-600 hover:text-red-700 flex items-center gap-1.5 hover:underline"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -783,7 +801,7 @@ export function ProductVariantMatrix({
                           <span className="text-slate-300">|</span>
                           <button
                             type="button"
-                            onClick={() => handleDeleteAttribute(attr)}
+                            onClick={() => setPendingConfirm({ kind: 'delete-attribute', attr })}
                             className="text-red-500 hover:text-red-700 flex items-center gap-0.5 hover:underline"
                             title="Delete this attribute"
                           >
@@ -988,8 +1006,10 @@ export function ProductVariantMatrix({
                     <div className="flex items-center ml-auto">
                       <button
                         type="button"
-                        onClick={handleBulkDeleteVariants}
-                        disabled={selectedVariantIds.length === 0}
+                        onClick={() =>
+                          setPendingConfirm({ kind: 'bulk-delete-variants', count: selectedVariantIds.length })
+                        }
+                        disabled={selectedVariantIds.length === 0 || isBulkDeleting}
                         className="px-3 py-1.5 bg-red-600 text-white font-bold text-xs rounded-lg hover:bg-red-700 disabled:opacity-40 flex items-center gap-1.5"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -1156,7 +1176,13 @@ export function ProductVariantMatrix({
                               {/* Delete single variant row */}
                               <button
                                 type="button"
-                                onClick={() => handleDeleteSingleVariant(variant.id, variantTitle)}
+                                onClick={() =>
+                                  setPendingConfirm({
+                                    kind: 'delete-variant',
+                                    variantId: variant.id,
+                                    variantTitle,
+                                  })
+                                }
                                 disabled={isDeletingVariant}
                                 className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                 title="Delete variant row"
@@ -1175,6 +1201,38 @@ export function ProductVariantMatrix({
           )}
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={pendingConfirm !== null}
+        onClose={() => setPendingConfirm(null)}
+        onConfirm={handleConfirmedAction}
+        isLoading={confirmBusy}
+        title={
+          pendingConfirm?.kind === 'delete-attribute'
+            ? 'Delete this option?'
+            : pendingConfirm?.kind === 'bulk-delete-variants'
+              ? 'Delete selected variants?'
+              : 'Delete this variant?'
+        }
+        confirmLabel="Delete"
+        message={
+          pendingConfirm?.kind === 'delete-attribute' ? (
+            <>
+              Delete the option <strong>{pendingConfirm.attr.name}</strong> and all its values? Variants
+              already generated from it are not removed.
+            </>
+          ) : pendingConfirm?.kind === 'bulk-delete-variants' ? (
+            <>
+              Delete <strong>{pendingConfirm.count}</strong> selected variant
+              {pendingConfirm.count === 1 ? '' : 's'}? This cannot be undone.
+            </>
+          ) : pendingConfirm?.kind === 'delete-variant' ? (
+            <>
+              Delete the variant <strong>{pendingConfirm.variantTitle}</strong>? This cannot be undone.
+            </>
+          ) : null
+        }
+      />
     </div>
   );
 }

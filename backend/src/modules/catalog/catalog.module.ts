@@ -59,6 +59,7 @@ import { GenerateProductVariantsService } from './services/generate-product-vari
 import { UpdateProductVariantService } from './services/update-product-variant.service';
 import { DeleteProductVariantService } from './services/delete-product-variant.service';
 import { BulkUpdateVariantsService } from './services/bulk-update-variants.service';
+import { BulkDeleteVariantsService } from './services/bulk-delete-variants.service';
 
 import { CreateShippingProfileService, ListShippingProfilesService } from './services/shipping-profile.service';
 
@@ -173,6 +174,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     UpdateProductVariantService,
     DeleteProductVariantService,
     BulkUpdateVariantsService,
+    BulkDeleteVariantsService,
     CreateShippingProfileService,
     ListShippingProfilesService,
     BulkUpdateProductStatusService,
@@ -243,6 +245,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     UpdateProductVariantService,
     DeleteProductVariantService,
     BulkUpdateVariantsService,
+    BulkDeleteVariantsService,
     CreateShippingProfileService,
     ListShippingProfilesService,
     BulkUpdateProductStatusService,

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { DollarSign, Percent, TrendingUp } from 'lucide-react';
+import { DollarSign, Percent, TrendingUp, AlertTriangle } from 'lucide-react';
 import { ProductFormState } from '@/features/catalog/hooks/useProductForm';
 import { ProductDiscountType, TaxCategory } from '@/features/catalog/api/catalogApi';
 
@@ -17,6 +17,7 @@ export function PricingTab({ form }: PricingTabProps) {
     compareAtPrice, setCompareAtPrice,
     costPrice, setCostPrice,
     numericBasePrice,
+    numericCompareAt,
     numericCostPrice,
     profitAmount,
     marginPercent,
@@ -28,6 +29,9 @@ export function PricingTab({ form }: PricingTabProps) {
     discountStartsAt, setDiscountStartsAt,
     discountEndsAt, setDiscountEndsAt,
   } = form;
+
+  const compareAtBelowSelling =
+    numericCompareAt > 0 && numericBasePrice > 0 && numericCompareAt <= numericBasePrice;
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
@@ -74,9 +78,20 @@ export function PricingTab({ form }: PricingTabProps) {
             value={compareAtPrice}
             onChange={(e) => setCompareAtPrice(e.target.value !== '' ? Number(e.target.value) : '')}
             placeholder="0.00"
-            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm font-semibold placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+            className={`w-full px-3.5 py-2.5 bg-slate-50 border rounded-xl text-slate-900 text-sm font-semibold placeholder:text-slate-400 focus:outline-none focus:ring-2 ${
+              compareAtBelowSelling
+                ? 'border-amber-400 focus:ring-amber-500/20 focus:border-amber-500'
+                : 'border-slate-200 focus:ring-blue-500/20 focus:border-blue-500'
+            }`}
           />
-          <p className="text-[10px] text-slate-400 mt-1">Original strike-through price</p>
+          {compareAtBelowSelling ? (
+            <p className="text-[10px] text-amber-600 mt-1 flex items-center gap-1 font-semibold">
+              <AlertTriangle className="w-3 h-3" />
+              Must be higher than the selling price to show as a discount.
+            </p>
+          ) : (
+            <p className="text-[10px] text-slate-400 mt-1">Original strike-through price</p>
+          )}
         </div>
 
         <div>

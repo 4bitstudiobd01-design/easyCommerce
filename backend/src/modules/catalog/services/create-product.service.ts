@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { ProductEntity } from '../entities/product.entity';
 import { CategoryEntity } from '../entities/category.entity';
-import { ProductVariantEntity } from '../entities/product-variant.entity';
 import { ProductImageEntity } from '../entities/product-image.entity';
 import { CollectionEntity } from '../entities/collection.entity';
 import { InventoryStockEntity } from '../../inventory/entities/inventory-stock.entity';
@@ -24,8 +23,6 @@ export class CreateProductService {
     private readonly productRepository: Repository<ProductEntity>,
     @InjectRepository(CategoryEntity)
     private readonly categoryRepository: Repository<CategoryEntity>,
-    @InjectRepository(ProductVariantEntity)
-    private readonly variantRepository: Repository<ProductVariantEntity>,
     @InjectRepository(ProductImageEntity)
     private readonly imageRepository: Repository<ProductImageEntity>,
     @InjectRepository(CollectionEntity)
@@ -72,6 +69,14 @@ export class CreateProductService {
 
     const productType = dto.productType || ProductType.PHYSICAL;
     const status = dto.status || ProductStatus.DRAFT;
+    const hasVariants = Boolean(dto.hasVariants);
+
+    // A product that goes live must carry a real selling price. Variant products
+    // set price per variant instead, so they are exempt at create time — the price
+    // then lives on the generated variants. A draft can still be saved without one.
+    if (status === ProductStatus.ACTIVE && !hasVariants && !(dto.basePrice && dto.basePrice > 0)) {
+      throw new BadRequestException('Set a selling price greater than 0 before publishing this product.');
+    }
 
     // Check SKU uniqueness in tenant scope
     const trimmedSku = dto.sku ? dto.sku.trim() : undefined;
@@ -93,6 +98,18 @@ export class CreateProductService {
       if (existingBarcode) {
         throw new BadRequestException('Barcode already exists.');
       }
+    }
+
+    // compareAtPrice is the struck-through "was" price, so it only makes sense when
+    // it sits above the actual selling price — otherwise the storefront shows a
+    // discount that raises the price.
+    if (
+      dto.compareAtPrice !== undefined &&
+      dto.compareAtPrice > 0 &&
+      dto.basePrice !== undefined &&
+      dto.compareAtPrice <= dto.basePrice
+    ) {
+      throw new BadRequestException('Compare-at price must be higher than the selling price.');
     }
 
     // Validate discount schedule if provided
@@ -136,6 +153,7 @@ export class CreateProductService {
       publishedAt: status === ProductStatus.ACTIVE ? new Date() : undefined,
       isVisible: dto.isVisible !== undefined ? dto.isVisible : true,
       homepageSections: dto.homepageSections ?? [],
+      hasVariants,
       sku: trimmedSku,
       barcode: trimmedBarcode,
       trackInventory: dto.trackInventory !== undefined ? dto.trackInventory : true,
@@ -204,17 +222,12 @@ export class CreateProductService {
       await this.inventoryMovementRepository.save(movement);
     }
 
-    // Create default SKU variant if base price/sku provided (legacy compatibility)
-    if (dto.basePrice !== undefined || trimmedSku) {
-      const defaultVariant = this.variantRepository.create({
-        sku: trimmedSku || `SKU-${Date.now().toString().slice(-6)}`,
-        price: dto.basePrice ?? 0,
-        compareAtPrice: dto.compareAtPrice,
-        productId: savedProduct.id,
-        tenantId,
-      });
-      await this.variantRepository.save(defaultVariant);
-    }
+    // A product without variants keeps its price/SKU/stock on the product row itself
+    // (basePrice, sku, inventory_stocks). Real variants are only created when the
+    // merchant explicitly generates them from the Variants tab, which also flips
+    // hasVariants to true. Auto-creating a hidden "default variant" here left every
+    // plain product reporting one phantom variant in the details page, exports and
+    // analytics, so it is not done anymore.
 
     // Create product gallery images if provided
     if (dto.images && dto.images.length > 0) {

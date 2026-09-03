@@ -11,7 +11,6 @@ import {
   Save,
   Globe,
   Sliders,
-  Sparkles,
   CheckCircle2,
   AlertCircle,
   Loader2,
@@ -23,20 +22,8 @@ import {
   Link2,
   Eye,
   EyeOff,
-  UploadCloud,
-  Tag,
-  Shirt,
-  ShoppingBag,
-  Briefcase,
-  Watch,
-  Ticket,
-  Footprints,
-  Gift,
-  Camera,
-  Home,
   Table,
   Code,
-  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -44,23 +31,10 @@ import {
   useGetCategoriesQuery,
   CategoryStatus,
 } from '../api/catalogApi';
+import { CATEGORY_ICON_OPTIONS } from '../utils/categoryIcons';
+import { FileUpload } from '@/components/ui/FileUpload';
 
 type SectionTab = 'general' | 'seo' | 'display';
-
-const CATEGORY_ICONS = [
-  { id: 'folder', name: 'Folder', icon: Folder },
-  { id: 'tag', name: 'Tag', icon: Tag },
-  { id: 'shirt', name: 'Shirt', icon: Shirt },
-  { id: 'shopping-bag', name: 'Jacket', icon: ShoppingBag },
-  { id: 'briefcase', name: 'Briefcase', icon: Briefcase },
-  { id: 'watch', name: 'Watch', icon: Watch },
-  { id: 'ticket', name: 'Ticket', icon: Ticket },
-  { id: 'sparkles', name: 'Sparkles', icon: Sparkles },
-  { id: 'footprints', name: 'Shoes', icon: Footprints },
-  { id: 'gift', name: 'Gift', icon: Gift },
-  { id: 'home', name: 'Home', icon: Home },
-  { id: 'camera', name: 'Camera', icon: Camera },
-];
 
 export function CreateCategoryView() {
   const router = useRouter();
@@ -121,9 +95,9 @@ export function CreateCategoryView() {
   const [status, setStatus] = useState<CategoryStatus>('ACTIVE');
   const [selectedIcon, setSelectedIcon] = useState('folder');
 
-  // Media State
+  // Media State — holds the hosted image URL returned by the upload endpoint, never
+  // a base64 string (that overflows the request-size limit on category create).
   const [image, setImage] = useState<string | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   // SEO State
   const [seoTitle, setSeoTitle] = useState('');
@@ -170,30 +144,6 @@ export function CreateCategoryView() {
     if (errors.slug) {
       setErrors((prev) => ({ ...prev, slug: undefined }));
     }
-  };
-
-  const handleImageFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please upload a valid image file (PNG, JPG, WebP)');
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image file size must be less than 5MB');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
-      setImage(dataUrl);
-      setImagePreview(dataUrl);
-      setIsDirty(true);
-    };
-    reader.readAsDataURL(file);
   };
 
   const validate = () => {
@@ -513,45 +463,24 @@ export function CreateCategoryView() {
 
                 {/* Right Image & Icon Picker Column */}
                 <div className="lg:col-span-5 space-y-6">
-                  {/* Category Image Upload Dropzone */}
-                  <div className="space-y-2">
-                    <label className="block text-xs font-semibold text-slate-700">Category Image</label>
-
-                    {imagePreview ? (
-                      <div className="relative aspect-video w-full rounded-xl overflow-hidden border border-slate-200 bg-slate-50 group">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={imagePreview} alt="Category" className="w-full h-full object-cover" />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setImage(null);
-                            setImagePreview(null);
-                            setIsDirty(true);
-                          }}
-                          className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 hover:bg-black/80 text-white transition-all shadow-md"
-                          title="Remove image"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ) : (
-                      <label className="flex flex-col items-center justify-center p-6 border border-dashed border-slate-200 hover:border-blue-400 bg-slate-50/50 hover:bg-blue-50/20 rounded-xl transition-all cursor-pointer text-center">
-                        <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shadow-xs">
-                          <UploadCloud className="w-6 h-6" />
-                        </div>
-                        <span className="text-xs font-bold text-slate-800 mt-2.5">Upload category image</span>
-                        <span className="text-[11px] text-slate-400 mt-0.5">PNG, JPG or WebP</span>
-                        <span className="text-[11px] text-slate-400">Recommended 800x800px</span>
-                        <input type="file" accept="image/*" onChange={handleImageFileSelect} className="hidden" />
-                      </label>
-                    )}
-                  </div>
+                  {/* Category Image Upload */}
+                  <FileUpload
+                    label="Category Image"
+                    description="PNG, JPG or WebP — recommended 800x800px"
+                    value={image}
+                    onChange={(url) => {
+                      setImage(url);
+                      setIsDirty(true);
+                    }}
+                    fileableType="CATEGORY"
+                    previewShape="square"
+                  />
 
                   {/* 4x3 Icon Picker Grid */}
                   <div className="space-y-2">
                     <label className="block text-xs font-semibold text-slate-700">Category Icon</label>
                     <div className="grid grid-cols-4 gap-2.5 p-3 bg-slate-50/60 rounded-xl border border-slate-100">
-                      {CATEGORY_ICONS.map((item) => {
+                      {CATEGORY_ICON_OPTIONS.map((item) => {
                         const IconComponent = item.icon;
                         const isSelected = selectedIcon === item.id;
                         return (

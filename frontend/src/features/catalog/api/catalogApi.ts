@@ -459,6 +459,7 @@ export interface CreateProductRequest {
   productType?: ProductType;
   status?: ProductStatus;
   slug?: string;
+  hasVariants?: boolean;
   sku?: string;
   barcode?: string;
   trackInventory?: boolean;
@@ -1229,6 +1230,20 @@ export const catalogApi = createApi({
       transformResponse: (response: { data: { success: boolean; message: string } }) => response.data || response,
     }),
 
+    bulkDeleteVariants: builder.mutation<
+      { success: boolean; deletedCount: number; message: string },
+      { productId: string; variantIds: string[] }
+    >({
+      query: ({ productId, variantIds }) => ({
+        url: `/products/${productId}/variants/bulk-delete`,
+        method: 'POST',
+        body: { variantIds },
+      }),
+      invalidatesTags: (_result, _err, { productId }) => [{ type: 'Product', id: productId }, 'Variant', 'Inventory'],
+      transformResponse: (response: { data: { success: boolean; deletedCount: number; message: string } }) =>
+        response.data || response,
+    }),
+
     // --- PRODUCT MEDIA ENDPOINTS ---
     getProductMedia: builder.query<ProductImage[], string>({
       query: (productId) => `/products/${productId}/media`,
@@ -1377,6 +1392,7 @@ export const {
   useGenerateVariantsMutation,
   useUpdateVariantMutation,
   useDeleteProductVariantMutation,
+  useBulkDeleteVariantsMutation,
   useBulkUpdateVariantsMutation,
   useGetProductMediaQuery,
   useUploadProductMediaMutation,

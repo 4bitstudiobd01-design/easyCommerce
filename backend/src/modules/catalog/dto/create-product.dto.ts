@@ -59,6 +59,11 @@ export class CreateProductDto {
   @IsString()
   barcode?: string;
 
+  @ApiProperty({ example: false, description: 'Whether this product is sold in multiple variant options (Color, Size, ...)', required: false })
+  @IsOptional()
+  @IsBoolean()
+  hasVariants?: boolean;
+
   @ApiProperty({ example: true, description: 'Track stock inventory for product', required: false })
   @IsOptional()
   @IsBoolean()

@@ -93,7 +93,9 @@ export function useProductForm() {
   const [basePrice, setBasePrice] = useState<number | ''>('');
   const [compareAtPrice, setCompareAtPrice] = useState<number | ''>('');
   const [costPrice, setCostPrice] = useState<number | ''>('');
-  const [taxRate, setTaxRate] = useState<number>(15);
+  // Default to 0 so a merchant who never opens the Pricing section does not silently
+  // ship a 15% VAT. This also matches the backend entity/DTO default.
+  const [taxRate, setTaxRate] = useState<number>(0);
   const [isTaxInclusive, setIsTaxInclusive] = useState<boolean>(false);
   const [taxCategory, setTaxCategory] = useState<TaxCategory>('STANDARD_VAT');
 
@@ -176,7 +178,7 @@ export function useProductForm() {
     setBasePrice(sourceProduct.basePrice ?? '');
     setCompareAtPrice(sourceProduct.compareAtPrice ?? '');
     setCostPrice(sourceProduct.costPrice ?? '');
-    setTaxRate(sourceProduct.taxRate ?? 15);
+    setTaxRate(sourceProduct.taxRate ?? 0);
     setIsTaxInclusive(Boolean(sourceProduct.isTaxInclusive));
     setTaxCategory(sourceProduct.taxCategory || 'STANDARD_VAT');
 
@@ -291,6 +293,21 @@ export function useProductForm() {
       return;
     }
 
+    // A product going live must have a real selling price. Variant products price
+    // each variant instead, so they are exempt here — the price lives on the
+    // variants generated in the Variants section. Drafts can be saved without one.
+    if (targetStatus === 'ACTIVE' && !hasVariants && numericBasePrice <= 0) {
+      setErrorMsg('Set a Selling Price greater than 0 before publishing, or Save as Draft instead.');
+      return;
+    }
+
+    // Compare-at is the struck-through original price, so it has to sit above the
+    // selling price — otherwise the storefront shows a "discount" that raises it.
+    if (numericCompareAt > 0 && numericBasePrice > 0 && numericCompareAt <= numericBasePrice) {
+      setErrorMsg('Compare-at price must be higher than the Selling Price.');
+      return;
+    }
+
     if (discountStartsAt && discountEndsAt && new Date(discountEndsAt) <= new Date(discountStartsAt)) {
       setErrorMsg('Discount schedule end date must be after start date.');
       return;
@@ -304,6 +321,7 @@ export function useProductForm() {
         status: targetStatus,
         isVisible,
         slug: customSlug.trim() || undefined,
+        hasVariants,
         sku: sku.trim() || undefined,
         barcode: barcode.trim() || undefined,
         trackInventory,
@@ -488,6 +506,7 @@ export function useProductForm() {
     discountStartsAt, setDiscountStartsAt,
     discountEndsAt, setDiscountEndsAt,
     numericBasePrice,
+    numericCompareAt,
     numericCostPrice,
     profitAmount,
     marginPercent,

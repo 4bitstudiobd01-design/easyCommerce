@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import {
   FolderTree,
-  Folder,
   ChevronRight,
   Package,
   Eye,
@@ -25,6 +24,7 @@ import {
   useReorderCategoryMutation,
   useUpdateCategoryMutation,
 } from '../api/catalogApi';
+import { getCategoryIcon } from '../utils/categoryIcons';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface BreadcrumbEntry {
@@ -403,9 +403,22 @@ export function CategoryBrowser({
                         onClick={() => onNavigate(cat.id, cat.name)}
                         className="flex items-center gap-3 text-left group"
                       >
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 bg-blue-50 text-blue-600 border border-blue-100">
-                          <Folder className="w-4 h-4" />
-                        </div>
+                        {(() => {
+                          if (cat.image) {
+                            return (
+                              <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 border border-slate-200 bg-slate-50">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={cat.image} alt="" className="w-full h-full object-cover" />
+                              </div>
+                            );
+                          }
+                          const IconComp = getCategoryIcon(cat.icon);
+                          return (
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-blue-50 text-blue-600 border border-blue-100">
+                              <IconComp className="w-4 h-4" />
+                            </div>
+                          );
+                        })()}
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-slate-900 text-xs truncate group-hover:text-blue-600 transition-colors">
