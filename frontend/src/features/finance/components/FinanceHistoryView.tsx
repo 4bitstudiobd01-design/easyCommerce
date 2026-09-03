@@ -688,7 +688,7 @@ export function FinanceHistoryView() {
             <span className="font-bold text-slate-900">{totalCount}</span> historical entries
           </div>
 
-          {totalPages > 1 && (
+          {totalCount > 0 && (
             <div className="flex items-center gap-1">
               <button
                 type="button"

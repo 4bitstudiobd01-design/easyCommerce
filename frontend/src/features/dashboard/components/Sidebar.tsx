@@ -842,7 +842,8 @@ export const Sidebar = ({
             </div>
           </Link>
 
-          {/* 5. ACCOUNTING ACCORDION */}
+          {/* 5. ACCOUNTING ACCORDION (Hidden from active navigation per simplified Finance MVP integration; code preserved for reuse) */}
+          {/*
           <AccordionHeader 
             title="Accounting" 
             groupKey="accounting" 
@@ -914,6 +915,7 @@ export const Sidebar = ({
               />
             </div>
           )}
+          */}
 
           {/* 6. MARKETING & ANALYTICS ACCORDION */}
           <AccordionHeader 

@@ -50,6 +50,145 @@ import {
 import { toast } from 'sonner';
 
 export const PLATFORM_CONFIGS: Record<SocialPlatform, PlatformConfig> = {
+  facebook: {
+    platform: 'facebook',
+    name: 'Facebook Page',
+    description: 'Meta Page integration for page posts, wall comments, and brand inquiries.',
+    color: '#1877F2',
+    docsUrl: 'https://developers.facebook.com/docs/pages',
+    webhookPath: '/api/v1/webhooks/facebook',
+    fields: [
+      {
+        key: 'pageId',
+        label: 'Facebook Page ID',
+        type: 'text',
+        placeholder: 'e.g. 102938475610293',
+        required: true,
+        helperText: 'Found on your Facebook Page > About section',
+      },
+      {
+        key: 'pageAccessToken',
+        label: 'Page Access Token (Permanent)',
+        type: 'password',
+        placeholder: 'EAABsb...',
+        required: true,
+        helperText: 'Requires pages_show_list, pages_read_engagement permissions',
+      },
+      {
+        key: 'verifyToken',
+        label: 'Webhook Verify Token',
+        type: 'text',
+        placeholder: 'omnichannel_verify_token',
+        required: false,
+      },
+    ],
+  },
+  messenger: {
+    platform: 'messenger',
+    name: 'Facebook Messenger',
+    description: 'Direct Meta Messenger chat for automated 1-on-1 customer conversations and replies.',
+    color: '#0084FF',
+    docsUrl: 'https://developers.facebook.com/docs/messenger-platform',
+    webhookPath: '/api/v1/webhooks/facebook',
+    fields: [
+      {
+        key: 'pageId',
+        label: 'Facebook Page ID',
+        type: 'text',
+        placeholder: 'e.g. 102938475610293',
+        required: true,
+        helperText: 'Found on your Facebook Page > About section',
+      },
+      {
+        key: 'pageAccessToken',
+        label: 'Page Access Token (Permanent)',
+        type: 'password',
+        placeholder: 'EAABsb...',
+        required: true,
+        helperText: 'Requires pages_messaging permission',
+      },
+      {
+        key: 'verifyToken',
+        label: 'Webhook Verify Token',
+        type: 'text',
+        placeholder: 'omnichannel_verify_token',
+        required: false,
+      },
+    ],
+  },
+  instagram: {
+    platform: 'instagram',
+    name: 'Instagram Direct',
+    description: 'Direct Messages & Story Mentions via Meta Graph API.',
+    color: '#E1306C',
+    docsUrl: 'https://developers.facebook.com/docs/messenger-platform/instagram',
+    webhookPath: '/api/v1/webhooks/facebook',
+    fields: [
+      {
+        key: 'instagramAccountId',
+        label: 'Instagram Business Account ID',
+        type: 'text',
+        placeholder: 'e.g. 17841400000000000',
+        required: true,
+        helperText: 'Linked Professional Account ID from Meta Business Suite',
+      },
+      {
+        key: 'pageAccessToken',
+        label: 'Page Access Token (with instagram permissions)',
+        type: 'password',
+        placeholder: 'EAABsb...',
+        required: true,
+        helperText: 'Requires instagram_basic, instagram_manage_messages permissions',
+      },
+      {
+        key: 'verifyToken',
+        label: 'Webhook Verify Token',
+        type: 'text',
+        placeholder: 'omnichannel_verify_token',
+        required: false,
+      },
+    ],
+  },
+  tiktok: {
+    platform: 'tiktok',
+    name: 'TikTok Business',
+    description: 'TikTok Direct Messages and TikTok Shop customer inquiry integration.',
+    color: '#010101',
+    docsUrl: 'https://business-api.tiktok.com/portal/docs',
+    webhookPath: '/api/v1/webhooks/tiktok',
+    fields: [
+      {
+        key: 'clientKey',
+        label: 'TikTok Client Key / App ID',
+        type: 'text',
+        placeholder: 'e.g. aw9abcdefg123456',
+        required: true,
+        helperText: 'Found in TikTok Developer Portal under App Details',
+      },
+      {
+        key: 'clientSecret',
+        label: 'TikTok Client Secret',
+        type: 'password',
+        placeholder: 'tiktok-app-secret',
+        required: true,
+      },
+      {
+        key: 'accessToken',
+        label: 'TikTok Access Token',
+        type: 'password',
+        placeholder: 'act.example...',
+        required: true,
+        helperText: 'OAuth Access Token with direct messaging scope',
+      },
+      {
+        key: 'verifyToken',
+        label: 'Webhook Verify Token',
+        type: 'text',
+        placeholder: 'tiktok_verify_token',
+        required: false,
+      },
+    ],
+  },
   whatsapp: {
     platform: 'whatsapp',
     name: 'WhatsApp Cloud API',
@@ -113,224 +252,6 @@ export const PLATFORM_CONFIGS: Record<SocialPlatform, PlatformConfig> = {
         type: 'text',
         placeholder: '@my_store_bot',
         required: false,
-      },
-    ],
-  },
-  facebook: {
-    platform: 'facebook',
-    name: 'Facebook Messenger',
-    description: 'Meta Page messaging integration for customer inquiries and page comments.',
-    color: '#1877F2',
-    docsUrl: 'https://developers.facebook.com/docs/messenger-platform',
-    webhookPath: '/api/v1/webhooks/facebook',
-    fields: [
-      {
-        key: 'pageId',
-        label: 'Facebook Page ID',
-        type: 'text',
-        placeholder: 'e.g. 102938475610293',
-        required: true,
-        helperText: 'Found on your Facebook Page > About section',
-      },
-      {
-        key: 'pageAccessToken',
-        label: 'Page Access Token (Permanent)',
-        type: 'password',
-        placeholder: 'EAABsb...',
-        required: true,
-        helperText: 'Requires pages_messaging and pages_show_list permissions',
-      },
-      {
-        key: 'verifyToken',
-        label: 'Webhook Verify Token',
-        type: 'text',
-        placeholder: 'omnichannel_verify_token',
-        required: false,
-      },
-    ],
-  },
-  instagram: {
-    platform: 'instagram',
-    name: 'Instagram Direct',
-    description: 'Direct Messages & Story Mentions via Meta Graph API.',
-    color: '#E1306C',
-    docsUrl: 'https://developers.facebook.com/docs/messenger-platform/instagram',
-    webhookPath: '/api/v1/webhooks/facebook',
-    fields: [
-      {
-        key: 'instagramAccountId',
-        label: 'Instagram Business Account ID',
-        type: 'text',
-        placeholder: 'e.g. 17841400000000000',
-        required: true,
-        helperText: 'Linked Professional Account ID from Meta Business Suite',
-      },
-      {
-        key: 'pageAccessToken',
-        label: 'Page Access Token (with instagram permissions)',
-        type: 'password',
-        placeholder: 'EAABsb...',
-        required: true,
-        helperText: 'Requires instagram_basic, instagram_manage_messages permissions',
-      },
-      {
-        key: 'verifyToken',
-        label: 'Webhook Verify Token',
-        type: 'text',
-        placeholder: 'omnichannel_verify_token',
-        required: false,
-      },
-    ],
-  },
-  x: {
-    platform: 'x',
-    name: 'X (Twitter)',
-    description: 'Direct Messages and brand mention tracking via Twitter Developer API.',
-    color: '#000000',
-    docsUrl: 'https://developer.twitter.com/en/docs/twitter-api',
-    webhookPath: '/api/v1/webhooks/x',
-    fields: [
-      {
-        key: 'apiKey',
-        label: 'Consumer API Key',
-        type: 'text',
-        placeholder: 'x-api-key',
-        required: true,
-      },
-      {
-        key: 'apiSecretKey',
-        label: 'Consumer API Secret',
-        type: 'password',
-        placeholder: 'x-api-secret',
-        required: true,
-      },
-      {
-        key: 'bearerToken',
-        label: 'App Bearer Token',
-        type: 'password',
-        placeholder: 'AAAA...',
-        required: true,
-      },
-    ],
-  },
-  slack: {
-    platform: 'slack',
-    name: 'Slack Bot Workspace',
-    description: 'Internal team notifications & staff dispatch chat bridge.',
-    color: '#4A154B',
-    docsUrl: 'https://api.slack.com/bot-users',
-    webhookPath: '/api/v1/webhooks/slack',
-    fields: [
-      {
-        key: 'botToken',
-        label: 'Bot User OAuth Token',
-        type: 'password',
-        placeholder: 'xoxb-...',
-        required: true,
-        helperText: 'Bot token starting with xoxb- with chat:write permissions',
-      },
-      {
-        key: 'signingSecret',
-        label: 'Signing Secret',
-        type: 'password',
-        placeholder: 'slack-signing-secret',
-        required: true,
-      },
-      {
-        key: 'defaultChannel',
-        label: 'Default Channel ID or Name',
-        type: 'text',
-        placeholder: 'e.g. C0123456789 or general',
-        required: false,
-      },
-    ],
-  },
-  shopify: {
-    platform: 'shopify',
-    name: 'Shopify Storefront Chat',
-    description: 'Integrate live web-chat & customer order lookup on your Shopify storefront.',
-    color: '#96BF48',
-    docsUrl: 'https://shopify.dev/docs/apps',
-    webhookPath: '/api/v1/webhooks/shopify',
-    fields: [
-      {
-        key: 'shopDomain',
-        label: 'Shop Domain (myshopify.com)',
-        type: 'text',
-        placeholder: 'your-store.myshopify.com',
-        required: true,
-      },
-      {
-        key: 'accessToken',
-        label: 'Storefront Access Token',
-        type: 'password',
-        placeholder: 'shpat_...',
-        required: true,
-      },
-    ],
-  },
-  linkedin: {
-    platform: 'linkedin',
-    name: 'LinkedIn Lead Messaging',
-    description: 'B2B Lead gen & InMail automated message capture.',
-    color: '#0A66C2',
-    docsUrl: 'https://learn.microsoft.com/en-us/linkedin/',
-    webhookPath: '/api/v1/webhooks/linkedin',
-    fields: [
-      {
-        key: 'clientId',
-        label: 'Client ID',
-        type: 'text',
-        placeholder: 'linkedin-client-id',
-        required: true,
-      },
-      {
-        key: 'clientSecret',
-        label: 'Client Secret',
-        type: 'password',
-        placeholder: 'linkedin-client-secret',
-        required: true,
-      },
-    ],
-  },
-  hubspot: {
-    platform: 'hubspot',
-    name: 'HubSpot CRM Bridge',
-    description: 'Bidirectional sync of contacts and chat tickets to HubSpot CRM.',
-    color: '#FF7A59',
-    docsUrl: 'https://developers.hubspot.com/',
-    webhookPath: '/api/v1/webhooks/hubspot',
-    fields: [
-      {
-        key: 'accessToken',
-        label: 'Private App Access Token',
-        type: 'password',
-        placeholder: 'pat-na1-...',
-        required: true,
-      },
-    ],
-  },
-  custom: {
-    platform: 'custom',
-    name: 'Custom Inbound Webhook',
-    description: 'Receive messages from custom ERP, Mobile Apps, or external websites.',
-    color: '#6366F1',
-    docsUrl: '#',
-    webhookPath: '/api/v1/webhooks/custom',
-    fields: [
-      {
-        key: 'secretKey',
-        label: 'Signature Secret Key',
-        type: 'password',
-        placeholder: 'hmac-sha256-secret',
-        required: true,
-      },
-      {
-        key: 'endpointName',
-        label: 'Custom Endpoint Identifier',
-        type: 'text',
-        placeholder: 'my-custom-app',
-        required: true,
       },
     ],
   },
@@ -431,11 +352,12 @@ export const ChannelCredentialsManager: React.FC = () => {
   const [aiTriggerMode, setAiTriggerMode] = useState<'ALWAYS' | 'NO_HUMAN_ACTIVE'>('ALWAYS');
   const [aiSystemPrompt, setAiSystemPrompt] = useState('');
   const [aiEnabledPlatforms, setAiEnabledPlatforms] = useState<Record<string, boolean>>({
-    telegram: true,
-    whatsapp: true,
-    instagram: true,
     facebook: true,
-    x: false,
+    messenger: true,
+    instagram: true,
+    tiktok: true,
+    whatsapp: true,
+    telegram: true,
   });
   // Per-provider test status cache: { openai: { success, message, latencyMs }, gemini: {...}, ... }
   const [providerStatuses, setProviderStatuses] = useState<
@@ -506,11 +428,12 @@ export const ChannelCredentialsManager: React.FC = () => {
     );
     if (aiConfig.enabledPlatforms) {
       setAiEnabledPlatforms({
-        telegram: aiConfig.enabledPlatforms.telegram !== false,
-        whatsapp: aiConfig.enabledPlatforms.whatsapp !== false,
-        instagram: aiConfig.enabledPlatforms.instagram !== false,
         facebook: aiConfig.enabledPlatforms.facebook !== false,
-        x: aiConfig.enabledPlatforms.x === true,
+        messenger: aiConfig.enabledPlatforms.messenger !== false,
+        instagram: aiConfig.enabledPlatforms.instagram !== false,
+        tiktok: aiConfig.enabledPlatforms.tiktok !== false,
+        whatsapp: aiConfig.enabledPlatforms.whatsapp !== false,
+        telegram: aiConfig.enabledPlatforms.telegram !== false,
       });
     }
     // Clear key input (always load fresh — never pre-fill for security)
@@ -642,48 +565,25 @@ export const ChannelCredentialsManager: React.FC = () => {
         ].filter((x): x is { label: string; value: string; isHighlight?: boolean } => Boolean(x.value));
       }
       case 'facebook':
+      case 'messenger':
       case 'instagram': {
         return [
-          { label: 'Page Name', value: cred.accountHandle || m.name || (platform === 'instagram' ? '@rahat.661' : 'Connected Page'), isHighlight: true },
+          { label: platform === 'instagram' ? 'Account Name' : 'Page Name', value: cred.accountHandle || m.name || (platform === 'instagram' ? '@rahat.661' : 'Connected Page'), isHighlight: true },
           { label: 'Account ID', value: c.instagramAccountId || c.pageId },
           { label: 'Sync Engine', value: 'Meta Graph Webhook' },
         ].filter((x): x is { label: string; value: string; isHighlight?: boolean } => Boolean(x.value));
       }
-      case 'slack': {
+      case 'tiktok': {
         return [
-          { label: 'Channel', value: c.defaultChannel ? `#${c.defaultChannel}` : null, isHighlight: true },
-          { label: 'Bot User ID', value: m.user_id || null },
-          { label: 'Sync Engine', value: 'Slack Events API' },
-        ].filter((x): x is { label: string; value: string; isHighlight?: boolean } => Boolean(x.value));
-      }
-      case 'shopify': {
-        return [
-          { label: 'Shop Domain', value: c.shopDomain, isHighlight: true },
-          { label: 'Sync Engine', value: 'Shopify Storefront Webhook' },
-        ].filter((x): x is { label: string; value: string; isHighlight?: boolean } => Boolean(x.value));
-      }
-      case 'x': {
-        return [
-          { label: 'Account Handle', value: cred.accountHandle || 'Connected X Account', isHighlight: true },
-          { label: 'API Key', value: c.apiKey },
-          { label: 'Sync Engine', value: 'X / Twitter API' },
-        ].filter((x): x is { label: string; value: string; isHighlight?: boolean } => Boolean(x.value));
-      }
-      case 'linkedin': {
-        return [
-          { label: 'Client ID', value: c.clientId, isHighlight: true },
-          { label: 'Sync Engine', value: 'LinkedIn Lead API' },
-        ].filter((x): x is { label: string; value: string; isHighlight?: boolean } => Boolean(x.value));
-      }
-      case 'hubspot': {
-        return [
-          { label: 'Auth Type', value: 'Private App Access Token', isHighlight: true },
-          { label: 'Sync Engine', value: 'HubSpot REST' },
+          { label: 'Account Handle', value: cred.accountHandle || (c.accountHandle ? `@${c.accountHandle}` : 'TikTok Business Account'), isHighlight: true },
+          { label: 'Client Key / App ID', value: c.clientKey || c.appId },
+          { label: 'Sync Engine', value: 'TikTok Open API' },
         ].filter((x): x is { label: string; value: string; isHighlight?: boolean } => Boolean(x.value));
       }
       default: {
+        const pConfig = (PLATFORM_CONFIGS as Record<string, PlatformConfig>)[platform as string];
         return [
-          { label: 'Inbound Endpoint', value: PLATFORM_CONFIGS[platform]?.webhookPath || '', isHighlight: true },
+          { label: 'Inbound Endpoint', value: pConfig?.webhookPath || '', isHighlight: true },
           { label: 'Sync Engine', value: 'Inbound REST Webhook' },
         ].filter((x): x is { label: string; value: string; isHighlight?: boolean } => Boolean(x.value));
       }
@@ -829,7 +729,7 @@ export const ChannelCredentialsManager: React.FC = () => {
               <h2 className="text-lg font-black tracking-tight">Channel API Integrations & Security</h2>
             </div>
             <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
-              Connect official Meta (WhatsApp & Facebook), Telegram, and Twitter APIs. Inbound messages automatically sync with Customer 360 profiles and trigger instant notifications.
+              Connect official Meta (Facebook, Messenger & WhatsApp), Instagram, TikTok, and Telegram APIs. Inbound messages automatically sync with Customer 360 profiles and trigger instant notifications.
             </p>
           </div>
           <div className="flex items-center gap-2 self-start sm:self-auto">
@@ -969,7 +869,7 @@ export const ChannelCredentialsManager: React.FC = () => {
                         AUTO-REPLY CHANNELS:
                       </span>
                       <div className="flex items-center gap-1 flex-wrap">
-                        {['telegram', 'whatsapp', 'instagram', 'facebook'].map((p) => {
+                        {['facebook', 'messenger', 'instagram', 'tiktok', 'whatsapp', 'telegram'].map((p) => {
                           const isOn = aiConfig?.enabledPlatforms?.[p] !== false;
                           return (
                             <span
@@ -1488,51 +1388,51 @@ export const ChannelCredentialsManager: React.FC = () => {
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {/* Telegram */}
+                  {/* Facebook */}
                   <div className="p-3 bg-white border border-slate-200 rounded-2xl flex items-center justify-between shadow-2xs">
                     <div className="flex items-center gap-2.5">
-                      <PlatformIcon platform="telegram" size={20} />
+                      <PlatformIcon platform="facebook" size={20} />
                       <div>
-                        <span className="font-bold text-slate-900 block">Telegram Bot</span>
-                        <span className="text-[10px] text-slate-400">@forsbit_bot</span>
+                        <span className="font-bold text-slate-900 block">Facebook Page</span>
+                        <span className="text-[10px] text-slate-400">Posts & Comments</span>
                       </div>
                     </div>
                     <button
                       type="button"
                       onClick={() =>
-                        setAiEnabledPlatforms((prev) => ({ ...prev, telegram: !prev.telegram }))
+                        setAiEnabledPlatforms((prev) => ({ ...prev, facebook: !prev.facebook }))
                       }
                       className={`px-3 py-1 rounded-lg font-bold text-[11px] transition-colors cursor-pointer ${
-                        aiEnabledPlatforms.telegram !== false
+                        aiEnabledPlatforms.facebook !== false
                           ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                           : 'bg-slate-100 text-slate-500 border border-slate-200'
                       }`}
                     >
-                      {aiEnabledPlatforms.telegram !== false ? 'AI Active' : 'Off'}
+                      {aiEnabledPlatforms.facebook !== false ? 'AI Active' : 'Off'}
                     </button>
                   </div>
 
-                  {/* WhatsApp */}
+                  {/* Messenger */}
                   <div className="p-3 bg-white border border-slate-200 rounded-2xl flex items-center justify-between shadow-2xs">
                     <div className="flex items-center gap-2.5">
-                      <PlatformIcon platform="whatsapp" size={20} />
+                      <PlatformIcon platform="messenger" size={20} />
                       <div>
-                        <span className="font-bold text-slate-900 block">WhatsApp Business</span>
-                        <span className="text-[10px] text-slate-400">Cloud API</span>
+                        <span className="font-bold text-slate-900 block">Facebook Messenger</span>
+                        <span className="text-[10px] text-slate-400">Direct Chat</span>
                       </div>
                     </div>
                     <button
                       type="button"
                       onClick={() =>
-                        setAiEnabledPlatforms((prev) => ({ ...prev, whatsapp: !prev.whatsapp }))
+                        setAiEnabledPlatforms((prev) => ({ ...prev, messenger: !prev.messenger }))
                       }
                       className={`px-3 py-1 rounded-lg font-bold text-[11px] transition-colors cursor-pointer ${
-                        aiEnabledPlatforms.whatsapp !== false
+                        aiEnabledPlatforms.messenger !== false
                           ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                           : 'bg-slate-100 text-slate-500 border border-slate-200'
                       }`}
                     >
-                      {aiEnabledPlatforms.whatsapp !== false ? 'AI Active' : 'Off'}
+                      {aiEnabledPlatforms.messenger !== false ? 'AI Active' : 'Off'}
                     </button>
                   </div>
 
@@ -1560,27 +1460,75 @@ export const ChannelCredentialsManager: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* Facebook */}
+                  {/* TikTok */}
                   <div className="p-3 bg-white border border-slate-200 rounded-2xl flex items-center justify-between shadow-2xs">
                     <div className="flex items-center gap-2.5">
-                      <PlatformIcon platform="facebook" size={20} />
+                      <PlatformIcon platform="tiktok" size={20} />
                       <div>
-                        <span className="font-bold text-slate-900 block">Facebook Messenger</span>
-                        <span className="text-[10px] text-slate-400">Page Messaging</span>
+                        <span className="font-bold text-slate-900 block">TikTok Business</span>
+                        <span className="text-[10px] text-slate-400">Direct Messages & Shop</span>
                       </div>
                     </div>
                     <button
                       type="button"
                       onClick={() =>
-                        setAiEnabledPlatforms((prev) => ({ ...prev, facebook: !prev.facebook }))
+                        setAiEnabledPlatforms((prev) => ({ ...prev, tiktok: !prev.tiktok }))
                       }
                       className={`px-3 py-1 rounded-lg font-bold text-[11px] transition-colors cursor-pointer ${
-                        aiEnabledPlatforms.facebook !== false
+                        aiEnabledPlatforms.tiktok !== false
                           ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                           : 'bg-slate-100 text-slate-500 border border-slate-200'
                       }`}
                     >
-                      {aiEnabledPlatforms.facebook !== false ? 'AI Active' : 'Off'}
+                      {aiEnabledPlatforms.tiktok !== false ? 'AI Active' : 'Off'}
+                    </button>
+                  </div>
+
+                  {/* WhatsApp */}
+                  <div className="p-3 bg-white border border-slate-200 rounded-2xl flex items-center justify-between shadow-2xs">
+                    <div className="flex items-center gap-2.5">
+                      <PlatformIcon platform="whatsapp" size={20} />
+                      <div>
+                        <span className="font-bold text-slate-900 block">WhatsApp Business</span>
+                        <span className="text-[10px] text-slate-400">Cloud API</span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setAiEnabledPlatforms((prev) => ({ ...prev, whatsapp: !prev.whatsapp }))
+                      }
+                      className={`px-3 py-1 rounded-lg font-bold text-[11px] transition-colors cursor-pointer ${
+                        aiEnabledPlatforms.whatsapp !== false
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                          : 'bg-slate-100 text-slate-500 border border-slate-200'
+                      }`}
+                    >
+                      {aiEnabledPlatforms.whatsapp !== false ? 'AI Active' : 'Off'}
+                    </button>
+                  </div>
+
+                  {/* Telegram */}
+                  <div className="p-3 bg-white border border-slate-200 rounded-2xl flex items-center justify-between shadow-2xs">
+                    <div className="flex items-center gap-2.5">
+                      <PlatformIcon platform="telegram" size={20} />
+                      <div>
+                        <span className="font-bold text-slate-900 block">Telegram Bot</span>
+                        <span className="text-[10px] text-slate-400">@forsbit_bot</span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setAiEnabledPlatforms((prev) => ({ ...prev, telegram: !prev.telegram }))
+                      }
+                      className={`px-3 py-1 rounded-lg font-bold text-[11px] transition-colors cursor-pointer ${
+                        aiEnabledPlatforms.telegram !== false
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                          : 'bg-slate-100 text-slate-500 border border-slate-200'
+                      }`}
+                    >
+                      {aiEnabledPlatforms.telegram !== false ? 'AI Active' : 'Off'}
                     </button>
                   </div>
                 </div>

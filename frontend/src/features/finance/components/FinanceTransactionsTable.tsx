@@ -12,6 +12,8 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   Download,
 } from 'lucide-react';
 import {
@@ -33,6 +35,7 @@ export function FinanceTransactionsTable() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   const { data, isLoading, isFetching, refetch } = useGetTransactionsQuery({
@@ -43,7 +46,7 @@ export function FinanceTransactionsTable() {
     startDate: startDate || undefined,
     endDate: endDate || undefined,
     page,
-    limit: 20,
+    limit,
   });
 
   const { data: accountsData } = useGetAccountsQuery();
@@ -57,6 +60,25 @@ export function FinanceTransactionsTable() {
   const categoryList: FinanceCategory[] = Array.isArray(categories) ? categories : [];
   const transactions = data?.items || [];
   const totalPages = data?.totalPages || 1;
+  const totalCount = data?.total || 0;
+  const startEntry = totalCount === 0 ? 0 : (page - 1) * limit + 1;
+  const endEntry = Math.min(page * limit, totalCount);
+
+  const getPaginationNumbers = () => {
+    const pages: (number | string)[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (page <= 4) {
+        pages.push(1, 2, 3, 4, 5, '...', totalPages);
+      } else if (page >= totalPages - 3) {
+        pages.push(1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        pages.push(1, '...', page - 1, page, page + 1, '...', totalPages);
+      }
+    }
+    return pages;
+  };
 
   const handleDelete = async (id: string) => {
     if (!window.confirm('Are you sure you want to delete this transaction?')) return;
@@ -326,32 +348,105 @@ export function FinanceTransactionsTable() {
           </div>
         )}
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <span>
-              Page {page} of {totalPages} ({data?.total} total records)
+        {/* Pagination Toolbar */}
+        <div className="p-4 bg-slate-50/60 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+          <div className="flex items-center gap-3">
+            <span className="font-medium text-slate-600">
+              Showing <span className="font-bold text-slate-900">{startEntry}</span> to{' '}
+              <span className="font-bold text-slate-900">{endEntry}</span> of{' '}
+              <span className="font-bold text-slate-900">{totalCount}</span> transactions
             </span>
-            <div className="flex items-center gap-2">
+
+            <div className="flex items-center gap-1.5 pl-2 border-l border-slate-200">
+              <span className="text-[11px] text-slate-400">Rows:</span>
+              <select
+                value={limit}
+                onChange={(e) => {
+                  setLimit(Number(e.target.value));
+                  setPage(1);
+                }}
+                className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 outline-hidden cursor-pointer"
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+          </div>
+
+          {totalCount > 0 && (
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                disabled={page <= 1}
+                onClick={() => setPage(1)}
+                className="p-2 border border-slate-200 rounded-lg disabled:opacity-30 hover:bg-white transition cursor-pointer text-slate-700"
+                title="First Page"
+              >
+                <ChevronsLeft className="w-3.5 h-3.5" />
+              </button>
+
               <button
                 type="button"
                 disabled={page <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="p-2 border border-slate-200 rounded-lg disabled:opacity-40 hover:bg-slate-50 transition"
+                className="p-2 border border-slate-200 rounded-lg disabled:opacity-30 hover:bg-white transition cursor-pointer text-slate-700"
+                title="Previous Page"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="w-3.5 h-3.5" />
               </button>
+
+              <div className="flex items-center gap-1 mx-1">
+                {getPaginationNumbers().map((num, idx) => {
+                  if (num === '...') {
+                    return (
+                      <span key={`ellipsis-${idx}`} className="px-2 py-1 text-slate-400 font-bold">
+                        ...
+                      </span>
+                    );
+                  }
+                  const pageNum = Number(num);
+                  const isCurrent = pageNum === page;
+                  return (
+                    <button
+                      key={`page-${pageNum}`}
+                      type="button"
+                      onClick={() => setPage(pageNum)}
+                      className={`min-w-[32px] h-8 px-2 rounded-lg text-xs font-bold transition cursor-pointer ${
+                        isCurrent
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'border border-slate-200 bg-white hover:bg-slate-100 text-slate-700'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+
               <button
                 type="button"
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                className="p-2 border border-slate-200 rounded-lg disabled:opacity-40 hover:bg-slate-50 transition"
+                className="p-2 border border-slate-200 rounded-lg disabled:opacity-30 hover:bg-white transition cursor-pointer text-slate-700"
+                title="Next Page"
               >
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+
+              <button
+                type="button"
+                disabled={page >= totalPages}
+                onClick={() => setPage(totalPages)}
+                className="p-2 border border-slate-200 rounded-lg disabled:opacity-30 hover:bg-white transition cursor-pointer text-slate-700"
+                title="Last Page"
+              >
+                <ChevronsRight className="w-3.5 h-3.5" />
               </button>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <CreateTransactionModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />

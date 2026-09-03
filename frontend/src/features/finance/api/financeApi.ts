@@ -338,6 +338,7 @@ export interface FinanceInvoice {
   terms?: string;
   orderId?: string;
   items: FinanceInvoiceItem[];
+  payments?: FinanceTransaction[];
   createdAt: string;
   updatedAt: string;
 }
@@ -375,6 +376,7 @@ export interface FinanceBill {
   notes?: string;
   attachmentFileId?: string;
   items: FinanceBillItem[];
+  payments?: FinanceTransaction[];
   createdAt: string;
   updatedAt: string;
 }
@@ -512,6 +514,13 @@ export interface InvoicesResponse extends PaginatedResponse<FinanceInvoice> {
     totalPaid: number;
     totalUnpaid: number;
     totalOverdue: number;
+    totalCount?: number;
+    paidCount?: number;
+    unpaidCount?: number;
+    partiallyPaidCount?: number;
+    overdueCount?: number;
+    allTimeOutstandingCount?: number;
+    allTimeOutstandingAmount?: number;
   };
 }
 
@@ -521,6 +530,13 @@ export interface BillsResponse extends PaginatedResponse<FinanceBill> {
     totalPaid: number;
     totalUnpaid: number;
     totalOverdue: number;
+    totalCount?: number;
+    paidCount?: number;
+    unpaidCount?: number;
+    partiallyPaidCount?: number;
+    overdueCount?: number;
+    allTimeOutstandingCount?: number;
+    allTimeOutstandingAmount?: number;
   };
 }
 
