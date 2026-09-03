@@ -29,8 +29,9 @@ interface OrganizationTabProps {
   form: ProductFormState;
 }
 
-const HOMEPAGE_SECTION_OPTIONS: { value: HomepageSection; label: string }[] = [
-  { value: 'HERO_FEATURED', label: 'Hero / Featured' },
+const HOMEPAGE_SECTION_OPTIONS: { value: HomepageSection; label: string; hint?: string }[] = [
+  { value: 'HERO', label: 'Hero Banner', hint: 'Shown in the top carousel when the store has no banner images' },
+  { value: 'FEATURED', label: 'Featured Products' },
   { value: 'NEW_ARRIVALS', label: 'New Arrivals' },
   { value: 'BEST_SELLERS', label: 'Best Sellers' },
 ];
@@ -334,7 +335,7 @@ export function OrganizationTab({ form }: OrganizationTabProps) {
               return (
                 <label
                   key={opt.value}
-                  className={`flex items-center gap-2 p-2 border rounded-xl cursor-pointer text-xs transition-all ${
+                  className={`flex items-start gap-2 p-2 border rounded-xl cursor-pointer text-xs transition-all ${
                     isChecked ? 'bg-blue-50/60 border-blue-300 font-bold text-blue-900' : 'bg-slate-50/50 border-slate-200 text-slate-700'
                   }`}
                 >
@@ -342,9 +343,14 @@ export function OrganizationTab({ form }: OrganizationTabProps) {
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => toggleHomepageSection(opt.value)}
-                    className="rounded text-blue-600 focus:ring-blue-500"
+                    className="rounded text-blue-600 focus:ring-blue-500 mt-0.5"
                   />
-                  <span>{opt.label}</span>
+                  <span>
+                    {opt.label}
+                    {opt.hint && (
+                      <span className="block text-[10.5px] font-normal text-slate-400 mt-0.5">{opt.hint}</span>
+                    )}
+                  </span>
                 </label>
               );
             })}

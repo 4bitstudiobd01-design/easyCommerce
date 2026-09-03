@@ -418,3 +418,49 @@ clarity), আর technical soundness — তিনটাই বিবেচন�
   `isRemote` true হয় → upload-এর পর সাথে সাথে `addMedia` করে DB-তে যায়,
   `useGetProductMediaQuery` (tag invalidation-এ) auto-refresh করে দেখায়, "Save
   Changes"-এর দরকারও পড়ে না ছবির জন্য। backend অপরিবর্তিত। tsc ✅।
+- 2026-09-04 — **Homepage section (Hero/Featured, New Arrivals, Best Sellers) —
+  backend + admin reorder modal-এ ছিল কিন্তু storefront render করত না (অসম্পূর্ণ
+  feature)। Storefront-এ যোগ করা হলো (পথ A)।**
+  Backend সম্পূর্ণ প্রস্তুত ছিল — `find-public-store-products.service.ts` `?section=X`
+  filter করে `homepageSections @> ARRAY['X']` + `sortOrder ASC` (reorder modal-এর
+  order)। ছোঁয়া লাগেনি।
+  Frontend (default theme only — অন্য থিম scope-এ নেই):
+  • নতুন reusable `ShopEaseProductSection.tsx` — badge + title + subtitle + product
+    grid + optional "View Full Catalog" লিংক; `hideWhenEmpty` prop (curated section
+    খালি হলে সম্পূর্ণ hide); tone white/muted alternating; primaryColor-themed badge।
+  • `DefaultStorefrontTheme.tsx` — ৩টা section-scoped query (`useGetPublicStoreProductsQuery`
+    with `section: 'HERO_FEATURED' | 'NEW_ARRIVALS' | 'BEST_SELLERS'`)। Categories-এর
+    পরে ৩টা `ShopEaseProductSection` (Featured / New Arrivals / Best Sellers) —
+    প্রতিটা merchant-এর টিক করা product না থাকলে render হয় না। category filter এদের
+    ছোঁয় না (curated, ordered)।
+  • `ShopEaseFeaturedProducts.tsx` — এখন "Full Catalog" section: badge "🛍️ All
+    Products", title "Browse the Full Catalog"; সব published product, category/search
+    filter সহ (আগে "Trending Products" নামে একই কাজ করত, কিন্তু section-aware ছিল না)।
+  Verify: frontend `npx tsc --noEmit` ✅ ০ error।
+- 2026-09-04 — **`HERO_FEATURED` homepage section ভেঙে `HERO` + `FEATURED` (পথ C)।**
+  merchant "Hero / Featured" টিক দিলে শুধু Featured section-এ যেত, Hero ব্যানারে না —
+  একটাই enum value ছিল আর hero ব্যানার প্রোডাক্ট নেয় না।
+  Backend: `homepage-section.enum.ts` — `HERO_FEATURED` → `HERO` + `FEATURED`
+  (NEW_ARRIVALS/BEST_SELLERS অপরিবর্তিত)। নতুন migration
+  `1788500000001-SplitHeroFeaturedHomepageSection.ts` — নতুন PG enum type বানিয়ে
+  column swap; existing `HERO_FEATURED` tag → `FEATURED`। down() reverse। **User
+  migration run করবে।**
+  Frontend: `catalogApi.ts` টাইপ 4-value। `OrganizationTab.tsx` "Homepage Placement"
+  — ৪টা অপশন, "Hero Banner" এ hint। `ProductReorderPanel.tsx` — ট্যাব Hero/Featured/
+  New Arrivals/Best Sellers/All; default `FEATURED`। `DefaultStorefrontTheme.tsx` —
+  আলাদা HERO + FEATURED query; HERO products → `ShopEaseHero` কে পাস। `ShopEaseHero.tsx`
+  — নতুন `heroProducts`/`storeSlug` prop; banner image না থাকলে + hero-tagged product
+  থাকলে → banner-style product carousel (Spotlight badge/নাম/দাম/Shop Now→product পেজ);
+  ব্যানার ছবি থাকলে সেটাই priority; কিছুই না থাকলে আগের generic hero।
+  Verify: backend `npm run build` ✅, `jest src/modules/catalog` ✅ ২২৫/২২৫; frontend
+  `npx tsc --noEmit` ✅ ০ error।
+- 2026-09-04 — Migration `SplitHeroFeaturedHomepageSection` **run করা হলো** (Claude
+  চালালো)। প্রথম attempt fail — PG `ALTER COLUMN TYPE ... USING` এ subquery নিষেধ।
+  Rewrite: temp `text[]` কলামে data stage (`HERO_FEATURED`→`FEATURED`), enum type
+  drop+recreate, data restore, temp drop। ২য় attempt ✅।
+- 2026-09-04 — Hero: banner image + hero product **দুটোই সেট করলে** আগে শুধু banner
+  দেখাত (একটা "Shop Now" বাটন, বাকি ফাঁকা)। এখন `ShopEaseHero.tsx`-এ unified
+  `CarouselSlide[]` — banner slides (merchant CTA সহ) + hero-product slides
+  (Spotlight badge + নাম + দাম + "Shop Now" → product পেজ) একই carousel-এ, একসাথে
+  rotate, shared dots। banner-only / product-only / দুটোই — সব কেস এক code path।
+  Verify: frontend `npx tsc --noEmit` ✅ ০ error।

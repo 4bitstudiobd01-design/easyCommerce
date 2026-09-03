@@ -9,7 +9,7 @@ export type AttributeType = 'TEXT' | 'NUMBER' | 'BOOLEAN' | 'SELECT' | 'MULTI_SE
 export type TaxCategory = 'STANDARD_VAT' | 'REDUCED' | 'ZERO_RATED' | 'EXEMPT';
 export type ProductDiscountType = 'NONE' | 'PERCENTAGE' | 'FIXED';
 export type StockStatus = 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK' | 'NOT_TRACKED';
-export type HomepageSection = 'HERO_FEATURED' | 'NEW_ARRIVALS' | 'BEST_SELLERS';
+export type HomepageSection = 'HERO' | 'FEATURED' | 'NEW_ARRIVALS' | 'BEST_SELLERS';
 
 export type WeightUnit = 'KG' | 'G' | 'LB' | 'OZ';
 export type DimensionUnit = 'CM' | 'M' | 'IN';

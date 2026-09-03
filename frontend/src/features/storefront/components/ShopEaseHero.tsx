@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowRight, Sparkles, Zap } from 'lucide-react';
 import Link from 'next/link';
+import type { Product } from '@/features/catalog/api/catalogApi';
 
 export interface HeroBannerSlide {
   id: string;
@@ -16,63 +17,129 @@ interface ShopEaseHeroProps {
   onShopNowClick?: () => void;
   primaryColor?: string;
   banners?: HeroBannerSlide[];
+  /** Products tagged "Hero" — used to fill the carousel when no banner images are set. */
+  heroProducts?: Product[];
+  storeSlug?: string;
 }
 
 const AUTO_ROTATE_MS = 6000;
+
+type CarouselSlide =
+  | { type: 'banner'; id: string; imageUrl: string; ctaText?: string; ctaLink?: string }
+  | {
+      type: 'product';
+      id: string;
+      title: string;
+      imageUrl?: string;
+      price: number;
+      compareAt: number;
+      href: string;
+    };
 
 export const ShopEaseHero = ({
   storeName = 'ShopEase',
   onShopNowClick,
   primaryColor,
   banners = [],
+  heroProducts = [],
+  storeSlug = 'main',
 }: ShopEaseHeroProps) => {
   const [activeSlide, setActiveSlide] = useState(0);
-  const hasCustomBanners = banners.length > 0;
+
+  // Banner images and hero-tagged products share one carousel. Banners come
+  // first (the merchant's own artwork), then each hero product as a product slide.
+  const slides: CarouselSlide[] = [
+    ...banners.map((b) => ({
+      type: 'banner' as const,
+      id: b.id,
+      imageUrl: b.imageUrl,
+      ctaText: b.ctaText,
+      ctaLink: b.ctaLink,
+    })),
+    ...heroProducts.slice(0, 6).map((p) => ({
+      type: 'product' as const,
+      id: p.id,
+      title: p.name || p.title || storeName,
+      imageUrl: p.images?.find((img) => img.isPrimary)?.url || p.images?.[0]?.url,
+      price: Number(p.basePrice || 0),
+      compareAt: Number(p.compareAtPrice || 0),
+      href: `/store/${storeSlug}/product/${p.slug}`,
+    })),
+  ];
+
+  const hasCarousel = slides.length > 0;
 
   useEffect(() => {
-    if (banners.length < 2) return;
+    if (slides.length < 2) return;
     const timer = setInterval(() => {
-      setActiveSlide((i) => (i + 1) % banners.length);
+      setActiveSlide((i) => (i + 1) % slides.length);
     }, AUTO_ROTATE_MS);
     return () => clearInterval(timer);
-  }, [banners.length]);
+  }, [slides.length]);
 
-  if (hasCustomBanners) {
-    const slide = banners[activeSlide % banners.length];
+  if (hasCarousel) {
+    const slide = slides[activeSlide % slides.length];
     return (
       <section className="relative overflow-hidden bg-gradient-to-b from-slate-50/70 via-white to-slate-50/30 py-4 sm:py-8 lg:py-10 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="group relative w-full h-[300px] sm:h-[400px] lg:h-[460px] rounded-3xl overflow-hidden bg-slate-100 border border-slate-200/80 shadow-[0_12px_40px_rgba(0,0,0,0.08)]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              key={slide.id}
-              src={slide.imageUrl}
-              alt={storeName}
-              className="absolute inset-0 w-full h-full object-cover animate-in fade-in duration-500 group-hover:scale-105 transition-transform duration-700"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />
+            {slide.imageUrl ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                key={slide.id}
+                src={slide.imageUrl}
+                alt={slide.type === 'product' ? slide.title : storeName}
+                className="absolute inset-0 w-full h-full object-cover animate-in fade-in duration-500 group-hover:scale-105 transition-transform duration-700"
+              />
+            ) : (
+              <div
+                className="absolute inset-0"
+                style={{ background: `linear-gradient(135deg, ${primaryColor || '#2563eb'}22, ${primaryColor || '#2563eb'}05)` }}
+              />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent" />
 
-            <div className="absolute inset-x-0 bottom-0 p-5 sm:p-8 lg:p-10 flex justify-center sm:justify-start">
+            {/* Slide content — a product overlay, or a banner CTA */}
+            <div className="absolute inset-x-0 bottom-0 p-5 sm:p-8 lg:p-10 space-y-3">
+              {slide.type === 'product' && (
+                <div className="max-w-lg space-y-1.5">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[10px] font-black uppercase tracking-wider">
+                    <Sparkles className="w-3 h-3" />
+                    Spotlight
+                  </span>
+                  <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-white leading-tight drop-shadow">
+                    {slide.title}
+                  </h2>
+                  <div className="flex items-baseline gap-2 text-white">
+                    <span className="text-lg sm:text-xl font-black">৳{slide.price.toLocaleString()}</span>
+                    {slide.compareAt > slide.price && (
+                      <span className="text-xs font-semibold text-white/60 line-through">
+                        ৳{slide.compareAt.toLocaleString()}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
               <Link
-                href={slide.ctaLink || '#featured-products'}
+                href={slide.type === 'product' ? slide.href : slide.ctaLink || '#featured-products'}
                 className="px-6 py-3 sm:px-7 sm:py-3.5 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-lg inline-flex items-center gap-2 transition-all active:scale-95 hover:brightness-110"
                 style={{ backgroundColor: primaryColor || '#2563eb' }}
               >
-                <span>{slide.ctaText || 'Shop Now'}</span>
+                <span>{slide.type === 'product' ? 'Shop Now' : slide.ctaText || 'Shop Now'}</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
 
-            {banners.length > 1 && (
+            {slides.length > 1 && (
               <div className="absolute bottom-5 right-5 sm:right-8 flex items-center gap-1.5">
-                {banners.map((b, i) => (
+                {slides.map((s, i) => (
                   <button
-                    key={b.id}
+                    key={s.id}
                     type="button"
                     aria-label={`Show slide ${i + 1}`}
                     onClick={() => setActiveSlide(i)}
                     className={`h-1.5 rounded-full transition-all ${
-                      i === activeSlide % banners.length ? 'w-6 bg-white' : 'w-1.5 bg-white/50 hover:bg-white/75'
+                      i === activeSlide % slides.length ? 'w-6 bg-white' : 'w-1.5 bg-white/50 hover:bg-white/75'
                     }`}
                   />
                 ))}

@@ -25,13 +25,13 @@ export const ShopEaseFeaturedProducts = ({
         {/* SECTION TITLE */}
         <div className="text-center mb-10 sm:mb-12 space-y-2.5">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-blue-700 text-[11px] font-black uppercase tracking-wider shadow-2xs">
-            <span>✨ Featured Collection</span>
+            <span>🛍️ All Products</span>
           </div>
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
-            Trending Products
+            Browse the Full Catalog
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-xl mx-auto">
-            Discover verified items with fast doorstep delivery, genuine warranty, and instant checkout.
+            Every item in the store — filter by category above or search to narrow it down.
           </p>
         </div>
 

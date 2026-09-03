@@ -2,11 +2,12 @@
 
 import React, { useMemo, useState } from 'react';
 import { Product } from '@/features/catalog/api/catalogApi';
-import { useGetPublicStoreCategoriesQuery } from '../api/storefrontApi';
+import { useGetPublicStoreCategoriesQuery, useGetPublicStoreProductsQuery } from '../api/storefrontApi';
 import { ShopEaseNavbar } from '../components/ShopEaseNavbar';
 import { ShopEaseHero } from '../components/ShopEaseHero';
 import { ShopEaseCategories } from '../components/ShopEaseCategories';
 import { ShopEaseFeaturedProducts } from '../components/ShopEaseFeaturedProducts';
+import { ShopEaseProductSection } from '../components/ShopEaseProductSection';
 import { ShopEasePromoBanner } from '../components/ShopEasePromoBanner';
 import { ShopEaseWhyChooseUs } from '../components/ShopEaseWhyChooseUs';
 import { ShopEaseFooter } from '../components/ShopEaseFooter';
@@ -63,6 +64,29 @@ export const DefaultStorefrontTheme = ({
     { slug },
     { skip: !slug },
   );
+
+  // Curated homepage rows — each pulls only the products the merchant placed in
+  // that section, already ordered by the sortOrder set in the reorder modal.
+  const { data: heroSectionData } = useGetPublicStoreProductsQuery(
+    { slug, section: 'HERO' },
+    { skip: !slug },
+  );
+  const { data: featuredData } = useGetPublicStoreProductsQuery(
+    { slug, section: 'FEATURED' },
+    { skip: !slug },
+  );
+  const { data: newArrivalsData } = useGetPublicStoreProductsQuery(
+    { slug, section: 'NEW_ARRIVALS' },
+    { skip: !slug },
+  );
+  const { data: bestSellersData } = useGetPublicStoreProductsQuery(
+    { slug, section: 'BEST_SELLERS' },
+    { skip: !slug },
+  );
+  const heroProducts = (heroSectionData?.products || []) as Product[];
+  const featured = (featuredData?.products || []) as ShopEaseProduct[];
+  const newArrivals = (newArrivalsData?.products || []) as ShopEaseProduct[];
+  const bestSellers = (bestSellersData?.products || []) as ShopEaseProduct[];
 
   // Category names for navbar and filter — merchant's admin-defined order takes
   // priority; falls back to the explicit `categories` prop, then product-derived names.
@@ -170,12 +194,15 @@ export const DefaultStorefrontTheme = ({
 
       {/* MAIN BODY SECTIONS */}
       <main className="flex-1">
-        {/* 2. HERO BANNER */}
+        {/* 2. HERO BANNER — merchant banner images take priority; when none are set,
+            the products tagged "Hero" fill the carousel instead. */}
         <ShopEaseHero
           storeName={storeName}
           onShopNowClick={handleShopNow}
           primaryColor={primaryColor}
           banners={heroBanners}
+          heroProducts={heroProducts}
+          storeSlug={slug}
         />
 
         {/* 3. CATEGORIES (Show only if store has categories) */}
@@ -188,14 +215,55 @@ export const DefaultStorefrontTheme = ({
           />
         )}
 
-        {/* 4. FEATURED PRODUCTS */}
+        {/* 4. CURATED HOMEPAGE ROWS — each hidden if the merchant placed nothing in it.
+            Not affected by the category filter: these are hand-picked, ordered sets. */}
+        <ShopEaseProductSection
+          id="featured"
+          badge="✨ Featured Collection"
+          title="Featured Products"
+          subtitle="Hand-picked highlights from across the store."
+          products={featured}
+          storeSlug={slug}
+          primaryColor={primaryColor}
+          tone="muted"
+          hideWhenEmpty
+          onOpenDetail={(prod) => onSelectProduct(prod as Product)}
+        />
+
+        <ShopEaseProductSection
+          id="new-arrivals"
+          badge="🆕 Just In"
+          title="New Arrivals"
+          subtitle="The latest additions to the catalog."
+          products={newArrivals}
+          storeSlug={slug}
+          primaryColor={primaryColor}
+          tone="white"
+          hideWhenEmpty
+          onOpenDetail={(prod) => onSelectProduct(prod as Product)}
+        />
+
+        <ShopEaseProductSection
+          id="best-sellers"
+          badge="🔥 Most Popular"
+          title="Best Sellers"
+          subtitle="Customer favourites, ready to ship."
+          products={bestSellers}
+          storeSlug={slug}
+          primaryColor={primaryColor}
+          tone="muted"
+          hideWhenEmpty
+          onOpenDetail={(prod) => onSelectProduct(prod as Product)}
+        />
+
+        {/* 5. FULL CATALOG — every published product, honours the category/search filter */}
         <ShopEaseFeaturedProducts
           products={filteredProducts}
           storeSlug={slug}
           onOpenDetail={(prod) => onSelectProduct(prod as Product)}
         />
 
-        {/* 5. SPECIAL PROMO BANNER */}
+        {/* 6. SPECIAL PROMO BANNER */}
         <ShopEasePromoBanner onShopNowClick={handleShopNow} />
 
         {/* 6. WHY CHOOSE US */}
