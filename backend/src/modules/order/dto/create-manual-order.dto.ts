@@ -12,6 +12,7 @@ import {
   ValidateIf,
   IsNotEmpty,
   ArrayMinSize,
+  IsUUID,
 } from 'class-validator';
 import { PaymentMethodEnum } from '../entities/order.entity';
 
@@ -116,6 +117,11 @@ export class CreateManualOrderDto {
   @IsOptional()
   @IsString()
   internalNote?: string;
+
+  @ApiPropertyOptional({ description: 'Branch (physical outlet) this order is attributed to; omitted/null for a non-branch order' })
+  @IsOptional()
+  @IsUUID()
+  branchId?: string;
 
   @ApiProperty({ enum: PaymentMethodEnum })
   @IsEnum(PaymentMethodEnum)
