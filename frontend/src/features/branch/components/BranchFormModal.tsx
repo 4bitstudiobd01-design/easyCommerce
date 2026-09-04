@@ -8,6 +8,7 @@ import {
   useCreateBranchMutation,
   useUpdateBranchMutation,
 } from '@/features/tenant/api/tenantApi';
+import { useGetWarehousesQuery } from '@/features/inventory/api/inventoryApi';
 
 interface BranchFormModalProps {
   isOpen: boolean;
@@ -24,9 +25,11 @@ export function BranchFormModal({ isOpen, onClose, branch }: BranchFormModalProp
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [isDefault, setIsDefault] = useState(false);
+  const [warehouseId, setWarehouseId] = useState('');
 
   const [createBranch, { isLoading: isCreating }] = useCreateBranchMutation();
   const [updateBranch, { isLoading: isUpdating }] = useUpdateBranchMutation();
+  const { data: warehouses = [] } = useGetWarehousesQuery();
   const isBusy = isCreating || isUpdating;
 
   useEffect(() => {
@@ -38,6 +41,7 @@ export function BranchFormModal({ isOpen, onClose, branch }: BranchFormModalProp
     setPhone(branch?.phone || '');
     setEmail(branch?.email || '');
     setIsDefault(branch?.isDefault || false);
+    setWarehouseId(branch?.warehouseId || '');
   }, [isOpen, branch]);
 
   if (!isOpen) return null;
@@ -61,6 +65,7 @@ export function BranchFormModal({ isOpen, onClose, branch }: BranchFormModalProp
             phone: phone.trim() || undefined,
             email: email.trim() || undefined,
             isDefault,
+            warehouseId: warehouseId || null,
           },
         }).unwrap();
         toast.success('Branch updated successfully.');
@@ -73,6 +78,7 @@ export function BranchFormModal({ isOpen, onClose, branch }: BranchFormModalProp
           phone: phone.trim() || undefined,
           email: email.trim() || undefined,
           isDefault,
+          warehouseId: warehouseId || null,
         }).unwrap();
         toast.success('Branch created successfully.');
       }
@@ -186,6 +192,27 @@ export function BranchFormModal({ isOpen, onClose, branch }: BranchFormModalProp
               placeholder="e.g. dhanmondi@example.com"
               className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white transition-all"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+              Warehouse
+            </label>
+            <select
+              value={warehouseId}
+              onChange={(e) => setWarehouseId(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white transition-all"
+            >
+              <option value="">No dedicated warehouse (use shared/central)</option>
+              {warehouses.map((warehouse) => (
+                <option key={warehouse.id} value={warehouse.id}>
+                  {warehouse.name} ({warehouse.code})
+                </option>
+              ))}
+            </select>
+            <p className="text-[11px] text-slate-400 mt-1.5">
+              Optionally assign a dedicated warehouse to this branch. Leave unset to share the central/tenant-wide warehouse.
+            </p>
           </div>
 
           <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">

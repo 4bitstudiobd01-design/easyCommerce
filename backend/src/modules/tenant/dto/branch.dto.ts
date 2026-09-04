@@ -5,6 +5,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   MaxLength,
 } from 'class-validator';
 
@@ -52,6 +53,15 @@ export class CreateBranchDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiProperty({
+    required: false,
+    description:
+      'Dedicated warehouse for this branch. Omit/null to share the central/tenant-wide warehouse.',
+  })
+  @IsOptional()
+  @IsUUID()
+  warehouseId?: string;
 }
 
 export class UpdateBranchDto {
@@ -98,4 +108,13 @@ export class UpdateBranchDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiProperty({
+    required: false,
+    description:
+      'Dedicated warehouse for this branch. Omit/null to share the central/tenant-wide warehouse.',
+  })
+  @IsOptional()
+  @IsUUID()
+  warehouseId?: string;
 }

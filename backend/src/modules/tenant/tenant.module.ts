@@ -10,6 +10,9 @@ import { DeliveryZoneEntity } from './entities/delivery-zone.entity';
 import { ApiKeyEntity } from './entities/api-key.entity';
 import { WebhookEntity } from './entities/webhook.entity';
 import { BranchEntity } from './entities/branch.entity';
+// Read-only lookup only (branch↔warehouse tenant-scoped existence check) —
+// see create-branch.service.ts / update-branch.service.ts for the rationale.
+import { WarehouseEntity } from '../inventory/entities/warehouse.entity';
 import { UserEntity } from '../user/entities/user.entity';
 import { UserModule } from '../user/user.module';
 import { CreateStoreService } from './services/create-store.service';
@@ -43,6 +46,7 @@ import { BillingModule } from '../billing/billing.module';
       ApiKeyEntity,
       WebhookEntity,
       BranchEntity,
+      WarehouseEntity,
       UserEntity,
     ]),
     UserModule,

@@ -126,6 +126,8 @@ export interface Branch {
   phone?: string;
   email?: string;
   isActive: boolean;
+  /** Dedicated warehouse for this branch. Null/undefined = shares the central/tenant-wide warehouse. */
+  warehouseId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -368,7 +370,7 @@ export const tenantApi = createApi({
     }),
     createBranch: builder.mutation<
       Branch,
-      { name: string; code: string; isDefault?: boolean; address?: string; city?: string; phone?: string; email?: string; isActive?: boolean }
+      { name: string; code: string; isDefault?: boolean; address?: string; city?: string; phone?: string; email?: string; isActive?: boolean; warehouseId?: string | null }
     >({
       query: (body) => ({ url: '/me/branches', method: 'POST', body }),
       invalidatesTags: ['Branch'],
