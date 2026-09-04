@@ -58,6 +58,15 @@ export class BranchEntity {
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
 
+  /**
+   * Raw FK to warehouses.id (Inventory module) — never a TypeORM relation,
+   * per the cross-module boundary rule. Null means this branch has no
+   * dedicated warehouse and shares the central/tenant-wide warehouse instead
+   * of owning stock separately. Set via Phase 2 warehouse-branch linking.
+   */
+  @Column({ type: 'uuid', nullable: true })
+  warehouseId?: string | null;
+
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 

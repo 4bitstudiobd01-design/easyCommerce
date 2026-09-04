@@ -3,12 +3,21 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository } from 'typeorm';
 import { BranchEntity } from '../entities/branch.entity';
 import { UpdateBranchDto } from '../dto/branch.dto';
+// Read-only existence/tenant check on the Inventory module's entity — approved
+// exception to the no-cross-module-repo-import rule for this warehouse-branch
+// link (see Phase 2 plan): no business logic crosses back into Inventory,
+// only a tenant-scoped lookup, and TenantModule cannot import InventoryModule
+// without creating a circular dependency (InventoryModule already imports
+// TenantModule).
+import { WarehouseEntity } from '../../inventory/entities/warehouse.entity';
 
 @Injectable()
 export class UpdateBranchService {
   constructor(
     @InjectRepository(BranchEntity)
     private readonly branchRepository: Repository<BranchEntity>,
+    @InjectRepository(WarehouseEntity)
+    private readonly warehouseRepository: Repository<WarehouseEntity>,
   ) {}
 
   async execute(
@@ -31,6 +40,18 @@ export class UpdateBranchService {
       if (existing) {
         throw new ConflictException(`A branch with code "${dto.code}" already exists in this store.`);
       }
+    }
+
+    if (dto.warehouseId !== undefined) {
+      if (dto.warehouseId) {
+        const warehouse = await this.warehouseRepository.findOne({
+          where: { id: dto.warehouseId, tenantId },
+        });
+        if (!warehouse) {
+          throw new NotFoundException(`Warehouse "${dto.warehouseId}" not found or access denied.`);
+        }
+      }
+      branch.warehouseId = dto.warehouseId ?? null;
     }
 
     if (dto.name !== undefined) branch.name = dto.name;
