@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddBranchIdToOrders1788542572247 implements MigrationInterface {
-  name = 'AddBranchIdToOrders1788542572247';
+export class AddBranchIdToOrders1788542572248 implements MigrationInterface {
+  name = 'AddBranchIdToOrders1788542572248';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Weak reference to branches.id — no FK constraint, per the module
