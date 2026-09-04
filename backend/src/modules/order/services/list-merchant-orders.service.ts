@@ -22,6 +22,7 @@ export class ListMerchantOrdersService {
       status,
       paymentStatus,
       courier,
+      branchId,
       dateFrom,
       dateTo,
       sortBy = 'createdAt',
@@ -63,6 +64,10 @@ export class ListMerchantOrdersService {
 
     if (paymentStatus) {
       query.andWhere('order.paymentStatus = :paymentStatus', { paymentStatus });
+    }
+
+    if (branchId) {
+      query.andWhere('order.branchId = :branchId', { branchId });
     }
 
     if (courier && courier !== 'ALL') {

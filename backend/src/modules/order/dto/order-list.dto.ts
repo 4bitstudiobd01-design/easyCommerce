@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsEnum, IsInt, Min, Max } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsInt, Min, Max, IsUUID } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { OrderStatusEnum, PaymentStatusEnum } from '../entities/order.entity';
@@ -38,6 +38,11 @@ export class OrderListDto {
   @IsOptional()
   @IsString()
   courier?: string;
+
+  @ApiPropertyOptional({ description: 'Filter by attributed branch (physical outlet) ID' })
+  @IsOptional()
+  @IsUUID()
+  branchId?: string;
 
   @ApiPropertyOptional({ description: 'Start date for filtering orders (ISO string)' })
   @IsOptional()

@@ -17,6 +17,7 @@ import { useBulkUpdateOrderStatusMutation } from '../api/orderApi';
 import { ThermalLabelModal } from './ThermalLabelModal';
 import { useDebounce } from '@/hooks/useDebounce';
 import { FraudRiskBadge } from '@/features/customer/components/FraudRiskBadge';
+import { useGetBranchesQuery } from '@/features/tenant/api/tenantApi';
 import {
   ShoppingCart,
   MapPin,
@@ -41,6 +42,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Package,
+  Store,
 } from 'lucide-react';
 import { TableRowSkeleton } from '@/components/ui/Skeleton';
 import { ChannelBadge } from '../utils/channelBadge';
@@ -65,6 +67,7 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
   const urlStatus = searchParams.get('status') as OrderStatusType | null;
   const urlPaymentStatus = searchParams.get('paymentStatus');
   const urlCourier = searchParams.get('courier');
+  const urlBranchId = searchParams.get('branchId');
   const urlDateRange = searchParams.get('dateRange');
   const urlSearch = searchParams.get('search') || '';
   const urlSortOrder = (searchParams.get('sortOrder') as 'ASC' | 'DESC') || 'DESC';
@@ -83,6 +86,11 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
 
   // Queries
   const { data: kpis, isLoading: isKpisLoading } = useGetMerchantOrderKpisQuery();
+  const { data: branches } = useGetBranchesQuery();
+  const branchNameById = React.useMemo(
+    () => new Map((branches ?? []).map((branch) => [branch.id, branch.name])),
+    [branches],
+  );
   
   // Relative range in the URL keeps shared links meaningful; resolved to a concrete
   // timestamp only when building the request.
@@ -98,6 +106,7 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
     status: (urlStatus as string) === 'ALL' ? undefined : urlStatus || undefined,
     paymentStatus: urlPaymentStatus === 'ALL' ? undefined : urlPaymentStatus || undefined,
     courier: urlCourier === 'ALL' ? undefined : urlCourier || undefined,
+    branchId: urlBranchId === 'ALL' ? undefined : urlBranchId || undefined,
     dateFrom,
     search: debouncedSearch || undefined,
     sortBy: 'createdAt',
@@ -242,6 +251,9 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
       ? { key: 'paymentStatus', label: `Payment: ${urlPaymentStatus}` }
       : null,
     urlCourier && urlCourier !== 'ALL' ? { key: 'courier', label: `Courier: ${urlCourier}` } : null,
+    urlBranchId && urlBranchId !== 'ALL'
+      ? { key: 'branchId', label: `Branch: ${branchNameById.get(urlBranchId) ?? urlBranchId}` }
+      : null,
     urlDateRange && urlDateRange !== 'ALL'
       ? { key: 'dateRange', label: `Date: ${dateRangeLabels[urlDateRange] ?? urlDateRange}` }
       : null,
@@ -578,6 +590,20 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
 
         <div className="relative">
           <select
+            value={urlBranchId || 'ALL'}
+            onChange={(e) => updateUrlParams({ branchId: e.target.value })}
+            className="appearance-none pl-4 pr-9 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer"
+          >
+            <option value="ALL">Branch: All</option>
+            {branches?.map((branch) => (
+              <option key={branch.id} value={branch.id}>Branch: {branch.name}</option>
+            ))}
+          </select>
+          <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-2.5 pointer-events-none" />
+        </div>
+
+        <div className="relative">
+          <select
             value={urlDateRange || 'ALL'}
             onChange={(e) => updateUrlParams({ dateRange: e.target.value })}
             className="appearance-none pl-4 pr-9 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer"
@@ -661,6 +687,7 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                 status: null,
                 paymentStatus: null,
                 courier: null,
+                branchId: null,
                 dateRange: null,
                 search: null,
               });
@@ -862,6 +889,11 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
 
                       <td className="px-4 py-4">
                         <ChannelBadge channel={order.channel} utmSource={order.utmSource} />
+                        {order.branchId && (
+                          <span className="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-violet-50 text-violet-700 border border-violet-100">
+                            <Store className="w-3 h-3" /> {branchNameById.get(order.branchId) ?? 'Branch'}
+                          </span>
+                        )}
                       </td>
 
                       <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>

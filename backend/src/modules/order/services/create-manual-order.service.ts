@@ -219,6 +219,7 @@ export class CreateManualOrderService {
       orderStatus: OrderStatusEnum.PENDING,
       storeSlug: store.slug,
       channel: 'manual',
+      branchId: dto.branchId,
       tenantId,
       items: newOrderItems,
     });
