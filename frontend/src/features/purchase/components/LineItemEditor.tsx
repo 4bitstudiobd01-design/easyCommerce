@@ -105,7 +105,7 @@ export function LineItemEditor({ value, onChange }: LineItemEditorProps) {
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-slate-200">
-        <table className="w-full min-w-[720px] text-sm table-fixed">
+        <table className="w-full min-w-[600px] text-sm">
           <thead className="bg-slate-50 text-xs uppercase text-slate-500">
             <tr>
               <th className="px-3 py-2 text-left font-medium w-[40%]">Product</th>
