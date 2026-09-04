@@ -67,6 +67,10 @@ export class StockTransferEntity {
   @Column({ type: 'text', nullable: true })
   notes?: string;
 
+  /** Raw FK to users.id — who initiated this transfer. No relation (User lives in a different module). */
+  @Column({ type: 'uuid', nullable: true })
+  createdByUserId?: string;
+
   @Column({ type: 'uuid' })
   tenantId: string;
 

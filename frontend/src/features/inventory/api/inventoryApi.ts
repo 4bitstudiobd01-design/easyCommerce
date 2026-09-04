@@ -75,6 +75,9 @@ export interface StockTransfer {
   variant?: { id: string; name?: string; sku?: string };
   quantity: number;
   notes?: string;
+  createdByUserId?: string;
+  createdByName?: string;
+  createdByEmail?: string;
   tenantId: string;
   createdAt: string;
 }

@@ -35,7 +35,7 @@ export class StockTransferController {
     @Headers('x-store-id') storeId?: string,
   ) {
     const tenantId = await this.getMerchantTenantId(userId, storeId);
-    return this.stockTransferService.transferStock(tenantId, dto);
+    return this.stockTransferService.transferStock(tenantId, { ...dto, createdByUserId: userId });
   }
 
   @Get()

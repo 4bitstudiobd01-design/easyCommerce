@@ -139,6 +139,10 @@ export function StockTransferDetailsDrawer({
                   minute: '2-digit',
                 })}
               />
+              <DetailRow
+                label="Transferred By"
+                value={transfer.createdByName || transfer.createdByEmail || 'Unknown'}
+              />
             </dl>
           </Section>
 

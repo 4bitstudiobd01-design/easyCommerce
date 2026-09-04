@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { StockTransferEntity } from '../entities/stock-transfer.entity';
 import { InventoryStockEntity } from '../entities/inventory-stock.entity';
 import { BranchStockEntity } from '../entities/branch-stock.entity';
@@ -12,6 +12,11 @@ import { ProductVariantEntity } from '../../catalog/entities/product-variant.ent
 // Phase 2 of the Branch feature: no business logic crosses into the tenant
 // module, only a tenant-scoped lookup via TypeORM's own repository.
 import { BranchEntity } from '../../tenant/entities/branch.entity';
+// Read-only lookup only (resolve who initiated a transfer to a display
+// name) — same cross-module repository-injection pattern as BranchEntity
+// above; TenantModule already re-exports TypeOrmModule with UserEntity
+// registered, so no extra module wiring is needed here.
+import { UserEntity } from '../../user/entities/user.entity';
 
 export type TransferLocation =
   | { type: 'WAREHOUSE'; id: string }
@@ -26,6 +31,7 @@ export interface TransferStockInput {
   variantId?: string;
   quantity: number;
   notes?: string;
+  createdByUserId?: string;
 }
 
 @Injectable()
@@ -45,6 +51,8 @@ export class StockTransferService {
     private readonly productVariantRepository: Repository<ProductVariantEntity>,
     @InjectRepository(BranchEntity)
     private readonly branchRepository: Repository<BranchEntity>,
+    @InjectRepository(UserEntity)
+    private readonly userRepository: Repository<UserEntity>,
   ) {}
 
   private resolveLocation(warehouseId?: string, branchId?: string, side: 'source' | 'destination' = 'source'): TransferLocation {
@@ -174,6 +182,7 @@ export class StockTransferService {
         variantId: dto.variantId,
         quantity: dto.quantity,
         notes: dto.notes,
+        createdByUserId: dto.createdByUserId,
         tenantId,
       });
 
@@ -181,11 +190,32 @@ export class StockTransferService {
     });
   }
 
-  async listStockTransfers(tenantId: string): Promise<StockTransferEntity[]> {
-    return this.stockTransferRepository.find({
+  async listStockTransfers(
+    tenantId: string,
+  ): Promise<Array<StockTransferEntity & { createdByName?: string; createdByEmail?: string }>> {
+    const transfers = await this.stockTransferRepository.find({
       where: { tenantId },
       relations: ['fromWarehouse', 'toWarehouse', 'product', 'variant'],
       order: { createdAt: 'DESC' },
+    });
+
+    const userIds = Array.from(
+      new Set(transfers.map((t) => t.createdByUserId).filter((id): id is string => Boolean(id))),
+    );
+    if (userIds.length === 0) {
+      return transfers;
+    }
+
+    const users = await this.userRepository.find({ where: { id: In(userIds) } });
+    const userMap = new Map(users.map((u) => [u.id, u]));
+
+    return transfers.map((t) => {
+      const user = t.createdByUserId ? userMap.get(t.createdByUserId) : undefined;
+      return {
+        ...t,
+        createdByName: user?.fullName,
+        createdByEmail: user?.email,
+      };
     });
   }
 

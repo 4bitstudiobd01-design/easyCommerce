@@ -30,6 +30,12 @@ describe('StockTransferService', () => {
     const branchRepository = {
       findOne: jest.fn().mockResolvedValue(overrides.branch ?? { id: 'branch-1', tenantId: 'tenant-1' }),
     };
+    const userRepository = {
+      find: jest.fn().mockResolvedValue([]),
+    };
+    const stockTransferRepository = {
+      find: jest.fn().mockResolvedValue([]),
+    };
     const productRepository = {
       findOne: jest.fn().mockResolvedValue(overrides.product ?? { id: 'prod-1', tenantId: 'tenant-1' }),
     };
@@ -44,18 +50,21 @@ describe('StockTransferService', () => {
 
     return {
       service: new StockTransferService(
-        {} as any, // stockTransferRepository (only used by listStockTransfers)
+        stockTransferRepository as any,
         inventoryStockRepository as any,
         branchStockRepository as any,
         warehouseRepository as any,
         productRepository as any,
         productVariantRepository as any,
         branchRepository as any,
+        userRepository as any,
       ),
       inventoryStockRepository,
       branchStockRepository,
       warehouseRepository,
       branchRepository,
+      userRepository,
+      stockTransferRepository,
       save,
       create,
     };
@@ -173,5 +182,50 @@ describe('StockTransferService', () => {
         quantity: 2,
       }),
     ).rejects.toThrow(NotFoundException);
+  });
+
+  it('persists createdByUserId when a transfer is created', async () => {
+    const sourceStock = { id: 'stock-1', quantityOnHand: 10, productId: 'prod-1' };
+    const { service, inventoryStockRepository, branchStockRepository } = build();
+    inventoryStockRepository.findOne.mockResolvedValue(sourceStock);
+    branchStockRepository.findOne.mockResolvedValue(null);
+
+    const result = await service.transferStock('tenant-1', {
+      fromWarehouseId: 'wh-1',
+      toBranchId: 'branch-1',
+      productId: 'prod-1',
+      quantity: 2,
+      createdByUserId: 'user-1',
+    });
+
+    expect(result.createdByUserId).toBe('user-1');
+  });
+
+  describe('listStockTransfers', () => {
+    it('resolves createdByUserId to a display name and email', async () => {
+      const { service, stockTransferRepository, userRepository } = build();
+      stockTransferRepository.find.mockResolvedValue([
+        { id: 't-1', createdByUserId: 'user-1', tenantId: 'tenant-1' },
+        { id: 't-2', createdByUserId: null, tenantId: 'tenant-1' },
+      ]);
+      userRepository.find.mockResolvedValue([
+        { id: 'user-1', fullName: 'Sumon Hossain', email: 'sumon@example.com' },
+      ]);
+
+      const result = await service.listStockTransfers('tenant-1');
+
+      expect(result[0].createdByName).toBe('Sumon Hossain');
+      expect(result[0].createdByEmail).toBe('sumon@example.com');
+      expect(result[1].createdByName).toBeUndefined();
+    });
+
+    it('skips the user lookup entirely when no transfer has a creator', async () => {
+      const { service, stockTransferRepository, userRepository } = build();
+      stockTransferRepository.find.mockResolvedValue([{ id: 't-1', createdByUserId: null, tenantId: 'tenant-1' }]);
+
+      await service.listStockTransfers('tenant-1');
+
+      expect(userRepository.find).not.toHaveBeenCalled();
+    });
   });
 });

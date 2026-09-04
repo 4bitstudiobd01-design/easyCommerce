@@ -54,7 +54,7 @@ export function WarehouseTransferModal() {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6">
       {/* Back Navigation */}
       <button
         type="button"
@@ -210,10 +210,11 @@ export function WarehouseTransferModal() {
             <thead className="border-b border-slate-200 bg-slate-50/50 text-slate-600 font-bold">
               <tr>
                 <th className="px-6 py-3">Product</th>
-                <th className="px-6 py-3">From Warehouse</th>
+                <th className="px-6 py-3">From</th>
                 <th className="px-6 py-3 text-center">→</th>
-                <th className="px-6 py-3">To Warehouse</th>
+                <th className="px-6 py-3">To</th>
                 <th className="px-6 py-3 text-center">Quantity</th>
+                <th className="px-6 py-3">Transferred By</th>
                 <th className="px-6 py-3">Date</th>
               </tr>
             </thead>
@@ -221,19 +222,19 @@ export function WarehouseTransferModal() {
             <tbody className="divide-y divide-slate-100">
               {isTransfersLoading ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-10 text-slate-400 text-xs">
+                  <td colSpan={7} className="text-center py-10 text-slate-400 text-xs">
                     Loading transfer history...
                   </td>
                 </tr>
               ) : isTransfersError ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-10 text-rose-500 text-xs font-semibold">
+                  <td colSpan={7} className="text-center py-10 text-rose-500 text-xs font-semibold">
                     Failed to load transfer history. Please refresh the page.
                   </td>
                 </tr>
               ) : transfers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-10 text-slate-400 text-xs">
+                  <td colSpan={7} className="text-center py-10 text-slate-400 text-xs">
                     No stock transfers yet. Click "Transfer Stock" to move inventory between warehouses or branches.
                   </td>
                 </tr>
@@ -253,6 +254,7 @@ export function WarehouseTransferModal() {
                     </td>
                     <td className="px-6 py-3 text-slate-700">{locationLabel(t.toWarehouse, t.toWarehouseId, t.toBranchId)}</td>
                     <td className="px-6 py-3 text-center font-extrabold text-slate-900">{t.quantity}</td>
+                    <td className="px-6 py-3 text-slate-700">{t.createdByName || t.createdByEmail || '—'}</td>
                     <td className="px-6 py-3 text-slate-500">{new Date(t.createdAt).toLocaleDateString()}</td>
                   </tr>
                 ))
