@@ -34,6 +34,14 @@ export interface TransferStockInput {
   createdByUserId?: string;
 }
 
+export interface ListStockTransfersQuery {
+  page?: number;
+  limit?: number;
+  search?: string;
+  warehouseId?: string;
+  branchId?: string;
+}
+
 @Injectable()
 export class StockTransferService {
   constructor(
@@ -192,24 +200,57 @@ export class StockTransferService {
 
   async listStockTransfers(
     tenantId: string,
-  ): Promise<Array<StockTransferEntity & { createdByName?: string; createdByEmail?: string }>> {
-    const transfers = await this.stockTransferRepository.find({
-      where: { tenantId },
-      relations: ['fromWarehouse', 'toWarehouse', 'product', 'variant'],
-      order: { createdAt: 'DESC' },
-    });
+    query: ListStockTransfersQuery = {},
+  ): Promise<{
+    data: Array<StockTransferEntity & { createdByName?: string; createdByEmail?: string }>;
+    meta: { page: number; limit: number; total: number; totalPages: number };
+  }> {
+    const page = Math.max(1, Number(query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(query.limit) || 15));
+    const skip = (page - 1) * limit;
+
+    const qb = this.stockTransferRepository
+      .createQueryBuilder('transfer')
+      .leftJoinAndSelect('transfer.fromWarehouse', 'fromWarehouse')
+      .leftJoinAndSelect('transfer.toWarehouse', 'toWarehouse')
+      .leftJoinAndSelect('transfer.product', 'product')
+      .leftJoinAndSelect('transfer.variant', 'variant')
+      .where('transfer.tenantId = :tenantId', { tenantId });
+
+    if (query.search && query.search.trim() !== '') {
+      const searchTerm = `%${query.search.trim()}%`;
+      qb.andWhere('(product.name ILIKE :search OR product.sku ILIKE :search OR variant.sku ILIKE :search)', {
+        search: searchTerm,
+      });
+    }
+
+    if (query.warehouseId) {
+      qb.andWhere('(transfer.fromWarehouseId = :warehouseId OR transfer.toWarehouseId = :warehouseId)', {
+        warehouseId: query.warehouseId,
+      });
+    }
+
+    if (query.branchId) {
+      qb.andWhere('(transfer.fromBranchId = :branchId OR transfer.toBranchId = :branchId)', {
+        branchId: query.branchId,
+      });
+    }
+
+    qb.orderBy('transfer.createdAt', 'DESC').skip(skip).take(limit);
+
+    const [transfers, total] = await qb.getManyAndCount();
+    const totalPages = Math.ceil(total / limit) || 0;
 
     const userIds = Array.from(
       new Set(transfers.map((t) => t.createdByUserId).filter((id): id is string => Boolean(id))),
     );
-    if (userIds.length === 0) {
-      return transfers;
+    const userMap = new Map<string, UserEntity>();
+    if (userIds.length > 0) {
+      const users = await this.userRepository.find({ where: { id: In(userIds) } });
+      users.forEach((u) => userMap.set(u.id, u));
     }
 
-    const users = await this.userRepository.find({ where: { id: In(userIds) } });
-    const userMap = new Map(users.map((u) => [u.id, u]));
-
-    return transfers.map((t) => {
+    const data = transfers.map((t) => {
       const user = t.createdByUserId ? userMap.get(t.createdByUserId) : undefined;
       return {
         ...t,
@@ -217,6 +258,8 @@ export class StockTransferService {
         createdByEmail: user?.email,
       };
     });
+
+    return { data, meta: { page, limit, total, totalPages } };
   }
 
   async listBranchStock(tenantId: string, branchId: string): Promise<BranchStockEntity[]> {

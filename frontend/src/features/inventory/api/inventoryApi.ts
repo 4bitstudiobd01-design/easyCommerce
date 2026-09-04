@@ -82,6 +82,19 @@ export interface StockTransfer {
   createdAt: string;
 }
 
+export interface StockTransferListResponse {
+  data: StockTransfer[];
+  meta: { page: number; limit: number; total: number; totalPages: number };
+}
+
+export interface ListStockTransfersParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  warehouseId?: string;
+  branchId?: string;
+}
+
 export interface CreateStockTransferRequest {
   fromWarehouseId?: string;
   fromBranchId?: string;
@@ -650,11 +663,10 @@ export const inventoryApi = createApi({
       transformResponse: (response: { data: StockTransfer } | StockTransfer) =>
         ('data' in (response as any)) ? (response as any).data : response,
     }),
-    getStockTransfers: builder.query<StockTransfer[], void>({
-      query: () => '/inventory/transfers',
+    getStockTransfers: builder.query<StockTransferListResponse, ListStockTransfersParams | void>({
+      query: (params) => ({ url: '/inventory/transfers', params: params || {} }),
       providesTags: ['StockTransfer'],
-      transformResponse: (response: { data: StockTransfer[] } | StockTransfer[]) =>
-        Array.isArray(response) ? response : (response as any).data || [],
+      transformResponse: (response: { data: StockTransferListResponse }) => response.data,
     }),
     getBranchStock: builder.query<BranchStockItem[], string>({
       query: (branchId) => `/inventory/transfers/branches/${branchId}/stock`,

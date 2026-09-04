@@ -1,10 +1,11 @@
-import { Controller, Post, Get, Body, Param, Headers, UseGuards, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Query, Headers, UseGuards, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { StockTransferService } from '../services/stock-transfer.service';
 import { FindStoreByUserService } from '../../tenant/services/find-store-by-user.service';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { TransferStockDto } from '../dto/transfer-stock.dto';
+import { ListStockTransfersQueryDto } from '../dto/list-stock-transfers-query.dto';
 
 @ApiTags('Multi-Warehouse Stock Transfers')
 @Controller('inventory/transfers')
@@ -47,10 +48,11 @@ export class StockTransferController {
   @ApiResponse({ status: 400, description: 'Merchant has not created a store yet' })
   async listTransfers(
     @CurrentUser('sub') userId: string,
+    @Query() query: ListStockTransfersQueryDto,
     @Headers('x-store-id') storeId?: string,
   ) {
     const tenantId = await this.getMerchantTenantId(userId, storeId);
-    return this.stockTransferService.listStockTransfers(tenantId);
+    return this.stockTransferService.listStockTransfers(tenantId, query);
   }
 
   @Get('branches/stock')

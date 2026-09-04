@@ -33,8 +33,17 @@ describe('StockTransferService', () => {
     const userRepository = {
       find: jest.fn().mockResolvedValue([]),
     };
+    const transferQb: any = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+    };
     const stockTransferRepository = {
-      find: jest.fn().mockResolvedValue([]),
+      createQueryBuilder: jest.fn().mockReturnValue(transferQb),
     };
     const productRepository = {
       findOne: jest.fn().mockResolvedValue(overrides.product ?? { id: 'prod-1', tenantId: 'tenant-1' }),
@@ -65,6 +74,7 @@ describe('StockTransferService', () => {
       branchRepository,
       userRepository,
       stockTransferRepository,
+      transferQb,
       save,
       create,
     };
@@ -203,10 +213,13 @@ describe('StockTransferService', () => {
 
   describe('listStockTransfers', () => {
     it('resolves createdByUserId to a display name and email', async () => {
-      const { service, stockTransferRepository, userRepository } = build();
-      stockTransferRepository.find.mockResolvedValue([
-        { id: 't-1', createdByUserId: 'user-1', tenantId: 'tenant-1' },
-        { id: 't-2', createdByUserId: null, tenantId: 'tenant-1' },
+      const { service, transferQb, userRepository } = build();
+      transferQb.getManyAndCount.mockResolvedValue([
+        [
+          { id: 't-1', createdByUserId: 'user-1', tenantId: 'tenant-1' },
+          { id: 't-2', createdByUserId: null, tenantId: 'tenant-1' },
+        ],
+        2,
       ]);
       userRepository.find.mockResolvedValue([
         { id: 'user-1', fullName: 'Sumon Hossain', email: 'sumon@example.com' },
@@ -214,18 +227,50 @@ describe('StockTransferService', () => {
 
       const result = await service.listStockTransfers('tenant-1');
 
-      expect(result[0].createdByName).toBe('Sumon Hossain');
-      expect(result[0].createdByEmail).toBe('sumon@example.com');
-      expect(result[1].createdByName).toBeUndefined();
+      expect(result.data[0].createdByName).toBe('Sumon Hossain');
+      expect(result.data[0].createdByEmail).toBe('sumon@example.com');
+      expect(result.data[1].createdByName).toBeUndefined();
+      expect(result.meta).toEqual({ page: 1, limit: 15, total: 2, totalPages: 1 });
     });
 
     it('skips the user lookup entirely when no transfer has a creator', async () => {
-      const { service, stockTransferRepository, userRepository } = build();
-      stockTransferRepository.find.mockResolvedValue([{ id: 't-1', createdByUserId: null, tenantId: 'tenant-1' }]);
+      const { service, transferQb, userRepository } = build();
+      transferQb.getManyAndCount.mockResolvedValue([
+        [{ id: 't-1', createdByUserId: null, tenantId: 'tenant-1' }],
+        1,
+      ]);
 
       await service.listStockTransfers('tenant-1');
 
       expect(userRepository.find).not.toHaveBeenCalled();
+    });
+
+    it('applies search and location filters, and paginates', async () => {
+      const { service, transferQb } = build();
+      transferQb.getManyAndCount.mockResolvedValue([[], 0]);
+
+      await service.listStockTransfers('tenant-1', {
+        page: 2,
+        limit: 5,
+        search: 'iphone',
+        warehouseId: 'wh-1',
+        branchId: 'branch-1',
+      });
+
+      expect(transferQb.andWhere).toHaveBeenCalledWith(
+        '(product.name ILIKE :search OR product.sku ILIKE :search OR variant.sku ILIKE :search)',
+        { search: '%iphone%' },
+      );
+      expect(transferQb.andWhere).toHaveBeenCalledWith(
+        '(transfer.fromWarehouseId = :warehouseId OR transfer.toWarehouseId = :warehouseId)',
+        { warehouseId: 'wh-1' },
+      );
+      expect(transferQb.andWhere).toHaveBeenCalledWith(
+        '(transfer.fromBranchId = :branchId OR transfer.toBranchId = :branchId)',
+        { branchId: 'branch-1' },
+      );
+      expect(transferQb.skip).toHaveBeenCalledWith(5);
+      expect(transferQb.take).toHaveBeenCalledWith(5);
     });
   });
 });

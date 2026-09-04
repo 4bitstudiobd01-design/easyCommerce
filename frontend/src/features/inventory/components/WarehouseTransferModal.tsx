@@ -34,7 +34,8 @@ export function WarehouseTransferModal() {
   const { data: branchStockItems = [] } = useGetAllBranchesStockQuery();
   const { data: productRes } = useGetProductsQuery();
   const products = productRes?.data || [];
-  const { data: transfers = [], isLoading: isTransfersLoading, isError: isTransfersError } = useGetStockTransfersQuery();
+  const { data: transfersRes, isLoading: isTransfersLoading, isError: isTransfersError } = useGetStockTransfersQuery({ limit: 8 });
+  const transfers = transfersRes?.data || [];
   const router = useRouter();
 
   const [selectedTransfer, setSelectedTransfer] = useState<StockTransfer | null>(null);
@@ -200,9 +201,17 @@ export function WarehouseTransferModal() {
 
       {/* RECENT STOCK TRANSFERS TABLE */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
-          <Clock className="w-4 h-4 text-slate-500" />
-          <h3 className="font-bold text-sm text-slate-900">Recent Transfer History</h3>
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-slate-500" />
+            <h3 className="font-bold text-sm text-slate-900">Recent Transfer History</h3>
+          </div>
+          <Link
+            href="/dashboard/warehouse-transfers/history"
+            className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
+          >
+            View All →
+          </Link>
         </div>
 
         <div className="overflow-x-auto">
@@ -239,7 +248,7 @@ export function WarehouseTransferModal() {
                   </td>
                 </tr>
               ) : (
-                transfers.slice(0, 15).map((t) => (
+                transfers.map((t) => (
                   <tr
                     key={t.id}
                     onClick={() => setSelectedTransfer(t)}
