@@ -29,6 +29,8 @@ import {
   useGetBillQuery,
   useGetSuppliersQuery,
   useGetSupplierPaymentsQuery,
+  useGetPurchaseOrdersQuery,
+  useGetPurchaseOrderQuery,
   useCreateBillMutation,
   useUpdateBillMutation,
   useDeleteBillMutation,
@@ -131,6 +133,7 @@ export function PurchasesListView({ activeTab = 'purchases', onNavigateTab }: Pu
 
   // ── Record Purchase form ──
   const [billSupplierId, setBillSupplierId] = useState('');
+  const [billPurchaseOrderId, setBillPurchaseOrderId] = useState('');
   const [billDate, setBillDate] = useState(today());
   const [billInvoiceNo, setBillInvoiceNo] = useState('');
   const [billDueDate, setBillDueDate] = useState('');
@@ -140,8 +143,18 @@ export function PurchasesListView({ activeTab = 'purchases', onNavigateTab }: Pu
     'CASH' | 'BANK_TRANSFER' | 'CARD' | 'CHEQUE' | 'MOBILE_BANKING'
   >('CASH');
 
+  // A purchase is only ever raised against a PO from the same supplier, so
+  // the PO picker is scoped to whichever supplier is currently selected and
+  // reset whenever the supplier changes.
+  const { data: supplierPOsData } = useGetPurchaseOrdersQuery(
+    { supplierId: billSupplierId, limit: 100 },
+    { skip: !billSupplierId },
+  );
+  const supplierPOs = (supplierPOsData?.items ?? []).filter((po) => po.status !== 'CANCELLED');
+
   const resetBillForm = () => {
     setBillSupplierId('');
+    setBillPurchaseOrderId('');
     setBillDate(today());
     setBillInvoiceNo('');
     setBillDueDate('');
@@ -161,6 +174,7 @@ export function PurchasesListView({ activeTab = 'purchases', onNavigateTab }: Pu
     try {
       const created = await createBill({
         supplierId: billSupplierId,
+        purchaseOrderId: billPurchaseOrderId || undefined,
         billDate,
         supplierInvoiceNo: billInvoiceNo.trim() || undefined,
         dueDate: billDueDate || undefined,
@@ -437,7 +451,12 @@ export function PurchasesListView({ activeTab = 'purchases', onNavigateTab }: Pu
                       />
                     </td>
                     <td className="px-4 py-4 font-bold text-slate-900 font-mono text-[11px]">
-                      {b.billNumber}
+                      <div>{b.billNumber}</div>
+                      {b.purchaseOrderId && (
+                        <div className="mt-0.5 inline-flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 text-blue-600 font-sans font-bold text-[9px] rounded-full border border-blue-200">
+                          PO linked
+                        </div>
+                      )}
                     </td>
                     <td className="px-4 py-4 text-slate-500 whitespace-nowrap">
                       {b.billDate}
@@ -599,7 +618,7 @@ export function PurchasesListView({ activeTab = 'purchases', onNavigateTab }: Pu
 
       {isRecordOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-xl border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col">
+          <div className="bg-white rounded-2xl w-full max-w-4xl shadow-xl border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col">
             <div className="p-5 border-b border-slate-100 flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-slate-900">Record New Purchase</h3>
@@ -624,7 +643,10 @@ export function PurchasesListView({ activeTab = 'purchases', onNavigateTab }: Pu
                   </label>
                   <select
                     value={billSupplierId}
-                    onChange={(e) => setBillSupplierId(e.target.value)}
+                    onChange={(e) => {
+                      setBillSupplierId(e.target.value);
+                      setBillPurchaseOrderId('');
+                    }}
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-blue-600 focus:outline-none"
                   >
                     <option value="">Choose a supplier</option>
@@ -637,6 +659,29 @@ export function PurchasesListView({ activeTab = 'purchases', onNavigateTab }: Pu
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Against Purchase Order (optional)
+                  </label>
+                  <select
+                    value={billPurchaseOrderId}
+                    onChange={(e) => setBillPurchaseOrderId(e.target.value)}
+                    disabled={!billSupplierId}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-blue-600 focus:outline-none disabled:bg-slate-50 disabled:text-slate-400"
+                  >
+                    <option value="">
+                      {billSupplierId ? 'No specific PO' : 'Choose a supplier first'}
+                    </option>
+                    {supplierPOs.map((po) => (
+                      <option key={po.id} value={po.id}>
+                        {po.poNumber} · {money(po.totalAmount)} · {po.status}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
                     Purchase / Invoice Date
                   </label>
                   <input
@@ -646,9 +691,6 @@ export function PurchasesListView({ activeTab = 'purchases', onNavigateTab }: Pu
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-blue-600 focus:outline-none"
                   />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
                     Vendor Invoice No.
@@ -771,6 +813,9 @@ function BillDetailModal({ id, onClose }: { id: string; onClose: () => void }) {
   const { data: bill, isLoading } = useGetBillQuery(id);
   const { data: paymentsData } = useGetSupplierPaymentsQuery({ billId: id });
   const payments = paymentsData?.items ?? [];
+  const { data: linkedPO } = useGetPurchaseOrderQuery(bill?.purchaseOrderId ?? '', {
+    skip: !bill?.purchaseOrderId,
+  });
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
@@ -780,8 +825,13 @@ function BillDetailModal({ id, onClose }: { id: string; onClose: () => void }) {
             <h3 className="text-base font-bold text-slate-900">
               {bill ? bill.billNumber : 'Purchase Bill'}
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              {bill ? `${bill.supplierName} · ${bill.billDate}` : 'Loading…'}
+            <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
+              <span>{bill ? `${bill.supplierName} · ${bill.billDate}` : 'Loading…'}</span>
+              {bill?.purchaseOrderId && (
+                <span className="px-2 py-0.5 bg-blue-50 text-blue-700 font-bold text-[10px] rounded-full border border-blue-200">
+                  Against PO: {linkedPO?.poNumber ?? '…'}
+                </span>
+              )}
             </p>
           </div>
           <button
@@ -987,6 +1037,9 @@ function RecordPaymentModal({
   const [recordPayment, { isLoading }] = useRecordSupplierPaymentMutation();
   const { data: accountsData } = useGetAccountsQuery({ activeOnly: true });
   const assetAccounts = (accountsData ?? []).filter((a) => a.type === 'ASSET');
+  const { data: linkedPO } = useGetPurchaseOrderQuery(bill.purchaseOrderId ?? '', {
+    skip: !bill.purchaseOrderId,
+  });
 
   const due = Number(bill.totalAmount) - Number(bill.paidAmount);
   const [amount, setAmount] = useState(due);
@@ -1033,6 +1086,11 @@ function RecordPaymentModal({
             <h3 className="text-base font-bold text-slate-900">Record Payment</h3>
             <p className="text-xs text-slate-500 mt-0.5">
               {bill.billNumber} · outstanding {money(due)}
+              {bill.purchaseOrderId && (
+                <span className="ml-1.5 text-blue-600 font-semibold">
+                  · against PO {linkedPO?.poNumber ?? '…'}
+                </span>
+              )}
             </p>
           </div>
           <button

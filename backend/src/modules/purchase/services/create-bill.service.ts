@@ -70,6 +70,11 @@ export class CreateBillService {
       if (!po) {
         throw new NotFoundException('Purchase order not found in this store.');
       }
+      if (po.supplierId !== dto.supplierId) {
+        throw new BadRequestException(
+          'This purchase order belongs to a different supplier than the one selected.',
+        );
+      }
     }
 
     const productIds = [...new Set(dto.lines.map((l) => l.productId))];
