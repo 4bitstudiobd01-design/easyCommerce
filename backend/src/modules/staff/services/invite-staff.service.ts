@@ -36,6 +36,7 @@ export class InviteStaffService {
     const staff = this.staffRepository.create({
       tenantId,
       storeId,
+      branchId: dto.branchId,
       name: dto.name,
       email: dto.email.toLowerCase(),
       phone: dto.phone,

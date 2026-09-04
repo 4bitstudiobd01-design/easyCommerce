@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { StaffMember, useUpdateStaffPermissionsMutation, StaffPermissionType } from '../api/staffApi';
-import { X, Shield, Save, AlertCircle, Sparkles } from 'lucide-react';
+import { useGetBranchesQuery } from '@/features/tenant/api/tenantApi';
+import { X, Shield, Save, AlertCircle, Sparkles, Building2 } from 'lucide-react';
 
 interface EditStaffPermissionsModalProps {
   isOpen: boolean;
@@ -92,14 +93,17 @@ export const EditStaffPermissionsModal: React.FC<EditStaffPermissionsModalProps>
   const [role, setRole] = useState<string>('CUSTOM');
   const [permissions, setPermissions] = useState<StaffPermissionType[]>([]);
   const [status, setStatus] = useState<'ACTIVE' | 'PENDING_INVITE' | 'SUSPENDED'>('ACTIVE');
+  const [branchId, setBranchId] = useState<string>('');
 
   const [updatePermissions, { isLoading, error }] = useUpdateStaffPermissionsMutation();
+  const { data: branches } = useGetBranchesQuery();
 
   useEffect(() => {
     if (staff) {
       setRole(staff.role);
       setPermissions(staff.permissions || []);
       setStatus(staff.status);
+      setBranchId(staff.branchId || '');
     }
   }, [staff]);
 
@@ -122,6 +126,7 @@ export const EditStaffPermissionsModal: React.FC<EditStaffPermissionsModalProps>
         role,
         permissions,
         status,
+        branchId: branchId || null,
       }).unwrap();
       toast.success('Staff permissions updated.');
       onClose();
@@ -195,6 +200,31 @@ export const EditStaffPermissionsModal: React.FC<EditStaffPermissionsModalProps>
               ))}
             </select>
           </div>
+
+          {/* Branch Access */}
+          {branches && branches.length > 0 && (
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
+                <Building2 className="w-3.5 h-3.5 text-slate-500" />
+                Branch Access (শাখা এক্সেস)
+              </label>
+              <select
+                value={branchId}
+                onChange={(e) => setBranchId(e.target.value)}
+                className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              >
+                <option value="">Store-wide (all branches)</option>
+                {branches.map((branch) => (
+                  <option key={branch.id} value={branch.id}>
+                    {branch.name} ({branch.code})
+                  </option>
+                ))}
+              </select>
+              <p className="text-[11px] text-slate-500 mt-1">
+                নির্দিষ্ট একটি শাখায় সীমাবদ্ধ রাখতে সিলেক্ট করুন, নাহলে সব শাখায় এক্সেস থাকবে।
+              </p>
+            </div>
+          )}
 
           {/* Permissions Matrix */}
           <div className="space-y-4 pt-2 border-t border-slate-100">
