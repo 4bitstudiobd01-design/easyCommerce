@@ -56,7 +56,11 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
       }),
     }),
   ],
-  controllers: [InventoryController, StockTransferController],
+  // StockTransferController must be registered before InventoryController:
+  // InventoryController's GET /inventory/:id wildcard would otherwise shadow
+  // StockTransferController's more specific /inventory/transfers/* routes,
+  // since Nest matches routes across controllers in registration order.
+  controllers: [StockTransferController, InventoryController],
   providers: [
     CreateWarehouseService,
     ListWarehousesService,

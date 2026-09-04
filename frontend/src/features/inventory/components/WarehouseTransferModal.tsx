@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import {
   useGetWarehousesQuery,
   useGetInventoryStockQuery,
+  useGetAllBranchesStockQuery,
   useCreateStockTransferMutation,
   useGetStockTransfersQuery,
   Warehouse,
@@ -15,6 +16,7 @@ import { useGetBranchesQuery, Branch } from '@/features/tenant/api/tenantApi';
 import {
   ArrowRightLeft,
   Warehouse as WarehouseIcon,
+  Store as BranchIcon,
   Package,
   Clock,
   ArrowRight,
@@ -29,9 +31,10 @@ export function WarehouseTransferModal() {
   const { data: warehouses = [] } = useGetWarehousesQuery();
   const { data: branches = [] } = useGetBranchesQuery();
   const { data: stockItems = [] } = useGetInventoryStockQuery();
+  const { data: branchStockItems = [] } = useGetAllBranchesStockQuery();
   const { data: productRes } = useGetProductsQuery();
   const products = productRes?.data || [];
-  const { data: transfers = [] } = useGetStockTransfersQuery();
+  const { data: transfers = [], isLoading: isTransfersLoading, isError: isTransfersError } = useGetStockTransfersQuery();
   const router = useRouter();
 
   const [selectedTransfer, setSelectedTransfer] = useState<StockTransfer | null>(null);
@@ -65,9 +68,9 @@ export function WarehouseTransferModal() {
       {/* HEADER */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight">Multi-Warehouse Stock Transfer</h2>
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight">Stock Transfers</h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Move stock between warehouses with real-time inventory updates and transfer logs.
+            Move stock between warehouses and branches with real-time inventory updates and transfer logs.
           </p>
         </div>
 
@@ -78,6 +81,14 @@ export function WarehouseTransferModal() {
           >
             <Settings2 className="w-4 h-4" />
             <span>Manage Warehouses</span>
+          </Link>
+
+          <Link
+            href="/dashboard/inventory/branches"
+            className="px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold text-xs rounded-xl shadow-sm flex items-center gap-2 transition-all active:scale-95"
+          >
+            <BranchIcon className="w-4 h-4" />
+            <span>Manage Branches</span>
           </Link>
 
           <button
@@ -130,6 +141,45 @@ export function WarehouseTransferModal() {
         </div>
       )}
 
+      {/* BRANCH STOCK OVERVIEW */}
+      {branches.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {branches.map((branch) => {
+            const branchItems = branchStockItems.filter((s) => s.branchId === branch.id);
+            const totalUnits = branchItems.reduce((sum, s) => sum + s.quantityOnHand, 0);
+            const lowStockCount = branchItems.filter((s) => s.quantityOnHand <= s.reorderPoint).length;
+
+            return (
+              <div key={branch.id} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center">
+                    <BranchIcon className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="font-black text-slate-900 text-sm">{branch.name}</p>
+                    <p className="text-[11px] text-slate-500">{branch.city || branch.address || 'Branch Outlet'}</p>
+                  </div>
+                  {branch.isDefault && (
+                    <span className="ml-auto px-2 py-0.5 bg-blue-50 text-blue-700 font-bold text-[10px] rounded-full border border-blue-200">
+                      Default
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-500 font-semibold">{totalUnits} total units</span>
+                  {lowStockCount > 0 && (
+                    <span className="px-2.5 py-1 bg-amber-50 text-amber-700 font-extrabold text-[10px] rounded-full border border-amber-200">
+                      ⚠ {lowStockCount} low stock
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* RECENT STOCK TRANSFERS TABLE */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
@@ -151,10 +201,22 @@ export function WarehouseTransferModal() {
             </thead>
 
             <tbody className="divide-y divide-slate-100">
-              {transfers.length === 0 ? (
+              {isTransfersLoading ? (
                 <tr>
                   <td colSpan={6} className="text-center py-10 text-slate-400 text-xs">
-                    No stock transfers yet. Click "Transfer Stock" to move inventory between warehouses.
+                    Loading transfer history...
+                  </td>
+                </tr>
+              ) : isTransfersError ? (
+                <tr>
+                  <td colSpan={6} className="text-center py-10 text-rose-500 text-xs font-semibold">
+                    Failed to load transfer history. Please refresh the page.
+                  </td>
+                </tr>
+              ) : transfers.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="text-center py-10 text-slate-400 text-xs">
+                    No stock transfers yet. Click "Transfer Stock" to move inventory between warehouses or branches.
                   </td>
                 </tr>
               ) : (
