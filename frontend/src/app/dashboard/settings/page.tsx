@@ -5,14 +5,12 @@ import { useRouter } from 'next/navigation';
 import { StoreSettingsHeader } from '@/features/settings/components/StoreSettingsHeader';
 import { SettingsSection } from '@/features/settings/components/SettingsSection';
 import { SettingsCard } from '@/features/settings/components/SettingsCard';
-import { SettingsInfoBox } from '@/features/settings/components/SettingsInfoBox';
 import {
-  Store, Globe, Globe2, Settings,
-  Palette, LayoutTemplate, Home,
-  ClipboardList, ShoppingCart, SlidersHorizontal, Users,
-  Truck, MapPin, ShieldAlert,
-  CreditCard, BarChart3,
-  Mail, MessageSquare, Code2, Link,
+  Store, Globe,
+  Palette, Home,
+  ClipboardList, ShoppingCart, Users,
+  MapPin, ShieldAlert,
+  Mail, MessageSquare,
   FileText, RefreshCw, Trash2
 } from 'lucide-react';
 
@@ -43,16 +41,6 @@ export default function SettingsPage() {
                 title="Store Domain" description="Manage your store domain, subdomain and SSL settings."
                 onClick={() => router.push('/dashboard/settings/domain')}
               />
-              <SettingsCard
-                icon={Globe2} iconBgColor="bg-emerald-50" iconColor="text-emerald-600"
-                title="Localization" description="Set your store language, currency, timezone and date format."
-                onClick={() => router.push('/dashboard/settings/localization')}
-              />
-              <SettingsCard
-                icon={Settings} iconBgColor="bg-amber-50" iconColor="text-amber-500"
-                title="Store Preferences" description="Configure general preferences and store-wide settings."
-                onClick={() => router.push('/dashboard/settings/preferences')}
-              />
             </div>
           </SettingsSection>
 
@@ -61,16 +49,11 @@ export default function SettingsPage() {
             title="Storefront" 
             subtitle="Customize how your store looks and behaves."
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <SettingsCard
                 icon={Palette} iconBgColor="bg-purple-50" iconColor="text-purple-600"
                 title="Theme & Branding" description="Customize theme, colors, typography, logo and store branding."
                 onClick={() => router.push('/dashboard/settings/theme')}
-              />
-              <SettingsCard
-                icon={LayoutTemplate} iconBgColor="bg-blue-50" iconColor="text-blue-600"
-                title="Navigation" description="Manage menu, header, footer and other navigation settings."
-                onClick={() => router.push('/dashboard/settings/navigation')}
               />
               <SettingsCard
                 icon={Home} iconBgColor="bg-amber-50" iconColor="text-amber-500"
@@ -97,11 +80,6 @@ export default function SettingsPage() {
                 onClick={() => router.push('/dashboard/settings/checkout')}
               />
               <SettingsCard
-                icon={SlidersHorizontal} iconBgColor="bg-amber-50" iconColor="text-amber-500"
-                title="Order Limits" description="Set limits for minimum order, max order, cancellation and return."
-                onClick={() => router.push('/dashboard/settings/limits')}
-              />
-              <SettingsCard
                 icon={Users} iconBgColor="bg-blue-50" iconColor="text-blue-600"
                 title="Customer Settings" description="Manage customer registration, accounts and login preferences."
                 onClick={() => router.push('/dashboard/settings/customers')}
@@ -111,17 +89,12 @@ export default function SettingsPage() {
 
         </div>
 
-        {/* BOTTOM MASONRY GRID (4 Columns) */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6 pt-4">
+        {/* BOTTOM MASONRY GRID (3 Columns) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4">
           
           {/* Column 1: Shipping & Security */}
           <div className="flex flex-col gap-8">
             <SettingsSection title="Shipping" subtitle="Manage shipping preferences.">
-              <SettingsCard
-                icon={Truck} iconBgColor="bg-blue-50" iconColor="text-blue-600"
-                title="Shipping Settings" description="Configure shipping methods, rates and default options."
-                onClick={() => router.push('/dashboard/settings/delivery')}
-              />
               <SettingsCard
                 icon={MapPin} iconBgColor="bg-blue-50" iconColor="text-blue-600"
                 title="Delivery Zones" description="Create and manage delivery zones for your store."
@@ -138,32 +111,7 @@ export default function SettingsPage() {
             </SettingsSection>
           </div>
 
-          {/* Column 2: Payments & SEO */}
-          <div className="flex flex-col gap-8">
-            <SettingsSection title="Payments" subtitle="Manage payment preferences.">
-              <SettingsCard
-                icon={CreditCard} iconBgColor="bg-emerald-50" iconColor="text-emerald-600"
-                title="Payment Preferences" description="Configure COD, partial payment, tips and other payment preferences."
-                onClick={() => router.push('/dashboard/settings/payment')}
-              />
-              <SettingsInfoBox text={
-                <>Manage payment gateways from the <span className="font-bold text-blue-700">Payments &rarr; Gateways</span> section.</>
-              } />
-            </SettingsSection>
-
-            <SettingsSection title="SEO & Tracking" subtitle="Improve your store visibility.">
-              <SettingsCard
-                icon={BarChart3} iconBgColor="bg-purple-50" iconColor="text-purple-600"
-                title="Tracking Preferences" description="Manage SEO, meta data and tracking preferences."
-                onClick={() => router.push('/dashboard/settings/seo')}
-              />
-              <SettingsInfoBox text={
-                <>Manage pixels & integrations from the <span className="font-bold text-blue-700">Marketing &rarr; Pixels</span> section.</>
-              } />
-            </SettingsSection>
-          </div>
-
-          {/* Column 3: Notifications & Advanced */}
+          {/* Column 2: Notifications */}
           <div className="flex flex-col gap-8">
             <SettingsSection title="Notifications" subtitle="Manage communication settings.">
               <SettingsCard
@@ -177,22 +125,9 @@ export default function SettingsPage() {
                 onClick={() => router.push('/dashboard/settings/sms')}
               />
             </SettingsSection>
-
-            <SettingsSection title="Advanced" subtitle="For advanced users and developers.">
-              <SettingsCard
-                icon={Code2} iconBgColor="bg-blue-50" iconColor="text-blue-600"
-                title="API / Developer" description="Manage API keys, webhooks and advanced developer settings."
-                onClick={() => router.push('/dashboard/settings/developer')}
-              />
-              <SettingsCard
-                icon={Link} iconBgColor="bg-purple-50" iconColor="text-purple-600"
-                title="Webhooks" description="Configure and manage webhook events for your store."
-                onClick={() => router.push('/dashboard/settings/webhooks')}
-              />
-            </SettingsSection>
           </div>
 
-          {/* Column 4: Policies & Danger Zone */}
+          {/* Column 3: Policies & Danger Zone */}
           <div className="flex flex-col gap-8">
             <SettingsSection title="Policies" subtitle="Manage your store policies and terms.">
               <SettingsCard
