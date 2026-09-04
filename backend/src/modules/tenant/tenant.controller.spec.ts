@@ -9,6 +9,10 @@ import { DeleteStoreService } from './services/delete-store.service';
 import { ManageDeliveryZonesService } from './services/manage-delivery-zones.service';
 import { ManageApiKeysService } from './services/manage-api-keys.service';
 import { ManageWebhooksService } from './services/manage-webhooks.service';
+import { CreateBranchService } from './services/create-branch.service';
+import { ListBranchesService } from './services/list-branches.service';
+import { UpdateBranchService } from './services/update-branch.service';
+import { DeleteBranchService } from './services/delete-branch.service';
 
 describe('TenantController', () => {
   let controller: TenantController;
@@ -39,6 +43,10 @@ describe('TenantController', () => {
         { provide: ManageDeliveryZonesService, useValue: {} },
         { provide: ManageApiKeysService, useValue: {} },
         { provide: ManageWebhooksService, useValue: {} },
+        { provide: CreateBranchService, useValue: {} },
+        { provide: ListBranchesService, useValue: {} },
+        { provide: UpdateBranchService, useValue: {} },
+        { provide: DeleteBranchService, useValue: {} },
         // Guard collaborator — its presence confirms JwtAuthGuard is genuinely attached to these routes.
         { provide: JwtService, useValue: { verify: jest.fn(), verifyAsync: jest.fn() } },
       ],
