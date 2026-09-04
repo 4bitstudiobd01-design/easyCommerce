@@ -659,6 +659,12 @@ export const inventoryApi = createApi({
       transformResponse: (response: { data: BranchStockItem[] } | BranchStockItem[]) =>
         Array.isArray(response) ? response : (response as any).data || [],
     }),
+    getAllBranchesStock: builder.query<BranchStockItem[], void>({
+      query: () => '/inventory/transfers/branches/stock',
+      providesTags: ['Stock'],
+      transformResponse: (response: { data: BranchStockItem[] } | BranchStockItem[]) =>
+        Array.isArray(response) ? response : (response as any).data || [],
+    }),
   }),
 });
 
@@ -681,6 +687,7 @@ export const {
   useCreateStockTransferMutation,
   useGetStockTransfersQuery,
   useGetBranchStockQuery,
+  useGetAllBranchesStockQuery,
 } = inventoryApi;
 
 

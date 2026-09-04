@@ -13,7 +13,6 @@ import {
   Trash2,
   Star,
   ArrowLeft,
-  Package,
 } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import {
@@ -21,11 +20,13 @@ import {
   useDeleteBranchMutation,
   Branch,
 } from '@/features/tenant/api/tenantApi';
+import { useGetAllBranchesStockQuery } from '@/features/inventory/api/inventoryApi';
 import { BranchFormModal } from './BranchFormModal';
 
 export function BranchesView() {
   const router = useRouter();
   const { data: branches = [], isLoading, isError } = useGetBranchesQuery();
+  const { data: branchStockItems = [] } = useGetAllBranchesStockQuery();
   const [deleteBranch, { isLoading: isDeleting }] = useDeleteBranchMutation();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -129,77 +130,89 @@ export function BranchesView() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {branches.map((branch) => (
-            <div
-              key={branch.id}
-              className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center shrink-0">
-                    <BranchIcon className="w-4 h-4 text-blue-600" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-extrabold text-slate-900 text-sm truncate">{branch.name}</p>
-                    <p className="text-[11px] font-mono text-slate-400">{branch.code}</p>
-                  </div>
-                </div>
-                {branch.isDefault && (
-                  <span className="px-2 py-0.5 bg-blue-50 text-blue-700 font-bold text-[10px] rounded-full border border-blue-200 flex items-center gap-1 shrink-0">
-                    <Star className="w-2.5 h-2.5 fill-blue-600 text-blue-600" />
-                    Default
-                  </span>
-                )}
-              </div>
+          {branches.map((branch) => {
+            const branchStock = branchStockItems.filter((s) => s.branchId === branch.id);
+            const totalUnits = branchStock.reduce((sum, s) => sum + s.quantityOnHand, 0);
+            const hasStock = branchStock.length > 0;
 
-              <div className="space-y-1.5">
-                {(branch.address || branch.city) && (
-                  <p className="text-[11px] text-slate-500 flex items-start gap-1.5">
-                    <MapPin className="w-3 h-3 text-slate-400 shrink-0 mt-0.5" />
-                    <span>{[branch.address, branch.city].filter(Boolean).join(', ')}</span>
-                  </p>
-                )}
-                {branch.phone && (
-                  <p className="text-[11px] text-slate-500 flex items-center gap-1.5">
-                    <Phone className="w-3 h-3 text-slate-400 shrink-0" />
-                    <span>{branch.phone}</span>
-                  </p>
-                )}
-              </div>
-
-              <Link
-                href={`/dashboard/inventory?branchId=${branch.id}`}
-                className="flex items-center justify-center gap-1.5 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 text-[11px] font-bold rounded-xl border border-slate-200 transition-colors"
+            return (
+              <div
+                key={branch.id}
+                onClick={() => router.push(`/dashboard/inventory?branchId=${branch.id}`)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    router.push(`/dashboard/inventory?branchId=${branch.id}`);
+                  }
+                }}
+                title={`View inventory at ${branch.name}`}
+                className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all"
               >
-                <Package className="w-3.5 h-3.5" />
-                <span>View Stock</span>
-              </Link>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center shrink-0">
+                      <BranchIcon className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-extrabold text-slate-900 text-sm truncate">{branch.name}</p>
+                      <p className="text-[11px] font-mono text-slate-400">{branch.code}</p>
+                    </div>
+                  </div>
+                  {branch.isDefault && (
+                    <span className="px-2 py-0.5 bg-blue-50 text-blue-700 font-bold text-[10px] rounded-full border border-blue-200 flex items-center gap-1 shrink-0">
+                      <Star className="w-2.5 h-2.5 fill-blue-600 text-blue-600" />
+                      Default
+                    </span>
+                  )}
+                </div>
 
-              <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                <span className={`text-[11px] font-bold ${branch.isActive ? 'text-emerald-600' : 'text-slate-400'}`}>
-                  {branch.isActive ? 'Active' : 'Inactive'}
-                </span>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => handleEditClick(branch)}
-                    className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                    title="Edit branch"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDeleteTarget(branch)}
-                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                    title="Delete branch"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                <div className="space-y-1.5">
+                  {(branch.address || branch.city) && (
+                    <p className="text-[11px] text-slate-500 flex items-start gap-1.5">
+                      <MapPin className="w-3 h-3 text-slate-400 shrink-0 mt-0.5" />
+                      <span>{[branch.address, branch.city].filter(Boolean).join(', ')}</span>
+                    </p>
+                  )}
+                  {branch.phone && (
+                    <p className="text-[11px] text-slate-500 flex items-center gap-1.5">
+                      <Phone className="w-3 h-3 text-slate-400 shrink-0" />
+                      <span>{branch.phone}</span>
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                  <span className="text-xs font-semibold text-slate-600">{totalUnits} units in stock</span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditClick(branch);
+                      }}
+                      className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="Edit branch"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteTarget(branch);
+                      }}
+                      disabled={hasStock}
+                      title={hasStock ? 'Move or clear stock before deleting' : 'Delete branch'}
+                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-slate-400"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

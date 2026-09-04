@@ -196,4 +196,12 @@ export class StockTransferService {
       order: { updatedAt: 'DESC' },
     });
   }
+
+  /** Stock rows across every branch for the tenant — used by the branch cards to show a per-branch unit count, same as warehouse cards. */
+  async listAllBranchesStock(tenantId: string): Promise<BranchStockEntity[]> {
+    return this.branchStockRepository.find({
+      where: { tenantId },
+      order: { updatedAt: 'DESC' },
+    });
+  }
 }

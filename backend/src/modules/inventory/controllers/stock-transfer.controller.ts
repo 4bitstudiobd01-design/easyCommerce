@@ -53,6 +53,19 @@ export class StockTransferController {
     return this.stockTransferService.listStockTransfers(tenantId);
   }
 
+  @Get('branches/stock')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List stock across every branch (for per-branch unit counts on the Branches page)' })
+  @ApiResponse({ status: 200, description: 'Stock rows across all branches' })
+  async listAllBranchesStock(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
+    return this.stockTransferService.listAllBranchesStock(tenantId);
+  }
+
   @Get('branches/:branchId/stock')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

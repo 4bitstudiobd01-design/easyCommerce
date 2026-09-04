@@ -13,6 +13,9 @@ import { BranchEntity } from './entities/branch.entity';
 // Read-only lookup only (branch↔warehouse tenant-scoped existence check) —
 // see create-branch.service.ts / update-branch.service.ts for the rationale.
 import { WarehouseEntity } from '../inventory/entities/warehouse.entity';
+// Read-only lookup only (block deleting a branch that still has stock) —
+// see delete-branch.service.ts for the rationale.
+import { BranchStockEntity } from '../inventory/entities/branch-stock.entity';
 import { UserEntity } from '../user/entities/user.entity';
 import { UserModule } from '../user/user.module';
 import { CreateStoreService } from './services/create-store.service';
@@ -47,6 +50,7 @@ import { BillingModule } from '../billing/billing.module';
       WebhookEntity,
       BranchEntity,
       WarehouseEntity,
+      BranchStockEntity,
       UserEntity,
     ]),
     UserModule,
