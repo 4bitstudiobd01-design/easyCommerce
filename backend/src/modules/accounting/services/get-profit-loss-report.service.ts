@@ -16,6 +16,9 @@ interface ReportLine {
 
 export interface ProfitLossReport {
   period: { from: string; to: string };
+  /** Echoes the branchId filter that produced this report, when one was applied.
+   *  Omitted (undefined) for the full store aggregate — unchanged from before. */
+  branchId?: string;
   revenue: { total: string; lines: ReportLine[] };
   cogs: { total: string; lines: ReportLine[] };
   grossProfit: string;
@@ -88,7 +91,7 @@ export class GetProfitLossReportService {
       (a) => a.type === AccountTypeEnum.REVENUE || a.type === AccountTypeEnum.EXPENSE,
     );
 
-    const movementRows = await this.journalLineRepository
+    const movementQuery = this.journalLineRepository
       .createQueryBuilder('line')
       .innerJoin(JournalEntryEntity, 'entry', 'entry.id = line.journalEntryId')
       .select('line.accountId', 'accountId')
@@ -97,7 +100,13 @@ export class GetProfitLossReportService {
       .where('line.storeId = :storeId', { storeId })
       .andWhere('entry.status = :status', { status: JournalStatusEnum.POSTED })
       .andWhere('entry.date >= :from', { from })
-      .andWhere('entry.date <= :to', { to })
+      .andWhere('entry.date <= :to', { to });
+
+    if (query.branchId) {
+      movementQuery.andWhere('line.branchId = :branchId', { branchId: query.branchId });
+    }
+
+    const movementRows = await movementQuery
       .groupBy('line.accountId')
       .getRawMany<{ accountId: string; debit: string; credit: string }>();
 
@@ -151,6 +160,7 @@ export class GetProfitLossReportService {
 
     return {
       period: { from, to },
+      ...(query.branchId ? { branchId: query.branchId } : {}),
       revenue: { total: fromCents(revenueCents), lines: revenueLines },
       cogs: { total: fromCents(cogsCents), lines: cogsLines },
       grossProfit: fromCents(grossProfitCents),

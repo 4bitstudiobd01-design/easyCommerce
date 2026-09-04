@@ -44,6 +44,13 @@ export class JournalEntryEntity {
   @Index('IDX_acc_journal_entries_storeId')
   storeId: string;
 
+  /** Branch this entry is attributed to, when posted from a branch-scoped transaction
+   *  (e.g. a branch-placed order). Null for store-wide/online entries. Weak reference —
+   *  no FK/relation, matches OrderEntity.branchId. */
+  @Column({ type: 'uuid', nullable: true })
+  @Index('IDX_acc_journal_entries_branchId')
+  branchId?: string;
+
   /** Per-store voucher number, e.g. "JE-2026-0045". Assigned on first save from the numbering rule. */
   @Column({ type: 'varchar', length: 40 })
   entryNumber: string;

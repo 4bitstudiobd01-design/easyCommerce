@@ -21,6 +21,12 @@ export class JournalLineEntity {
   @Column({ type: 'uuid' })
   storeId: string;
 
+  /** Branch this line is attributed to, mirrored from the parent JournalEntryEntity at
+   *  post time. Null for store-wide/online entries. Weak reference — no FK/relation. */
+  @Column({ type: 'uuid', nullable: true })
+  @Index('IDX_acc_journal_lines_branchId')
+  branchId?: string;
+
   @Column({ type: 'uuid' })
   @Index('IDX_acc_journal_lines_journalEntryId')
   journalEntryId: string;

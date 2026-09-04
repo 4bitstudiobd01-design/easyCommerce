@@ -7,6 +7,7 @@ import {
   Download,
   Calendar as CalendarIcon,
   Info,
+  Store as StoreIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -14,6 +15,7 @@ import {
   type ProfitLossReport,
   type ReportLine,
 } from '../api/accountingApi';
+import { useGetBranchesQuery } from '@/features/tenant/api/tenantApi';
 
 /** "1520.00" | 1520 → "৳1,520.00" */
 function formatCurrency(value: string | number | null | undefined): string {
@@ -57,13 +59,17 @@ const EMPTY_REPORT: ProfitLossReport = {
 export function ProfitLossView() {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [branchId, setBranchId] = useState('');
+
+  const { data: branches } = useGetBranchesQuery();
 
   const params = useMemo(() => {
-    const p: { from?: string; to?: string } = {};
+    const p: { from?: string; to?: string; branchId?: string } = {};
     if (fromDate) p.from = fromDate;
     if (toDate) p.to = toDate;
+    if (branchId) p.branchId = branchId;
     return p;
-  }, [fromDate, toDate]);
+  }, [fromDate, toDate, branchId]);
 
   const { data, isLoading, isFetching } = useGetProfitLossReportQuery(params);
   const report = data ?? EMPTY_REPORT;
@@ -116,6 +122,23 @@ export function ProfitLossView() {
               onChange={(e) => setToDate(e.target.value)}
               className="bg-white border border-slate-200 rounded-xl pl-8 pr-2 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-500 shadow-sm"
             />
+          </div>
+
+          {/* Branch filter */}
+          <div className="relative">
+            <StoreIcon className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <select
+              value={branchId}
+              onChange={(e) => setBranchId(e.target.value)}
+              className="bg-white border border-slate-200 rounded-xl pl-8 pr-6 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-500 shadow-sm appearance-none"
+            >
+              <option value="">All branches</option>
+              {(branches ?? []).map((branch) => (
+                <option key={branch.id} value={branch.id}>
+                  {branch.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Export Button */}

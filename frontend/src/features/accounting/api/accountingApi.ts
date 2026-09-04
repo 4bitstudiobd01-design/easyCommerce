@@ -265,6 +265,8 @@ export interface ReportLine {
 
 export interface ProfitLossReport {
   period: { from: string; to: string };
+  /** Echoes the branchId filter that produced this report, when one was applied. */
+  branchId?: string;
   revenue: { total: string; lines: ReportLine[] };
   cogs: { total: string; lines: ReportLine[] };
   grossProfit: string;
@@ -286,6 +288,9 @@ export interface BalanceSheetReport {
 export interface ProfitLossParams {
   from?: string;
   to?: string;
+  /** Optional branch filter — when provided, only that branch's journal lines are
+   *  aggregated. Omitted = full store aggregate (unchanged default behaviour). */
+  branchId?: string;
 }
 
 // ─── Overview ────────────────────────────────────────────────────────────────

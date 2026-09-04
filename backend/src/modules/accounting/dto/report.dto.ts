@@ -1,4 +1,4 @@
-import { IsDateString, IsOptional } from 'class-validator';
+import { IsDateString, IsOptional, IsUUID } from 'class-validator';
 
 /**
  * Query params for the Profit & Loss report (`GET /accounting/reports/profit-loss`).
@@ -15,6 +15,12 @@ export class ProfitLossQueryDto {
   @IsOptional()
   @IsDateString()
   to?: string;
+
+  /** Optional branch filter — when provided, only journal lines attributed to this
+   *  branch are aggregated. Omitted = full store aggregate (unchanged behaviour). */
+  @IsOptional()
+  @IsUUID()
+  branchId?: string;
 }
 
 /**
