@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { useInviteStaffMutation, StaffPermissionType } from '../api/staffApi';
+import { useGetBranchesQuery } from '@/features/tenant/api/tenantApi';
 import {
   X,
   UserPlus,
@@ -13,6 +14,7 @@ import {
   AlertCircle,
   Sparkles,
   ChevronRight,
+  Building2,
 } from 'lucide-react';
 
 interface InviteStaffModalProps {
@@ -144,10 +146,12 @@ export const InviteStaffModal: React.FC<InviteStaffModalProps> = ({ isOpen, onCl
   const [permissions, setPermissions] = useState<StaffPermissionType[]>(
     PRESET_ROLES[0].permissions,
   );
+  const [branchId, setBranchId] = useState<string>('');
   const [createdInviteToken, setCreatedInviteToken] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   const [inviteStaff, { isLoading, error }] = useInviteStaffMutation();
+  const { data: branches } = useGetBranchesQuery();
 
   if (!isOpen) return null;
 
@@ -177,6 +181,7 @@ export const InviteStaffModal: React.FC<InviteStaffModalProps> = ({ isOpen, onCl
         phone: phone || undefined,
         role: selectedRole,
         permissions,
+        branchId: branchId || undefined,
       }).unwrap();
 
       toast.success('Staff invitation sent.');
@@ -206,6 +211,7 @@ export const InviteStaffModal: React.FC<InviteStaffModalProps> = ({ isOpen, onCl
     setName('');
     setEmail('');
     setPhone('');
+    setBranchId('');
     onClose();
   };
 
@@ -334,6 +340,30 @@ export const InviteStaffModal: React.FC<InviteStaffModalProps> = ({ isOpen, onCl
                   className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
               </div>
+
+              {branches && branches.length > 0 && (
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
+                    <Building2 className="w-3.5 h-3.5 text-slate-500" />
+                    Branch Access (শাখা এক্সেস - Optional)
+                  </label>
+                  <select
+                    value={branchId}
+                    onChange={(e) => setBranchId(e.target.value)}
+                    className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  >
+                    <option value="">Store-wide (all branches)</option>
+                    {branches.map((branch) => (
+                      <option key={branch.id} value={branch.id}>
+                        {branch.name} ({branch.code})
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    নির্দিষ্ট একটি শাখায় সীমাবদ্ধ রাখতে সিলেক্ট করুন, নাহলে সব শাখায় এক্সেস থাকবে।
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Preset Roles */}
