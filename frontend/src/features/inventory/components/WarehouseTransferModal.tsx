@@ -11,6 +11,7 @@ import {
   StockTransfer,
 } from '../api/inventoryApi';
 import { useGetProductsQuery, Product } from '@/features/catalog/api/catalogApi';
+import { useGetBranchesQuery, Branch } from '@/features/tenant/api/tenantApi';
 import {
   ArrowRightLeft,
   Warehouse as WarehouseIcon,
@@ -26,6 +27,7 @@ import { StockTransferDetailsDrawer } from './StockTransferDetailsDrawer';
 
 export function WarehouseTransferModal() {
   const { data: warehouses = [] } = useGetWarehousesQuery();
+  const { data: branches = [] } = useGetBranchesQuery();
   const { data: stockItems = [] } = useGetInventoryStockQuery();
   const { data: productRes } = useGetProductsQuery();
   const products = productRes?.data || [];
@@ -36,6 +38,17 @@ export function WarehouseTransferModal() {
 
   const productMap = new Map<string, Product>(products.map((p) => [p.id, p]));
   const warehouseMap = new Map<string, Warehouse>(warehouses.map((w) => [w.id, w]));
+  const branchMap = new Map<string, Branch>(branches.map((b) => [b.id, b]));
+
+  const locationLabel = (
+    warehouseRel: Warehouse | undefined,
+    warehouseId: string | undefined,
+    branchId: string | undefined,
+  ) => {
+    if (warehouseId) return warehouseRel?.name || warehouseMap.get(warehouseId)?.name || '—';
+    if (branchId) return branchMap.get(branchId)?.name || '—';
+    return '—';
+  };
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -154,11 +167,11 @@ export function WarehouseTransferModal() {
                     <td className="px-6 py-3 font-bold text-slate-900">
                       {productMap.get(t.productId)?.name || productMap.get(t.productId)?.title || 'Product'}
                     </td>
-                    <td className="px-6 py-3 text-slate-700">{t.fromWarehouse?.name || warehouseMap.get(t.fromWarehouseId)?.name || '—'}</td>
+                    <td className="px-6 py-3 text-slate-700">{locationLabel(t.fromWarehouse, t.fromWarehouseId, t.fromBranchId)}</td>
                     <td className="px-6 py-3 text-center">
                       <ArrowRight className="w-4 h-4 text-blue-500 mx-auto" />
                     </td>
-                    <td className="px-6 py-3 text-slate-700">{t.toWarehouse?.name || warehouseMap.get(t.toWarehouseId)?.name || '—'}</td>
+                    <td className="px-6 py-3 text-slate-700">{locationLabel(t.toWarehouse, t.toWarehouseId, t.toBranchId)}</td>
                     <td className="px-6 py-3 text-center font-extrabold text-slate-900">{t.quantity}</td>
                     <td className="px-6 py-3 text-slate-500">{new Date(t.createdAt).toLocaleDateString()}</td>
                   </tr>
@@ -174,6 +187,7 @@ export function WarehouseTransferModal() {
         onClose={() => setSelectedTransfer(null)}
         productMap={productMap}
         warehouseMap={warehouseMap}
+        branchMap={branchMap}
       />
     </div>
   );

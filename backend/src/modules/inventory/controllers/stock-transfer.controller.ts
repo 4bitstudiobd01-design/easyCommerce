@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Headers, UseGuards, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Headers, UseGuards, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { StockTransferService } from '../services/stock-transfer.service';
 import { FindStoreByUserService } from '../../tenant/services/find-store-by-user.service';
@@ -51,5 +51,19 @@ export class StockTransferController {
   ) {
     const tenantId = await this.getMerchantTenantId(userId, storeId);
     return this.stockTransferService.listStockTransfers(tenantId);
+  }
+
+  @Get('branches/:branchId/stock')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "List a branch's own stock (products/variants and quantities)" })
+  @ApiResponse({ status: 200, description: 'Stock rows for the branch' })
+  async listBranchStock(
+    @CurrentUser('sub') userId: string,
+    @Param('branchId') branchId: string,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
+    return this.stockTransferService.listBranchStock(tenantId, branchId);
   }
 }

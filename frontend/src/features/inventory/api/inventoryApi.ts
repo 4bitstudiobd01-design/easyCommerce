@@ -54,6 +54,7 @@ export interface InventoryStockItem {
   warehouseId: string;
   warehouse?: Warehouse;
   productId: string;
+  variantId?: string;
   quantityOnHand: number;
   quantityReserved: number;
   availableQuantity?: number;
@@ -63,11 +64,15 @@ export interface InventoryStockItem {
 
 export interface StockTransfer {
   id: string;
-  fromWarehouseId: string;
+  fromWarehouseId?: string;
   fromWarehouse?: Warehouse;
-  toWarehouseId: string;
+  fromBranchId?: string;
+  toWarehouseId?: string;
   toWarehouse?: Warehouse;
+  toBranchId?: string;
   productId: string;
+  variantId?: string;
+  variant?: { id: string; name?: string; sku?: string };
   quantity: number;
   notes?: string;
   tenantId: string;
@@ -75,11 +80,28 @@ export interface StockTransfer {
 }
 
 export interface CreateStockTransferRequest {
-  fromWarehouseId: string;
-  toWarehouseId: string;
+  fromWarehouseId?: string;
+  fromBranchId?: string;
+  toWarehouseId?: string;
+  toBranchId?: string;
   productId: string;
+  variantId?: string;
   quantity: number;
   notes?: string;
+}
+
+export interface BranchStockItem {
+  id: string;
+  branchId: string;
+  productId: string;
+  product?: { id: string; name?: string; title?: string };
+  variantId?: string;
+  variant?: { id: string; name?: string; sku?: string };
+  quantityOnHand: number;
+  quantityReserved: number;
+  availableQuantity?: number;
+  reorderPoint: number;
+  tenantId: string;
 }
 
 export interface AdjustStockRequest {
@@ -628,6 +650,12 @@ export const inventoryApi = createApi({
       transformResponse: (response: { data: StockTransfer[] } | StockTransfer[]) =>
         Array.isArray(response) ? response : (response as any).data || [],
     }),
+    getBranchStock: builder.query<BranchStockItem[], string>({
+      query: (branchId) => `/inventory/transfers/branches/${branchId}/stock`,
+      providesTags: ['Stock'],
+      transformResponse: (response: { data: BranchStockItem[] } | BranchStockItem[]) =>
+        Array.isArray(response) ? response : (response as any).data || [],
+    }),
   }),
 });
 
@@ -649,6 +677,7 @@ export const {
   useBulkAdjustStockMutation,
   useCreateStockTransferMutation,
   useGetStockTransfersQuery,
+  useGetBranchStockQuery,
 } = inventoryApi;
 
 

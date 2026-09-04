@@ -6,8 +6,10 @@ import { WarehouseEntity } from './entities/warehouse.entity';
 import { InventoryStockEntity } from './entities/inventory-stock.entity';
 import { InventoryMovementEntity } from './entities/inventory-movement.entity';
 import { StockTransferEntity } from './entities/stock-transfer.entity';
+import { BranchStockEntity } from './entities/branch-stock.entity';
 import { ProductEntity } from '../catalog/entities/product.entity';
 import { ProductVariantEntity } from '../catalog/entities/product-variant.entity';
+import { BranchEntity } from '../tenant/entities/branch.entity';
 import { TenantModule } from '../tenant/tenant.module';
 import { CatalogModule } from '../catalog/catalog.module';
 import { CreateWarehouseService } from './services/create-warehouse.service';
@@ -38,8 +40,10 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
       InventoryStockEntity,
       InventoryMovementEntity,
       StockTransferEntity,
+      BranchStockEntity,
       ProductEntity,
       ProductVariantEntity,
+      BranchEntity,
     ]),
     TenantModule,
     CatalogModule,

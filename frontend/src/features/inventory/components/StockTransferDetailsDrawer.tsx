@@ -1,15 +1,17 @@
 'use client';
 
 import React from 'react';
-import { X, ArrowRight, Package, Warehouse as WarehouseIcon, Clock, FileText } from 'lucide-react';
+import { X, ArrowRight, Package, Warehouse as WarehouseIcon, Store as BranchIcon, Clock, FileText } from 'lucide-react';
 import { StockTransfer, Warehouse } from '../api/inventoryApi';
 import { Product } from '@/features/catalog/api/catalogApi';
+import { Branch } from '@/features/tenant/api/tenantApi';
 
 interface StockTransferDetailsDrawerProps {
   transfer: StockTransfer | null;
   onClose: () => void;
   productMap: Map<string, Product>;
   warehouseMap: Map<string, Warehouse>;
+  branchMap?: Map<string, Branch>;
 }
 
 const DetailRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
@@ -42,13 +44,22 @@ export function StockTransferDetailsDrawer({
   onClose,
   productMap,
   warehouseMap,
+  branchMap,
 }: StockTransferDetailsDrawerProps) {
   const isOpen = Boolean(transfer);
   if (!isOpen || !transfer) return null;
 
   const product = productMap.get(transfer.productId);
-  const fromWarehouse = transfer.fromWarehouse || warehouseMap.get(transfer.fromWarehouseId);
-  const toWarehouse = transfer.toWarehouse || warehouseMap.get(transfer.toWarehouseId);
+  const fromWarehouse = transfer.fromWarehouseId
+    ? transfer.fromWarehouse || warehouseMap.get(transfer.fromWarehouseId)
+    : undefined;
+  const toWarehouse = transfer.toWarehouseId
+    ? transfer.toWarehouse || warehouseMap.get(transfer.toWarehouseId)
+    : undefined;
+  const fromBranch = transfer.fromBranchId ? branchMap?.get(transfer.fromBranchId) : undefined;
+  const toBranch = transfer.toBranchId ? branchMap?.get(transfer.toBranchId) : undefined;
+  const fromLabel = fromWarehouse?.name || fromBranch?.name || 'Unknown';
+  const toLabel = toWarehouse?.name || toBranch?.name || 'Unknown';
 
   return (
     <>
@@ -83,18 +94,18 @@ export function StockTransferDetailsDrawer({
           <div className="bg-blue-50/60 border border-blue-100 rounded-2xl p-4 flex items-center justify-between gap-2">
             <div className="min-w-0 text-center flex-1">
               <div className="w-9 h-9 rounded-xl bg-white border border-blue-200 flex items-center justify-center mx-auto mb-1.5">
-                <WarehouseIcon className="w-4 h-4 text-blue-600" />
+                {fromBranch ? <BranchIcon className="w-4 h-4 text-blue-600" /> : <WarehouseIcon className="w-4 h-4 text-blue-600" />}
               </div>
-              <p className="text-[11px] font-bold text-slate-900 truncate">{fromWarehouse?.name || 'Unknown'}</p>
-              <p className="text-[10px] text-slate-400">From</p>
+              <p className="text-[11px] font-bold text-slate-900 truncate">{fromLabel}</p>
+              <p className="text-[10px] text-slate-400">From{fromBranch ? ' (Branch)' : ''}</p>
             </div>
             <ArrowRight className="w-4 h-4 text-blue-500 shrink-0" />
             <div className="min-w-0 text-center flex-1">
               <div className="w-9 h-9 rounded-xl bg-white border border-blue-200 flex items-center justify-center mx-auto mb-1.5">
-                <WarehouseIcon className="w-4 h-4 text-blue-600" />
+                {toBranch ? <BranchIcon className="w-4 h-4 text-blue-600" /> : <WarehouseIcon className="w-4 h-4 text-blue-600" />}
               </div>
-              <p className="text-[11px] font-bold text-slate-900 truncate">{toWarehouse?.name || 'Unknown'}</p>
-              <p className="text-[10px] text-slate-400">To</p>
+              <p className="text-[11px] font-bold text-slate-900 truncate">{toLabel}</p>
+              <p className="text-[10px] text-slate-400">To{toBranch ? ' (Branch)' : ''}</p>
             </div>
           </div>
 
@@ -102,15 +113,16 @@ export function StockTransferDetailsDrawer({
             <dl className="divide-y divide-slate-100">
               <DetailRow label="Product" value={product?.name || product?.title || transfer.productId} />
               {product?.sku && <DetailRow label="SKU" value={product.sku} />}
+              {transfer.variant && <DetailRow label="Variant" value={transfer.variant.name || transfer.variant.sku || transfer.variantId} />}
               <DetailRow label="Quantity Transferred" value={`${transfer.quantity} units`} />
             </dl>
           </Section>
 
-          <Section title="Warehouses" icon={WarehouseIcon}>
+          <Section title="Locations" icon={WarehouseIcon}>
             <dl className="divide-y divide-slate-100">
-              <DetailRow label="Source Warehouse" value={fromWarehouse?.name || '—'} />
+              <DetailRow label="Source" value={fromLabel} />
               {fromWarehouse?.code && <DetailRow label="Source Code" value={fromWarehouse.code} />}
-              <DetailRow label="Destination Warehouse" value={toWarehouse?.name || '—'} />
+              <DetailRow label="Destination" value={toLabel} />
               {toWarehouse?.code && <DetailRow label="Destination Code" value={toWarehouse.code} />}
             </dl>
           </Section>

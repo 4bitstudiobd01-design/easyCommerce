@@ -4,31 +4,49 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   useGetWarehousesQuery,
   useGetInventoryStockQuery,
+  useGetBranchStockQuery,
   useCreateStockTransferMutation,
 } from '@/features/inventory/api/inventoryApi';
-import { useGetProductsQuery, Product } from '@/features/catalog/api/catalogApi';
+import { useGetBranchesQuery } from '@/features/tenant/api/tenantApi';
+import { useGetProductsQuery, useGetProductByIdQuery, Product } from '@/features/catalog/api/catalogApi';
 import { ArrowRightLeft, ArrowLeft, Search, ChevronDown, Package } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
+type LocationType = 'WAREHOUSE' | 'BRANCH';
+
 export default function CreateWarehouseTransferPage() {
   const router = useRouter();
-  
+
   const { data: warehouses = [] } = useGetWarehousesQuery();
-  const { data: stockItems = [] } = useGetInventoryStockQuery();
+  const { data: branches = [] } = useGetBranchesQuery();
+  const { data: warehouseStockItems = [] } = useGetInventoryStockQuery();
   const { data: productRes } = useGetProductsQuery();
   const products = productRes?.data || [];
   const [createTransfer, { isLoading: isTransferring }] = useCreateStockTransferMutation();
 
-  const [fromWarehouseId, setFromWarehouseId] = useState('');
-  const [toWarehouseId, setToWarehouseId] = useState('');
+  const [fromType, setFromType] = useState<LocationType>('WAREHOUSE');
+  const [fromId, setFromId] = useState('');
+  const [toType, setToType] = useState<LocationType>('WAREHOUSE');
+  const [toId, setToId] = useState('');
   const [productId, setProductId] = useState('');
+  const [variantId, setVariantId] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState('');
 
   const [isProductPickerOpen, setIsProductPickerOpen] = useState(false);
   const [productSearch, setProductSearch] = useState('');
   const productPickerRef = useRef<HTMLDivElement>(null);
+
+  // Source branch stock is only fetched when the source is a branch (skip otherwise).
+  const { data: branchStockItems = [] } = useGetBranchStockQuery(fromId, {
+    skip: fromType !== 'BRANCH' || !fromId,
+  });
+
+  // Once a product is picked, fetch its full detail (with variants) — the list
+  // response doesn't reliably include the variants array.
+  const { data: selectedProduct } = useGetProductByIdQuery(productId, { skip: !productId });
+  const variants = selectedProduct?.variants || [];
 
   const productMap = new Map<string, Product>(products.map((p) => [p.id, p]));
 
@@ -37,10 +55,15 @@ export default function CreateWarehouseTransferPage() {
     return p?.name || p?.title || 'Untitled Product';
   };
 
-  const sourceStockItems = stockItems.filter((s) => s.warehouseId === fromWarehouseId);
-  const selectedStock = sourceStockItems.find((s) => s.productId === productId);
+  const sourceStockItems = fromType === 'WAREHOUSE'
+    ? warehouseStockItems.filter((s) => s.warehouseId === fromId)
+    : branchStockItems;
 
-  const availableStockItems = fromWarehouseId ? sourceStockItems : stockItems;
+  const selectedStock = sourceStockItems.find(
+    (s) => s.productId === productId && (variantId ? s.variantId === variantId : !s.variantId),
+  );
+
+  const availableStockItems = fromId ? sourceStockItems : [];
   const filteredStockItems = useMemo(() => {
     const query = productSearch.trim().toLowerCase();
     if (!query) return availableStockItems;
@@ -52,7 +75,6 @@ export default function CreateWarehouseTransferPage() {
     });
   }, [availableStockItems, productSearch, products]);
 
-  // Close the product picker on outside click
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
       if (productPickerRef.current && !productPickerRef.current.contains(e.target as Node)) {
@@ -68,23 +90,44 @@ export default function CreateWarehouseTransferPage() {
   const handleTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!fromWarehouseId || !toWarehouseId || !productId || quantity <= 0) {
+    if (!fromId || !toId || !productId || quantity <= 0) {
       toast.error('Please fill in all required fields.');
       return;
     }
 
-    if (fromWarehouseId === toWarehouseId) {
-      toast.error('Source and destination warehouses must be different.');
+    if (fromType === toType && fromId === toId) {
+      toast.error('Source and destination must be different.');
+      return;
+    }
+
+    if (variants.length > 0 && !variantId) {
+      toast.error('This product has variants — please select one.');
       return;
     }
 
     try {
-      await createTransfer({ fromWarehouseId, toWarehouseId, productId, quantity, notes }).unwrap();
+      await createTransfer({
+        fromWarehouseId: fromType === 'WAREHOUSE' ? fromId : undefined,
+        fromBranchId: fromType === 'BRANCH' ? fromId : undefined,
+        toWarehouseId: toType === 'WAREHOUSE' ? toId : undefined,
+        toBranchId: toType === 'BRANCH' ? toId : undefined,
+        productId,
+        variantId: variantId || undefined,
+        quantity,
+        notes,
+      }).unwrap();
       toast.success(`✅ ${quantity} unit(s) of "${getProductLabel(productId)}" transferred successfully!`);
       router.push('/dashboard/warehouse-transfers');
     } catch (err: any) {
       toast.error(err?.data?.message || 'Transfer failed. Check available stock.');
     }
+  };
+
+  const locationOptionsFor = (type: LocationType, excludeType?: LocationType, excludeId?: string) => {
+    if (type === 'WAREHOUSE') {
+      return warehouses.filter((wh) => !(excludeType === 'WAREHOUSE' && wh.id === excludeId));
+    }
+    return branches.filter((b) => !(excludeType === 'BRANCH' && b.id === excludeId));
   };
 
   return (
@@ -105,38 +148,70 @@ export default function CreateWarehouseTransferPage() {
           </div>
           <div>
             <h1 className="font-extrabold text-2xl text-slate-900">Transfer Stock</h1>
-            <p className="text-sm text-slate-500 mt-1">Move inventory between warehouses instantly</p>
+            <p className="text-sm text-slate-500 mt-1">Move inventory between warehouses and branches</p>
           </div>
         </div>
 
         <form onSubmit={handleTransfer} className="space-y-6 font-semibold">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">From Warehouse</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">From</label>
+              <div className="flex gap-2 mb-2">
+                {(['WAREHOUSE', 'BRANCH'] as LocationType[]).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => { setFromType(t); setFromId(''); setProductId(''); setVariantId(''); setProductSearch(''); }}
+                    className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold border transition-colors ${
+                      fromType === t
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    {t === 'WAREHOUSE' ? 'Warehouse' : 'Branch'}
+                  </button>
+                ))}
+              </div>
               <select
-                value={fromWarehouseId}
-                onChange={(e) => { setFromWarehouseId(e.target.value); setProductId(''); setProductSearch(''); }}
+                value={fromId}
+                onChange={(e) => { setFromId(e.target.value); setProductId(''); setVariantId(''); setProductSearch(''); }}
                 className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-base focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
                 required
               >
-                <option value="">Select source warehouse...</option>
-                {warehouses.map((wh) => (
-                  <option key={wh.id} value={wh.id}>{wh.name}</option>
+                <option value="">Select source {fromType === 'WAREHOUSE' ? 'warehouse' : 'branch'}...</option>
+                {locationOptionsFor(fromType).map((loc) => (
+                  <option key={loc.id} value={loc.id}>{loc.name}</option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">To Warehouse</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">To</label>
+              <div className="flex gap-2 mb-2">
+                {(['WAREHOUSE', 'BRANCH'] as LocationType[]).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => { setToType(t); setToId(''); }}
+                    className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold border transition-colors ${
+                      toType === t
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    {t === 'WAREHOUSE' ? 'Warehouse' : 'Branch'}
+                  </button>
+                ))}
+              </div>
               <select
-                value={toWarehouseId}
-                onChange={(e) => setToWarehouseId(e.target.value)}
+                value={toId}
+                onChange={(e) => setToId(e.target.value)}
                 className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-base focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
                 required
               >
-                <option value="">Select destination warehouse...</option>
-                {warehouses.filter((wh) => wh.id !== fromWarehouseId).map((wh) => (
-                  <option key={wh.id} value={wh.id}>{wh.name}</option>
+                <option value="">Select destination {toType === 'WAREHOUSE' ? 'warehouse' : 'branch'}...</option>
+                {locationOptionsFor(toType, fromType, fromId).map((loc) => (
+                  <option key={loc.id} value={loc.id}>{loc.name}</option>
                 ))}
               </select>
             </div>
@@ -147,11 +222,12 @@ export default function CreateWarehouseTransferPage() {
 
             <button
               type="button"
+              disabled={!fromId}
               onClick={() => setIsProductPickerOpen((prev) => !prev)}
-              className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-xl text-left text-base focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all flex items-center justify-between gap-3"
+              className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-xl text-left text-base focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all flex items-center justify-between gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span className={productId ? 'text-slate-900 truncate' : 'text-slate-400'}>
-                {productId ? getProductLabel(productId) : 'Select product...'}
+                {productId ? getProductLabel(productId) : fromId ? 'Select product...' : 'Select a source first'}
               </span>
               <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${isProductPickerOpen ? 'rotate-180' : ''}`} />
             </button>
@@ -180,10 +256,11 @@ export default function CreateWarehouseTransferPage() {
                       const isSelected = s.productId === productId;
                       return (
                         <button
-                          key={s.productId}
+                          key={`${s.productId}-${s.variantId || 'base'}`}
                           type="button"
                           onClick={() => {
                             setProductId(s.productId);
+                            setVariantId('');
                             setIsProductPickerOpen(false);
                             setProductSearch('');
                           }}
@@ -202,13 +279,32 @@ export default function CreateWarehouseTransferPage() {
                 </div>
               </div>
             )}
-
-            {selectedStock && (
-              <p className="text-sm text-slate-500 mt-2">
-                Available in source: <span className="font-black text-slate-800">{selectedStock.quantityOnHand} units</span>
-              </p>
-            )}
           </div>
+
+          {productId && variants.length > 0 && (
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                Variant <span className="text-rose-500">*</span>
+              </label>
+              <select
+                value={variantId}
+                onChange={(e) => setVariantId(e.target.value)}
+                className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-base focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
+                required
+              >
+                <option value="">Select variant...</option>
+                {variants.map((v) => (
+                  <option key={v.id} value={v.id}>{v.title}{v.sku ? ` (${v.sku})` : ''}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {selectedStock && (
+            <p className="text-sm text-slate-500 -mt-2">
+              Available in source: <span className="font-black text-slate-800">{selectedStock.quantityOnHand} units</span>
+            </p>
+          )}
 
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">Quantity to Transfer</label>
@@ -229,7 +325,7 @@ export default function CreateWarehouseTransferPage() {
               type="text"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="e.g. Restocking for Dhaka warehouse"
+              placeholder="e.g. Restocking for Dhanmondi branch"
               className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-base focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
             />
           </div>
