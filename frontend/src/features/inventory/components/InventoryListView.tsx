@@ -28,6 +28,7 @@ import {
   ListInventoryParams,
   InventoryListItem,
 } from '../api/inventoryApi';
+import { useGetBranchesQuery } from '@/features/tenant/api/tenantApi';
 
 import { InventoryKpiCards } from './InventoryKpiCards';
 import { InventoryOverviewSection } from './InventoryOverviewSection';
@@ -55,6 +56,7 @@ export function InventoryListView() {
   const initialCategory = searchParams?.get('categoryId') || '';
   const initialProductType = searchParams?.get('productType') || '';
   const initialWarehouseId = searchParams?.get('warehouseId') || '';
+  const initialBranchId = searchParams?.get('branchId') || '';
   const initialSortBy = searchParams?.get('sortBy') || 'updatedAt';
   const initialSortOrder = (searchParams?.get('sortOrder') as 'ASC' | 'DESC') || 'DESC';
 
@@ -66,6 +68,7 @@ export function InventoryListView() {
   const [categoryId, setCategoryId] = useState<string>(initialCategory);
   const [productType, setProductType] = useState<string>(initialProductType);
   const [warehouseId, setWarehouseId] = useState<string>(initialWarehouseId);
+  const [branchId, setBranchId] = useState<string>(initialBranchId);
   const [sortBy, setSortBy] = useState<string>(initialSortBy);
   const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>(initialSortOrder);
 
@@ -104,13 +107,20 @@ export function InventoryListView() {
       setPage(1);
       setSelectedInventoryIds([]);
     }
+    const urlBranchId = searchParams?.get('branchId') || '';
+    if (urlBranchId !== branchId) {
+      setBranchId(urlBranchId);
+      setPage(1);
+      setSelectedInventoryIds([]);
+    }
   }, [searchParams]);
 
-  // Jump straight to the Inventory tab when arriving with a warehouse filter
-  // already in the URL (e.g. clicked in from a warehouse card) — otherwise
-  // the filtered result lands on the Overview tab and is easy to miss.
+  // Jump straight to the Inventory tab when arriving with a warehouse/branch
+  // filter already in the URL (e.g. clicked in from a warehouse or branch
+  // card) — otherwise the filtered result lands on the Overview tab and is
+  // easy to miss.
   useEffect(() => {
-    if (initialWarehouseId) {
+    if (initialWarehouseId || initialBranchId) {
       setActiveSection('inventory');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -142,8 +152,9 @@ export function InventoryListView() {
     if (categoryId) p.categoryId = categoryId;
     if (productType) p.productType = productType;
     if (warehouseId) p.warehouseId = warehouseId;
+    if (branchId) p.branchId = branchId;
     return p;
-  }, [page, limit, debouncedSearch, status, categoryId, productType, warehouseId, sortBy, sortOrder]);
+  }, [page, limit, debouncedSearch, status, categoryId, productType, warehouseId, branchId, sortBy, sortOrder]);
 
   // Fetch Inventory List & Store-wide KPIs
   const {
@@ -156,7 +167,9 @@ export function InventoryListView() {
 
   const { data: kpis, isLoading: isKpisLoading } = useGetInventoryKpisQuery();
   const { data: warehouses = [] } = useGetWarehousesQuery();
+  const { data: branches = [] } = useGetBranchesQuery();
   const activeWarehouse = warehouseId ? warehouses.find((w) => w.id === warehouseId) : undefined;
+  const activeBranch = branchId ? branches.find((b) => b.id === branchId) : undefined;
 
   const items: InventoryListItem[] = useMemo(() => {
     if (!listResponse) return [];
@@ -199,8 +212,9 @@ export function InventoryListView() {
     if (categoryId) count += 1;
     if (productType) count += 1;
     if (warehouseId) count += 1;
+    if (branchId) count += 1;
     return count;
-  }, [debouncedSearch, status, categoryId, productType, warehouseId]);
+  }, [debouncedSearch, status, categoryId, productType, warehouseId, branchId]);
 
   const handleResetFilters = () => {
     setSearchInput('');
@@ -209,6 +223,7 @@ export function InventoryListView() {
     setCategoryId('');
     setProductType('');
     setWarehouseId('');
+    setBranchId('');
     setPage(1);
     setSelectedInventoryIds([]);
     router.push('/dashboard/inventory', { scroll: false });
@@ -252,7 +267,7 @@ export function InventoryListView() {
     }
   };
 
-  const isFiltered = Boolean(debouncedSearch || categoryId || productType || status || warehouseId);
+  const isFiltered = Boolean(debouncedSearch || categoryId || productType || status || warehouseId || branchId);
 
   return (
     <div className="space-y-6">
@@ -276,6 +291,24 @@ export function InventoryListView() {
                 }}
                 className="ml-1 hover:text-blue-900"
                 title="Clear warehouse filter"
+              >
+                ×
+              </button>
+            </div>
+          )}
+          {activeBranch && (
+            <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-[11px] font-bold">
+              <BranchIcon className="w-3 h-3" />
+              <span>Showing stock at: {activeBranch.name}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setBranchId('');
+                  setPage(1);
+                  router.push('/dashboard/inventory', { scroll: false });
+                }}
+                className="ml-1 hover:text-blue-900"
+                title="Clear branch filter"
               >
                 ×
               </button>

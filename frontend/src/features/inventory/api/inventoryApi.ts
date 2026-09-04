@@ -160,8 +160,10 @@ export interface InventoryListItem {
   variantId?: string;
   variantTitle?: string;
   sku?: string;
-  warehouseId: string;
-  warehouseName: string;
+  warehouseId?: string;
+  warehouseName?: string;
+  branchId?: string;
+  branchName?: string;
   quantityOnHand: number;
   quantityReserved: number;
   availableQuantity: number;
@@ -200,6 +202,7 @@ export interface ListInventoryParams {
   categoryId?: string;
   productType?: string;
   warehouseId?: string;
+  branchId?: string;
   sortBy?: string;
   sortOrder?: 'ASC' | 'DESC';
 }

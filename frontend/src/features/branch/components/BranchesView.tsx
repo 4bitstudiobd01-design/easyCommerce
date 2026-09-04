@@ -168,7 +168,7 @@ export function BranchesView() {
               </div>
 
               <Link
-                href={`/dashboard/inventory/branches/${branch.id}/stock`}
+                href={`/dashboard/inventory?branchId=${branch.id}`}
                 className="flex items-center justify-center gap-1.5 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 text-[11px] font-bold rounded-xl border border-slate-200 transition-colors"
               >
                 <Package className="w-3.5 h-3.5" />

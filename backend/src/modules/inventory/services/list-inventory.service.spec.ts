@@ -3,6 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { ListInventoryService } from './list-inventory.service';
 import { InventoryDomainService } from './inventory-domain.service';
 import { InventoryStockEntity } from '../entities/inventory-stock.entity';
+import { BranchStockEntity } from '../entities/branch-stock.entity';
 import { StockStatus } from '../../catalog/enums/stock-status.enum';
 import { ProductType } from '../../catalog/enums/product-type.enum';
 import { InventorySortField } from '../dto/list-inventory-query.dto';
@@ -64,6 +65,10 @@ describe('ListInventoryService', () => {
       createQueryBuilder: jest.fn().mockReturnValue(qb),
     };
 
+    const branchStockRepo = {
+      createQueryBuilder: jest.fn().mockReturnValue(qb),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ListInventoryService,
@@ -71,6 +76,10 @@ describe('ListInventoryService', () => {
         {
           provide: getRepositoryToken(InventoryStockEntity),
           useValue: stockRepo,
+        },
+        {
+          provide: getRepositoryToken(BranchStockEntity),
+          useValue: branchStockRepo,
         },
       ],
     }).compile();
@@ -161,6 +170,58 @@ describe('ListInventoryService', () => {
     });
     expect(qb.andWhere).toHaveBeenCalledWith('product.productType = :productType', {
       productType: ProductType.PHYSICAL,
+    });
+  });
+
+  describe('branch scope', () => {
+    it('queries BranchStockEntity instead of InventoryStockEntity when branchId is given', async () => {
+      const branchQb = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([
+          [
+            {
+              id: 'bstock-1',
+              productId: 'prod-1',
+              branchId: 'branch-1',
+              quantityOnHand: 20,
+              quantityReserved: 2,
+              reorderPoint: 5,
+              tenantId: 'tenant-1',
+              updatedAt: new Date('2026-08-14T10:00:00Z'),
+              product: {
+                id: 'prod-1',
+                name: 'iPhone 15 Pro',
+                slug: 'iphone-15-pro',
+                sku: 'IP15P-128',
+                productType: ProductType.PHYSICAL,
+                trackInventory: true,
+                allowBackorder: false,
+                lowStockThreshold: 10,
+              },
+            },
+          ],
+          1,
+        ]),
+      };
+      const branchStockRepo = (service as any).branchStockRepository;
+      branchStockRepo.createQueryBuilder = jest.fn().mockReturnValue(branchQb);
+
+      const result = await service.execute('tenant-1', { branchId: 'branch-1' });
+
+      expect(branchStockRepo.createQueryBuilder).toHaveBeenCalledWith('stock');
+      expect(branchQb.where).toHaveBeenCalledWith('stock.tenantId = :tenantId', { tenantId: 'tenant-1' });
+      expect(branchQb.andWhere).toHaveBeenCalledWith('stock.branchId = :branchId', { branchId: 'branch-1' });
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].branchId).toBe('branch-1');
+      expect(result.data[0].warehouseId).toBeUndefined();
+      expect(result.data[0].quantityOnHand).toBe(20);
     });
   });
 });
