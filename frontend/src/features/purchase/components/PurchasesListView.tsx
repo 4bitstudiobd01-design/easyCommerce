@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import {
@@ -151,6 +151,26 @@ export function PurchasesListView({ activeTab = 'purchases', onNavigateTab }: Pu
     { skip: !billSupplierId },
   );
   const supplierPOs = (supplierPOsData?.items ?? []).filter((po) => po.status !== 'CANCELLED');
+
+  // Selecting a PO auto-fills the line items from that PO (full quantity/cost) —
+  // the merchant can still raise/lower quantities from there for a partial bill.
+  const { data: selectedPO } = useGetPurchaseOrderQuery(billPurchaseOrderId, {
+    skip: !billPurchaseOrderId,
+  });
+  useEffect(() => {
+    if (!selectedPO) return;
+    setBillLines(
+      selectedPO.lines.map((l) => ({
+        key: `po-line-${l.id}`,
+        productId: l.productId,
+        productName: l.productName,
+        variantId: l.variantId,
+        sku: l.sku,
+        quantity: l.quantity,
+        unitCost: Number(l.unitCost),
+      })),
+    );
+  }, [selectedPO]);
 
   const resetBillForm = () => {
     setBillSupplierId('');
@@ -646,6 +666,7 @@ export function PurchasesListView({ activeTab = 'purchases', onNavigateTab }: Pu
                     onChange={(e) => {
                       setBillSupplierId(e.target.value);
                       setBillPurchaseOrderId('');
+                      setBillLines([makeEmptyLine()]);
                     }}
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-blue-600 focus:outline-none"
                   >
@@ -663,7 +684,13 @@ export function PurchasesListView({ activeTab = 'purchases', onNavigateTab }: Pu
                   </label>
                   <select
                     value={billPurchaseOrderId}
-                    onChange={(e) => setBillPurchaseOrderId(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setBillPurchaseOrderId(value);
+                      if (!value) {
+                        setBillLines([makeEmptyLine()]);
+                      }
+                    }}
                     disabled={!billSupplierId}
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-blue-600 focus:outline-none disabled:bg-slate-50 disabled:text-slate-400"
                   >
