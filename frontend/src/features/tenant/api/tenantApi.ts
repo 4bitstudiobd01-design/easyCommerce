@@ -114,6 +114,22 @@ export interface DeliveryZone {
   createdAt: string;
 }
 
+export interface Branch {
+  id: string;
+  tenantId: string;
+  storeId: string;
+  name: string;
+  code: string;
+  isDefault: boolean;
+  address?: string;
+  city?: string;
+  phone?: string;
+  email?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type WebhookEvent =
   | 'ORDER_CREATED'
   | 'ORDER_STATUS_UPDATED'
@@ -259,7 +275,7 @@ const API_ROOT = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/
 export const tenantApi = createApi({
   reducerPath: 'tenantApi',
   baseQuery: createBaseQueryWithReauth(`${API_ROOT}/stores`),
-  tagTypes: ['Store', 'Themes', 'DeliveryZone', 'ApiKey', 'Webhook'],
+  tagTypes: ['Store', 'Themes', 'DeliveryZone', 'ApiKey', 'Webhook', 'Branch'],
   endpoints: (builder) => ({
     getMyStores: builder.query<Store[], void>({
       query: () => '/my-stores',
@@ -340,6 +356,35 @@ export const tenantApi = createApi({
     deleteDeliveryZone: builder.mutation<{ success: boolean }, string>({
       query: (id) => ({ url: `/me/delivery-zones/${id}`, method: 'DELETE' }),
       invalidatesTags: ['DeliveryZone'],
+      transformResponse: (response: { data: any } | any) => (response as any).data || response,
+    }),
+
+    // --- Branches ---
+    getBranches: builder.query<Branch[], void>({
+      query: () => '/me/branches',
+      providesTags: ['Branch'],
+      transformResponse: (response: { data: Branch[] } | Branch[]) =>
+        Array.isArray(response) ? response : (response as any).data || [],
+    }),
+    createBranch: builder.mutation<
+      Branch,
+      { name: string; code: string; isDefault?: boolean; address?: string; city?: string; phone?: string; email?: string; isActive?: boolean }
+    >({
+      query: (body) => ({ url: '/me/branches', method: 'POST', body }),
+      invalidatesTags: ['Branch'],
+      transformResponse: (response: { data: Branch } | Branch) => (response as any).data || response,
+    }),
+    updateBranch: builder.mutation<
+      Branch,
+      { id: string; data: Partial<Omit<Branch, 'id' | 'tenantId' | 'storeId' | 'createdAt' | 'updatedAt'>> }
+    >({
+      query: ({ id, data }) => ({ url: `/me/branches/${id}`, method: 'PATCH', body: data }),
+      invalidatesTags: ['Branch'],
+      transformResponse: (response: { data: Branch } | Branch) => (response as any).data || response,
+    }),
+    deleteBranch: builder.mutation<{ message: string }, string>({
+      query: (id) => ({ url: `/me/branches/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['Branch'],
       transformResponse: (response: { data: any } | any) => (response as any).data || response,
     }),
 
@@ -507,6 +552,10 @@ export const {
   useCreateDeliveryZoneMutation,
   useUpdateDeliveryZoneMutation,
   useDeleteDeliveryZoneMutation,
+  useGetBranchesQuery,
+  useCreateBranchMutation,
+  useUpdateBranchMutation,
+  useDeleteBranchMutation,
   useGetApiKeysQuery,
   useCreateApiKeyMutation,
   useRevokeApiKeyMutation,

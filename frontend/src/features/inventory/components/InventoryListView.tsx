@@ -16,6 +16,7 @@ import {
   Download,
   MoreVertical,
   Warehouse as WarehouseIcon,
+  Store as BranchIcon,
   ArrowRightLeft,
 } from 'lucide-react';
 
@@ -291,6 +292,15 @@ export function InventoryListView() {
             <Download className="w-4 h-4 text-slate-500" />
             <span>Export</span>
           </button>
+
+          <Link
+            href="/dashboard/inventory/branches"
+            className="px-3.5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 shadow-sm flex items-center gap-1.5 transition-all"
+            title="Manage Branches"
+          >
+            <BranchIcon className="w-4 h-4 text-slate-500" />
+            <span>Branches</span>
+          </Link>
 
           <Link
             href="/dashboard/inventory/warehouses"

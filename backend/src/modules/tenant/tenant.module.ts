@@ -9,6 +9,7 @@ import { ThemePurchaseEntity } from './entities/theme-purchase.entity';
 import { DeliveryZoneEntity } from './entities/delivery-zone.entity';
 import { ApiKeyEntity } from './entities/api-key.entity';
 import { WebhookEntity } from './entities/webhook.entity';
+import { BranchEntity } from './entities/branch.entity';
 import { UserEntity } from '../user/entities/user.entity';
 import { UserModule } from '../user/user.module';
 import { CreateStoreService } from './services/create-store.service';
@@ -19,6 +20,10 @@ import { DeleteStoreService } from './services/delete-store.service';
 import { ManageDeliveryZonesService } from './services/manage-delivery-zones.service';
 import { ManageApiKeysService } from './services/manage-api-keys.service';
 import { ManageWebhooksService } from './services/manage-webhooks.service';
+import { CreateBranchService } from './services/create-branch.service';
+import { ListBranchesService } from './services/list-branches.service';
+import { UpdateBranchService } from './services/update-branch.service';
+import { DeleteBranchService } from './services/delete-branch.service';
 import { ListAvailableThemesService } from './services/list-available-themes.service';
 import { ActivateThemeService } from './services/activate-theme.service';
 import { InitiateThemeSslCommerzPaymentService } from './services/initiate-theme-sslcommerz-payment.service';
@@ -37,6 +42,7 @@ import { BillingModule } from '../billing/billing.module';
       DeliveryZoneEntity,
       ApiKeyEntity,
       WebhookEntity,
+      BranchEntity,
       UserEntity,
     ]),
     UserModule,
@@ -60,6 +66,10 @@ import { BillingModule } from '../billing/billing.module';
     ManageDeliveryZonesService,
     ManageApiKeysService,
     ManageWebhooksService,
+    CreateBranchService,
+    ListBranchesService,
+    UpdateBranchService,
+    DeleteBranchService,
     ListAvailableThemesService,
     ActivateThemeService,
     InitiateThemeSslCommerzPaymentService,
@@ -72,6 +82,10 @@ import { BillingModule } from '../billing/billing.module';
     UpdateStoreService,
     ManageDeliveryZonesService,
     ManageWebhooksService,
+    CreateBranchService,
+    ListBranchesService,
+    UpdateBranchService,
+    DeleteBranchService,
     ListAvailableThemesService,
     ActivateThemeService,
     TypeOrmModule,
