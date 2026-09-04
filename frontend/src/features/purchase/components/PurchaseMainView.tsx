@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { PurchaseTabsHeader, PurchaseTabKey } from './PurchaseTabsHeader';
+import { PurchaseTabKey } from './PurchaseTabsHeader';
 import { PurchaseOverviewView } from './PurchaseOverviewView';
 import { SuppliersView } from './SuppliersView';
 import { PurchaseOrdersView } from './PurchaseOrdersView';
@@ -48,22 +48,19 @@ export function PurchaseMainView({ initialTab }: PurchaseMainViewProps) {
   };
 
   return (
-    <div className="w-full space-y-6">
-      {/* 1. Purchase Horizontal Sub-Navigation Tabs */}
-      <PurchaseTabsHeader
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-      />
-
-      {/* 2. Active Tab Sub-View Content */}
-      <div className="w-full">
-        {activeTab === 'overview' && (
-          <PurchaseOverviewView onNavigateTab={handleTabChange} />
-        )}
-        {activeTab === 'suppliers' && <SuppliersView />}
-        {activeTab === 'purchase-orders' && <PurchaseOrdersView />}
-        {activeTab === 'purchases' && <PurchasesListView />}
-      </div>
+    <div className="w-full">
+      {activeTab === 'overview' && (
+        <PurchaseOverviewView activeTab={activeTab} onNavigateTab={handleTabChange} />
+      )}
+      {activeTab === 'suppliers' && (
+        <SuppliersView activeTab={activeTab} onNavigateTab={handleTabChange} />
+      )}
+      {activeTab === 'purchase-orders' && (
+        <PurchaseOrdersView activeTab={activeTab} onNavigateTab={handleTabChange} />
+      )}
+      {activeTab === 'purchases' && (
+        <PurchasesListView activeTab={activeTab} onNavigateTab={handleTabChange} />
+      )}
     </div>
   );
 }

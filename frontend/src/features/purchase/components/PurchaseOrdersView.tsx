@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import Link from 'next/link';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import {
@@ -41,6 +40,7 @@ import {
   toLineInputs,
   type LineItemDraft,
 } from './LineItemEditor';
+import { PurchaseTabsHeader, type PurchaseTabKey } from './PurchaseTabsHeader';
 
 const STATUS_LABELS: Record<PurchaseOrderStatus, string> = {
   DRAFT: 'Draft',
@@ -73,7 +73,12 @@ const money = (v: string | number) =>
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-export function PurchaseOrdersView() {
+interface PurchaseOrdersViewProps {
+  activeTab?: PurchaseTabKey;
+  onNavigateTab?: (tab: PurchaseTabKey) => void;
+}
+
+export function PurchaseOrdersView({ activeTab = 'purchase-orders', onNavigateTab }: PurchaseOrdersViewProps = {}) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All Status');
   const [supplierFilter, setSupplierFilter] = useState('All Suppliers');
@@ -226,15 +231,6 @@ export function PurchaseOrdersView() {
     <div className="space-y-6 pb-12 text-slate-800">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-1.5 text-xs font-semibold mb-1">
-            <span className="text-slate-500">E-Commerce</span>
-            <span className="text-slate-400">›</span>
-            <Link href="/dashboard/purchase" className="text-blue-600 hover:underline">
-              Purchase
-            </Link>
-            <span className="text-slate-400">›</span>
-            <span className="text-slate-500">Purchase Orders</span>
-          </div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">
             Purchase Orders
           </h1>
@@ -251,6 +247,8 @@ export function PurchaseOrdersView() {
           <span>New Purchase Order</span>
         </button>
       </div>
+
+      <PurchaseTabsHeader activeTab={activeTab} onTabChange={(tab) => onNavigateTab?.(tab)} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
         {kpiCards.map((k) => (

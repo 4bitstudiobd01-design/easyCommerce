@@ -176,18 +176,8 @@ export function CategoryManagementApp() {
 
   return (
     <div className="space-y-6 pb-12">
-      {/* 1. BREADCRUMB & HEADER */}
+      {/* 1. HEADER */}
       <div className="flex flex-col gap-3">
-        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs font-medium text-slate-500">
-          <Link href="/dashboard" className="hover:text-blue-600 transition-colors">
-            Dashboard
-          </Link>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-          <span className="text-slate-500">Catalog</span>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-          <span className="text-slate-900 font-semibold">Categories</span>
-        </nav>
-
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200/80">
           <div>
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">

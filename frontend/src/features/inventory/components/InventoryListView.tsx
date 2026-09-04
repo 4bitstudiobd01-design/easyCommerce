@@ -34,7 +34,10 @@ import { InventoryFilterBar } from './InventoryFilterBar';
 import { InventoryTable } from './InventoryTable';
 import { InventoryPagination } from './InventoryPagination';
 import { BulkAdjustStockModal } from './BulkAdjustStockModal';
+import { InventoryTabsHeader, InventoryTabKey } from './InventoryTabsHeader';
 import { useGetMyStoreQuery } from '@/features/tenant/api/tenantApi';
+
+const VALID_INVENTORY_TABS: InventoryTabKey[] = ['overview', 'inventory'];
 
 
 
@@ -69,6 +72,24 @@ export function InventoryListView() {
   const [selectedInventoryIds, setSelectedInventoryIds] = useState<string[]>([]);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState<boolean>(false);
 
+  // Page-level section tab (Overview vs Inventory table)
+  const initialSection = searchParams?.get('section') as InventoryTabKey | null;
+  const [activeSection, setActiveSection] = useState<InventoryTabKey>(
+    initialSection && VALID_INVENTORY_TABS.includes(initialSection) ? initialSection : 'overview',
+  );
+
+  const handleSectionChange = (tab: InventoryTabKey) => {
+    setActiveSection(tab);
+    const params = new URLSearchParams(searchParams?.toString());
+    if (tab === 'overview') {
+      params.delete('section');
+    } else {
+      params.set('section', tab);
+    }
+    const query = params.toString();
+    router.push(`/dashboard/inventory${query ? `?${query}` : ''}`, { scroll: false });
+  };
+
   // Sync state when URL searchParams change
   useEffect(() => {
     const urlStatus = searchParams?.get('status') || '';
@@ -84,12 +105,12 @@ export function InventoryListView() {
     }
   }, [searchParams]);
 
-  // Jump straight to the table when arriving with a warehouse filter already
-  // in the URL (e.g. clicked in from a warehouse card) — the KPI/overview
-  // sections above the table make the filtered result easy to miss otherwise.
+  // Jump straight to the Inventory tab when arriving with a warehouse filter
+  // already in the URL (e.g. clicked in from a warehouse card) — otherwise
+  // the filtered result lands on the Overview tab and is easy to miss.
   useEffect(() => {
     if (initialWarehouseId) {
-      document.getElementById('inventory-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setActiveSection('inventory');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -234,16 +255,9 @@ export function InventoryListView() {
 
   return (
     <div className="space-y-6">
-      {/* Top Header & Breadcrumb */}
+      {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <nav className="flex items-center gap-1.5 text-xs text-slate-400 font-medium mb-1">
-            <Link href="/dashboard" className="hover:text-slate-600 transition-colors">
-              Dashboard
-            </Link>
-            <span>&gt;</span>
-            <span className="text-slate-700 font-semibold">Inventory</span>
-          </nav>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Inventory</h1>
           <p className="text-xs text-slate-500 mt-0.5">
             Manage your product stock, track inventory and keep your business running smoothly.
@@ -314,124 +328,134 @@ export function InventoryListView() {
         </div>
       </div>
 
-      {/* KPI Stat Cards (Matching Showcase Mockup) */}
-      <InventoryKpiCards kpis={kpis} isLoading={isKpisLoading} />
+      {/* Section Tabs: Overview vs Inventory */}
+      <InventoryTabsHeader activeTab={activeSection} onTabChange={handleSectionChange} />
 
-      {/* Recent Inventory Activity & Stock Status Donut Chart (Showcase Screen 1) */}
-      <InventoryOverviewSection kpis={kpis} isLoadingKpis={isKpisLoading} />
+      {activeSection === 'overview' && (
+        <div className="space-y-6">
+          {/* KPI Stat Cards (Matching Showcase Mockup) */}
+          <InventoryKpiCards kpis={kpis} isLoading={isKpisLoading} />
 
+          {/* Recent Inventory Activity & Stock Status Donut Chart (Showcase Screen 1) */}
+          <InventoryOverviewSection kpis={kpis} isLoadingKpis={isKpisLoading} />
+        </div>
+      )}
 
-      {/* Stock Health Quick Navigation Tabs (Solid button style like Screen 6) */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1">
-        <button
-          type="button"
-          onClick={() => handleTabChange('')}
-          className={`px-4 py-2 text-xs font-bold rounded-xl flex items-center gap-2 transition-all whitespace-nowrap border ${
-            status === '' || (status !== 'LOW_STOCK' && status !== 'OUT_OF_STOCK' && status !== 'IN_STOCK')
-              ? 'bg-slate-100 text-slate-800 border-slate-200 shadow-sm'
-              : 'bg-white text-slate-500 border-transparent hover:bg-slate-50 hover:text-slate-700'
-          }`}
-        >
-          <span>All ({kpis?.totalItems ?? 1248})</span>
-        </button>
+      {activeSection === 'inventory' && (
+        <div className="space-y-6">
+          {/* Stock Health Quick Navigation Tabs (Solid button style like Screen 6) */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            <button
+              type="button"
+              onClick={() => handleTabChange('')}
+              className={`px-4 py-2 text-xs font-bold rounded-xl flex items-center gap-2 transition-all whitespace-nowrap border ${
+                status === '' || (status !== 'LOW_STOCK' && status !== 'OUT_OF_STOCK' && status !== 'IN_STOCK')
+                  ? 'bg-slate-100 text-slate-800 border-slate-200 shadow-sm'
+                  : 'bg-white text-slate-500 border-transparent hover:bg-slate-50 hover:text-slate-700'
+              }`}
+            >
+              <span>All ({kpis?.totalItems ?? 1248})</span>
+            </button>
 
-        <button
-          type="button"
-          onClick={() => handleTabChange('IN_STOCK')}
-          className={`px-4 py-2 text-xs font-bold rounded-xl flex items-center gap-2 transition-all whitespace-nowrap border ${
-            status === 'IN_STOCK'
-              ? 'bg-emerald-50 text-emerald-700 border-emerald-100 shadow-sm'
-              : 'bg-white text-slate-500 border-transparent hover:bg-slate-50 hover:text-slate-700'
-          }`}
-        >
-          <span>In Stock ({kpis ? kpis.totalItems - kpis.lowStockCount - kpis.outOfStockCount : 1130})</span>
-        </button>
+            <button
+              type="button"
+              onClick={() => handleTabChange('IN_STOCK')}
+              className={`px-4 py-2 text-xs font-bold rounded-xl flex items-center gap-2 transition-all whitespace-nowrap border ${
+                status === 'IN_STOCK'
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-100 shadow-sm'
+                  : 'bg-white text-slate-500 border-transparent hover:bg-slate-50 hover:text-slate-700'
+              }`}
+            >
+              <span>In Stock ({kpis ? kpis.totalItems - kpis.lowStockCount - kpis.outOfStockCount : 1130})</span>
+            </button>
 
-        <button
-          type="button"
-          onClick={() => handleTabChange('LOW_STOCK')}
-          className={`px-4 py-2 text-xs font-bold rounded-xl flex items-center gap-2 transition-all whitespace-nowrap border ${
-            status === 'LOW_STOCK'
-              ? 'bg-amber-50 text-amber-700 border-amber-100 shadow-sm'
-              : 'bg-white text-slate-500 border-transparent hover:bg-slate-50 hover:text-slate-700'
-          }`}
-        >
-          <span>Low Stock ({kpis?.lowStockCount ?? 24})</span>
-        </button>
+            <button
+              type="button"
+              onClick={() => handleTabChange('LOW_STOCK')}
+              className={`px-4 py-2 text-xs font-bold rounded-xl flex items-center gap-2 transition-all whitespace-nowrap border ${
+                status === 'LOW_STOCK'
+                  ? 'bg-amber-50 text-amber-700 border-amber-100 shadow-sm'
+                  : 'bg-white text-slate-500 border-transparent hover:bg-slate-50 hover:text-slate-700'
+              }`}
+            >
+              <span>Low Stock ({kpis?.lowStockCount ?? 24})</span>
+            </button>
 
-        <button
-          type="button"
-          onClick={() => handleTabChange('OUT_OF_STOCK')}
-          className={`px-4 py-2 text-xs font-bold rounded-xl flex items-center gap-2 transition-all whitespace-nowrap border ${
-            status === 'OUT_OF_STOCK'
-              ? 'bg-rose-50 text-rose-700 border-rose-100 shadow-sm'
-              : 'bg-white text-slate-500 border-transparent hover:bg-slate-50 hover:text-slate-700'
-          }`}
-        >
-          <span>Out of Stock ({kpis?.outOfStockCount ?? 8})</span>
-        </button>
-      </div>
+            <button
+              type="button"
+              onClick={() => handleTabChange('OUT_OF_STOCK')}
+              className={`px-4 py-2 text-xs font-bold rounded-xl flex items-center gap-2 transition-all whitespace-nowrap border ${
+                status === 'OUT_OF_STOCK'
+                  ? 'bg-rose-50 text-rose-700 border-rose-100 shadow-sm'
+                  : 'bg-white text-slate-500 border-transparent hover:bg-slate-50 hover:text-slate-700'
+              }`}
+            >
+              <span>Out of Stock ({kpis?.outOfStockCount ?? 8})</span>
+            </button>
+          </div>
 
-      {/* Search & Filters */}
-      <InventoryFilterBar
-        search={searchInput}
-        onSearchChange={setSearchInput}
-        status={status}
-        onStatusChange={(val) => {
-          setStatus(val);
-          setPage(1);
-        }}
-        categoryId={categoryId}
-        onCategoryChange={(val) => {
-          setCategoryId(val);
-          setPage(1);
-        }}
-        productType={productType}
-        onProductTypeChange={(val) => {
-          setProductType(val);
-          setPage(1);
-        }}
-        warehouseId={warehouseId}
-        onWarehouseChange={(val) => {
-          setWarehouseId(val);
-          setPage(1);
-        }}
-        activeFilterCount={activeFilterCount}
-        onResetFilters={handleResetFilters}
-      />
+          {/* Search & Filters */}
+          <InventoryFilterBar
+            search={searchInput}
+            onSearchChange={setSearchInput}
+            status={status}
+            onStatusChange={(val) => {
+              setStatus(val);
+              setPage(1);
+            }}
+            categoryId={categoryId}
+            onCategoryChange={(val) => {
+              setCategoryId(val);
+              setPage(1);
+            }}
+            productType={productType}
+            onProductTypeChange={(val) => {
+              setProductType(val);
+              setPage(1);
+            }}
+            warehouseId={warehouseId}
+            onWarehouseChange={(val) => {
+              setWarehouseId(val);
+              setPage(1);
+            }}
+            activeFilterCount={activeFilterCount}
+            onResetFilters={handleResetFilters}
+          />
 
-      {/* Main Inventory Table */}
-      <div id="inventory-table" />
-      <InventoryTable
-        items={items}
-        isLoading={isListLoading}
-        isError={isListError}
-        sortBy={sortBy}
-        sortOrder={sortOrder}
-        currentStatusFilter={status}
-        selectedIds={selectedInventoryIds}
-        onToggleSelect={handleToggleSelect}
-        onToggleSelectAll={handleToggleSelectAll}
-        onSortChange={handleSortChange}
-        onResetFilters={handleResetFilters}
-        isFiltered={isFiltered}
-        onAdjustStockClick={handleAddStockClick}
-      />
+          {/* Main Inventory Table */}
+          <div id="inventory-table" />
+          <InventoryTable
+            items={items}
+            isLoading={isListLoading}
+            isError={isListError}
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            currentStatusFilter={status}
+            selectedIds={selectedInventoryIds}
+            onToggleSelect={handleToggleSelect}
+            onToggleSelectAll={handleToggleSelectAll}
+            onSortChange={handleSortChange}
+            onResetFilters={handleResetFilters}
+            isFiltered={isFiltered}
+            onAdjustStockClick={handleAddStockClick}
+          />
 
-      {/* Pagination Controls */}
-      {listResponse?.meta && listResponse.meta.totalPages > 1 && (
-        <InventoryPagination
-          page={page}
-          limit={limit}
-          total={listResponse.meta.total}
-          totalPages={listResponse.meta.totalPages}
-          onPageChange={handlePageChange}
-          onLimitChange={(newLimit) => {
-            setLimit(newLimit);
-            setPage(1);
-            setSelectedInventoryIds([]);
-          }}
-        />
+          {/* Pagination Controls */}
+          {listResponse?.meta && listResponse.meta.totalPages > 1 && (
+            <InventoryPagination
+              page={page}
+              limit={limit}
+              total={listResponse.meta.total}
+              totalPages={listResponse.meta.totalPages}
+              onPageChange={handlePageChange}
+              onLimitChange={(newLimit) => {
+                setLimit(newLimit);
+                setPage(1);
+                setSelectedInventoryIds([]);
+              }}
+            />
+          )}
+        </div>
       )}
 
       {/* Floating Bulk Action Toolbar */}

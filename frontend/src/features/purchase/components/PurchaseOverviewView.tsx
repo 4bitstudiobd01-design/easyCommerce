@@ -11,7 +11,6 @@ import {
   BarChart2,
   ClipboardList,
   Users,
-  Zap,
   Plus,
   UserPlus,
   Settings,
@@ -35,6 +34,7 @@ import {
   useSeedPurchaseDemoMutation,
   type PurchaseOrderStatus,
 } from '../api/purchaseApi';
+import { PurchaseTabsHeader, type PurchaseTabKey } from './PurchaseTabsHeader';
 
 const money = (v: string | number) =>
   `৳ ${Number(v).toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
@@ -84,10 +84,11 @@ const PAYMENT_LABEL: Record<string, string> = {
 };
 
 interface PurchaseOverviewViewProps {
-  onNavigateTab?: (tab: 'overview' | 'suppliers' | 'purchase-orders' | 'purchases') => void;
+  activeTab?: PurchaseTabKey;
+  onNavigateTab?: (tab: PurchaseTabKey) => void;
 }
 
-export function PurchaseOverviewView({ onNavigateTab }: PurchaseOverviewViewProps = {}) {
+export function PurchaseOverviewView({ activeTab = 'overview', onNavigateTab }: PurchaseOverviewViewProps = {}) {
   const { data, isLoading } = useGetPurchaseOverviewQuery();
   const [seedDemo, { isLoading: isSeeding }] = useSeedPurchaseDemoMutation();
 
@@ -171,15 +172,6 @@ export function PurchaseOverviewView({ onNavigateTab }: PurchaseOverviewViewProp
     <div className="space-y-6 pb-12 text-slate-800">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-1.5 text-xs font-semibold mb-1">
-            <span className="text-slate-500">E-Commerce</span>
-            <span className="text-slate-400">›</span>
-            <Link href="/dashboard/purchase" className="text-blue-600 hover:underline">
-              Purchase
-            </Link>
-            <span className="text-slate-400">›</span>
-            <span className="text-slate-500">Overview</span>
-          </div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">
             Purchase Overview
           </h1>
@@ -187,7 +179,61 @@ export function PurchaseOverviewView({ onNavigateTab }: PurchaseOverviewViewProp
             Track your purchasing activities, supplier dues and stock inflow at a glance.
           </p>
         </div>
+
+        <div className="flex items-center gap-2.5 shrink-0">
+          <Link
+            href="/dashboard/purchase?tab=suppliers"
+            onClick={(e) => {
+              if (!e.metaKey && !e.ctrlKey && onNavigateTab) {
+                e.preventDefault();
+                onNavigateTab('suppliers');
+              }
+            }}
+            className="px-3.5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 shadow-sm flex items-center gap-1.5 transition-all"
+          >
+            <UserPlus className="w-4 h-4 text-slate-500" />
+            <span>Add Supplier</span>
+          </Link>
+
+          <Link
+            href="/dashboard/accounting/settings"
+            className="px-3.5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 shadow-sm flex items-center gap-1.5 transition-all"
+          >
+            <Settings className="w-4 h-4 text-slate-500" />
+            <span>Account Mapping</span>
+          </Link>
+
+          <Link
+            href="/dashboard/purchase?tab=purchase-orders"
+            onClick={(e) => {
+              if (!e.metaKey && !e.ctrlKey && onNavigateTab) {
+                e.preventDefault();
+                onNavigateTab('purchase-orders');
+              }
+            }}
+            className="px-3.5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 shadow-sm flex items-center gap-1.5 transition-all"
+          >
+            <FileText className="w-4 h-4 text-slate-500" />
+            <span>Create Purchase Order</span>
+          </Link>
+
+          <Link
+            href="/dashboard/purchase?tab=purchases"
+            onClick={(e) => {
+              if (!e.metaKey && !e.ctrlKey && onNavigateTab) {
+                e.preventDefault();
+                onNavigateTab('purchases');
+              }
+            }}
+            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-sm shadow-blue-600/30 flex items-center gap-2 transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            <span>New Purchase</span>
+          </Link>
+        </div>
       </div>
+
+      <PurchaseTabsHeader activeTab={activeTab} onTabChange={(tab) => onNavigateTab?.(tab)} />
 
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -576,62 +622,6 @@ export function PurchaseOverviewView({ onNavigateTab }: PurchaseOverviewViewProp
                       ))}
                     </tbody>
                   </table>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-2xs">
-                <div className="flex items-center gap-2 mb-4">
-                  <Zap className="w-4 h-4 text-slate-600" />
-                  <h2 className="text-sm font-bold text-slate-900">Quick Actions</h2>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Link
-                    href="/dashboard/purchase?tab=purchases"
-                    onClick={(e) => {
-                      if (!e.metaKey && !e.ctrlKey && onNavigateTab) {
-                        e.preventDefault();
-                        onNavigateTab('purchases');
-                      }
-                    }}
-                    className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-xs shadow-blue-500/20"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>New Purchase</span>
-                  </Link>
-                  <Link
-                    href="/dashboard/purchase?tab=purchase-orders"
-                    onClick={(e) => {
-                      if (!e.metaKey && !e.ctrlKey && onNavigateTab) {
-                        e.preventDefault();
-                        onNavigateTab('purchase-orders');
-                      }
-                    }}
-                    className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-white hover:bg-slate-50 text-blue-600 border border-blue-200 rounded-xl text-xs font-bold transition shadow-2xs"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Create Purchase Order</span>
-                  </Link>
-                  <Link
-                    href="/dashboard/purchase?tab=suppliers"
-                    onClick={(e) => {
-                      if (!e.metaKey && !e.ctrlKey && onNavigateTab) {
-                        e.preventDefault();
-                        onNavigateTab('suppliers');
-                      }
-                    }}
-                    className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-white hover:bg-slate-50 text-blue-600 border border-blue-200 rounded-xl text-xs font-bold transition shadow-2xs"
-                  >
-                    <UserPlus className="w-4 h-4" />
-                    <span>Add Supplier</span>
-                  </Link>
-                  <Link
-                    href="/dashboard/accounting/settings"
-                    className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-white hover:bg-slate-50 text-blue-600 border border-blue-200 rounded-xl text-xs font-bold transition shadow-2xs"
-                  >
-                    <Settings className="w-4 h-4" />
-                    <span>Account Mapping</span>
-                  </Link>
                 </div>
               </div>
             </div>

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import Link from 'next/link';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import {
@@ -45,6 +44,7 @@ import {
   toLineInputs,
   type LineItemDraft,
 } from './LineItemEditor';
+import { PurchaseTabsHeader, type PurchaseTabKey } from './PurchaseTabsHeader';
 
 const STATUS_LABELS: Record<BillPaymentStatus, string> = {
   UNPAID: 'Unpaid',
@@ -76,7 +76,12 @@ const deltaClass = (pct: string) =>
   Number(pct) >= 0 ? 'text-emerald-600' : 'text-rose-600';
 const deltaArrow = (pct: string) => (Number(pct) >= 0 ? '↑' : '↓');
 
-export function PurchasesListView() {
+interface PurchasesListViewProps {
+  activeTab?: PurchaseTabKey;
+  onNavigateTab?: (tab: PurchaseTabKey) => void;
+}
+
+export function PurchasesListView({ activeTab = 'purchases', onNavigateTab }: PurchasesListViewProps = {}) {
   const [searchTerm, setSearchTerm] = useState('');
   const [supplierFilter, setSupplierFilter] = useState('All Suppliers');
   const [statusFilter, setStatusFilter] = useState('All Status');
@@ -239,15 +244,6 @@ export function PurchasesListView() {
     <div className="space-y-6 pb-12 text-slate-800">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-1.5 text-xs font-semibold mb-1">
-            <span className="text-slate-500">E-Commerce</span>
-            <span className="text-slate-400">›</span>
-            <Link href="/dashboard/purchase" className="text-blue-600 hover:underline">
-              Purchase
-            </Link>
-            <span className="text-slate-400">›</span>
-            <span className="text-slate-500">Purchases</span>
-          </div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">Purchases</h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
             Manage your purchases, receive stock and track supplier payments.
@@ -273,6 +269,8 @@ export function PurchasesListView() {
           </button>
         </div>
       </div>
+
+      <PurchaseTabsHeader activeTab={activeTab} onTabChange={(tab) => onNavigateTab?.(tab)} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {kpiCards.map((k) => (

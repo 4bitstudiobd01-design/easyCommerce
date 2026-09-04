@@ -29,6 +29,7 @@ import {
   type SupplierListItem,
   type SupplierStatus,
 } from '../api/purchaseApi';
+import { PurchaseTabsHeader, type PurchaseTabKey } from './PurchaseTabsHeader';
 
 const SORT_MAP: Record<string, 'name_asc' | 'name_desc' | 'purchases_desc' | 'due_desc'> = {
   'Name (A-Z)': 'name_asc',
@@ -69,7 +70,12 @@ const EMPTY_FORM: SupplierFormState = {
   location: '',
 };
 
-export function SuppliersView() {
+interface SuppliersViewProps {
+  activeTab?: PurchaseTabKey;
+  onNavigateTab?: (tab: PurchaseTabKey) => void;
+}
+
+export function SuppliersView({ activeTab = 'suppliers', onNavigateTab }: SuppliersViewProps = {}) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [sortBy, setSortBy] = useState('Name (A-Z)');
@@ -215,15 +221,6 @@ export function SuppliersView() {
     <div className="space-y-6 pb-12 text-slate-800">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-1.5 text-xs font-semibold mb-1">
-            <span className="text-slate-500">E-Commerce</span>
-            <span className="text-slate-400">›</span>
-            <Link href="/dashboard/purchase" className="text-blue-600 hover:underline">
-              Purchase
-            </Link>
-            <span className="text-slate-400">›</span>
-            <span className="text-slate-500">Suppliers</span>
-          </div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">Suppliers</h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
             Manage all your suppliers and their related information.
@@ -238,6 +235,8 @@ export function SuppliersView() {
           <span>Add Supplier</span>
         </button>
       </div>
+
+      <PurchaseTabsHeader activeTab={activeTab} onTabChange={(tab) => onNavigateTab?.(tab)} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((kpi) => (
