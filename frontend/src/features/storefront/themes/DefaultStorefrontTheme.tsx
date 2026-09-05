@@ -35,6 +35,11 @@ interface DefaultStorefrontThemeProps {
   primaryColor?: string;
   fontFamily?: string;
   heroBanners?: HeroBannerSlide[];
+  facebookUrl?: string;
+  instagramUrl?: string;
+  twitterUrl?: string;
+  youtubeUrl?: string;
+  footerDescription?: string;
   products?: Product[];
   categories?: string[];
   onSelectProduct: (product: Product) => void;
@@ -59,6 +64,11 @@ export const DefaultStorefrontTheme = ({
   primaryColor = '#2563eb',
   fontFamily,
   heroBanners = [],
+  facebookUrl,
+  instagramUrl,
+  twitterUrl,
+  youtubeUrl,
+  footerDescription,
   products = [],
   categories = [],
   onSelectProduct,
@@ -304,6 +314,11 @@ export const DefaultStorefrontTheme = ({
         slug={slug}
         primaryColor={primaryColor}
         logo={logo}
+        facebookUrl={facebookUrl}
+        instagramUrl={instagramUrl}
+        twitterUrl={twitterUrl}
+        youtubeUrl={youtubeUrl}
+        footerDescription={footerDescription}
       />
 
       {/* 8. ULTRA-MODERN NATIVE MOBILE SHOPPING APP DOCK */}

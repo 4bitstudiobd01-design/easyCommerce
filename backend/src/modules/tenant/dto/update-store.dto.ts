@@ -73,6 +73,31 @@ export class UpdateStoreDto {
   @IsUrl(IMAGE_URL_OPTIONS)
   favicon?: string;
 
+  @ApiProperty({ example: 'https://facebook.com/yourpage', required: false })
+  @IsOptional()
+  @IsUrl()
+  facebookUrl?: string;
+
+  @ApiProperty({ example: 'https://instagram.com/yourpage', required: false })
+  @IsOptional()
+  @IsUrl()
+  instagramUrl?: string;
+
+  @ApiProperty({ example: 'https://twitter.com/yourpage', required: false })
+  @IsOptional()
+  @IsUrl()
+  twitterUrl?: string;
+
+  @ApiProperty({ example: 'https://youtube.com/@yourpage', required: false })
+  @IsOptional()
+  @IsUrl()
+  youtubeUrl?: string;
+
+  @ApiProperty({ example: 'Your verified online store for authentic goods.', required: false })
+  @IsOptional()
+  @IsString()
+  footerDescription?: string;
+
   @ApiProperty({ example: 'Sumon Fashion - Premium Apparel Store', required: false })
   @IsOptional()
   @IsString()

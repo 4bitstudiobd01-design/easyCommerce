@@ -59,7 +59,17 @@ export function StorePolicyPage({ title, content, emptyMessage }: StorePolicyPag
         </div>
       </main>
 
-      <ShopEaseFooter storeName={store?.name} slug={slug} primaryColor={primaryColor} logo={store?.logo} />
+      <ShopEaseFooter
+        storeName={store?.name}
+        slug={slug}
+        primaryColor={primaryColor}
+        logo={store?.logo}
+        facebookUrl={store?.facebookUrl}
+        instagramUrl={store?.instagramUrl}
+        twitterUrl={store?.twitterUrl}
+        youtubeUrl={store?.youtubeUrl}
+        footerDescription={store?.footerDescription}
+      />
     </div>
   );
 }

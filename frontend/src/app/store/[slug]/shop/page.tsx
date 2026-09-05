@@ -140,6 +140,11 @@ export default function ShopPage() {
           primaryColor={primaryColor}
           products={products}
           categories={categories}
+          facebookUrl={(store as any).facebookUrl}
+          instagramUrl={(store as any).instagramUrl}
+          twitterUrl={(store as any).twitterUrl}
+          youtubeUrl={(store as any).youtubeUrl}
+          footerDescription={(store as any).footerDescription}
           onSelectProduct={(p) => setSelectedProduct(p)}
           onAddToCart={handleAddToCart}
         />

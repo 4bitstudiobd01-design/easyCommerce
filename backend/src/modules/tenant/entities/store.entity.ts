@@ -73,6 +73,22 @@ export class StoreEntity {
   @Column({ type: 'text', nullable: true })
   logo?: string;
 
+  // Social Links & Footer Description
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  facebookUrl?: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  instagramUrl?: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  twitterUrl?: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  youtubeUrl?: string;
+
+  @Column({ type: 'text', nullable: true })
+  footerDescription?: string;
+
   // Branding, Favicon & SEO
   @Column({ type: 'varchar', length: 255, nullable: true })
   favicon?: string;

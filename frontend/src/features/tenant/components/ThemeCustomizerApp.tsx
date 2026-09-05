@@ -14,6 +14,7 @@ import {
   Layout,
   ImagePlus,
   ExternalLink,
+  Share2,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -30,6 +31,12 @@ export function ThemeCustomizerApp({ store }: ThemeCustomizerAppProps) {
   const [favicon, setFavicon] = useState(store?.favicon || '');
   const [metaTitle, setMetaTitle] = useState(store?.metaTitle || '');
   const [metaDescription, setMetaDescription] = useState(store?.metaDescription || '');
+
+  const [facebookUrl, setFacebookUrl] = useState(store?.facebookUrl || '');
+  const [instagramUrl, setInstagramUrl] = useState(store?.instagramUrl || '');
+  const [twitterUrl, setTwitterUrl] = useState(store?.twitterUrl || '');
+  const [youtubeUrl, setYoutubeUrl] = useState(store?.youtubeUrl || '');
+  const [footerDescription, setFooterDescription] = useState(store?.footerDescription || '');
 
   const [primaryColor, setPrimaryColor] = useState(store?.primaryColor || '#2563eb');
   const [fontFamily, setFontFamily] = useState(store?.fontFamily || 'Inter');
@@ -87,6 +94,11 @@ export function ThemeCustomizerApp({ store }: ThemeCustomizerAppProps) {
         favicon: favicon || undefined,
         metaTitle: metaTitle.trim() || undefined,
         metaDescription: metaDescription.trim() || undefined,
+        facebookUrl: facebookUrl.trim() || undefined,
+        instagramUrl: instagramUrl.trim() || undefined,
+        twitterUrl: twitterUrl.trim() || undefined,
+        youtubeUrl: youtubeUrl.trim() || undefined,
+        footerDescription: footerDescription.trim() || undefined,
         primaryColor,
         fontFamily,
         heroBanners,
@@ -225,6 +237,72 @@ export function ThemeCustomizerApp({ store }: ThemeCustomizerAppProps) {
               className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-600 transition-colors"
             />
             <p className="text-[10.5px] text-slate-400 font-medium mt-1">This description helps search engines understand your store.</p>
+          </div>
+        </div>
+
+        {/* Social Links & Footer Description */}
+        <div className="pt-4 border-t border-slate-100 space-y-4">
+          <div className="flex items-center gap-2">
+            <Share2 className="w-3.5 h-3.5 text-slate-400" />
+            <h5 className="font-bold text-slate-700 text-xs">Social Links & Footer</h5>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-semibold">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1.5">Facebook URL</label>
+              <input
+                type="text"
+                value={facebookUrl}
+                onChange={(e) => setFacebookUrl(e.target.value)}
+                placeholder="https://facebook.com/yourpage"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-600 transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1.5">Instagram URL</label>
+              <input
+                type="text"
+                value={instagramUrl}
+                onChange={(e) => setInstagramUrl(e.target.value)}
+                placeholder="https://instagram.com/yourpage"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-600 transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1.5">Twitter URL</label>
+              <input
+                type="text"
+                value={twitterUrl}
+                onChange={(e) => setTwitterUrl(e.target.value)}
+                placeholder="https://twitter.com/yourpage"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-600 transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1.5">YouTube URL</label>
+              <input
+                type="text"
+                value={youtubeUrl}
+                onChange={(e) => setYoutubeUrl(e.target.value)}
+                placeholder="https://youtube.com/@yourpage"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-600 transition-colors"
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block font-bold text-slate-700 mb-1.5">Footer Description</label>
+              <textarea
+                value={footerDescription}
+                onChange={(e) => setFooterDescription(e.target.value)}
+                placeholder="Your verified online store for authentic goods, fast nationwide dispatch, and dependable customer support."
+                rows={3}
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-600 transition-colors resize-none"
+              />
+              <p className="text-[10.5px] text-slate-400 font-medium mt-1">Shown under your store name in the footer. Leave blank to use the default.</p>
+            </div>
           </div>
         </div>
       </div>

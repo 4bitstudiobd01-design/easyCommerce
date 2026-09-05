@@ -28,6 +28,11 @@ interface ShopEaseShopViewProps {
   primaryColor?: string;
   products?: Product[];
   categories?: string[];
+  facebookUrl?: string;
+  instagramUrl?: string;
+  twitterUrl?: string;
+  youtubeUrl?: string;
+  footerDescription?: string;
   onSelectProduct: (product: Product) => void;
   onAddToCart: (product: Product) => void;
 }
@@ -42,6 +47,11 @@ export const ShopEaseShopView = ({
   primaryColor = '#2563eb',
   products = [],
   categories = [],
+  facebookUrl,
+  instagramUrl,
+  twitterUrl,
+  youtubeUrl,
+  footerDescription,
   onSelectProduct,
   onAddToCart,
 }: ShopEaseShopViewProps) => {
@@ -391,6 +401,11 @@ export const ShopEaseShopView = ({
         slug={slug}
         primaryColor={primaryColor}
         logo={logo}
+        facebookUrl={facebookUrl}
+        instagramUrl={instagramUrl}
+        twitterUrl={twitterUrl}
+        youtubeUrl={youtubeUrl}
+        footerDescription={footerDescription}
       />
 
       {/* 9. ULTRA-MODERN NATIVE MOBILE SHOPPING APP DOCK */}

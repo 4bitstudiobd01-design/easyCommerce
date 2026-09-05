@@ -21,6 +21,11 @@ export interface Store {
   favicon?: string;
   metaTitle?: string;
   metaDescription?: string;
+  facebookUrl?: string;
+  instagramUrl?: string;
+  twitterUrl?: string;
+  youtubeUrl?: string;
+  footerDescription?: string;
   activeThemeId?: string;
   unlockedThemeIds?: string[];
   primaryColor?: string;
@@ -211,6 +216,11 @@ export interface UpdateStoreRequest {
   favicon?: string;
   metaTitle?: string;
   metaDescription?: string;
+  facebookUrl?: string;
+  instagramUrl?: string;
+  twitterUrl?: string;
+  youtubeUrl?: string;
+  footerDescription?: string;
   primaryColor?: string;
   fontFamily?: string;
   heroBanners?: HeroBanner[];

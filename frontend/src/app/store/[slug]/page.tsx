@@ -241,6 +241,11 @@ export default function StorefrontPage() {
         primaryColor={primaryColor}
         fontFamily={store.fontFamily}
         heroBanners={store.heroBanners}
+        facebookUrl={store.facebookUrl}
+        instagramUrl={store.instagramUrl}
+        twitterUrl={store.twitterUrl}
+        youtubeUrl={store.youtubeUrl}
+        footerDescription={store.footerDescription}
         products={filteredProducts}
         categories={categories}
         onSelectProduct={(p) => router.push(`/store/${slug}/product/${p.slug}`)}

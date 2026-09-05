@@ -11,35 +11,61 @@ import {
   Youtube,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useSubscribePublicMutation } from '@/features/email-marketing/api/emailMarketingApi';
 
 interface ShopEaseFooterProps {
   storeName?: string;
   slug?: string;
   primaryColor?: string;
   logo?: string;
+  facebookUrl?: string;
+  instagramUrl?: string;
+  twitterUrl?: string;
+  youtubeUrl?: string;
+  footerDescription?: string;
 }
+
+const DEFAULT_FOOTER_DESCRIPTION =
+  'Your verified online store for authentic goods, fast nationwide dispatch, and dependable customer support.';
 
 export const ShopEaseFooter = ({
   storeName = 'ShopEase',
   slug = 'main',
   primaryColor = '#2563eb',
   logo,
+  facebookUrl,
+  instagramUrl,
+  twitterUrl,
+  youtubeUrl,
+  footerDescription,
 }: ShopEaseFooterProps) => {
   const [email, setEmail] = useState('');
-  const [isSubscribing, setIsSubscribing] = useState(false);
+  const [subscribePublic, { isLoading: isSubscribing }] = useSubscribePublicMutation();
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const socialLinks = [
+    { href: facebookUrl, label: 'Facebook', Icon: Facebook, hoverClasses: 'hover:bg-blue-600 hover:border-blue-600' },
+    { href: instagramUrl, label: 'Instagram', Icon: Instagram, hoverClasses: 'hover:bg-pink-600 hover:border-pink-600' },
+    { href: twitterUrl, label: 'Twitter', Icon: Twitter, hoverClasses: 'hover:bg-sky-500 hover:border-sky-500' },
+    { href: youtubeUrl, label: 'YouTube', Icon: Youtube, hoverClasses: 'hover:bg-red-600 hover:border-red-600' },
+  ].filter((social) => !!social.href);
+
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !email.includes('@')) {
       toast.error('Please enter a valid email address.');
       return;
     }
-    setIsSubscribing(true);
-    setTimeout(() => {
-      setIsSubscribing(false);
+    try {
+      const result = await subscribePublic({
+        storeSlug: slug,
+        email,
+        source: 'STOREFRONT_FOOTER',
+      }).unwrap();
       setEmail('');
-      toast.success('Thank you for subscribing to our newsletter!');
-    }, 600);
+      toast.success(result?.message || 'Thank you for subscribing to our newsletter!');
+    } catch (err: any) {
+      toast.error(err?.data?.message || 'Failed to subscribe. Please try again.');
+    }
   };
 
   return (
@@ -79,40 +105,26 @@ export const ShopEaseFooter = ({
             </Link>
 
             <p className="text-slate-400 text-xs leading-relaxed max-w-sm">
-              Your verified online store for authentic goods, fast nationwide dispatch, and dependable customer support.
+              {footerDescription?.trim() ? footerDescription : DEFAULT_FOOTER_DESCRIPTION}
             </p>
 
             {/* Social Icons */}
-            <div className="flex items-center gap-2 pt-1">
-              <a
-                href="#facebook"
-                aria-label="Facebook"
-                className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-800 hover:bg-blue-600 hover:border-blue-600 text-slate-400 hover:text-white flex items-center justify-center transition-all cursor-pointer"
-              >
-                <Facebook className="w-3.5 h-3.5" />
-              </a>
-              <a
-                href="#instagram"
-                aria-label="Instagram"
-                className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-800 hover:bg-pink-600 hover:border-pink-600 text-slate-400 hover:text-white flex items-center justify-center transition-all cursor-pointer"
-              >
-                <Instagram className="w-3.5 h-3.5" />
-              </a>
-              <a
-                href="#twitter"
-                aria-label="Twitter"
-                className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-800 hover:bg-sky-500 hover:border-sky-500 text-slate-400 hover:text-white flex items-center justify-center transition-all cursor-pointer"
-              >
-                <Twitter className="w-3.5 h-3.5" />
-              </a>
-              <a
-                href="#youtube"
-                aria-label="YouTube"
-                className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-800 hover:bg-red-600 hover:border-red-600 text-slate-400 hover:text-white flex items-center justify-center transition-all cursor-pointer"
-              >
-                <Youtube className="w-3.5 h-3.5" />
-              </a>
-            </div>
+            {socialLinks.length > 0 && (
+              <div className="flex items-center gap-2 pt-1">
+                {socialLinks.map(({ href, label, Icon, hoverClasses }) => (
+                  <a
+                    key={label}
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={label}
+                    className={`w-8 h-8 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-all cursor-pointer ${hoverClasses}`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* COL 2: QUICK LINKS (2 COLS) */}
@@ -132,28 +144,6 @@ export const ShopEaseFooter = ({
               <li>
                 <Link href={`/store/${slug}/track`} className="hover:text-white transition-colors">
                   Track Order
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* COL 3: CUSTOMER SERVICE (2 COLS) */}
-          <div className="lg:col-span-2 space-y-3">
-            <h4 className="text-white font-black text-xs uppercase tracking-wider">Assistance</h4>
-            <ul className="space-y-2 text-slate-400 text-xs">
-              <li>
-                <Link href="#shipping" className="hover:text-white transition-colors">
-                  Shipping Info
-                </Link>
-              </li>
-              <li>
-                <Link href="#returns" className="hover:text-white transition-colors">
-                  Returns & Refunds
-                </Link>
-              </li>
-              <li>
-                <Link href="#faqs" className="hover:text-white transition-colors">
-                  Help & FAQs
                 </Link>
               </li>
             </ul>
@@ -200,7 +190,7 @@ export const ShopEaseFooter = ({
                 type="submit"
                 disabled={isSubscribing}
                 aria-label="Subscribe"
-                className="h-10 w-10 hover:brightness-110 active:scale-95 text-white flex items-center justify-center rounded-xl transition-colors shrink-0 shadow-xs cursor-pointer"
+                className="h-10 w-10 hover:brightness-110 active:scale-95 text-white flex items-center justify-center rounded-xl transition-colors shrink-0 shadow-xs cursor-pointer disabled:opacity-60"
                 style={{ backgroundColor: primaryColor }}
               >
                 <Send className="w-3.5 h-3.5" />

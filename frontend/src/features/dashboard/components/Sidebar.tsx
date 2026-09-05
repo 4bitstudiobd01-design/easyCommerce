@@ -18,6 +18,7 @@ import {
   Store as StoreIcon,
   Layers,
   Megaphone,
+  Mail,
   BarChart2,
   MonitorSmartphone,
   ShoppingBag,
@@ -91,7 +92,7 @@ export const Sidebar = ({
     crm: isRouteInGroup('/dashboard/crm'),
     hrm: isRouteInGroup('/dashboard/hr'),
     accounting: isRouteInGroup('/dashboard/accounting'),
-    marketing: isRouteInGroup(['/dashboard/marketing', '/dashboard/analytics']),
+    marketing: isRouteInGroup(['/dashboard/marketing', '/dashboard/analytics', '/dashboard/email-marketing']),
   });
 
   const [openSubGroups, setOpenSubGroups] = useState<Record<string, boolean>>({
@@ -131,7 +132,7 @@ export const Sidebar = ({
     if (isRouteInGroup('/dashboard/accounting/settings')) {
       setOpenSubGroups(prev => ({ ...prev, accountingSettings: true }));
     }
-    if (isRouteInGroup(['/dashboard/marketing', '/dashboard/analytics'])) {
+    if (isRouteInGroup(['/dashboard/marketing', '/dashboard/analytics', '/dashboard/email-marketing'])) {
       setOpenGroups(prev => ({ ...prev, marketing: true }));
     }
   }, [pathname]);
@@ -894,6 +895,19 @@ export const Sidebar = ({
                 <div className="flex items-center gap-2.5">
                   <BarChart2 className={iconClass} strokeWidth={iconStroke} />
                   {!isDesktopCollapsed && <span>Store Analytics</span>}
+                </div>
+              </Link>
+              <Link
+                href="/dashboard/email-marketing"
+                className={navItemClass('/dashboard/email-marketing')}
+                onMouseEnter={(e) => handleTooltipEnter(e, "Email Marketing")}
+                onFocus={(e) => handleTooltipEnter(e, "Email Marketing")}
+                onMouseLeave={handleTooltipLeave}
+                onBlur={handleTooltipLeave}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Mail className={iconClass} strokeWidth={iconStroke} />
+                  {!isDesktopCollapsed && <span>Email Marketing</span>}
                 </div>
               </Link>
             </div>
