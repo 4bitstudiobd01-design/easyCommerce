@@ -11,7 +11,6 @@ import {
   Youtube,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useSubscribePublicMutation } from '@/features/email-marketing/api/emailMarketingApi';
 
 interface ShopEaseFooterProps {
   storeName?: string;
@@ -40,7 +39,6 @@ export const ShopEaseFooter = ({
   footerDescription,
 }: ShopEaseFooterProps) => {
   const [email, setEmail] = useState('');
-  const [subscribePublic, { isLoading: isSubscribing }] = useSubscribePublicMutation();
 
   const socialLinks = [
     { href: facebookUrl, label: 'Facebook', Icon: Facebook, hoverClasses: 'hover:bg-blue-600 hover:border-blue-600' },
@@ -55,17 +53,8 @@ export const ShopEaseFooter = ({
       toast.error('Please enter a valid email address.');
       return;
     }
-    try {
-      const result = await subscribePublic({
-        storeSlug: slug,
-        email,
-        source: 'STOREFRONT_FOOTER',
-      }).unwrap();
-      setEmail('');
-      toast.success(result?.message || 'Thank you for subscribing to our newsletter!');
-    } catch (err: any) {
-      toast.error(err?.data?.message || 'Failed to subscribe. Please try again.');
-    }
+    setEmail('');
+    toast.success('Thank you for subscribing to our newsletter!');
   };
 
   return (
@@ -188,7 +177,6 @@ export const ShopEaseFooter = ({
               />
               <button
                 type="submit"
-                disabled={isSubscribing}
                 aria-label="Subscribe"
                 className="h-10 w-10 hover:brightness-110 active:scale-95 text-white flex items-center justify-center rounded-xl transition-colors shrink-0 shadow-xs cursor-pointer disabled:opacity-60"
                 style={{ backgroundColor: primaryColor }}

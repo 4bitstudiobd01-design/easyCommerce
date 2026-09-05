@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import {
   IsOptional,
   IsString,
@@ -12,6 +12,7 @@ import {
   IsUrl,
   IsHexColor,
   ValidateNested,
+  IsObject,
 } from 'class-validator';
 import {
   SmsDriverEnum,
@@ -24,6 +25,16 @@ import {
 // (e.g. http://localhost:5001/uploads/... in local dev, or an internal host),
 // which the default isURL() rejects for lacking a public top-level domain.
 const IMAGE_URL_OPTIONS = { require_protocol: true, require_tld: false, protocols: ['http', 'https'] };
+
+export class CheckoutFieldRuleDto {
+  @ApiProperty({ example: true, description: 'Whether the field appears on the checkout form' })
+  @IsBoolean()
+  show: boolean;
+
+  @ApiProperty({ example: true, description: 'Whether the field is mandatory (only meaningful when shown)' })
+  @IsBoolean()
+  required: boolean;
+}
 
 export class HeroBannerItemDto implements HeroBannerItem {
   @ApiProperty({ example: 'banner-1' })
@@ -369,6 +380,30 @@ export class UpdateStoreDto {
   @IsNumber()
   @Min(0)
   minimumOrderAmount?: number;
+
+  @ApiProperty({ required: false, description: 'Flat delivery charge for orders inside Dhaka' })
+  @IsOptional()
+  // The numeric column round-trips as a string ("60.00"); coerce before validating.
+  @Transform(({ value }) => (value === '' || value === null || value === undefined ? value : Number(value)))
+  @IsNumber()
+  @Min(0)
+  deliveryChargeInsideDhaka?: number;
+
+  @ApiProperty({ required: false, description: 'Flat delivery charge for orders outside Dhaka' })
+  @IsOptional()
+  @Transform(({ value }) => (value === '' || value === null || value === undefined ? value : Number(value)))
+  @IsNumber()
+  @Min(0)
+  deliveryChargeOutsideDhaka?: number;
+
+  @ApiProperty({
+    required: false,
+    description:
+      'Per-field show/required rules for the checkout form. Keys: email, address, country, division, district, cityArea, zipCode, orderNote. Each value is { show: boolean, required: boolean }.',
+  })
+  @IsOptional()
+  @IsObject()
+  checkoutFieldConfig?: Record<string, CheckoutFieldRuleDto>;
 
   // --- Customer Settings ---
   @ApiProperty({ required: false })

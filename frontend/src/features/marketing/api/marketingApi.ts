@@ -134,6 +134,31 @@ export const marketingApi = createApi({
       }),
       invalidatesTags: ['MarketingDashboard', 'MarketingLogs'],
     }),
+
+    seedMarketingDemoData: builder.mutation<
+      {
+        success: boolean;
+        message: string;
+        pixelsCreated: number;
+        eventConfigsCreated: number;
+        eventLogsCreated: number;
+      },
+      void
+    >({
+      query: () => ({
+        url: '/marketing/seed-demo',
+        method: 'POST',
+      }),
+      invalidatesTags: ['MarketingDashboard', 'MarketingLogs'],
+      transformResponse: (response: unknown) =>
+        unwrap<{
+          success: boolean;
+          message: string;
+          pixelsCreated: number;
+          eventConfigsCreated: number;
+          eventLogsCreated: number;
+        }>(response),
+    }),
   }),
 });
 
@@ -145,4 +170,5 @@ export const {
   useToggleEventMutation,
   useTestEventMutation,
   useTestAllPixelsMutation,
+  useSeedMarketingDemoDataMutation,
 } = marketingApi;

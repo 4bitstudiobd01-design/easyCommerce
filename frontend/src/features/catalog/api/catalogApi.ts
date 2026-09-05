@@ -466,6 +466,17 @@ export interface CreateProductRequest {
   allowBackorder?: boolean;
   lowStockThreshold?: number;
   initialStock?: number;
+  variants?: {
+    title: string;
+    combinationKey?: string;
+    sku?: string;
+    price?: number;
+    compareAtPrice?: number;
+    costPrice?: number;
+    isEnabled?: boolean;
+    initialStock?: number;
+    options: VariantOptionMeta[];
+  }[];
   categoryId?: string;
   brandId?: string;
   collectionIds?: string[];
@@ -981,6 +992,21 @@ export const catalogApi = createApi({
       invalidatesTags: ['Category'],
       transformResponse: (response: { data: Category }) => response.data,
     }),
+    seedCategoryDemoData: builder.mutation<
+      { success: boolean; message: string; categoriesCreated: number },
+      void
+    >({
+      query: () => ({
+        url: '/categories/seed-demo',
+        method: 'POST',
+      }),
+      invalidatesTags: ['Category'],
+      transformResponse: (
+        response:
+          | { data: { success: boolean; message: string; categoriesCreated: number } }
+          | { success: boolean; message: string; categoriesCreated: number },
+      ) => ('data' in response ? response.data : response),
+    }),
     updateCategory: builder.mutation<Category, { id: string; data: UpdateCategoryRequest }>({
       query: ({ id, data }) => ({
         url: `/categories/${id}`,
@@ -1362,6 +1388,7 @@ export const {
   useGetParentCategoriesQuery,
   useGetCategoryByIdQuery,
   useCreateCategoryMutation,
+  useSeedCategoryDemoDataMutation,
   useUpdateCategoryMutation,
   useReorderCategoryMutation,
   useUploadCategoryMediaMutation,

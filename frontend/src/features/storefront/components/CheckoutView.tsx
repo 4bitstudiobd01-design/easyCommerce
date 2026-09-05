@@ -2,18 +2,17 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store';
-import { clearCart } from '@/features/storefront/slices/cartSlice';
-import { useCreatePublicOrderMutation, Order } from '@/features/order/api/orderApi';
-import { useInitiatePaymentMutation } from '@/features/payment/api/paymentApi';
 import { useValidatePublicCouponMutation } from '@/features/coupon/api/couponApi';
 import { useGetPublicStoreProductsQuery } from '@/features/storefront/api/storefrontApi';
 import { CustomerAuthModal } from '@/features/storefront/components/CustomerAuthModal';
-import { readStoredAttribution, readStoredSessionId } from '@/features/storefront/utils/attribution';
+import { ShopEaseNavbar } from '@/features/storefront/components/ShopEaseNavbar';
+import { CartDrawer } from '@/features/storefront/components/CartDrawer';
+import { setCheckoutDraft } from '@/features/storefront/slices/checkoutSlice';
 import {
-  ShoppingBag,
   ChevronDown,
   Truck,
   Rocket,
@@ -29,51 +28,64 @@ import {
   Loader2,
 } from 'lucide-react';
 
-export default function CheckoutPage() {
+/**
+ * The full checkout experience. `storeSlugFromRoute` is passed when this renders
+ * under the store-scoped route (/store/[slug]/checkout); the legacy /checkout
+ * route renders it with no prop and the slug is recovered from the cart instead.
+ */
+export function CheckoutView({ storeSlugFromRoute }: { storeSlugFromRoute?: string }) {
   const dispatch = useDispatch();
+  const router = useRouter();
   const rawCartItems = useSelector((state: RootState) => state.cart.items);
   const activeCartItems = rawCartItems;
+  const savedDraft = useSelector((state: RootState) => state.checkout.draft);
 
-  // Form states initialized cleanly
-  const [fullName, setFullName] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [countryCode, setCountryCode] = useState('+880');
-  const [emailAddress, setEmailAddress] = useState('');
-  const [address, setAddress] = useState('');
-  const [country, setCountry] = useState('Bangladesh');
-  const [division, setDivision] = useState('Dhaka');
-  const [district, setDistrict] = useState('Dhaka');
-  const [cityArea, setCityArea] = useState('');
-  const [zipCode, setZipCode] = useState('');
-  const [orderNote, setOrderNote] = useState('');
+  // Form states — pre-filled from a saved draft so a customer who came back from
+  // the review page still sees everything they entered.
+  const [fullName, setFullName] = useState(savedDraft?.fullName ?? '');
+  const [phoneNumber, setPhoneNumber] = useState(savedDraft?.phoneNumber ?? '');
+  const [countryCode, setCountryCode] = useState(savedDraft?.countryCode ?? '+880');
+  const [emailAddress, setEmailAddress] = useState(savedDraft?.emailAddress ?? '');
+  const [address, setAddress] = useState(savedDraft?.address ?? '');
+  const [country, setCountry] = useState(savedDraft?.country ?? 'Bangladesh');
+  const [division, setDivision] = useState(savedDraft?.division ?? 'Dhaka');
+  const [district, setDistrict] = useState(savedDraft?.district ?? 'Dhaka');
+  const [cityArea, setCityArea] = useState(savedDraft?.cityArea ?? '');
+  const [zipCode, setZipCode] = useState(savedDraft?.zipCode ?? '');
+  const [orderNote, setOrderNote] = useState(savedDraft?.orderNote ?? '');
 
   // Shipping & Payment selection
-  const [shippingMethod, setShippingMethod] = useState<'standard' | 'express'>('standard');
-  const [paymentMethod, setPaymentMethod] = useState<'COD' | 'BKASH' | 'NAGAD' | 'CARD'>('COD');
+  const [shippingMethod, setShippingMethod] = useState<'standard' | 'express'>(
+    savedDraft?.shippingMethod ?? 'standard',
+  );
+  const [paymentMethod, setPaymentMethod] = useState<'COD' | 'BKASH' | 'NAGAD' | 'CARD'>(
+    savedDraft?.paymentMethod ?? 'COD',
+  );
 
   const [errorMsg, setErrorMsg] = useState('');
   const customerAuth = useSelector((state: RootState) => (state as any).customerAuth);
   const loggedInCustomer = customerAuth?.customer;
   const authUser = useSelector((state: RootState) => (state as any).auth?.user);
-  const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   // Coupon
-  const [couponCode, setCouponCode] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountAmount: number } | null>(null);
+  const [couponCode, setCouponCode] = useState(savedDraft?.appliedCoupon?.code ?? '');
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountAmount: number } | null>(
+    savedDraft?.appliedCoupon ?? null,
+  );
   const [couponError, setCouponError] = useState('');
   const [validateCoupon, { isLoading: isValidatingCoupon }] = useValidatePublicCouponMutation();
 
-  const [createOrder, { isLoading: isCreatingOrder }] = useCreatePublicOrderMutation();
-  const [initiatePayment, { isLoading: isInitiatingPayment }] = useInitiatePaymentMutation();
-
-  const isSubmitting = isCreatingOrder || isInitiatingPayment;
+  const isSubmitting = false;
 
   // Cached in a ref (not just derived from the cart) so it survives clearCart() —
   // the cart empties right after a successful order, but the confirmation screen
-  // still needs to know which store to link back to.
+  // still needs to know which store to link back to. The route slug (when present)
+  // is authoritative; otherwise fall back to the cart's stored storeSlug.
   const storeSlugRef = React.useRef('');
-  if (activeCartItems[0]?.storeSlug) {
+  if (storeSlugFromRoute) {
+    storeSlugRef.current = storeSlugFromRoute;
+  } else if (activeCartItems[0]?.storeSlug) {
     storeSlugRef.current = activeCartItems[0].storeSlug;
   }
   const storeSlug = storeSlugRef.current;
@@ -81,13 +93,40 @@ export default function CheckoutPage() {
   const { data: storeData } = useGetPublicStoreProductsQuery({ slug: storeSlug }, { skip: !storeSlug });
   const store = storeData?.store;
   const primaryColor = (store as any)?.primaryColor || '#2563eb';
-  const cartItemsCount = activeCartItems.reduce((acc, item) => acc + item.quantity, 0);
 
   const guestCheckoutEnabled = store?.guestCheckoutEnabled ?? true;
-  const requireCustomerEmail = store?.requireCustomerEmail ?? false;
   const showCouponFieldAtCheckout = store?.showCouponFieldAtCheckout ?? true;
-  const showOrderNoteFieldAtCheckout = store?.showOrderNoteFieldAtCheckout ?? true;
   const minimumOrderAmount = store?.minimumOrderAmount ?? 0;
+
+  // Per-field show/required rules from store settings, with the historical
+  // defaults as a fallback (all shown; address/country/division/district/area
+  // required; email/zip/note optional).
+  const DEFAULT_FIELD_CONFIG = {
+    email: { show: true, required: false },
+    address: { show: true, required: true },
+    country: { show: true, required: true },
+    division: { show: true, required: true },
+    district: { show: true, required: true },
+    cityArea: { show: true, required: true },
+    zipCode: { show: true, required: false },
+    orderNote: { show: true, required: false },
+  } as const;
+  type FieldKey = keyof typeof DEFAULT_FIELD_CONFIG;
+  const fieldCfg = (key: FieldKey) =>
+    (store?.checkoutFieldConfig as Record<string, { show: boolean; required: boolean }> | undefined)?.[key] ??
+    DEFAULT_FIELD_CONFIG[key];
+  const showField = (key: FieldKey) => fieldCfg(key).show;
+  const isRequired = (key: FieldKey) => fieldCfg(key).show && fieldCfg(key).required;
+
+  const showOrderNoteFieldAtCheckout = showField('orderNote');
+
+  // Small label suffix: red * when required, "(Optional)" otherwise.
+  const reqMark = (key: FieldKey) =>
+    isRequired(key) ? (
+      <span className="text-red-500">*</span>
+    ) : (
+      <span className="text-slate-400 font-normal">(Optional)</span>
+    );
 
   // Autofill customer profile if logged in or previously ordered
   React.useEffect(() => {
@@ -122,10 +161,16 @@ export default function CheckoutPage() {
     } catch (e) {}
   }, [loggedInCustomer, storeSlug]);
 
+  // Delivery charges by zone come from store settings (falling back to the old
+  // flat defaults). `shippingMethod` now means the zone: 'standard' = inside
+  // Dhaka, 'express' = outside Dhaka.
+  const insideDhakaCharge = Number(store?.deliveryChargeInsideDhaka ?? 60);
+  const outsideDhakaCharge = Number(store?.deliveryChargeOutsideDhaka ?? 120);
+
   // Price calculations
   const itemsCount = activeCartItems.reduce((acc, item) => acc + item.quantity, 0);
   const subtotal = activeCartItems.reduce((acc, item) => acc + (item.price || (item as any).basePrice || 0) * item.quantity, 0);
-  const shippingCharge = shippingMethod === 'express' ? 120 : 60;
+  const shippingCharge = shippingMethod === 'express' ? outsideDhakaCharge : insideDhakaCharge;
   const discount = appliedCoupon?.discountAmount || 0;
   const totalAmount = Math.max(0, subtotal + shippingCharge - discount);
 
@@ -156,19 +201,27 @@ export default function CheckoutPage() {
     setCouponError('');
   };
 
-  const handleSubmitOrder = async (e: React.FormEvent) => {
+  // "Review Order" — validate, save the form as a draft, then go to the review
+  // page where the order is actually placed.
+  const handleReviewOrder = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
 
-    if (!fullName.trim() || !phoneNumber.trim() || !address.trim()) {
-      setErrorMsg('Please fill in all required shipping fields (*)');
-      toast.error('Please fill in all required shipping fields.');
-      return;
-    }
+    // Full Name and Phone are always required; the rest follow the store config.
+    const missing: string[] = [];
+    if (!fullName.trim()) missing.push('Full Name');
+    if (!phoneNumber.trim()) missing.push('Phone Number');
+    if (isRequired('email') && !emailAddress.trim()) missing.push('Email Address');
+    if (isRequired('address') && !address.trim()) missing.push('Address');
+    if (isRequired('division') && !division.trim()) missing.push('Division');
+    if (isRequired('district') && !district.trim()) missing.push('District');
+    if (isRequired('cityArea') && !cityArea.trim()) missing.push('City/Area');
+    if (isRequired('zipCode') && !zipCode.trim()) missing.push('Zip Code');
 
-    if (requireCustomerEmail && !emailAddress.trim()) {
-      setErrorMsg('Email address is required.');
-      toast.error('Please enter your email address.');
+    if (missing.length > 0) {
+      const msg = `Please fill in: ${missing.join(', ')}.`;
+      setErrorMsg(msg);
+      toast.error(msg);
       return;
     }
 
@@ -185,113 +238,28 @@ export default function CheckoutPage() {
       return;
     }
 
-    try {
-      const attribution = readStoredAttribution();
-      const sessionId = readStoredSessionId();
-      const formattedPhone = countryCode + phoneNumber.replace(/\D/g, '');
-
-      const isGuest = !loggedInCustomer && !authUser;
-      const authenticatedUserId = loggedInCustomer?.id || authUser?.id || undefined;
-
-      // 1. Create order
-      const order = await createOrder({
+    dispatch(
+      setCheckoutDraft({
         storeSlug,
-        customerName: fullName,
-        customerPhone: formattedPhone,
-        customerEmail: emailAddress || undefined,
-        shippingAddress: `${address}, ${cityArea}, ${district}, ${division} - ${zipCode}`,
-        city: cityArea || district || 'Dhaka',
-        paymentMethod: paymentMethod === 'COD' ? 'COD' : 'SSLCOMMERZ',
-        items: activeCartItems.map((i) => ({
-          productId: i.productId,
-          quantity: i.quantity,
-          variantId: i.variantId,
-        })),
-        channel: attribution?.channel,
-        utmSource: attribution?.utmSource,
-        utmMedium: attribution?.utmMedium,
-        utmCampaign: attribution?.utmCampaign,
-        referrerHost: attribution?.referrerHost,
-        sessionId: sessionId || undefined,
-        userId: authenticatedUserId,
-        isGuest,
-        couponCode: showCouponFieldAtCheckout && appliedCoupon ? appliedCoupon.code : undefined,
-      }).unwrap();
-
-      // 2. If Online / Gateway Payment (bKash, Nagad, Card)
-      if (paymentMethod !== 'COD') {
-        toast.loading('Connecting to payment gateway...');
-        try {
-          const paymentRes = await initiatePayment({
-            orderId: order.id,
-          }).unwrap();
-
-          if (paymentRes.gatewayUrl) {
-            dispatch(clearCart());
-            toast.success('Redirecting to payment gateway...');
-            window.location.href = paymentRes.gatewayUrl;
-            return;
-          }
-        } catch (paymentErr: any) {
-          // If payment initiation encounters a sandbox/network error, show helpful message and show order
-          toast.info('Order placed! Redirecting to payment...');
-        }
-      }
-
-      // 3. For Cash on Delivery or fallback
-      dispatch(clearCart());
-      setCompletedOrder(order);
-      toast.success('Order placed successfully!');
-    } catch (err: any) {
-      const msg = err?.data?.message || 'Failed to place order. Please try again.';
-      setErrorMsg(msg);
-      toast.error(msg);
-    }
-  };
-
-  // If order was successfully completed
-  if (completedOrder) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 font-sans text-slate-900">
-        <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xl max-w-lg w-full p-8 text-center space-y-6">
-          <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto shadow-sm">
-            <CheckCircle2 className="w-8 h-8" />
-          </div>
-          <div className="space-y-2">
-            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Order Confirmed!</h1>
-            <p className="text-xs text-slate-500">
-              Thank you for your purchase{store?.name ? ` from ${store.name}` : ''}. We have received your order.
-            </p>
-          </div>
-          <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 text-xs space-y-2 text-left">
-            <div className="flex justify-between">
-              <span className="text-slate-500">Order Reference:</span>
-              <span className="font-mono font-bold text-slate-900">{completedOrder.orderNumber}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500">Customer:</span>
-              <span className="font-bold text-slate-900">{completedOrder.customerName}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500">Total Amount:</span>
-              <span className="font-bold" style={{ color: primaryColor }}>৳ {Number(completedOrder.grandTotal).toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500">Payment:</span>
-              <span className="font-bold text-slate-900">{paymentMethod}</span>
-            </div>
-          </div>
-          <Link
-            href={storeSlug ? `/store/${storeSlug}` : '/'}
-            className="w-full h-12 hover:brightness-110 text-white font-bold text-xs rounded-xl flex items-center justify-center transition-all"
-            style={{ backgroundColor: primaryColor }}
-          >
-            Continue Shopping
-          </Link>
-        </div>
-      </div>
+        fullName,
+        countryCode,
+        phoneNumber,
+        emailAddress,
+        address,
+        country,
+        division,
+        district,
+        cityArea,
+        zipCode,
+        orderNote,
+        shippingMethod,
+        paymentMethod,
+        appliedCoupon: showCouponFieldAtCheckout ? appliedCoupon : null,
+      }),
     );
-  }
+
+    router.push(storeSlug ? `/store/${storeSlug}/checkout/review` : '/checkout/review');
+  };
 
   return (
     <div
@@ -299,47 +267,15 @@ export default function CheckoutPage() {
       style={{ ['--brand' as any]: primaryColor }}
     >
 
-      {/* =======================================================================
-          1. MINIMAL BRANDED CHECKOUT HEADER (distraction-free — no search/account/wishlist)
-      ======================================================================= */}
-      <header className="w-full bg-white border-b border-slate-200 sticky top-0 z-40">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-8 h-18 flex items-center justify-between gap-4">
-
-          {/* Left Brand */}
-          <Link href={storeSlug ? `/store/${storeSlug}` : '/'} className="flex items-center gap-3 shrink-0 group">
-            {store?.logo ? (
-              <img
-                src={store.logo}
-                alt={store.name}
-                className="w-9 h-9 rounded-xl object-contain bg-white border border-slate-200 shadow-xs"
-              />
-            ) : (
-              <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-xs"
-                style={{ backgroundColor: primaryColor }}
-              >
-                <ShoppingBag className="w-5 h-5" />
-              </div>
-            )}
-            <span className="font-extrabold text-lg tracking-tight text-slate-900 leading-none">
-              {store?.name || 'Checkout'}
-            </span>
-          </Link>
-
-          {/* Right: Cart Item Count + Secure Checkout Badge */}
-          <div className="flex items-center gap-4 text-xs font-bold text-slate-700">
-            <div className="flex items-center gap-1.5 text-slate-500">
-              <ShoppingBag className="w-4 h-4" />
-              <span>{cartItemsCount} {cartItemsCount === 1 ? 'item' : 'items'}</span>
-            </div>
-            <div className="hidden sm:flex items-center gap-1.5 text-emerald-600">
-              <Lock className="w-3.5 h-3.5" />
-              <span>Secure Checkout</span>
-            </div>
-          </div>
-
-        </div>
-      </header>
+      {/* Full storefront navigation — same header as the rest of the store. */}
+      <ShopEaseNavbar
+        storeName={store?.name}
+        slug={storeSlug || 'main'}
+        logo={store?.logo}
+        primaryColor={primaryColor}
+        activeTab="shop"
+      />
+      <CartDrawer primaryColor={primaryColor} />
 
       {/* =======================================================================
           2. CHECKOUT HEADER (CLEAN TITLE)
@@ -356,7 +292,7 @@ export default function CheckoutPage() {
           3. MAIN 2-COLUMN CHECKOUT CONTENT
       ======================================================================= */}
       <main className="max-w-[1400px] mx-auto px-4 sm:px-8 pb-16">
-        <form onSubmit={handleSubmitOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <form onSubmit={handleReviewOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
           {/* -------------------------------------------------------------------
               LEFT MAIN COLUMN (SHIPPING & PAYMENT FORMS)
@@ -410,152 +346,170 @@ export default function CheckoutPage() {
                 </div>
 
                 {/* Row 2: Email Address */}
-                <div>
-                  <label className="block text-slate-700 mb-1.5">
-                    Email Address{' '}
-                    {requireCustomerEmail ? (
-                      <span className="text-red-500">*</span>
-                    ) : (
-                      <span className="text-slate-400 font-normal">(Optional)</span>
-                    )}
-                  </label>
-                  <input
-                    type="email"
-                    required={requireCustomerEmail}
-                    value={emailAddress}
-                    onChange={(e) => setEmailAddress(e.target.value)}
-                    placeholder="belal.hossain@example.com"
-                    className="w-full h-11 px-4 border border-slate-200 rounded-xl text-slate-900 font-medium placeholder-slate-400 focus:outline-none focus:[border-color:var(--brand)] focus:ring-1 focus:[--tw-ring-color:var(--brand)] transition-all bg-white"
-                  />
-                </div>
-
-                {/* Row 3: Address */}
-                <div>
-                  <label className="block text-slate-700 mb-1.5">
-                    Address <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="House 12, Road 5, Dhanmondi"
-                    className="w-full h-11 px-4 border border-slate-200 rounded-xl text-slate-900 font-medium placeholder-slate-400 focus:outline-none focus:[border-color:var(--brand)] focus:ring-1 focus:[--tw-ring-color:var(--brand)] transition-all bg-white"
-                  />
-                </div>
-
-                {/* Row 4: 4 Select Dropdowns (Country, Division, District, City/Area) */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {showField('email') && (
                   <div>
                     <label className="block text-slate-700 mb-1.5">
-                      Country <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <select
-                        value={country}
-                        onChange={(e) => setCountry(e.target.value)}
-                        className="w-full h-11 pl-3 pr-8 border border-slate-200 rounded-xl text-slate-900 font-medium bg-white appearance-none focus:outline-none focus:[border-color:var(--brand)] focus:ring-1 focus:[--tw-ring-color:var(--brand)] text-xs"
-                      >
-                        <option value="Bangladesh">Bangladesh</option>
-                      </select>
-                      <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 mb-1.5">
-                      Division <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <select
-                        value={division}
-                        onChange={(e) => setDivision(e.target.value)}
-                        className="w-full h-11 pl-3 pr-8 border border-slate-200 rounded-xl text-slate-900 font-medium bg-white appearance-none focus:outline-none focus:[border-color:var(--brand)] focus:ring-1 focus:[--tw-ring-color:var(--brand)] text-xs"
-                      >
-                        <option value="Dhaka">Dhaka</option>
-                        <option value="Chittagong">Chittagong</option>
-                        <option value="Rajshahi">Rajshahi</option>
-                        <option value="Sylhet">Sylhet</option>
-                        <option value="Khulna">Khulna</option>
-                        <option value="Barisal">Barisal</option>
-                        <option value="Rangpur">Rangpur</option>
-                        <option value="Mymensingh">Mymensingh</option>
-                      </select>
-                      <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 mb-1.5">
-                      District <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <select
-                        value={district}
-                        onChange={(e) => setDistrict(e.target.value)}
-                        className="w-full h-11 pl-3 pr-8 border border-slate-200 rounded-xl text-slate-900 font-medium bg-white appearance-none focus:outline-none focus:[border-color:var(--brand)] focus:ring-1 focus:[--tw-ring-color:var(--brand)] text-xs"
-                      >
-                        <option value="Dhaka">Dhaka</option>
-                        <option value="Gazipur">Gazipur</option>
-                        <option value="Narayanganj">Narayanganj</option>
-                        <option value="Tangail">Tangail</option>
-                      </select>
-                      <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 mb-1.5">
-                      City/Area <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <select
-                        value={cityArea}
-                        onChange={(e) => setCityArea(e.target.value)}
-                        className="w-full h-11 pl-3 pr-8 border border-slate-200 rounded-xl text-slate-900 font-medium bg-white appearance-none focus:outline-none focus:[border-color:var(--brand)] focus:ring-1 focus:[--tw-ring-color:var(--brand)] text-xs"
-                      >
-                        <option value="Dhanmondi">Dhanmondi</option>
-                        <option value="Gulshan">Gulshan</option>
-                        <option value="Banani">Banani</option>
-                        <option value="Uttara">Uttara</option>
-                        <option value="Mirpur">Mirpur</option>
-                        <option value="Mohammadpur">Mohammadpur</option>
-                      </select>
-                      <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Row 5: Zip Code & Order Note */}
-                <div className={`grid grid-cols-1 ${showOrderNoteFieldAtCheckout ? 'sm:grid-cols-2' : ''} gap-4`}>
-                  <div>
-                    <label className="block text-slate-700 mb-1.5">
-                      Zip Code <span className="text-slate-400 font-normal">(Optional)</span>
+                      Email Address {reqMark('email')}
                     </label>
                     <input
-                      type="text"
-                      value={zipCode}
-                      onChange={(e) => setZipCode(e.target.value)}
-                      placeholder="1205"
+                      type="email"
+                      required={isRequired('email')}
+                      value={emailAddress}
+                      onChange={(e) => setEmailAddress(e.target.value)}
+                      placeholder="belal.hossain@example.com"
                       className="w-full h-11 px-4 border border-slate-200 rounded-xl text-slate-900 font-medium placeholder-slate-400 focus:outline-none focus:[border-color:var(--brand)] focus:ring-1 focus:[--tw-ring-color:var(--brand)] transition-all bg-white"
                     />
                   </div>
+                )}
 
-                  {showOrderNoteFieldAtCheckout && (
-                    <div>
-                      <label className="block text-slate-700 mb-1.5">
-                        Order Note (Optional)
-                      </label>
-                      <input
-                        type="text"
-                        value={orderNote}
-                        onChange={(e) => setOrderNote(e.target.value)}
-                        placeholder="Note about your order, e.g. leave at door..."
-                        className="w-full h-11 px-4 border border-slate-200 rounded-xl text-slate-900 font-medium placeholder-slate-400 focus:outline-none focus:[border-color:var(--brand)] focus:ring-1 focus:[--tw-ring-color:var(--brand)] transition-all bg-white"
-                      />
-                    </div>
-                  )}
-                </div>
+                {/* Row 3: Address */}
+                {showField('address') && (
+                  <div>
+                    <label className="block text-slate-700 mb-1.5">
+                      Address {reqMark('address')}
+                    </label>
+                    <input
+                      type="text"
+                      required={isRequired('address')}
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      placeholder="House 12, Road 5, Dhanmondi"
+                      className="w-full h-11 px-4 border border-slate-200 rounded-xl text-slate-900 font-medium placeholder-slate-400 focus:outline-none focus:[border-color:var(--brand)] focus:ring-1 focus:[--tw-ring-color:var(--brand)] transition-all bg-white"
+                    />
+                  </div>
+                )}
+
+                {/* Row 4: Location dropdowns (Country, Division, District, City/Area) */}
+                {(showField('country') || showField('division') || showField('district') || showField('cityArea')) && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {showField('country') && (
+                      <div>
+                        <label className="block text-slate-700 mb-1.5">
+                          Country {reqMark('country')}
+                        </label>
+                        <div className="relative">
+                          <select
+                            value={country}
+                            onChange={(e) => setCountry(e.target.value)}
+                            className="w-full h-11 pl-3 pr-8 border border-slate-200 rounded-xl text-slate-900 font-medium bg-white appearance-none focus:outline-none focus:[border-color:var(--brand)] focus:ring-1 focus:[--tw-ring-color:var(--brand)] text-xs"
+                          >
+                            <option value="Bangladesh">Bangladesh</option>
+                          </select>
+                          <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
+                      </div>
+                    )}
+
+                    {showField('division') && (
+                      <div>
+                        <label className="block text-slate-700 mb-1.5">
+                          Division {reqMark('division')}
+                        </label>
+                        <div className="relative">
+                          <select
+                            value={division}
+                            onChange={(e) => setDivision(e.target.value)}
+                            className="w-full h-11 pl-3 pr-8 border border-slate-200 rounded-xl text-slate-900 font-medium bg-white appearance-none focus:outline-none focus:[border-color:var(--brand)] focus:ring-1 focus:[--tw-ring-color:var(--brand)] text-xs"
+                          >
+                            <option value="Dhaka">Dhaka</option>
+                            <option value="Chittagong">Chittagong</option>
+                            <option value="Rajshahi">Rajshahi</option>
+                            <option value="Sylhet">Sylhet</option>
+                            <option value="Khulna">Khulna</option>
+                            <option value="Barisal">Barisal</option>
+                            <option value="Rangpur">Rangpur</option>
+                            <option value="Mymensingh">Mymensingh</option>
+                          </select>
+                          <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
+                      </div>
+                    )}
+
+                    {showField('district') && (
+                      <div>
+                        <label className="block text-slate-700 mb-1.5">
+                          District {reqMark('district')}
+                        </label>
+                        <div className="relative">
+                          <select
+                            value={district}
+                            onChange={(e) => setDistrict(e.target.value)}
+                            className="w-full h-11 pl-3 pr-8 border border-slate-200 rounded-xl text-slate-900 font-medium bg-white appearance-none focus:outline-none focus:[border-color:var(--brand)] focus:ring-1 focus:[--tw-ring-color:var(--brand)] text-xs"
+                          >
+                            <option value="Dhaka">Dhaka</option>
+                            <option value="Gazipur">Gazipur</option>
+                            <option value="Narayanganj">Narayanganj</option>
+                            <option value="Tangail">Tangail</option>
+                          </select>
+                          <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
+                      </div>
+                    )}
+
+                    {showField('cityArea') && (
+                      <div>
+                        <label className="block text-slate-700 mb-1.5">
+                          City/Area {reqMark('cityArea')}
+                        </label>
+                        <div className="relative">
+                          <select
+                            value={cityArea}
+                            onChange={(e) => setCityArea(e.target.value)}
+                            className="w-full h-11 pl-3 pr-8 border border-slate-200 rounded-xl text-slate-900 font-medium bg-white appearance-none focus:outline-none focus:[border-color:var(--brand)] focus:ring-1 focus:[--tw-ring-color:var(--brand)] text-xs"
+                          >
+                            <option value="Dhanmondi">Dhanmondi</option>
+                            <option value="Gulshan">Gulshan</option>
+                            <option value="Banani">Banani</option>
+                            <option value="Uttara">Uttara</option>
+                            <option value="Mirpur">Mirpur</option>
+                            <option value="Mohammadpur">Mohammadpur</option>
+                          </select>
+                          <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Row 5: Zip Code & Order Note */}
+                {(showField('zipCode') || showOrderNoteFieldAtCheckout) && (
+                  <div
+                    className={`grid grid-cols-1 ${
+                      showField('zipCode') && showOrderNoteFieldAtCheckout ? 'sm:grid-cols-2' : ''
+                    } gap-4`}
+                  >
+                    {showField('zipCode') && (
+                      <div>
+                        <label className="block text-slate-700 mb-1.5">
+                          Zip Code {reqMark('zipCode')}
+                        </label>
+                        <input
+                          type="text"
+                          required={isRequired('zipCode')}
+                          value={zipCode}
+                          onChange={(e) => setZipCode(e.target.value)}
+                          placeholder="1205"
+                          className="w-full h-11 px-4 border border-slate-200 rounded-xl text-slate-900 font-medium placeholder-slate-400 focus:outline-none focus:[border-color:var(--brand)] focus:ring-1 focus:[--tw-ring-color:var(--brand)] transition-all bg-white"
+                        />
+                      </div>
+                    )}
+
+                    {showOrderNoteFieldAtCheckout && (
+                      <div>
+                        <label className="block text-slate-700 mb-1.5">
+                          Order Note {reqMark('orderNote')}
+                        </label>
+                        <input
+                          type="text"
+                          value={orderNote}
+                          onChange={(e) => setOrderNote(e.target.value)}
+                          placeholder="Note about your order, e.g. leave at door..."
+                          className="w-full h-11 px-4 border border-slate-200 rounded-xl text-slate-900 font-medium placeholder-slate-400 focus:outline-none focus:[border-color:var(--brand)] focus:ring-1 focus:[--tw-ring-color:var(--brand)] transition-all bg-white"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {!guestCheckoutEnabled && !loggedInCustomer && !authUser && (
                   <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-800 font-semibold leading-relaxed">
@@ -577,14 +531,14 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* --- SECTION 2: SHIPPING METHOD --- */}
+            {/* --- SECTION 2: DELIVERY ZONE --- */}
             <div>
               <h2 className="text-sm font-extrabold text-slate-900 mb-3.5">
-                Shipping Method
+                Delivery Area
               </h2>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Standard Delivery */}
+                {/* Inside Dhaka */}
                 <div
                   onClick={() => setShippingMethod('standard')}
                   className={`p-4 rounded-2xl cursor-pointer transition-all flex items-center justify-between ${
@@ -607,15 +561,15 @@ export default function CheckoutPage() {
                     </div>
 
                     <div>
-                      <h4 className="text-xs font-bold text-slate-900 leading-snug">Standard Delivery</h4>
-                      <p className="text-[11px] text-slate-500 font-medium">Delivered within 2-4 business days</p>
+                      <h4 className="text-xs font-bold text-slate-900 leading-snug">Inside Dhaka</h4>
+                      <p className="text-[11px] text-slate-500 font-medium">Delivered within 1-2 business days</p>
                     </div>
                   </div>
 
-                  <span className="text-xs font-bold text-slate-900">৳60</span>
+                  <span className="text-xs font-bold text-slate-900">৳{insideDhakaCharge}</span>
                 </div>
 
-                {/* Express Delivery */}
+                {/* Outside Dhaka */}
                 <div
                   onClick={() => setShippingMethod('express')}
                   className={`p-4 rounded-2xl cursor-pointer transition-all flex items-center justify-between ${
@@ -638,12 +592,12 @@ export default function CheckoutPage() {
                     </div>
 
                     <div>
-                      <h4 className="text-xs font-bold text-slate-900 leading-snug">Express Delivery</h4>
-                      <p className="text-[11px] text-slate-500 font-medium">Delivered within 24-48 hours</p>
+                      <h4 className="text-xs font-bold text-slate-900 leading-snug">Outside Dhaka</h4>
+                      <p className="text-[11px] text-slate-500 font-medium">Delivered within 3-5 business days</p>
                     </div>
                   </div>
 
-                  <span className="text-xs font-bold text-slate-900">৳120</span>
+                  <span className="text-xs font-bold text-slate-900">৳{outsideDhakaCharge}</span>
                 </div>
               </div>
             </div>
@@ -896,23 +850,13 @@ export default function CheckoutPage() {
               className="w-full h-12 hover:brightness-110 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md flex items-center justify-center gap-2 transition-all active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               style={{ backgroundColor: primaryColor }}
             >
-              {isSubmitting ? (
-                <span>Connecting to Payment...</span>
-              ) : isBelowMinimumOrder ? (
+              {isBelowMinimumOrder ? (
                 <span>Minimum order amount is ৳{minimumOrderAmount.toLocaleString()}</span>
               ) : blockedByGuestCheckout ? (
                 <span>Log in to Checkout</span>
               ) : (
                 <>
-                  <span>
-                    {paymentMethod === 'COD'
-                      ? 'Confirm Order (Cash on Delivery)'
-                      : paymentMethod === 'BKASH'
-                      ? 'Proceed to bKash Payment'
-                      : paymentMethod === 'NAGAD'
-                      ? 'Proceed to Nagad Payment'
-                      : 'Proceed to Payment Gateway'}
-                  </span>
+                  <span>Review Order</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}

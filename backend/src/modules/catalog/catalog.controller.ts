@@ -23,6 +23,7 @@ import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CreateCategoryService } from './services/create-category.service';
+import { SeedCategoryDemoDataService } from './services/seed-category-demo-data.service';
 import { FindCategoryByIdService } from './services/find-category-by-id.service';
 import { ListCategoriesService, CategoryListResult } from './services/list-categories.service';
 import { GetCategoryKpisService } from './services/get-category-kpis.service';
@@ -152,6 +153,7 @@ import { ProductImageEntity } from './entities/product-image.entity';
 export class CatalogController {
   constructor(
     private readonly createCategoryService: CreateCategoryService,
+    private readonly seedCategoryDemoDataService: SeedCategoryDemoDataService,
     private readonly findCategoryByIdService: FindCategoryByIdService,
     private readonly listCategoriesService: ListCategoriesService,
     private readonly getCategoryKpisService: GetCategoryKpisService,
@@ -724,6 +726,19 @@ export class CatalogController {
   ): Promise<CategoryEntity> {
     const tenantId = await this.getMerchantTenantId(userId, storeId);
     return this.createCategoryService.execute(tenantId, dto);
+  }
+
+  @Post('categories/seed-demo')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Seed a demo category tree (dev only)' })
+  @RequirePermissions('products:write')
+  async seedDemoCategories(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const tenantId = await this.getMerchantTenantId(userId, storeId);
+    return this.seedCategoryDemoDataService.execute(tenantId);
   }
 
   @Get('categories/tree')

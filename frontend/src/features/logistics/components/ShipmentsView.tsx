@@ -212,6 +212,9 @@ export const ShipmentsView = () => {
   const [syncShipment] = useSyncShipmentMutation();
   const [seedDemoData, { isLoading: isSeeding }] = useSeedShipmentDemoDataMutation();
 
+  // The demo-data seeder is a development aid only — never exposed in production.
+  const isDev = process.env.NODE_ENV !== 'production';
+
   const shipments = shipmentsData?.data ?? [];
   const meta = shipmentsData?.meta ?? { page: 1, limit: limitParam, total: 0, totalPages: 0 };
 
@@ -381,9 +384,10 @@ export const ShipmentsView = () => {
   const rangeEnd = Math.min(meta.page * meta.limit, meta.total);
 
   // The empty dataset is what makes the seeder worth offering, so the control
-  // only appears when the merchant genuinely has nothing to look at.
+  // only appears when the merchant genuinely has nothing to look at — and only
+  // in development.
   const showSeedAction =
-    !isShipmentsLoading && !isShipmentsError && meta.total === 0 && !hasActiveFilters;
+    isDev && !isShipmentsLoading && !isShipmentsError && meta.total === 0 && !hasActiveFilters;
 
   return (
     <div className="space-y-5 pb-12">

@@ -46,9 +46,16 @@ export class CreateOrderService {
     const store = await this.findStoreBySlugService.execute(dto.storeSlug);
     const tenantId = store.tenantId;
 
-    // Delivery fee logic
-    const isDhaka = dto.city.toLowerCase().includes('dhaka');
-    const deliveryFee = isDhaka ? 60 : 120;
+    // Flat delivery charge by zone, taken from store settings. The checkout sends
+    // an explicit zone; older/other callers that omit it fall back to inferring
+    // "inside Dhaka" from the city name. Store defaults are 60 / 120.
+    const insideDhakaCharge = Number(store.deliveryChargeInsideDhaka ?? 60);
+    const outsideDhakaCharge = Number(store.deliveryChargeOutsideDhaka ?? 120);
+    const isInsideDhaka =
+      dto.deliveryZone
+        ? dto.deliveryZone === 'INSIDE_DHAKA'
+        : (dto.city ?? '').toLowerCase().includes('dhaka');
+    const deliveryFee = isInsideDhaka ? insideDhakaCharge : outsideDhakaCharge;
 
     let subtotal = 0;
     const orderItems: OrderItemEntity[] = [];
@@ -88,7 +95,7 @@ export class CreateOrderService {
 
         const orderItem = this.orderItemRepository.create({
           productId: product.id,
-          productTitle: product.title,
+          productTitle: product.name || product.title || 'Product',
           variantId: variant?.id,
           variantTitle: variant?.title,
           sku,
@@ -158,8 +165,8 @@ export class CreateOrderService {
       address: {
         recipientName: dto.customerName,
         phone: dto.customerPhone,
-        addressLine1: dto.shippingAddress,
-        city: dto.city,
+        addressLine1: dto.shippingAddress ?? '',
+        city: dto.city ?? '',
       },
     });
 
@@ -169,8 +176,8 @@ export class CreateOrderService {
       customerName: dto.customerName,
       customerPhone: dto.customerPhone,
       customerEmail: dto.customerEmail,
-      shippingAddress: dto.shippingAddress,
-      city: dto.city,
+      shippingAddress: dto.shippingAddress ?? '',
+      city: dto.city ?? '',
       deliveryFee,
       subtotal,
       discountAmount,

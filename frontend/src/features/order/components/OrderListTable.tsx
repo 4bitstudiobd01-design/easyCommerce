@@ -3,12 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { 
-  useGetMerchantOrdersQuery, 
+import {
+  useGetMerchantOrdersQuery,
   useGetMerchantOrderKpisQuery,
-  useUpdateOrderStatusMutation, 
-  Order, 
-  OrderStatusType 
+  useUpdateOrderStatusMutation,
+  useSeedOrderDemoDataMutation,
+  Order,
+  OrderStatusType
 } from '../api/orderApi';
 import { BulkActionPreviewModal } from './BulkActionPreviewModal';
 import { InvoiceModal } from './InvoiceModal';
@@ -43,6 +44,8 @@ import {
   ChevronRight,
   Package,
   Store,
+  Database,
+  Loader2,
 } from 'lucide-react';
 import { TableRowSkeleton } from '@/components/ui/Skeleton';
 import { ChannelBadge } from '../utils/channelBadge';
@@ -120,6 +123,21 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
   const [bulkAction, setBulkAction] = useState<{ title: string; targetStatus: OrderStatusType; requireReason?: boolean } | null>(null);
 
   const [bulkUpdateStatus, { isLoading: isBulkUpdating }] = useBulkUpdateOrderStatusMutation();
+  const [seedOrderDemoData, { isLoading: isSeeding }] = useSeedOrderDemoDataMutation();
+
+  // The demo-data seeder is a development aid only — never exposed in production.
+  const isDev = process.env.NODE_ENV !== 'production';
+
+  const handleSeedDemoData = async () => {
+    try {
+      const res = await seedOrderDemoData().unwrap();
+      toast.success(
+        res.ordersCreated > 0 ? `Seeded ${res.ordersCreated} demo orders.` : res.message,
+      );
+    } catch (err: any) {
+      toast.error(err?.data?.message || 'Failed to seed demo orders.');
+    }
+  };
 
   const handleBulkActionConfirm = async (reason?: string) => {
     if (!bulkAction) return;
@@ -195,6 +213,9 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
 
   const rawMeta = (rawOrdersData as any)?.meta || (ordersResponse as any)?.meta;
   const meta = rawMeta || { page: 1, limit: 20, total: orders.length, totalPages: 1 };
+
+  // Demo-data button: dev only, and only when the store genuinely has no orders.
+  const showSeedAction = isDev && !isOrdersLoading && meta.total === 0 && orders.length === 0;
 
   // Sync Search with URL
   useEffect(() => {
@@ -449,6 +470,22 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
         </div>
 
         <div className="flex items-center gap-2">
+          {showSeedAction && (
+            <button
+              type="button"
+              onClick={handleSeedDemoData}
+              disabled={isSeeding}
+              className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 flex items-center gap-2 shadow-sm transition-colors disabled:opacity-50"
+              title="Seed demo customer orders (development only)"
+            >
+              {isSeeding ? (
+                <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+              ) : (
+                <Database className="w-4 h-4 text-blue-600" />
+              )}
+              <span>{isSeeding ? 'Seeding…' : 'Load Demo Data'}</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={handleExportCsv}

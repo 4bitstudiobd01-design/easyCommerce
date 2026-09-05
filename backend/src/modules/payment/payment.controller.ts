@@ -110,13 +110,16 @@ export class PaymentController {
       status: payload.status,
     });
 
+    const slug = result.storeSlug || '';
+    const base = slug ? `${frontendUrl}/store/${encodeURIComponent(slug)}` : frontendUrl;
+
     if (result.success) {
       return res.redirect(
-        `${frontendUrl}/checkout/success?orderNumber=${encodeURIComponent(result.orderNumber || '')}&storeSlug=${encodeURIComponent(result.storeSlug || '')}`,
+        `${base}/checkout/success?orderNumber=${encodeURIComponent(result.orderNumber || '')}&storeSlug=${encodeURIComponent(slug)}`,
       );
     }
 
-    return res.redirect(`${frontendUrl}/checkout?status=FAIL`);
+    return res.redirect(`${base}/checkout?status=FAIL`);
   }
 
   @Post('sslcommerz/fail')

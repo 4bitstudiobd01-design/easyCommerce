@@ -42,6 +42,8 @@ export interface PendingVariant {
   compareAtPrice?: number;
   costPrice?: number;
   isEnabled: boolean;
+  /** Initial stock quantity for this variant, seeded into its inventory row on create. */
+  initialStock?: number;
   options: VariantOptionMeta[];
 }
 

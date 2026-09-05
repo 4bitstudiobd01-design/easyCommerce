@@ -276,6 +276,32 @@ export class StoreEntity {
   @Column({ type: 'int', nullable: true, default: 0 })
   minimumOrderAmount?: number;
 
+  // Flat delivery charges by zone, shown as the two shipping options at checkout.
+  @Column({ type: 'numeric', precision: 10, scale: 2, default: 60 })
+  deliveryChargeInsideDhaka: number;
+
+  @Column({ type: 'numeric', precision: 10, scale: 2, default: 120 })
+  deliveryChargeOutsideDhaka: number;
+
+  /**
+   * Per-field show/required rules for the storefront checkout form. Full Name and
+   * Phone are always shown and required, so they are not configurable here. The
+   * shape is `{ [field]: { show: boolean; required: boolean } }` for the fields
+   * email, address, country, division, district, cityArea, zipCode, orderNote.
+   * Defaults reproduce today's behaviour.
+   */
+  @Column({ type: 'jsonb', default: () => `'${JSON.stringify({
+    email: { show: true, required: false },
+    address: { show: true, required: true },
+    country: { show: true, required: true },
+    division: { show: true, required: true },
+    district: { show: true, required: true },
+    cityArea: { show: true, required: true },
+    zipCode: { show: true, required: false },
+    orderNote: { show: true, required: false },
+  })}'` })
+  checkoutFieldConfig: Record<string, { show: boolean; required: boolean }>;
+
   // --- Customer Settings ---
   @Column({ type: 'boolean', default: true })
   allowCustomerRegistration: boolean;

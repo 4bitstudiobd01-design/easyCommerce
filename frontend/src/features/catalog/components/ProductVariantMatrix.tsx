@@ -71,6 +71,8 @@ interface VariantRow {
   price?: number;
   compareAtPrice?: number;
   isEnabled: boolean;
+  /** Create mode only — per-variant initial stock, saved with the product. */
+  initialStock?: number;
   options: VariantOptionMeta[];
 }
 
@@ -145,6 +147,8 @@ export function ProductVariantMatrix({
   // Bulk edit values
   const [bulkPrice, setBulkPrice] = useState<number | ''>('');
   const [bulkComparePrice, setBulkComparePrice] = useState<number | ''>('');
+  // Create mode only — bulk-set the initial stock across selected variants.
+  const [bulkStock, setBulkStock] = useState<number | ''>('');
   const [showBulkBar, setShowBulkBar] = useState(false);
 
   // Inline Create Attribute Modal/Card State
@@ -161,8 +165,11 @@ export function ProductVariantMatrix({
   const [quickOptionInputs, setQuickOptionInputs] = useState<Record<string, string>>({});
   const [activeAddOptionAttrId, setActiveAddOptionAttrId] = useState<string | null>(null);
 
-  // Local editing buffer for variants
-  const [variantBuffer, setVariantBuffer] = useState<Record<string, Partial<ProductVariant>>>({});
+  // Local editing buffer for variants. `initialStock` only applies in create mode
+  // (a not-yet-saved product), where per-variant stock is seeded with the product.
+  const [variantBuffer, setVariantBuffer] = useState<
+    Record<string, Partial<ProductVariant> & { initialStock?: number }>
+  >({});
 
   // Toggle option selection
   const toggleOption = (attributeId: string, optionId: string) => {
@@ -431,6 +438,7 @@ export function ProductVariantMatrix({
           price: basePrice > 0 ? basePrice : undefined,
           compareAtPrice: compareAtPrice && compareAtPrice > 0 ? compareAtPrice : undefined,
           isEnabled: true,
+          initialStock: 0,
           options,
         };
       });
@@ -470,6 +478,7 @@ export function ProductVariantMatrix({
         price: patch.price,
         compareAtPrice: patch.compareAtPrice,
         isEnabled: patch.isEnabled,
+        initialStock: patch.initialStock,
       });
       setVariantBuffer((prev) => {
         const copy = { ...prev };
@@ -555,7 +564,9 @@ export function ProductVariantMatrix({
   const confirmBusy = isDeletingAttr || isDeletingVariant || isBulkDeleting;
 
   // Bulk Apply
-  const handleBulkApply = async (actionType: 'PRICE' | 'COMPARE_PRICE' | 'ENABLE' | 'DISABLE') => {
+  const handleBulkApply = async (
+    actionType: 'PRICE' | 'COMPARE_PRICE' | 'STOCK' | 'ENABLE' | 'DISABLE',
+  ) => {
     if (selectedVariantIds.length === 0) return;
 
     // Create mode: apply to the pending variants in form state.
@@ -565,6 +576,7 @@ export function ProductVariantMatrix({
         if (!selectedVariantIds.includes(key)) return v;
         if (actionType === 'PRICE' && bulkPrice !== '') return { ...v, price: Number(bulkPrice) };
         if (actionType === 'COMPARE_PRICE' && bulkComparePrice !== '') return { ...v, compareAtPrice: Number(bulkComparePrice) };
+        if (actionType === 'STOCK' && bulkStock !== '') return { ...v, initialStock: Number(bulkStock) };
         if (actionType === 'ENABLE') return { ...v, isEnabled: true };
         if (actionType === 'DISABLE') return { ...v, isEnabled: false };
         return v;
@@ -574,6 +586,7 @@ export function ProductVariantMatrix({
       setSelectedVariantIds([]);
       setBulkPrice('');
       setBulkComparePrice('');
+      setBulkStock('');
       return;
     }
 
@@ -615,6 +628,7 @@ export function ProductVariantMatrix({
         price: v.price,
         compareAtPrice: v.compareAtPrice,
         isEnabled: v.isEnabled,
+        initialStock: v.initialStock,
         options: v.options,
       }))
     : existingVariants.map((v) => ({
@@ -1162,6 +1176,27 @@ export function ProductVariantMatrix({
                       </button>
                     </div>
 
+                    {isCreateMode && (
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="Stock qty..."
+                          value={bulkStock}
+                          onChange={(e) => setBulkStock(e.target.value !== '' ? Number(e.target.value) : '')}
+                          className="px-2.5 py-1.5 bg-white border rounded-lg text-xs w-32"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleBulkApply('STOCK')}
+                          disabled={selectedVariantIds.length === 0}
+                          className="px-3 py-1.5 bg-blue-600 text-white font-bold text-xs rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                        >
+                          Apply Stock
+                        </button>
+                      </div>
+                    )}
+
                     <div className="flex items-center gap-1.5">
                       <button
                         type="button"
@@ -1219,6 +1254,7 @@ export function ProductVariantMatrix({
                       <th className="p-3">SKU</th>
                       <th className="p-3">Price ({currencySymbol})</th>
                       <th className="p-3">Compare Price ({currencySymbol})</th>
+                      {isCreateMode && <th className="p-3">Initial Stock</th>}
                       <th className="p-3">Status</th>
                       <th className="p-3 text-right">Actions</th>
                     </tr>
@@ -1233,6 +1269,10 @@ export function ProductVariantMatrix({
                           ? patch.compareAtPrice
                           : variant.compareAtPrice || '';
                       const currentSku = patch.sku !== undefined ? patch.sku : variant.sku || '';
+                      const currentStock =
+                        patch.initialStock !== undefined
+                          ? patch.initialStock
+                          : variant.initialStock ?? 0;
                       const isEnabled =
                         patch.isEnabled !== undefined ? patch.isEnabled : variant.isEnabled;
                       const isDirty = Object.keys(patch).length > 0;
@@ -1313,6 +1353,25 @@ export function ProductVariantMatrix({
                               className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs w-24 text-slate-500"
                             />
                           </td>
+                          {isCreateMode && (
+                            <td className="p-3">
+                              <input
+                                type="number"
+                                min="0"
+                                value={currentStock}
+                                onChange={(e) =>
+                                  setVariantBuffer((prev) => ({
+                                    ...prev,
+                                    [variant.id]: {
+                                      ...prev[variant.id],
+                                      initialStock: e.target.value !== '' ? Number(e.target.value) : 0,
+                                    },
+                                  }))
+                                }
+                                className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs w-20 font-bold"
+                              />
+                            </td>
+                          )}
                           <td className="p-3">
                             <button
                               type="button"

@@ -123,6 +123,15 @@ describe('ListInventoryService', () => {
     expect(item.productThumbnail).toBe('https://img.com/iphone.jpg');
   });
 
+  it('excludes the variant-product placeholder row and archived products from every query', async () => {
+    await service.execute('tenant-1', { page: 1, limit: 10 });
+
+    expect(qb.andWhere).toHaveBeenCalledWith('NOT (product.hasVariants = true AND stock.variantId IS NULL)');
+    expect(qb.andWhere).toHaveBeenCalledWith('product.status != :archivedStatus', {
+      archivedStatus: 'ARCHIVED',
+    });
+  });
+
   it('should filter by LOW_STOCK status using canonical available and threshold bounds', async () => {
     await service.execute('tenant-1', {
       status: StockStatus.LOW_STOCK,

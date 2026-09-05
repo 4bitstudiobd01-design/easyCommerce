@@ -9,7 +9,6 @@ import { ProductDetailModal } from '@/features/storefront/components/ProductDeta
 import { CartDrawer } from '@/features/storefront/components/CartDrawer';
 import { StorefrontPixelTracker } from '@/features/storefront/components/StorefrontPixelTracker';
 import { recordStorefrontVisit } from '@/features/storefront/utils/attribution';
-import { NewsletterSignupWidget } from '@/features/email-marketing/components/NewsletterSignupWidget';
 import { JsonLdScript } from '@/features/seo/components/JsonLdScript';
 import { useGetStoreSeoQuery } from '@/features/seo/api/seoApi';
 import { toggleCartDrawer, addToCart } from '@/features/storefront/slices/cartSlice';

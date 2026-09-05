@@ -197,27 +197,34 @@ export class CreateProductService {
 
     const savedProduct = await this.productRepository.save(product);
 
-    // Initial stock setup if trackInventory is enabled
-    const initialStockQty = dto.initialStock !== undefined && dto.initialStock > 0 ? dto.initialStock : 0;
     const warehouseId = await this.resolveDefaultWarehouseId(tenantId);
+
+    // Where a product's stock lives depends on whether it has variants. A simple
+    // product carries its stock on the product-level row itself, so the form's
+    // "Initial Stock Quantity" seeds that row. A variant product sells from its
+    // variants instead — each gets its own stock row seeded from the per-variant
+    // quantity set in the Variants tab — so the product-level row is opened at 0
+    // purely as a placeholder and the single form field is ignored.
+    const productLevelStockQty =
+      !hasVariants && dto.initialStock !== undefined && dto.initialStock > 0 ? dto.initialStock : 0;
     const inventoryStock = this.inventoryStockRepository.create({
       productId: savedProduct.id,
       warehouseId,
-      quantityOnHand: initialStockQty,
+      quantityOnHand: productLevelStockQty,
       quantityReserved: 0,
       reorderPoint: savedProduct.lowStockThreshold,
       tenantId,
     });
     const savedStock = await this.inventoryStockRepository.save(inventoryStock);
 
-    if (initialStockQty > 0) {
+    if (productLevelStockQty > 0) {
       const movement = this.inventoryMovementRepository.create({
         productId: savedProduct.id,
         inventoryStockId: savedStock.id,
         type: MovementType.INITIAL_STOCK,
-        quantity: initialStockQty,
+        quantity: productLevelStockQty,
         previousQuantity: 0,
-        newQuantity: initialStockQty,
+        newQuantity: productLevelStockQty,
         reason: 'Initial Stock',
         referenceType: 'CREATE_PRODUCT',
         tenantId,
@@ -256,17 +263,35 @@ export class CreateProductService {
           }),
         );
 
-        await this.inventoryStockRepository.save(
+        const variantStockQty = v.initialStock !== undefined && v.initialStock > 0 ? v.initialStock : 0;
+        const savedVariantStock = await this.inventoryStockRepository.save(
           this.inventoryStockRepository.create({
             productId: savedProduct.id,
             variantId: savedVariant.id,
             warehouseId,
-            quantityOnHand: 0,
+            quantityOnHand: variantStockQty,
             quantityReserved: 0,
             reorderPoint: savedProduct.lowStockThreshold || 10,
             tenantId,
           }),
         );
+
+        if (variantStockQty > 0) {
+          await this.inventoryMovementRepository.save(
+            this.inventoryMovementRepository.create({
+              productId: savedProduct.id,
+              variantId: savedVariant.id,
+              inventoryStockId: savedVariantStock.id,
+              type: MovementType.INITIAL_STOCK,
+              quantity: variantStockQty,
+              previousQuantity: 0,
+              newQuantity: variantStockQty,
+              reason: 'Initial Stock',
+              referenceType: 'CREATE_PRODUCT',
+              tenantId,
+            }),
+          );
+        }
       }
     }
 

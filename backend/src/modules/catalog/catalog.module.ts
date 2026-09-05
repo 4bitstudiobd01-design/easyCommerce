@@ -24,6 +24,7 @@ import { TenantModule } from '../tenant/tenant.module';
 import { StaffModule } from '../staff/staff.module';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { CreateCategoryService } from './services/create-category.service';
+import { SeedCategoryDemoDataService } from './services/seed-category-demo-data.service';
 import { FindCategoryByIdService } from './services/find-category-by-id.service';
 import { ListCategoriesService } from './services/list-categories.service';
 import { GetCategoryKpisService } from './services/get-category-kpis.service';
@@ -141,6 +142,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
   controllers: [CatalogController, ProductFeedController],
   providers: [
     CreateCategoryService,
+    SeedCategoryDemoDataService,
     FindCategoryByIdService,
     ListCategoriesService,
     GetCategoryKpisService,

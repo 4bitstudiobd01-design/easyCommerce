@@ -9,6 +9,19 @@ export interface HeroBanner {
   ctaLink?: string;
 }
 
+/** Configurable checkout form fields (Full Name and Phone are always on). */
+export type CheckoutFieldKey =
+  | 'email'
+  | 'address'
+  | 'country'
+  | 'division'
+  | 'district'
+  | 'cityArea'
+  | 'zipCode'
+  | 'orderNote';
+
+export type CheckoutFieldConfig = Record<CheckoutFieldKey, { show: boolean; required: boolean }>;
+
 export interface Store {
   id: string;
   name: string;
@@ -84,6 +97,9 @@ export interface Store {
   showCouponFieldAtCheckout?: boolean;
   showOrderNoteFieldAtCheckout?: boolean;
   minimumOrderAmount?: number;
+  deliveryChargeInsideDhaka?: number;
+  deliveryChargeOutsideDhaka?: number;
+  checkoutFieldConfig?: Partial<CheckoutFieldConfig>;
 
   // Customer settings
   allowCustomerRegistration?: boolean;
@@ -270,6 +286,9 @@ export interface UpdateStoreRequest {
   showCouponFieldAtCheckout?: boolean;
   showOrderNoteFieldAtCheckout?: boolean;
   minimumOrderAmount?: number;
+  deliveryChargeInsideDhaka?: number;
+  deliveryChargeOutsideDhaka?: number;
+  checkoutFieldConfig?: Partial<CheckoutFieldConfig>;
 
   // Customer settings
   allowCustomerRegistration?: boolean;

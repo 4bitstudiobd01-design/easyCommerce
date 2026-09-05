@@ -12,6 +12,10 @@ import { AbandonedCartEntity } from './entities/abandoned-cart.entity';
 import { OrderNoteEntity } from './entities/order-note.entity';
 import { UserEntity } from '../user/entities/user.entity';
 import { ProductEntity } from '../catalog/entities/product.entity';
+import { ProductVariantEntity } from '../catalog/entities/product-variant.entity';
+import { InventoryStockEntity } from '../inventory/entities/inventory-stock.entity';
+import { InventoryMovementEntity } from '../inventory/entities/inventory-movement.entity';
+import { WarehouseEntity } from '../inventory/entities/warehouse.entity';
 import { ConsignmentEntity } from '../logistics/entities/consignment.entity';
 import { LeadEntity } from '../customer/entities/lead.entity';
 import { TenantModule } from '../tenant/tenant.module';
@@ -30,6 +34,8 @@ import { TrackPublicOrderService } from './services/track-public-order.service';
 import { GenerateOrderInvoiceService } from './services/generate-order-invoice.service';
 import { GenerateThermalLabelService } from './services/generate-thermal-label.service';
 import { AbandonedCartService } from './services/abandoned-cart.service';
+import { SeedAbandonedCartDemoDataService } from './services/seed-abandoned-cart-demo-data.service';
+import { SeedOrderDemoDataService } from './services/seed-order-demo-data.service';
 import { EditOrderService } from './services/edit-order.service';
 import { OrderStateService } from './services/order-state.service';
 import { OrderCalculationService } from './services/order-calculation.service';
@@ -63,6 +69,10 @@ import { GenerateOrderNumberService } from './services/generate-order-number.ser
       AbandonedCartEntity,
       OrderNoteEntity,
       ProductEntity,
+      ProductVariantEntity,
+      InventoryStockEntity,
+      InventoryMovementEntity,
+      WarehouseEntity,
       ConsignmentEntity,
       PaymentEntity,
       UserEntity,
@@ -95,6 +105,8 @@ import { GenerateOrderNumberService } from './services/generate-order-number.ser
     GenerateOrderInvoiceService,
     GenerateThermalLabelService,
     AbandonedCartService,
+    SeedAbandonedCartDemoDataService,
+    SeedOrderDemoDataService,
     OrderStateService,
     OrderCalculationService,
     EditOrderService,

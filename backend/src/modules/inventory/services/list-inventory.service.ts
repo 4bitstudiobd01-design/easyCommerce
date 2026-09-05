@@ -10,6 +10,7 @@ import {
   InventoryListResponseDto,
 } from '../dto/inventory-list-response.dto';
 import { StockStatus } from '../../catalog/enums/stock-status.enum';
+import { ProductStatus } from '../../catalog/enums/product-status.enum';
 
 @Injectable()
 export class ListInventoryService {
@@ -43,6 +44,19 @@ export class ListInventoryService {
     qb: SelectQueryBuilder<T>,
     queryDto: ListInventoryQueryDto,
   ) {
+    // A variant product also carries a product-level placeholder stock row
+    // (variantId IS NULL) that is never sold from — its stock lives on the
+    // variant rows. Listing it would show a phantom "0 / Out of Stock" line for
+    // every variant product, so it is filtered out here. Simple products keep
+    // their single product-level row.
+    qb.andWhere('NOT (product.hasVariants = true AND stock.variantId IS NULL)');
+
+    // An archived product is out of the catalogue (deleted from the merchant's
+    // point of view — a hard delete cascades its stock away, an archive keeps
+    // the rows only so a restore can recover them). It must not appear in the
+    // inventory list or inflate its counts.
+    qb.andWhere('product.status != :archivedStatus', { archivedStatus: ProductStatus.ARCHIVED });
+
     if (queryDto.search && queryDto.search.trim() !== '') {
       const searchTerm = `%${queryDto.search.trim()}%`;
       qb.andWhere(

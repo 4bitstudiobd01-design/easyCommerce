@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { RootState } from '@/store';
 import {
   toggleCartDrawer,
@@ -29,6 +29,7 @@ interface CartDrawerProps {
 export function CartDrawer({ primaryColor = '#2563eb' }: CartDrawerProps = {}) {
   const dispatch = useDispatch();
   const router = useRouter();
+  const pathname = usePathname();
   const { items, isDrawerOpen } = useSelector((state: RootState) => state.cart);
 
   if (!isDrawerOpen) return null;
@@ -37,7 +38,11 @@ export function CartDrawer({ primaryColor = '#2563eb' }: CartDrawerProps = {}) {
 
   const handleProceedToCheckout = () => {
     dispatch(toggleCartDrawer(false));
-    router.push('/checkout');
+    // Prefer the store this cart belongs to (all lines share one storeSlug); fall
+    // back to the slug in the current storefront URL. Only drop to the legacy
+    // /checkout route if neither is known.
+    const slug = items[0]?.storeSlug || pathname?.match(/^\/store\/([^/]+)/)?.[1] || '';
+    router.push(slug ? `/store/${slug}/checkout` : '/checkout');
   };
 
   return (

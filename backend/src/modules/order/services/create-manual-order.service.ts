@@ -106,7 +106,7 @@ export class CreateManualOrderService {
       newItem.variantId = variant?.id;
       newItem.variantTitle = variant?.title;
       newItem.isCustomItem = false;
-      newItem.productTitle = product.title;
+      newItem.productTitle = product.name || product.title || 'Product';
       newItem.sku = sku;
       newItem.productImageUrl = variant?.image?.url ?? primaryImage?.url ?? null;
       newItem.unitPrice = unitPrice;

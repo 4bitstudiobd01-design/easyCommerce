@@ -16,7 +16,14 @@ export function InventoryTab({ form }: InventoryTabProps) {
     initialStock, setInitialStock,
     lowStockThreshold, setLowStockThreshold,
     allowBackorder, setAllowBackorder,
+    hasVariants,
+    isEditMode,
   } = form;
+
+  // A variant product carries stock per variant, not on the product itself, so a
+  // single "Initial Stock" field here would be meaningless — it is set in the
+  // Variants tab instead. In edit mode all stock is managed from the Inventory page.
+  const showInitialStock = trackInventory && !hasVariants && !isEditMode;
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
@@ -75,20 +82,31 @@ export function InventoryTab({ form }: InventoryTabProps) {
       {/* Stock Quantities Row (If Track Inventory Enabled) */}
       {trackInventory && (
         <div className="pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-              Initial Stock Quantity
-            </label>
-            <input
-              type="number"
-              min="0"
-              value={initialStock}
-              onChange={(e) => setInitialStock(e.target.value !== '' ? Number(e.target.value) : '')}
-              placeholder="100"
-              className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-            />
-            <p className="text-[10px] text-slate-400 mt-1">Initial physical stock count on creation</p>
-          </div>
+          {showInitialStock ? (
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Initial Stock Quantity
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={initialStock}
+                onChange={(e) => setInitialStock(e.target.value !== '' ? Number(e.target.value) : '')}
+                placeholder="100"
+                className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              />
+              <p className="text-[10px] text-slate-400 mt-1">Initial physical stock count on creation</p>
+            </div>
+          ) : hasVariants && !isEditMode ? (
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Initial Stock Quantity
+              </label>
+              <div className="w-full px-3.5 py-2 bg-slate-50 border border-dashed border-slate-200 rounded-lg text-xs text-slate-500">
+                Set stock for each variant in the <strong>Variants</strong> tab.
+              </div>
+            </div>
+          ) : null}
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">

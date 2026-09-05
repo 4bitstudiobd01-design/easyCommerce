@@ -118,6 +118,9 @@ export function CouriersView() {
   const [setDefaultCourier] = useSetDefaultCourierMutation();
   const [seedDemoData, { isLoading: isSeeding }] = useSeedCourierDemoDataMutation();
 
+  // The demo-data seeder is a development aid only — never exposed in production.
+  const isDev = process.env.NODE_ENV !== 'production';
+
   const couriers = useMemo(() => data?.couriers ?? [], [data]);
 
   // Every distinct service type the backend actually returned, so the filter can
@@ -232,8 +235,9 @@ export function CouriersView() {
   }
 
   const { summary } = data;
-  // The seeder is only worth offering when there is genuinely nothing set up.
-  const showSeedAction = summary.connected.count === 0 && !hasActiveFilters;
+  // The seeder is only worth offering when there is genuinely nothing set up —
+  // and only in development.
+  const showSeedAction = isDev && summary.connected.count === 0 && !hasActiveFilters;
 
   return (
     <div className="space-y-5 animate-in fade-in duration-500">

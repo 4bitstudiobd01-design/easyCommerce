@@ -27,6 +27,9 @@ export function InventorySettingsView() {
   const overview = settingsData?.overview;
   const integrity = settingsData?.integrity;
 
+  // The demo-data seeder is a development aid only — never exposed in production.
+  const isDev = process.env.NODE_ENV !== 'production';
+
   const [seedDemoData, { isLoading: isSeeding }] = useSeedInventoryDemoDataMutation();
   const [showSeedModal, setShowSeedModal] = useState(false);
   const [seedSuccessMessage, setSeedSuccessMessage] = useState<string | null>(null);
@@ -102,39 +105,41 @@ export function InventorySettingsView() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Column */}
         <div className="space-y-6">
-          {/* Main Seed / Demo Data Card */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-6">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0">
-                <Database className="w-6 h-6" />
+          {/* Main Seed / Demo Data Card — development only */}
+          {isDev && (
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-6">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+                  <Database className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-base font-extrabold text-slate-900">Seed / Demo Data</h2>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Add realistic inventory data for testing and development. Generates catalog products, multi-level variants, stock distributions, and movement logs.
+                  </p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-base font-extrabold text-slate-900">Seed / Demo Data</h2>
-                <p className="text-xs text-slate-500 mt-1">
-                  Add realistic inventory data for testing and development. Generates catalog products, multi-level variants, stock distributions, and movement logs.
-                </p>
-              </div>
-            </div>
 
-            <button
-              type="button"
-              onClick={() => setShowSeedModal(true)}
-              disabled={isSeeding}
-              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm shadow-blue-600/30 flex items-center justify-center gap-2 transition-all"
-            >
-              {isSeeding ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Seeding Demo Data...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" />
-                  <span>Seed Demo Data</span>
-                </>
-              )}
-            </button>
-          </div>
+              <button
+                type="button"
+                onClick={() => setShowSeedModal(true)}
+                disabled={isSeeding}
+                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm shadow-blue-600/30 flex items-center justify-center gap-2 transition-all"
+              >
+                {isSeeding ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Seeding Demo Data...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    <span>Seed Demo Data</span>
+                  </>
+                )}
+              </button>
+            </div>
+          )}
 
           {/* Live Data Overview Section */}
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
@@ -305,8 +310,8 @@ export function InventorySettingsView() {
         </div>
       </div>
 
-      {/* Confirmation Modal for Demo Data Seed */}
-      {showSeedModal && (
+      {/* Confirmation Modal for Demo Data Seed — development only */}
+      {isDev && showSeedModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => !isSeeding && setShowSeedModal(false)} />
           <div className="relative bg-white rounded-[24px] shadow-2xl w-full max-w-md overflow-hidden">

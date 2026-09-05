@@ -15,6 +15,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CreateOrderService } from './services/create-order.service';
 import { CreateManualOrderService } from './services/create-manual-order.service';
+import { SeedOrderDemoDataService } from './services/seed-order-demo-data.service';
 import { ListMerchantOrdersService } from './services/list-merchant-orders.service';
 import { OrderKpiService } from './services/order-kpi.service';
 import { FindOrderByIdService } from './services/find-order-by-id.service';
@@ -39,6 +40,7 @@ export class OrderController {
   constructor(
     private readonly createOrderService: CreateOrderService,
     private readonly createManualOrderService: CreateManualOrderService,
+    private readonly seedOrderDemoDataService: SeedOrderDemoDataService,
     private readonly listMerchantOrdersService: ListMerchantOrdersService,
     private readonly orderKpiService: OrderKpiService,
     private readonly findOrderByIdService: FindOrderByIdService,
@@ -99,6 +101,22 @@ export class OrderController {
       throw new BadRequestException('Merchant must create a store before managing orders.');
     }
     return this.createManualOrderService.execute(store.tenantId, userId, store, dto);
+  }
+
+  @Post('seed-demo')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Seed demo customer orders (dev only)' })
+  @ApiResponse({ status: 201, description: 'Seed result with counts' })
+  async seedDemoOrders(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const store = await this.findStoreByUserService.execute(userId, storeId);
+    if (!store) {
+      throw new BadRequestException('Merchant must create a store before managing orders.');
+    }
+    return this.seedOrderDemoDataService.execute(store.tenantId, userId, store);
   }
 
   @Get()

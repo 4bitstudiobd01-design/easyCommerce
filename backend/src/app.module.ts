@@ -19,7 +19,6 @@ import { AdminModule } from './modules/admin/admin.module';
 import { SmsModule } from './modules/sms/sms.module';
 import { CouponModule } from './modules/coupon/coupon.module';
 import { StaffModule } from './modules/staff/staff.module';
-import { EmailMarketingModule } from './modules/email-marketing/email-marketing.module';
 import { SeoModule } from './modules/seo/seo.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { CustomerModule } from './modules/customer/customer.module';
@@ -91,7 +90,6 @@ import { APP_FILTER } from '@nestjs/core';
     SmsModule,
     CouponModule,
     StaffModule,
-    EmailMarketingModule,
     SeoModule,
     BillingModule,
     CustomerModule,

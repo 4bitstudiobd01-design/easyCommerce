@@ -178,6 +178,8 @@ export interface CreateOrderRequest {
   customerEmail?: string;
   shippingAddress: string;
   city: string;
+  /** Delivery zone chosen at checkout — picks the flat charge from store settings. */
+  deliveryZone?: 'INSIDE_DHAKA' | 'OUTSIDE_DHAKA';
   paymentMethod: 'COD' | 'BKASH' | 'NAGAD' | 'SSLCOMMERZ';
   couponCode?: string;
   items: CreateOrderItemRequest[];
@@ -359,6 +361,21 @@ export const orderApi = createApi({
       invalidatesTags: ['Order', 'OrderKpi'],
       transformResponse: (response: { data: Order }) => response.data,
     }),
+    seedOrderDemoData: builder.mutation<
+      { success: boolean; message: string; ordersCreated: number },
+      void
+    >({
+      query: () => ({
+        url: '/seed-demo',
+        method: 'POST',
+      }),
+      invalidatesTags: ['Order', 'OrderKpi'],
+      transformResponse: (
+        response:
+          | { data: { success: boolean; message: string; ordersCreated: number } }
+          | { success: boolean; message: string; ordersCreated: number },
+      ) => ('data' in response ? response.data : response),
+    }),
     editOrder: builder.mutation<Order, { id: string; data: EditOrderRequest }>({
       query: ({ id, data }) => ({
         url: `/${id}`,
@@ -403,6 +420,21 @@ export const orderApi = createApi({
         method: 'POST',
       }),
       invalidatesTags: ['AbandonedCart'],
+    }),
+    seedAbandonedCartDemoData: builder.mutation<
+      { success: boolean; message: string; cartsCreated: number },
+      void
+    >({
+      query: () => ({
+        url: '/abandoned-carts/seed-demo',
+        method: 'POST',
+      }),
+      invalidatesTags: ['AbandonedCart'],
+      transformResponse: (
+        response:
+          | { data: { success: boolean; message: string; cartsCreated: number } }
+          | { success: boolean; message: string; cartsCreated: number },
+      ) => ('data' in response ? response.data : response),
     }),
     trackAbandonedCart: builder.mutation<AbandonedCart, {
       storeSlug: string;
@@ -529,10 +561,12 @@ export const {
   useGetOrderInvoiceQuery,
   useGetMerchantOrderKpisQuery,
   useCreateManualOrderMutation,
+  useSeedOrderDemoDataMutation,
   useEditOrderMutation,
   useUpdateOrderStatusMutation,
   useUpdateOrderPaymentStatusMutation,
   useGetMerchantAbandonedCartsQuery,
+  useSeedAbandonedCartDemoDataMutation,
   useSendRecoverySmsMutation,
   useTrackAbandonedCartMutation,
   useCollectCodPaymentMutation,

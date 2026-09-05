@@ -234,6 +234,59 @@ describe('CreateProductService', () => {
     );
   });
 
+  it('seeds each variant stock row from its own initialStock and skips the single form field', async () => {
+    await service.execute(mockTenantId, {
+      name: 'T-Shirt',
+      hasVariants: true,
+      // The single "Initial Stock Quantity" field is ignored for variant products.
+      initialStock: 999,
+      variants: [
+        {
+          title: 'Black / L',
+          combinationKey: 'color:black|size:l',
+          price: 1200,
+          isEnabled: true,
+          initialStock: 30,
+          options: [
+            { attributeId: 'a1', attributeName: 'Color', optionId: 'o1', optionLabel: 'Black', value: 'black' },
+            { attributeId: 'a2', attributeName: 'Size', optionId: 'o2', optionLabel: 'L', value: 'l' },
+          ],
+        },
+        {
+          title: 'Black / M',
+          combinationKey: 'color:black|size:m',
+          price: 1200,
+          isEnabled: true,
+          initialStock: 0,
+          options: [
+            { attributeId: 'a1', attributeName: 'Color', optionId: 'o1', optionLabel: 'Black', value: 'black' },
+            { attributeId: 'a2', attributeName: 'Size', optionId: 'o3', optionLabel: 'M', value: 'm' },
+          ],
+        },
+      ],
+    } as any);
+
+    // Product-level stock row (first create call) is opened at 0 for a variant product.
+    expect(stockRepo.create.mock.calls[0][0]).toEqual(
+      expect.objectContaining({ productId: 'prod-1', quantityOnHand: 0 }),
+    );
+    expect(stockRepo.create.mock.calls[0][0].variantId).toBeUndefined();
+    // Each variant's stock row carries that variant's own quantity.
+    expect(stockRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ variantId: 'var-1', quantityOnHand: 30 }),
+    );
+    expect(stockRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ variantId: 'var-1', quantityOnHand: 0 }),
+    );
+    // Only the variant with stock > 0 records an INITIAL_STOCK movement.
+    expect(movementRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ variantId: 'var-1', quantity: 30 }),
+    );
+    expect(movementRepo.create).not.toHaveBeenCalledWith(
+      expect.objectContaining({ quantity: 999 }),
+    );
+  });
+
   it('should support creating a SERVICE product type', async () => {
     const dto = {
       name: 'Consulting Session',

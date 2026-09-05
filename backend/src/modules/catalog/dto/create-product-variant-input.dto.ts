@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsOptional, IsNumber, Min, IsBoolean, IsArray, ValidateNested } from 'class-validator';
+import { IsString, IsOptional, IsNumber, Min, IsBoolean, IsArray, ValidateNested, IsInt } from 'class-validator';
 import { Type } from 'class-transformer';
 
 /**
@@ -68,6 +68,12 @@ export class CreateProductVariantInputDto {
   @IsOptional()
   @IsBoolean()
   isEnabled?: boolean;
+
+  @ApiProperty({ example: 50, description: 'Initial stock quantity for this variant on creation', required: false })
+  @IsOptional()
+  @IsInt()
+  @Min(0, { message: 'Variant initial stock cannot be negative' })
+  initialStock?: number;
 
   @ApiProperty({ type: [VariantOptionInputDto] })
   @IsArray()
