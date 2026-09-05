@@ -16,12 +16,14 @@ interface ShopEaseFooterProps {
   storeName?: string;
   slug?: string;
   primaryColor?: string;
+  logo?: string;
 }
 
 export const ShopEaseFooter = ({
   storeName = 'ShopEase',
   slug = 'main',
   primaryColor = '#2563eb',
+  logo,
 }: ShopEaseFooterProps) => {
   const [email, setEmail] = useState('');
   const [isSubscribing, setIsSubscribing] = useState(false);
@@ -43,7 +45,10 @@ export const ShopEaseFooter = ({
   return (
     <footer id="contact" className="bg-slate-950 text-slate-400 text-xs pt-16 pb-10 border-t border-slate-800/80 relative overflow-hidden">
       {/* Subtle top glow line */}
-      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent" />
+      <div
+        className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent to-transparent"
+        style={{ backgroundImage: `linear-gradient(to right, transparent, ${primaryColor}80, transparent)` }}
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* TOP 5 COLUMNS GRID */}
@@ -51,13 +56,24 @@ export const ShopEaseFooter = ({
           {/* COL 1: BRAND INFO (4 COLS ON LG) */}
           <div className="lg:col-span-4 space-y-4">
             <Link href={`/store/${slug}`} className="flex items-center gap-3 inline-flex group">
+              {logo ? (
+                <img
+                  src={logo}
+                  alt={storeName}
+                  className="w-10 h-10 rounded-2xl object-contain bg-white shadow-md transition-transform group-hover:scale-105 shrink-0"
+                />
+              ) : (
+                <div
+                  className="w-10 h-10 rounded-2xl flex items-center justify-center text-white shadow-md font-black text-base transition-transform group-hover:scale-105 shrink-0"
+                  style={{ backgroundColor: primaryColor }}
+                >
+                  {storeName ? storeName.charAt(0).toUpperCase() : <ShoppingBag className="w-4 h-4 text-white" strokeWidth={2.2} />}
+                </div>
+              )}
               <div
-                className="w-10 h-10 rounded-2xl flex items-center justify-center text-white shadow-md font-black text-base transition-transform group-hover:scale-105"
-                style={{ backgroundColor: primaryColor }}
+                className="text-xl font-black tracking-tight text-white transition-colors group-hover:[color:var(--brand-hover)]"
+                style={{ ['--brand-hover' as any]: primaryColor }}
               >
-                {storeName ? storeName.charAt(0).toUpperCase() : <ShoppingBag className="w-4 h-4 text-white" strokeWidth={2.2} />}
-              </div>
-              <div className="text-xl font-black tracking-tight text-white group-hover:text-blue-400 transition-colors">
                 {storeName}
               </div>
             </Link>
@@ -148,13 +164,18 @@ export const ShopEaseFooter = ({
             <h4 className="text-white font-black text-xs uppercase tracking-wider">Legal</h4>
             <ul className="space-y-2 text-slate-400 text-xs">
               <li>
-                <Link href="/privacy" className="hover:text-white transition-colors">
+                <Link href={`/store/${slug}/privacy`} className="hover:text-white transition-colors">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link href="/terms" className="hover:text-white transition-colors">
+                <Link href={`/store/${slug}/terms`} className="hover:text-white transition-colors">
                   Terms of Service
+                </Link>
+              </li>
+              <li>
+                <Link href={`/store/${slug}/refund-policy`} className="hover:text-white transition-colors">
+                  Refund & Returns
                 </Link>
               </li>
             </ul>
@@ -172,13 +193,15 @@ export const ShopEaseFooter = ({
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Your email"
-                className="w-full h-10 px-3 bg-slate-900 border border-slate-800 text-white placeholder:text-slate-500 text-xs rounded-xl focus:outline-none focus:border-blue-500 transition-colors"
+                className="w-full h-10 px-3 bg-slate-900 border border-slate-800 text-white placeholder:text-slate-500 text-xs rounded-xl focus:outline-none transition-colors focus:[border-color:var(--newsletter-focus)]"
+                style={{ ['--newsletter-focus' as any]: primaryColor }}
               />
               <button
                 type="submit"
                 disabled={isSubscribing}
                 aria-label="Subscribe"
-                className="h-10 w-10 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white flex items-center justify-center rounded-xl transition-colors shrink-0 shadow-xs cursor-pointer"
+                className="h-10 w-10 hover:brightness-110 active:scale-95 text-white flex items-center justify-center rounded-xl transition-colors shrink-0 shadow-xs cursor-pointer"
+                style={{ backgroundColor: primaryColor }}
               >
                 <Send className="w-3.5 h-3.5" />
               </button>

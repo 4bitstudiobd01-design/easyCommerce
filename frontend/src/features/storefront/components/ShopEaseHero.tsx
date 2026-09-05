@@ -154,7 +154,10 @@ export const ShopEaseHero = ({
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-slate-50/70 via-white to-slate-50/30 py-6 sm:py-10 lg:py-16 border-b border-slate-100">
       {/* Subtle Ambient Background Glow */}
-      <div className="absolute top-0 right-1/4 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl pointer-events-none" />
+      <div
+        className="absolute top-0 right-1/4 w-96 h-96 rounded-full blur-3xl pointer-events-none"
+        style={{ backgroundColor: `${primaryColor || '#2563eb'}1a` }}
+      />
       <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-indigo-400/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -171,7 +174,10 @@ export const ShopEaseHero = ({
 
           {/* Floating Top Pill Badge */}
           <div className="absolute top-3.5 left-3.5 z-10">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/95 backdrop-blur-md border border-white text-blue-700 text-[10px] font-black shadow-md shadow-slate-900/5">
+            <div
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/95 backdrop-blur-md border border-white text-[10px] font-black shadow-md shadow-slate-900/5"
+              style={{ color: primaryColor || '#2563eb' }}
+            >
               <Sparkles className="w-3 h-3 text-amber-500 fill-amber-500" />
               <span>Official Storefront</span>
             </div>
@@ -180,7 +186,7 @@ export const ShopEaseHero = ({
           {/* Floating Frosted Glass Action Card at Bottom */}
           <div className="absolute bottom-3 inset-x-3 z-10 bg-white/90 backdrop-blur-xl rounded-2xl p-4 sm:p-5 border border-white/95 shadow-[0_15px_35px_rgba(0,0,0,0.12)] space-y-2.5">
             <div>
-              <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest block">
+              <span className="text-[10px] font-black uppercase tracking-widest block" style={{ color: primaryColor || '#2563eb' }}>
                 Welcome to
               </span>
               <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-none mt-0.5">
@@ -230,8 +236,15 @@ export const ShopEaseHero = ({
           {/* LEFT CONTENT */}
           <div className="lg:col-span-6 space-y-6 text-left">
             {/* Pill Badge */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold shadow-2xs">
-              <Sparkles className="w-3.5 h-3.5 text-blue-600 fill-blue-600" />
+            <div
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold shadow-2xs"
+              style={{
+                backgroundColor: `${primaryColor || '#2563eb'}14`,
+                border: `1px solid ${primaryColor || '#2563eb'}33`,
+                color: primaryColor || '#2563eb',
+              }}
+            >
+              <Sparkles className="w-3.5 h-3.5" style={{ color: primaryColor || '#2563eb', fill: primaryColor || '#2563eb' }} />
               <span>Verified Store • Official Partner</span>
             </div>
 
@@ -257,7 +270,10 @@ export const ShopEaseHero = ({
                 <span>100% Genuine</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="w-5 h-5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-black text-[10px]">
+                <div
+                  className="w-5 h-5 rounded-full flex items-center justify-center font-black text-[10px]"
+                  style={{ backgroundColor: `${primaryColor || '#2563eb'}14`, color: primaryColor || '#2563eb' }}
+                >
                   ⚡
                 </div>
                 <span>Fast Dispatch</span>

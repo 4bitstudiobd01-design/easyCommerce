@@ -1,4 +1,4 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, ForbiddenException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
@@ -32,7 +32,16 @@ export class RegisterCustomerService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async execute(tenantId: string, storeId: string, dto: CustomerRegisterDto): Promise<CustomerAuthResponseDto> {
+  async execute(
+    tenantId: string,
+    storeId: string,
+    dto: CustomerRegisterDto,
+    allowCustomerRegistration = true,
+  ): Promise<CustomerAuthResponseDto> {
+    if (!allowCustomerRegistration) {
+      throw new ForbiddenException('This store is not accepting new customer registrations right now.');
+    }
+
     const phone = dto.phone.trim();
     const email = dto.email.trim().toLowerCase();
 

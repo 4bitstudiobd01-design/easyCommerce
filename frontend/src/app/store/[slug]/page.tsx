@@ -132,8 +132,8 @@ export default function StorefrontPage() {
           tiktokPixelId={(store as any).tiktokPixelId}
           googleTagManagerId={(store as any).googleTagManagerId}
         />
-        <CartDrawer />
-        <ProductDetailModal product={selectedProduct} storeSlug={slug} onClose={() => setSelectedProduct(null)} />
+        <CartDrawer primaryColor={primaryColor} />
+        <ProductDetailModal product={selectedProduct} storeSlug={slug} primaryColor={primaryColor} onClose={() => setSelectedProduct(null)} />
         <LuxuryFashionTheme
           storeName={store.name}
           slug={store.slug}
@@ -156,8 +156,8 @@ export default function StorefrontPage() {
           tiktokPixelId={(store as any).tiktokPixelId}
           googleTagManagerId={(store as any).googleTagManagerId}
         />
-        <CartDrawer />
-        <ProductDetailModal product={selectedProduct} storeSlug={slug} onClose={() => setSelectedProduct(null)} />
+        <CartDrawer primaryColor={primaryColor} />
+        <ProductDetailModal product={selectedProduct} storeSlug={slug} primaryColor={primaryColor} onClose={() => setSelectedProduct(null)} />
         <TechHubTheme
           storeName={store.name}
           slug={store.slug}
@@ -180,8 +180,8 @@ export default function StorefrontPage() {
           tiktokPixelId={(store as any).tiktokPixelId}
           googleTagManagerId={(store as any).googleTagManagerId}
         />
-        <CartDrawer />
-        <ProductDetailModal product={selectedProduct} storeSlug={slug} onClose={() => setSelectedProduct(null)} />
+        <CartDrawer primaryColor={primaryColor} />
+        <ProductDetailModal product={selectedProduct} storeSlug={slug} primaryColor={primaryColor} onClose={() => setSelectedProduct(null)} />
         <OrganicGroceryTheme
           storeName={store.name}
           slug={store.slug}
@@ -204,8 +204,8 @@ export default function StorefrontPage() {
           tiktokPixelId={(store as any).tiktokPixelId}
           googleTagManagerId={(store as any).googleTagManagerId}
         />
-        <CartDrawer />
-        <ProductDetailModal product={selectedProduct} storeSlug={slug} onClose={() => setSelectedProduct(null)} />
+        <CartDrawer primaryColor={primaryColor} />
+        <ProductDetailModal product={selectedProduct} storeSlug={slug} primaryColor={primaryColor} onClose={() => setSelectedProduct(null)} />
         <MinimalDarkTheme
           storeName={store.name}
           slug={store.slug}
@@ -230,7 +230,7 @@ export default function StorefrontPage() {
         tiktokPixelId={(store as any).tiktokPixelId}
         googleTagManagerId={(store as any).googleTagManagerId}
       />
-      <CartDrawer />
+      <CartDrawer primaryColor={primaryColor} />
       <DefaultStorefrontTheme
         storeName={store.name}
         slug={store.slug}
@@ -245,6 +245,14 @@ export default function StorefrontPage() {
         categories={categories}
         onSelectProduct={(p) => router.push(`/store/${slug}/product/${p.slug}`)}
         onAddToCart={handleThemeAddToCart}
+        showHeroSection={(store as any).showHeroSection}
+        showCategoriesSection={(store as any).showCategoriesSection}
+        showFeaturedProducts={(store as any).showFeaturedProducts}
+        showNewArrivals={(store as any).showNewArrivals}
+        showBestSellers={(store as any).showBestSellers}
+        showFullCatalog={(store as any).showFullCatalog}
+        showPromoBanner={(store as any).showPromoBanner}
+        showWhyChooseUs={(store as any).showWhyChooseUs}
       />
     </>
   );

@@ -22,7 +22,11 @@ import {
   Image as ImageIcon,
 } from 'lucide-react';
 
-export function CartDrawer() {
+interface CartDrawerProps {
+  primaryColor?: string;
+}
+
+export function CartDrawer({ primaryColor = '#2563eb' }: CartDrawerProps = {}) {
   const dispatch = useDispatch();
   const router = useRouter();
   const { items, isDrawerOpen } = useSelector((state: RootState) => state.cart);
@@ -49,7 +53,10 @@ export function CartDrawer() {
           {/* Header */}
           <div className="p-6 border-b border-slate-200 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-50 text-blue-600 rounded-xl border border-blue-100">
+              <div
+                className="p-2 rounded-xl"
+                style={{ backgroundColor: `${primaryColor}14`, color: primaryColor, border: `1px solid ${primaryColor}22` }}
+              >
                 <ShoppingBag className="w-5 h-5" />
               </div>
               <div>
@@ -99,7 +106,7 @@ export function CartDrawer() {
                             .join(' / ')}
                       </p>
                     )}
-                    <p className="text-xs font-extrabold text-blue-600 mt-0.5">৳{item.price.toLocaleString()}</p>
+                    <p className="text-xs font-extrabold mt-0.5" style={{ color: primaryColor }}>৳{item.price.toLocaleString()}</p>
 
                     <div className="flex items-center gap-2 mt-2">
                       <div className="flex items-center border border-slate-200 rounded-lg bg-white overflow-hidden">
@@ -161,13 +168,14 @@ export function CartDrawer() {
                 </div>
                 <div className="pt-2 border-t border-slate-200 flex items-center justify-between font-extrabold text-sm text-slate-900">
                   <span>Total</span>
-                  <span className="text-blue-600">৳{subtotal.toLocaleString()}</span>
+                  <span style={{ color: primaryColor }}>৳{subtotal.toLocaleString()}</span>
                 </div>
               </div>
 
               <button
                 onClick={handleProceedToCheckout}
-                className="w-full py-3.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all text-sm shadow-lg shadow-blue-600/20 active:scale-95"
+                className="w-full py-3.5 px-4 hover:brightness-110 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all text-sm shadow-lg active:scale-95"
+                style={{ backgroundColor: primaryColor, boxShadow: `0 10px 25px -6px ${primaryColor}55` }}
               >
                 <span>Proceed to Checkout</span>
                 <ArrowRight className="w-4 h-4" />

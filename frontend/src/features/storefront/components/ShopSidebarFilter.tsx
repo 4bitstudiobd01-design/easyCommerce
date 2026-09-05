@@ -11,6 +11,7 @@ import {
 
 interface ShopSidebarFilterProps {
   categories?: string[];
+  primaryColor?: string;
   selectedCategory: string;
   onSelectCategory: (category: string) => void;
   priceRange: [number, number];
@@ -26,6 +27,7 @@ interface ShopSidebarFilterProps {
 
 export const ShopSidebarFilter = ({
   categories = [],
+  primaryColor = '#2563eb',
   selectedCategory,
   onSelectCategory,
   priceRange,
@@ -65,7 +67,8 @@ export const ShopSidebarFilter = ({
           <button
             type="button"
             onClick={onResetFilters}
-            className="text-[11px] font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors"
+            className="text-[11px] font-bold hover:brightness-110 flex items-center gap-1 transition-colors"
+            style={{ color: primaryColor }}
           >
             <RotateCcw className="w-3 h-3" />
             <span>Reset</span>
@@ -103,9 +106,10 @@ export const ShopSidebarFilter = ({
                       onClick={() => onSelectCategory(isSelected ? 'ALL' : catName)}
                       className={`w-full flex items-center justify-between py-1.5 px-2 rounded-lg transition-colors text-left ${
                         isSelected
-                          ? 'text-blue-600 font-extrabold bg-blue-50/60'
+                          ? 'font-extrabold'
                           : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium'
                       }`}
+                      style={isSelected ? { color: primaryColor, backgroundColor: `${primaryColor}0f` } : undefined}
                     >
                       <span>{catName}</span>
                     </button>
@@ -143,7 +147,8 @@ export const ShopSidebarFilter = ({
                 step="100"
                 value={priceRange[1]}
                 onChange={(e) => onPriceRangeChange([priceRange[0], Number(e.target.value)])}
-                className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                style={{ accentColor: primaryColor }}
               />
             </div>
 
@@ -207,9 +212,13 @@ export const ShopSidebarFilter = ({
                           type="checkbox"
                           checked={isChecked}
                           onChange={() => onToggleBrand(brandName)}
-                          className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500 rounded-md cursor-pointer"
+                          className="w-4 h-4 rounded border-slate-300 rounded-md cursor-pointer"
+                          style={{ accentColor: primaryColor }}
                         />
-                        <span className={`text-xs font-medium ${isChecked ? 'font-bold text-blue-600' : ''}`}>
+                        <span
+                          className={`text-xs font-medium ${isChecked ? 'font-bold' : ''}`}
+                          style={isChecked ? { color: primaryColor } : undefined}
+                        >
                           {brandName}
                         </span>
                       </label>
@@ -222,7 +231,8 @@ export const ShopSidebarFilter = ({
                 <button
                   type="button"
                   onClick={() => setShowAllBrands(!showAllBrands)}
-                  className="text-[11px] font-bold text-blue-600 hover:text-blue-700 pt-1 flex items-center gap-1"
+                  className="text-[11px] font-bold hover:brightness-110 pt-1 flex items-center gap-1"
+                  style={{ color: primaryColor }}
                 >
                   <span>{showAllBrands ? 'Show Less' : `+${availableBrands.length - 5} More`}</span>
                 </button>
@@ -259,7 +269,8 @@ export const ShopSidebarFilter = ({
                       type="checkbox"
                       checked={isChecked}
                       onChange={() => onSelectMinRating(isChecked ? 0 : stars)}
-                      className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer"
+                      className="w-4 h-4 rounded border-slate-300 cursor-pointer"
+                      style={{ accentColor: primaryColor }}
                     />
                     <div className="flex items-center gap-0.5">
                       {[...Array(5)].map((_, i) => (

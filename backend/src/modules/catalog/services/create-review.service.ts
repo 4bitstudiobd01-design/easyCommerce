@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ReviewEntity } from '../entities/review.entity';
 import { ProductEntity } from '../entities/product.entity';
 import { CreateReviewDto } from '../dto/create-review.dto';
+import { StoreEntity } from '../../tenant/entities/store.entity';
 
 @Injectable()
 export class CreateReviewService {
@@ -12,6 +13,11 @@ export class CreateReviewService {
     private readonly reviewRepository: Repository<ReviewEntity>,
     @InjectRepository(ProductEntity)
     private readonly productRepository: Repository<ProductEntity>,
+    // Read-only lookup only (allowCustomerReviews / autoApproveReviews store
+    // preferences) — TenantModule exports TypeOrmModule so this repository is
+    // already available here without a circular module dependency.
+    @InjectRepository(StoreEntity)
+    private readonly storeRepository: Repository<StoreEntity>,
   ) {}
 
   async execute(productId: string, dto: CreateReviewDto): Promise<ReviewEntity> {
@@ -21,6 +27,12 @@ export class CreateReviewService {
       throw new NotFoundException(`Product with ID "${productId}" not found.`);
     }
 
+    const store = await this.storeRepository.findOne({ where: { tenantId: product.tenantId } });
+
+    if (store && store.allowCustomerReviews === false) {
+      throw new ForbiddenException('This store is not accepting product reviews right now.');
+    }
+
     const review = this.reviewRepository.create({
       rating: dto.rating,
       reviewerName: dto.reviewerName,
@@ -28,7 +40,7 @@ export class CreateReviewService {
       comment: dto.comment,
       images: dto.images || [],
       isVerifiedBuyer: true, // Default verified buyer for storefront orders
-      isApproved: false, // Requires merchant approval by default
+      isApproved: store?.autoApproveReviews ?? true, // Requires merchant approval when disabled
       productId: product.id,
       tenantId: product.tenantId,
     });

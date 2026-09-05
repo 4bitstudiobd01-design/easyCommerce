@@ -122,10 +122,11 @@ export default function ShopPage() {
         tiktokPixelId={(store as any).tiktokPixelId}
         googleTagManagerId={(store as any).googleTagManagerId}
       />
-      <CartDrawer />
+      <CartDrawer primaryColor={primaryColor} />
       <ProductDetailModal
         product={selectedProduct}
         storeSlug={slug}
+        primaryColor={primaryColor}
         onClose={() => setSelectedProduct(null)}
       />
       <React.Suspense fallback={<div className="min-h-screen bg-slate-50" />}>

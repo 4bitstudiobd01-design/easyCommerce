@@ -22,6 +22,10 @@ interface ThemeCustomizerAppProps {
 }
 
 export function ThemeCustomizerApp({ store }: ThemeCustomizerAppProps) {
+  const [name, setName] = useState(store?.name || '');
+  const [phone, setPhone] = useState(store?.phone || '');
+  const [address, setAddress] = useState(store?.address || '');
+  const [currency, setCurrency] = useState(store?.currency || 'BDT');
   const [logo, setLogo] = useState(store?.logo || '');
   const [favicon, setFavicon] = useState(store?.favicon || '');
   const [metaTitle, setMetaTitle] = useState(store?.metaTitle || '');
@@ -76,6 +80,9 @@ export function ThemeCustomizerApp({ store }: ThemeCustomizerAppProps) {
 
     try {
       await updateStore({
+        name: name.trim(),
+        phone: phone.trim() || undefined,
+        address: address.trim() || undefined,
         logo: logo || undefined,
         favicon: favicon || undefined,
         metaTitle: metaTitle.trim() || undefined,
@@ -83,9 +90,10 @@ export function ThemeCustomizerApp({ store }: ThemeCustomizerAppProps) {
         primaryColor,
         fontFamily,
         heroBanners,
+        currency,
       }).unwrap();
 
-      toast.success('Storefront theme, branding, logo & hero banners saved successfully!');
+      toast.success('Store settings, theme & hero banners saved successfully!');
       router.push('/dashboard/settings');
     } catch (err: any) {
       const message = err?.data?.message || 'Failed to save storefront theme customization.';
@@ -109,13 +117,62 @@ export function ThemeCustomizerApp({ store }: ThemeCustomizerAppProps) {
             <Sparkles className="w-4 h-4" />
           </div>
           <div>
-            <h4 className="font-extrabold text-sm text-slate-900">Brand Identity & SEO Meta Tags</h4>
-            <p className="text-[11.5px] text-slate-400 font-medium">Define your brand identity and improve your store&apos;s search visibility.</p>
+            <h4 className="font-extrabold text-sm text-slate-900">Store Identity, Branding & SEO</h4>
+            <p className="text-[11.5px] text-slate-400 font-medium">Basic store information, brand assets, and search visibility.</p>
+          </div>
+        </div>
+
+        {/* Store Identity (name, phone, pickup address) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-semibold">
+          <div>
+            <label className="block font-bold text-slate-700 mb-1.5">Store Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-600 transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="block font-bold text-slate-700 mb-1.5">Store Phone Number</label>
+            <input
+              type="text"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="01700000000"
+              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-600 transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="block font-bold text-slate-700 mb-1.5">Store Currency</label>
+            <select
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-600 transition-colors"
+            >
+              <option value="BDT">BDT (৳) - Bangladeshi Taka</option>
+              <option value="USD">USD ($) - US Dollar</option>
+            </select>
+            <p className="text-[10.5px] text-slate-400 font-medium mt-1">Used for all prices shown across your storefront and dashboard.</p>
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="block font-bold text-slate-700 mb-1.5">Warehouse Pickup Address</label>
+            <input
+              type="text"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="House #10, Road #5, Dhanmondi, Dhaka"
+              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-600 transition-colors"
+            />
           </div>
         </div>
 
         {/* Dual Mode Upload & Link for Logo & Favicon */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2 border-t border-slate-100">
           <ImageInputWithUpload
             label="Store Logo"
             value={logo}
@@ -211,6 +268,30 @@ export function ThemeCustomizerApp({ store }: ThemeCustomizerAppProps) {
                   )}
                 </button>
               ))}
+            </div>
+
+            {/* Custom color picker — pick any brand color beyond the presets above */}
+            <div className="mt-3 flex items-center gap-2.5 p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+              <div className="relative w-9 h-9 rounded-lg overflow-hidden border border-slate-200 shrink-0" style={{ backgroundColor: primaryColor }}>
+                <input
+                  type="color"
+                  value={primaryColor}
+                  onChange={(e) => setPrimaryColor(e.target.value)}
+                  className="absolute -top-1 -left-1 w-11 h-11 cursor-pointer opacity-0"
+                  aria-label="Pick a custom primary color"
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10.5px] font-bold text-slate-500 uppercase tracking-wide">Custom Color</p>
+                <input
+                  type="text"
+                  value={primaryColor}
+                  onChange={(e) => setPrimaryColor(e.target.value)}
+                  placeholder="#2563eb"
+                  spellCheck={false}
+                  className="w-full bg-transparent text-xs font-mono font-bold text-slate-900 focus:outline-none"
+                />
+              </div>
             </div>
           </div>
 

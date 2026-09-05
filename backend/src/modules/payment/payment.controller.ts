@@ -112,7 +112,7 @@ export class PaymentController {
 
     if (result.success) {
       return res.redirect(
-        `${frontendUrl}/checkout/success?orderNumber=${result.orderNumber || ''}&status=SUCCESS`,
+        `${frontendUrl}/checkout/success?orderNumber=${encodeURIComponent(result.orderNumber || '')}&storeSlug=${encodeURIComponent(result.storeSlug || '')}`,
       );
     }
 

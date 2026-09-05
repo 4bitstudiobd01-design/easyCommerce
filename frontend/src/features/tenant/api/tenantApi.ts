@@ -92,6 +92,11 @@ export interface Store {
   showFeaturedProducts?: boolean;
   showCategoriesSection?: boolean;
   featuredProductsCount?: number;
+  showNewArrivals?: boolean;
+  showBestSellers?: boolean;
+  showFullCatalog?: boolean;
+  showPromoBanner?: boolean;
+  showWhyChooseUs?: boolean;
 }
 
 export interface NavigationLink {
@@ -268,6 +273,11 @@ export interface UpdateStoreRequest {
   showFeaturedProducts?: boolean;
   showCategoriesSection?: boolean;
   featuredProductsCount?: number;
+  showNewArrivals?: boolean;
+  showBestSellers?: boolean;
+  showFullCatalog?: boolean;
+  showPromoBanner?: boolean;
+  showWhyChooseUs?: boolean;
 }
 
 const API_ROOT = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1')

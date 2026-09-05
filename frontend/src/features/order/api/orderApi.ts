@@ -129,6 +129,7 @@ export interface InvoiceData {
   amountPaid: number;
   balanceDue: number;
   generatedAt: string;
+  invoiceFooterNote?: string;
 }
 
 export interface TimelineEvent {

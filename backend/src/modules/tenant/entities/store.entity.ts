@@ -290,6 +290,21 @@ export class StoreEntity {
   @Column({ type: 'int', default: 8 })
   featuredProductsCount: number;
 
+  @Column({ type: 'boolean', default: true })
+  showNewArrivals: boolean;
+
+  @Column({ type: 'boolean', default: true })
+  showBestSellers: boolean;
+
+  @Column({ type: 'boolean', default: true })
+  showFullCatalog: boolean;
+
+  @Column({ type: 'boolean', default: true })
+  showPromoBanner: boolean;
+
+  @Column({ type: 'boolean', default: true })
+  showWhyChooseUs: boolean;
+
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 

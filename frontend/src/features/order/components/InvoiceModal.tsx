@@ -201,6 +201,12 @@ export function InvoiceModal({ isOpen, onClose, order }: InvoiceModalProps) {
               <p className="text-[10px] text-slate-500 leading-relaxed">{TERMS_AND_CONDITIONS}</p>
             </div>
 
+            {invoice?.invoiceFooterNote && (
+              <div className="pt-4 mt-4 border-t border-slate-200">
+                <p className="text-[10px] text-slate-500 leading-relaxed whitespace-pre-line">{invoice.invoiceFooterNote}</p>
+              </div>
+            )}
+
             {/* Powered by footer */}
             <div className="pt-4 mt-4 border-t border-slate-100 text-center text-[10px] text-slate-400">
               Powered by {storeName} • Generated {generatedAt.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}

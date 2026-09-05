@@ -393,4 +393,29 @@ export class UpdateStoreDto {
   @IsNumber()
   @Min(1)
   featuredProductsCount?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  showNewArrivals?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  showBestSellers?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  showFullCatalog?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  showPromoBanner?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  showWhyChooseUs?: boolean;
 }

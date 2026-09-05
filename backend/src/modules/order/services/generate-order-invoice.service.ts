@@ -13,6 +13,7 @@ export interface InvoiceData {
   amountPaid: number;
   balanceDue: number;
   generatedAt: string;
+  invoiceFooterNote?: string;
 }
 
 @Injectable()
@@ -66,6 +67,7 @@ export class GenerateOrderInvoiceService {
       amountPaid: Math.round(amountPaid * 100) / 100,
       balanceDue: Math.round(balanceDue * 100) / 100,
       generatedAt: new Date().toISOString(),
+      invoiceFooterNote: store.invoiceFooterNote || undefined,
     };
   }
 }

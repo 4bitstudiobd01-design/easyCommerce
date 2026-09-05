@@ -180,7 +180,7 @@ export class CreateManualOrderService {
     let orderNumber: string;
     try {
       orderNumber = await this.dataSource.transaction((manager) =>
-        this.generateOrderNumberService.execute(manager, tenantId),
+        this.generateOrderNumberService.execute(manager, tenantId, store.orderNumberPrefix),
       );
     } catch (err) {
       await this.rollbackStock(tenantId, deductedItems);
@@ -216,7 +216,7 @@ export class CreateManualOrderService {
       grandTotal: totals.grandTotal,
       paymentMethod: dto.paymentMethod,
       paymentStatus: dto.paymentMethod === PaymentMethodEnum.COD ? PaymentStatusEnum.COD_PENDING : PaymentStatusEnum.UNPAID,
-      orderStatus: OrderStatusEnum.PENDING,
+      orderStatus: store.autoConfirmOrders ? OrderStatusEnum.CONFIRMED : OrderStatusEnum.PENDING,
       storeSlug: store.slug,
       channel: 'manual',
       branchId: dto.branchId,

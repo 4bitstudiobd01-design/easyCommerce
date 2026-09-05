@@ -87,6 +87,7 @@ export const ShopEaseProductSection = ({
                   key={product.id}
                   product={product}
                   storeSlug={storeSlug}
+                  primaryColor={primaryColor}
                   onOpenDetail={onOpenDetail}
                 />
               ))}

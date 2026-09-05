@@ -11,10 +11,11 @@ import { ShoppingBag, X, Plus, Minus, ShieldCheck, Image as ImageIcon } from 'lu
 interface ProductDetailModalProps {
   product: Product | null;
   storeSlug: string;
+  primaryColor?: string;
   onClose: () => void;
 }
 
-export function ProductDetailModal({ product, storeSlug, onClose }: ProductDetailModalProps) {
+export function ProductDetailModal({ product, storeSlug, primaryColor = '#2563eb', onClose }: ProductDetailModalProps) {
   const dispatch = useDispatch();
   const [quantity, setQuantity] = useState(1);
 
@@ -65,7 +66,7 @@ export function ProductDetailModal({ product, storeSlug, onClose }: ProductDetai
             <div>
               {/* Category */}
               {product.category?.name && (
-                <span className="text-xs font-bold uppercase tracking-wider text-blue-600 block mb-2">
+                <span className="text-xs font-bold uppercase tracking-wider block mb-2" style={{ color: primaryColor }}>
                   {product.category.name}
                 </span>
               )}
@@ -125,7 +126,8 @@ export function ProductDetailModal({ product, storeSlug, onClose }: ProductDetai
 
               <button
                 onClick={handleAddToCart}
-                className="w-full py-3.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all text-sm shadow-lg shadow-blue-600/20 active:scale-95"
+                className="w-full py-3.5 px-4 hover:brightness-110 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all text-sm shadow-lg active:scale-95"
+                style={{ backgroundColor: primaryColor, boxShadow: `0 10px 25px -6px ${primaryColor}55` }}
               >
                 <ShoppingBag className="w-4 h-4" />
                 <span>Add {quantity} to Cart • ৳{(Number(product.basePrice) * quantity).toLocaleString()}</span>

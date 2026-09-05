@@ -130,7 +130,8 @@ export default function ProductLandingPage() {
           </p>
           <Link
             href={`/store/${slug}/shop`}
-            className="inline-flex items-center gap-2 mt-2 h-10 px-5 text-white text-xs font-bold rounded-2xl shadow-lg transition-all active:scale-[0.98] bg-blue-600"
+            className="inline-flex items-center gap-2 mt-2 h-10 px-5 text-white text-xs font-bold rounded-2xl shadow-lg transition-all active:scale-[0.98]"
+            style={{ backgroundColor: primaryColor }}
           >
             Browse the Shop
           </Link>
@@ -141,7 +142,7 @@ export default function ProductLandingPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans">
-      <CartDrawer />
+      <CartDrawer primaryColor={primaryColor} />
       <ShopEaseNavbar
         storeName={store.name || 'Storefront'}
         slug={slug}
@@ -196,10 +197,13 @@ export default function ProductLandingPage() {
                       type="button"
                       onClick={() => setSelectedImageIndex(idx)}
                       className={`w-16 h-16 rounded-xl overflow-hidden border-2 shrink-0 transition-all ${
-                        selectedImageIndex === idx
-                          ? 'border-blue-600 ring-2 ring-blue-600/20'
-                          : 'border-slate-200 opacity-70 hover:opacity-100'
+                        selectedImageIndex === idx ? '' : 'border-slate-200 opacity-70 hover:opacity-100'
                       }`}
+                      style={
+                        selectedImageIndex === idx
+                          ? { borderColor: primaryColor, boxShadow: `0 0 0 2px ${primaryColor}33` }
+                          : undefined
+                      }
                     >
                       <img src={img.url} alt="" className="w-full h-full object-cover" />
                     </button>
@@ -212,7 +216,7 @@ export default function ProductLandingPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between text-xs">
                 {product.brand?.name && (
-                  <span className="font-bold text-blue-600 uppercase tracking-wider text-[10.5px]">
+                  <span className="font-bold uppercase tracking-wider text-[10.5px]" style={{ color: primaryColor }}>
                     {product.brand.name}
                   </span>
                 )}
@@ -323,7 +327,7 @@ export default function ProductLandingPage() {
               {/* Trust highlights */}
               <div className="grid grid-cols-3 gap-2 pt-3 border-t border-slate-100 text-center">
                 <div className="p-2.5 bg-slate-50 rounded-xl">
-                  <Truck className="w-4 h-4 mx-auto text-blue-600 mb-1" />
+                  <Truck className="w-4 h-4 mx-auto mb-1" style={{ color: primaryColor }} />
                   <span className="text-[10px] font-bold text-slate-700 block">Fast Delivery</span>
                 </div>
                 <div className="p-2.5 bg-slate-50 rounded-xl">

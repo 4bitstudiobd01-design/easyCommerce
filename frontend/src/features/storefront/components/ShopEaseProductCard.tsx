@@ -10,12 +10,14 @@ import { ShopEaseProduct } from '../data/defaultStorefrontData';
 interface ShopEaseProductCardProps {
   product: ShopEaseProduct;
   storeSlug?: string;
+  primaryColor?: string;
   onOpenDetail?: (product: ShopEaseProduct) => void;
 }
 
 export const ShopEaseProductCard = ({
   product,
   storeSlug = 'main',
+  primaryColor = '#2563eb',
   onOpenDetail,
 }: ShopEaseProductCardProps) => {
   const dispatch = useDispatch();
@@ -56,7 +58,11 @@ export const ShopEaseProductCard = ({
   return (
     <div
       onClick={() => onOpenDetail?.(product)}
-      className="group bg-white rounded-3xl border border-slate-100 hover:border-blue-300/80 p-3 sm:p-4 shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_15px_30px_rgba(37,99,235,0.08)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between cursor-pointer relative active:scale-[0.98] select-none"
+      className="group bg-white rounded-3xl border border-slate-100 p-3 sm:p-4 shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between cursor-pointer relative active:scale-[0.98] select-none hover:[border-color:var(--card-border-hover)] hover:[box-shadow:0_15px_30px_var(--card-shadow-hover)]"
+      style={{
+        ['--card-border-hover' as any]: `${primaryColor}55`,
+        ['--card-shadow-hover' as any]: `${primaryColor}14`,
+      }}
     >
       {/* 1. TOP BADGE */}
       {badgeText && (
@@ -74,7 +80,7 @@ export const ShopEaseProductCard = ({
       )}
 
       {/* 2. PRODUCT IMAGE */}
-      <div className="w-full h-36 sm:h-48 rounded-2xl bg-gradient-to-b from-slate-50 to-slate-100/40 flex items-center justify-center p-3 mb-3 overflow-hidden group-hover:bg-blue-50/20 transition-colors">
+      <div className="w-full h-36 sm:h-48 rounded-2xl bg-gradient-to-b from-slate-50 to-slate-100/40 flex items-center justify-center p-3 mb-3 overflow-hidden transition-colors">
         <img
           src={imageUrl}
           alt={product.name || product.title}
@@ -85,7 +91,10 @@ export const ShopEaseProductCard = ({
 
       {/* 3. PRODUCT TITLE */}
       <div className="space-y-1.5 flex-1 flex flex-col justify-between">
-        <h3 className="text-xs sm:text-sm font-bold text-slate-800 group-hover:text-blue-600 transition-colors line-clamp-2 leading-snug">
+        <h3
+          className="text-xs sm:text-sm font-bold text-slate-800 transition-colors line-clamp-2 leading-snug group-hover:[color:var(--title-hover)]"
+          style={{ ['--title-hover' as any]: primaryColor }}
+        >
           {product.name || product.title}
         </h3>
 
@@ -119,7 +128,8 @@ export const ShopEaseProductCard = ({
           type="button"
           onClick={handleAddToCart}
           aria-label={`Add ${product.name || product.title} to cart`}
-          className="w-full mt-2.5 py-2 sm:py-2.5 px-3 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs hover:shadow-md hover:shadow-blue-500/20 cursor-pointer"
+          className="w-full mt-2.5 py-2 sm:py-2.5 px-3 hover:brightness-110 active:scale-95 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs hover:shadow-md cursor-pointer"
+          style={{ backgroundColor: primaryColor, boxShadow: `0 4px 12px -4px ${primaryColor}55` }}
         >
           <ShoppingCart className="w-3.5 h-3.5" strokeWidth={2.2} />
           <span>Add to Cart</span>

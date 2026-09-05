@@ -6,15 +6,19 @@ import { SHOPEASE_FEATURES } from '../data/defaultStorefrontData';
 
 interface ShopEaseWhyChooseUsProps {
   storeName?: string;
+  primaryColor?: string;
 }
 
-export const ShopEaseWhyChooseUs = ({ storeName = 'Our Store' }: ShopEaseWhyChooseUsProps) => {
+export const ShopEaseWhyChooseUs = ({ storeName = 'Our Store', primaryColor = '#2563eb' }: ShopEaseWhyChooseUsProps) => {
   return (
     <section className="py-14 bg-white border-t border-slate-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* SECTION TITLE */}
         <div className="text-center mb-10 space-y-2.5">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-blue-700 text-[11px] font-black uppercase tracking-wider shadow-2xs">
+          <div
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider shadow-2xs"
+            style={{ backgroundColor: `${primaryColor}14`, color: primaryColor, border: `1px solid ${primaryColor}33` }}
+          >
             <span>💎 Our Guarantee</span>
           </div>
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
@@ -28,8 +32,14 @@ export const ShopEaseWhyChooseUs = ({ storeName = 'Our Store' }: ShopEaseWhyChoo
         {/* 3 COLUMNS FEATURE ROW */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-8 max-w-5xl mx-auto">
           {/* Feature 1: Fast Delivery */}
-          <div className="flex items-center gap-4 p-5 rounded-3xl bg-slate-50/80 hover:bg-blue-50/30 transition-all duration-200 border border-slate-100/90 hover:border-blue-200 shadow-2xs group">
-            <div className="w-12 h-12 rounded-2xl bg-blue-100/80 text-blue-600 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+          <div
+            className="flex items-center gap-4 p-5 rounded-3xl bg-slate-50/80 transition-all duration-200 border border-slate-100/90 shadow-2xs group hover:[background-color:var(--feature-hover-bg)] hover:[border-color:var(--feature-hover-border)]"
+            style={{ ['--feature-hover-bg' as any]: `${primaryColor}08`, ['--feature-hover-border' as any]: `${primaryColor}33` }}
+          >
+            <div
+              className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform"
+              style={{ backgroundColor: `${primaryColor}1a`, color: primaryColor }}
+            >
               <Truck className="w-6 h-6" strokeWidth={2.2} />
             </div>
             <div>

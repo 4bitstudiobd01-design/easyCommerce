@@ -16,6 +16,7 @@ interface ShopEaseCategoriesProps {
   categories?: ShopEaseCategoryItem[];
   selectedCategory?: string;
   storeSlug?: string;
+  primaryColor?: string;
   onSelectCategory?: (category: string) => void;
 }
 
@@ -23,6 +24,7 @@ export const ShopEaseCategories = ({
   categories = [],
   selectedCategory = 'ALL',
   storeSlug = 'main',
+  primaryColor = '#2563eb',
   onSelectCategory,
 }: ShopEaseCategoriesProps) => {
   if (!categories || categories.length === 0) {
@@ -33,7 +35,10 @@ export const ShopEaseCategories = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* SECTION TITLE */}
         <div className="text-center mb-10 space-y-2.5">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-blue-700 text-[11px] font-black uppercase tracking-wider shadow-2xs">
+          <div
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider shadow-2xs"
+            style={{ backgroundColor: `${primaryColor}14`, color: primaryColor, border: `1px solid ${primaryColor}33` }}
+          >
             <span>✨ Collections</span>
           </div>
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
@@ -55,12 +60,17 @@ export const ShopEaseCategories = ({
                 onClick={() => onSelectCategory?.(cat.name)}
                 className={`bg-white rounded-3xl p-4 sm:p-5 flex flex-col items-center justify-center text-center border transition-all duration-300 cursor-pointer group active:scale-95 select-none shadow-[0_2px_10px_rgba(0,0,0,0.02)] ${
                   isSelected
-                    ? 'border-blue-600 ring-4 ring-blue-500/10 shadow-lg bg-blue-50/30'
-                    : 'border-slate-100 hover:border-blue-300/80 hover:shadow-xl hover:-translate-y-1'
+                    ? 'shadow-lg'
+                    : 'border-slate-100 hover:shadow-xl hover:-translate-y-1 hover:[border-color:var(--cat-hover-border)]'
                 }`}
+                style={
+                  isSelected
+                    ? { borderColor: primaryColor, boxShadow: `0 0 0 4px ${primaryColor}1a`, backgroundColor: `${primaryColor}08` }
+                    : { ['--cat-hover-border' as any]: `${primaryColor}55` }
+                }
               >
                 {/* CATEGORY ICON / IMAGE */}
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-b from-slate-50 to-slate-100/50 flex items-center justify-center p-2.5 mb-3 group-hover:bg-blue-50/50 transition-colors overflow-hidden border border-slate-100">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-b from-slate-50 to-slate-100/50 flex items-center justify-center p-2.5 mb-3 transition-colors overflow-hidden border border-slate-100">
                   <img
                     src={cat.imageUrl || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200&auto=format&fit=crop&q=80'}
                     alt={cat.name}
@@ -72,8 +82,9 @@ export const ShopEaseCategories = ({
                 {/* CATEGORY NAME */}
                 <span
                   className={`text-xs font-black transition-colors line-clamp-1 ${
-                    isSelected ? 'text-blue-600' : 'text-slate-800 group-hover:text-blue-600'
+                    isSelected ? '' : 'text-slate-800 group-hover:[color:var(--cat-name-hover)]'
                   }`}
+                  style={isSelected ? { color: primaryColor } : { ['--cat-name-hover' as any]: primaryColor }}
                 >
                   {cat.name}
                 </span>

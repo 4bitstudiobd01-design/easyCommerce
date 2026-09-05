@@ -39,6 +39,14 @@ interface DefaultStorefrontThemeProps {
   categories?: string[];
   onSelectProduct: (product: Product) => void;
   onAddToCart: (product: Product) => void;
+  showHeroSection?: boolean;
+  showCategoriesSection?: boolean;
+  showFeaturedProducts?: boolean;
+  showNewArrivals?: boolean;
+  showBestSellers?: boolean;
+  showFullCatalog?: boolean;
+  showPromoBanner?: boolean;
+  showWhyChooseUs?: boolean;
 }
 
 export const DefaultStorefrontTheme = ({
@@ -55,6 +63,14 @@ export const DefaultStorefrontTheme = ({
   categories = [],
   onSelectProduct,
   onAddToCart,
+  showHeroSection = true,
+  showCategoriesSection = true,
+  showFeaturedProducts = true,
+  showNewArrivals = true,
+  showBestSellers = true,
+  showFullCatalog = true,
+  showPromoBanner = true,
+  showWhyChooseUs = true,
 }: DefaultStorefrontThemeProps) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -175,8 +191,8 @@ export const DefaultStorefrontTheme = ({
 
   return (
     <div
-      className="min-h-screen bg-white font-sans text-slate-900 flex flex-col selection:bg-blue-600 selection:text-white"
-      style={fontFamily ? { fontFamily } : undefined}
+      className="min-h-screen bg-white font-sans text-slate-900 flex flex-col selection:[background-color:var(--brand-selection)] selection:text-white"
+      style={{ ...(fontFamily ? { fontFamily } : {}), ['--brand-selection' as any]: primaryColor }}
     >
       {/* 1. NAVBAR */}
       <ShopEaseNavbar
@@ -196,78 +212,90 @@ export const DefaultStorefrontTheme = ({
       <main className="flex-1">
         {/* 2. HERO BANNER — merchant banner images take priority; when none are set,
             the products tagged "Hero" fill the carousel instead. */}
-        <ShopEaseHero
-          storeName={storeName}
-          onShopNowClick={handleShopNow}
-          primaryColor={primaryColor}
-          banners={heroBanners}
-          heroProducts={heroProducts}
-          storeSlug={slug}
-        />
+        {showHeroSection && (
+          <ShopEaseHero
+            storeName={storeName}
+            onShopNowClick={handleShopNow}
+            primaryColor={primaryColor}
+            banners={heroBanners}
+            heroProducts={heroProducts}
+            storeSlug={slug}
+          />
+        )}
 
         {/* 3. CATEGORIES (Show only if store has categories) */}
-        {structuredCategories.length > 0 && (
+        {showCategoriesSection && structuredCategories.length > 0 && (
           <ShopEaseCategories
             categories={structuredCategories}
             selectedCategory={selectedCategory}
             storeSlug={slug}
+            primaryColor={primaryColor}
             onSelectCategory={handleCategorySelect}
           />
         )}
 
         {/* 4. CURATED HOMEPAGE ROWS — each hidden if the merchant placed nothing in it.
             Not affected by the category filter: these are hand-picked, ordered sets. */}
-        <ShopEaseProductSection
-          id="featured"
-          badge="✨ Featured Collection"
-          title="Featured Products"
-          subtitle="Hand-picked highlights from across the store."
-          products={featured}
-          storeSlug={slug}
-          primaryColor={primaryColor}
-          tone="muted"
-          hideWhenEmpty
-          onOpenDetail={(prod) => onSelectProduct(prod as Product)}
-        />
+        {showFeaturedProducts && (
+          <ShopEaseProductSection
+            id="featured"
+            badge="✨ Featured Collection"
+            title="Featured Products"
+            subtitle="Hand-picked highlights from across the store."
+            products={featured}
+            storeSlug={slug}
+            primaryColor={primaryColor}
+            tone="muted"
+            hideWhenEmpty
+            onOpenDetail={(prod) => onSelectProduct(prod as Product)}
+          />
+        )}
 
-        <ShopEaseProductSection
-          id="new-arrivals"
-          badge="🆕 Just In"
-          title="New Arrivals"
-          subtitle="The latest additions to the catalog."
-          products={newArrivals}
-          storeSlug={slug}
-          primaryColor={primaryColor}
-          tone="white"
-          hideWhenEmpty
-          onOpenDetail={(prod) => onSelectProduct(prod as Product)}
-        />
+        {showNewArrivals && (
+          <ShopEaseProductSection
+            id="new-arrivals"
+            badge="🆕 Just In"
+            title="New Arrivals"
+            subtitle="The latest additions to the catalog."
+            products={newArrivals}
+            storeSlug={slug}
+            primaryColor={primaryColor}
+            tone="white"
+            hideWhenEmpty
+            onOpenDetail={(prod) => onSelectProduct(prod as Product)}
+          />
+        )}
 
-        <ShopEaseProductSection
-          id="best-sellers"
-          badge="🔥 Most Popular"
-          title="Best Sellers"
-          subtitle="Customer favourites, ready to ship."
-          products={bestSellers}
-          storeSlug={slug}
-          primaryColor={primaryColor}
-          tone="muted"
-          hideWhenEmpty
-          onOpenDetail={(prod) => onSelectProduct(prod as Product)}
-        />
+        {showBestSellers && (
+          <ShopEaseProductSection
+            id="best-sellers"
+            badge="🔥 Most Popular"
+            title="Best Sellers"
+            subtitle="Customer favourites, ready to ship."
+            products={bestSellers}
+            storeSlug={slug}
+            primaryColor={primaryColor}
+            tone="muted"
+            hideWhenEmpty
+            onOpenDetail={(prod) => onSelectProduct(prod as Product)}
+          />
+        )}
 
         {/* 5. FULL CATALOG — every published product, honours the category/search filter */}
-        <ShopEaseFeaturedProducts
-          products={filteredProducts}
-          storeSlug={slug}
-          onOpenDetail={(prod) => onSelectProduct(prod as Product)}
-        />
+        {showFullCatalog && (
+          <ShopEaseFeaturedProducts
+            products={filteredProducts}
+            storeSlug={slug}
+            primaryColor={primaryColor}
+            onOpenDetail={(prod) => onSelectProduct(prod as Product)}
+          />
+        )}
 
         {/* 6. SPECIAL PROMO BANNER */}
-        <ShopEasePromoBanner onShopNowClick={handleShopNow} />
+        {showPromoBanner && <ShopEasePromoBanner onShopNowClick={handleShopNow} primaryColor={primaryColor} />}
 
         {/* 6. WHY CHOOSE US */}
-        <ShopEaseWhyChooseUs storeName={storeName} />
+        {showWhyChooseUs && <ShopEaseWhyChooseUs storeName={storeName} primaryColor={primaryColor} />}
       </main>
 
       {/* 7. DARK FOOTER */}
@@ -275,10 +303,11 @@ export const DefaultStorefrontTheme = ({
         storeName={storeName}
         slug={slug}
         primaryColor={primaryColor}
+        logo={logo}
       />
 
       {/* 8. ULTRA-MODERN NATIVE MOBILE SHOPPING APP DOCK */}
-      <StorefrontMobileBottomNav slug={slug} />
+      <StorefrontMobileBottomNav slug={slug} primaryColor={primaryColor} />
     </div>
   );
 };

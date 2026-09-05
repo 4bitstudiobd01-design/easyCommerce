@@ -199,7 +199,10 @@ export const ShopEaseShopView = ({
   );
 
   return (
-    <div className="min-h-screen bg-slate-50/50 font-sans text-slate-900 flex flex-col selection:bg-blue-600 selection:text-white pb-20 md:pb-0">
+    <div
+      className="min-h-screen bg-slate-50/50 font-sans text-slate-900 flex flex-col selection:[background-color:var(--brand-selection)] selection:text-white pb-20 md:pb-0"
+      style={{ ['--brand-selection' as any]: primaryColor }}
+    >
       {/* 1. NAVBAR WITH ACTIVE 'SHOP' TAB */}
       <ShopEaseNavbar
         storeName={storeName}
@@ -222,7 +225,7 @@ export const ShopEaseShopView = ({
       />
 
       {/* 2. SHOP PAGE HEADER BANNER */}
-      <ShopPageHeader slug={slug} totalProducts={totalProductsCount} />
+      <ShopPageHeader slug={slug} totalProducts={totalProductsCount} primaryColor={primaryColor} />
 
       {/* 3. MOBILE QUICK CATEGORY PILLS STRIP (VISIBLE ON MOBILE ONLY) */}
       <div className="lg:hidden bg-white border-b border-slate-200/80 px-4 py-2.5 overflow-x-auto scrollbar-none flex items-center gap-2">
@@ -233,10 +236,9 @@ export const ShopEaseShopView = ({
             setCurrentPage(1);
           }}
           className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
-            selectedCategory === 'ALL'
-              ? 'bg-blue-600 text-white shadow-xs'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            selectedCategory === 'ALL' ? 'text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
           }`}
+          style={selectedCategory === 'ALL' ? { backgroundColor: primaryColor } : undefined}
         >
           All
         </button>
@@ -251,10 +253,9 @@ export const ShopEaseShopView = ({
                 setCurrentPage(1);
               }}
               className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
-                isSelected
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                isSelected ? 'text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
+              style={isSelected ? { backgroundColor: primaryColor } : undefined}
             >
               {catName}
             </button>
@@ -270,10 +271,13 @@ export const ShopEaseShopView = ({
           onClick={() => setIsMobileFilterOpen(true)}
           className="flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 rounded-xl text-xs font-bold transition-all"
         >
-          <SlidersHorizontal className="w-3.5 h-3.5 text-blue-600" />
+          <SlidersHorizontal className="w-3.5 h-3.5" style={{ color: primaryColor }} />
           <span>Filters</span>
           {activeFiltersCount > 0 && (
-            <span className="w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-black flex items-center justify-center">
+            <span
+              className="w-4 h-4 rounded-full text-white text-[9px] font-black flex items-center justify-center"
+              style={{ backgroundColor: primaryColor }}
+            >
               {activeFiltersCount}
             </span>
           )}
@@ -307,6 +311,7 @@ export const ShopEaseShopView = ({
           <div className="hidden lg:block lg:col-span-3 min-w-0">
             <ShopSidebarFilter
               categories={categoryNames}
+              primaryColor={primaryColor}
               selectedCategory={selectedCategory}
               onSelectCategory={(cat) => {
                 setSelectedCategory(cat);
@@ -334,6 +339,7 @@ export const ShopEaseShopView = ({
             <ShopProductGrid
               products={pagedProducts}
               storeSlug={slug}
+              primaryColor={primaryColor}
               sortBy={sortBy}
               onSortChange={setSortBy}
               viewMode={viewMode}
@@ -353,6 +359,7 @@ export const ShopEaseShopView = ({
         isOpen={isMobileFilterOpen}
         onClose={() => setIsMobileFilterOpen(false)}
         categories={categoryNames}
+        primaryColor={primaryColor}
         selectedCategory={selectedCategory}
         onSelectCategory={(cat) => {
           setSelectedCategory(cat);
@@ -376,17 +383,18 @@ export const ShopEaseShopView = ({
       />
 
       {/* 7. SHOP TRUST & PROPOSITIONS STRIP */}
-      <ShopTrustStrip />
+      <ShopTrustStrip primaryColor={primaryColor} />
 
       {/* 8. DARK FOOTER */}
       <ShopEaseFooter
         storeName={storeName}
         slug={slug}
         primaryColor={primaryColor}
+        logo={logo}
       />
 
       {/* 9. ULTRA-MODERN NATIVE MOBILE SHOPPING APP DOCK */}
-      <StorefrontMobileBottomNav slug={slug} />
+      <StorefrontMobileBottomNav slug={slug} primaryColor={primaryColor} />
     </div>
   );
 };
