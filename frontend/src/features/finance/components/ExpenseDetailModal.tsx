@@ -87,7 +87,7 @@ export function ExpenseDetailModal({
       icon={<TrendingDown className="w-5 h-5 text-rose-600" />}
       size="lg"
     >
-      <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+      <div className="p-6 space-y-6">
         {/* Status & Source Tags Bar */}
         <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-100">
           <div className="flex flex-wrap items-center gap-2">

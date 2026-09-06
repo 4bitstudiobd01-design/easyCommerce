@@ -139,7 +139,7 @@ export function CreateInvoiceModal({ isOpen, onClose }: Props) {
       icon={<FileText className="w-5 h-5" />}
       size="xl"
     >
-      <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
+      <form onSubmit={handleSubmit} className="p-6 space-y-5">
         {/* Customer Information */}
         <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
           <h4 className="text-xs font-bold text-slate-700 uppercase">Customer Information</h4>

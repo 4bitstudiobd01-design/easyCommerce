@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
+import { Module, OnModuleInit } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { StaffModule } from '../staff/staff.module';
@@ -56,6 +57,8 @@ import { ListAccountsService } from './services/list-accounts.service';
 import { CreateAccountService } from './services/create-account.service';
 import { UpdateAccountService } from './services/update-account.service';
 import { GetAccountStatementService } from './services/get-account-statement.service';
+import { DepositToAccountService } from './services/deposit-to-account.service';
+import { DeleteAccountService } from './services/delete-account.service';
 import { ListTransfersService } from './services/list-transfers.service';
 import { CreateTransferService } from './services/create-transfer.service';
 import { GetProfitLossReportService } from './services/get-profit-loss-report.service';
@@ -154,6 +157,8 @@ import { DisburseSalaryPaymentService } from './services/disburse-salary-payment
     CreateAccountService,
     UpdateAccountService,
     GetAccountStatementService,
+    DepositToAccountService,
+    DeleteAccountService,
     ListTransfersService,
     CreateTransferService,
     GetProfitLossReportService,
@@ -194,6 +199,20 @@ import { DisburseSalaryPaymentService } from './services/disburse-salary-payment
     GetSalaryPaymentSummaryService,
     ListSalaryPaymentRunsService,
     DisburseSalaryPaymentService,
+    DepositToAccountService,
+    DeleteAccountService,
   ],
 })
-export class FinanceModule {}
+export class FinanceModule implements OnModuleInit {
+  constructor(private readonly dataSource: DataSource) {}
+
+  async onModuleInit() {
+    try {
+      await this.dataSource.query(
+        `ALTER TYPE "public"."fin_accounts_type_enum" ADD VALUE IF NOT EXISTS 'CARD'`,
+      );
+    } catch (e) {
+      // Ignored if type or value already exists
+    }
+  }
+}

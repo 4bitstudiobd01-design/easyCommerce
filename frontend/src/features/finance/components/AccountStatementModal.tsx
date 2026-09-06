@@ -72,7 +72,7 @@ export function AccountStatementModal({ isOpen, onClose, accountId }: Props) {
       icon={<Landmark className="w-5 h-5" />}
       size="xl"
     >
-      <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+      <div className="p-6 space-y-6">
         {isLoading ? (
           <div className="space-y-4 animate-pulse">
             <div className="h-20 bg-slate-100 rounded-xl" />

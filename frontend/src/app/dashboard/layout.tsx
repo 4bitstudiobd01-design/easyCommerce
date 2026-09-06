@@ -9,6 +9,7 @@ import { useGetMyStoreQuery } from '@/features/tenant/api/tenantApi';
 import { DashboardHeader } from '@/features/dashboard/components/DashboardHeader';
 import { Toaster } from 'sonner';
 import { ConnectionStatusBanner } from '@/components/ui/ConnectionStatusBanner';
+import { DockedChatManager } from '@/features/crm/components/omnichannel/DockedChatManager';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, token, isAuthenticated } = useSelector((state: RootState) => state.auth);
@@ -146,8 +147,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {children}
           </div>
         </main>
-
       </div>
+
+      {/* 3. Messenger-Style Floating Bottom Chat Dock */}
+      <DockedChatManager />
     </div>
   );
 }

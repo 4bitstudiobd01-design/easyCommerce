@@ -25,15 +25,22 @@ import {
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  initialAccountId?: string;
 }
 
-export function CreateExpenseModal({ isOpen, onClose }: Props) {
+export function CreateExpenseModal({ isOpen, onClose, initialAccountId }: Props) {
   const [amount, setAmount] = useState('');
   const [transactionDate, setTransactionDate] = useState(
     new Date().toISOString().split('T')[0],
   );
   const [categoryCode, setCategoryCode] = useState('MARKETING');
-  const [accountId, setAccountId] = useState('');
+  const [accountId, setAccountId] = useState(initialAccountId || '');
+
+  React.useEffect(() => {
+    if (initialAccountId) {
+      setAccountId(initialAccountId);
+    }
+  }, [initialAccountId, isOpen]);
   const [description, setDescription] = useState('');
   const [reference, setReference] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
@@ -141,7 +148,7 @@ export function CreateExpenseModal({ isOpen, onClose }: Props) {
       icon={<TrendingDown className="w-5 h-5 text-rose-600" />}
       size="lg"
     >
-      <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+      <form onSubmit={handleSubmit} className="p-6 space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">

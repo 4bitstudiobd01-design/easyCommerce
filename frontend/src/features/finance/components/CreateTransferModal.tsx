@@ -13,10 +13,17 @@ import {
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  initialFromAccountId?: string;
 }
 
-export function CreateTransferModal({ isOpen, onClose }: Props) {
-  const [fromAccountId, setFromAccountId] = useState('');
+export function CreateTransferModal({ isOpen, onClose, initialFromAccountId }: Props) {
+  const [fromAccountId, setFromAccountId] = useState(initialFromAccountId || '');
+
+  React.useEffect(() => {
+    if (initialFromAccountId) {
+      setFromAccountId(initialFromAccountId);
+    }
+  }, [initialFromAccountId, isOpen]);
   const [toAccountId, setToAccountId] = useState('');
   const [amount, setAmount] = useState('');
   const [fee, setFee] = useState('');

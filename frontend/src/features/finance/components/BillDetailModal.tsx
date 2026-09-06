@@ -46,7 +46,7 @@ export function BillDetailModal({ isOpen, onClose, bill, onPayBill }: Props) {
       icon={<Receipt className="w-5 h-5" />}
       size="xl"
     >
-      <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+      <div className="p-6 space-y-6">
         {/* Top bar with Status */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-200">
           <div className="flex items-center gap-2">

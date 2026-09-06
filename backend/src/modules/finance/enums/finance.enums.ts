@@ -1,6 +1,7 @@
 export enum FinanceAccountTypeEnum {
   CASH = 'CASH',
   BANK = 'BANK',
+  CARD = 'CARD',
   PAYMENT_GATEWAY = 'PAYMENT_GATEWAY',
   DIGITAL_WALLET = 'DIGITAL_WALLET',
 }

@@ -26,7 +26,20 @@ export type StaffPermissionType =
   | 'hr:shifts:manage'
   | 'hr:expenses:manage'
   | 'hr:payroll:manage'
-  | 'hr:notices:manage';
+  | 'hr:notices:manage'
+  | 'finance:read'
+  | 'finance:manage'
+  | 'finance:transactions:manage'
+  | 'finance:invoices:manage'
+  | 'finance:bills:manage'
+  | 'finance:accounts:manage'
+  | 'finance:transfers:manage'
+  | 'finance:reports:read'
+  | 'finance:settings:manage'
+  | 'accounting:read'
+  | 'accounting:manage'
+  | 'accounting:settings:manage'
+  | 'purchases:read';
 
 export interface StaffMember {
   id: string;

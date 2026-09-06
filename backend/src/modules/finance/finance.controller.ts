@@ -44,6 +44,8 @@ import { ListAccountsService } from './services/list-accounts.service';
 import { CreateAccountService } from './services/create-account.service';
 import { UpdateAccountService } from './services/update-account.service';
 import { GetAccountStatementService } from './services/get-account-statement.service';
+import { DepositToAccountService } from './services/deposit-to-account.service';
+import { DeleteAccountService } from './services/delete-account.service';
 import { ListTransfersService } from './services/list-transfers.service';
 import { CreateTransferService } from './services/create-transfer.service';
 import { GetProfitLossReportService } from './services/get-profit-loss-report.service';
@@ -74,7 +76,11 @@ import { GetSalaryPaymentRunDetailService } from './services/get-salary-payment-
 import { DisburseSalaryPaymentService } from './services/disburse-salary-payment.service';
 import { ExportFinanceDataService, ExportFinanceQueryDto } from './services/export-finance-data.service';
 
-import { CreateFinanceAccountDto, UpdateFinanceAccountDto } from './dto/account.dto';
+import {
+  CreateFinanceAccountDto,
+  UpdateFinanceAccountDto,
+  DepositToFinanceAccountDto,
+} from './dto/account.dto';
 import { CreateFinanceCategoryDto } from './dto/category.dto';
 import {
   CreateFinanceTransactionDto,
@@ -156,6 +162,8 @@ export class FinanceController {
     private readonly createAccountService: CreateAccountService,
     private readonly updateAccountService: UpdateAccountService,
     private readonly getAccountStatementService: GetAccountStatementService,
+    private readonly depositToAccountService: DepositToAccountService,
+    private readonly deleteAccountService: DeleteAccountService,
     private readonly listTransfersService: ListTransfersService,
     private readonly createTransferService: CreateTransferService,
     private readonly getProfitLossReportService: GetProfitLossReportService,
@@ -675,6 +683,35 @@ export class FinanceController {
   ) {
     const store = await this.getStoreContext(userId, headerStoreId);
     return this.updateAccountService.execute(store.id, id, dto);
+  }
+
+  @Post('accounts/:id/deposit')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('finance:accounts:manage', 'finance:manage')
+  @ApiOperation({ summary: 'Deposit money into a financial account' })
+  async depositToAccount(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') id: string,
+    @Body() dto: DepositToFinanceAccountDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.depositToAccountService.execute(store.tenantId, store.id, userId, id, dto);
+  }
+
+  @Delete('accounts/:id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('finance:accounts:manage', 'finance:manage')
+  @ApiOperation({ summary: 'Delete or deactivate financial account' })
+  async deleteAccount(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') id: string,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.deleteAccountService.execute(store.id, id);
   }
 
   @Get('accounts/:id/statement')

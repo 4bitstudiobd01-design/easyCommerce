@@ -1,7 +1,7 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { createBaseQueryWithReauth } from '@/store/baseQueryWithReauth';
 
-export type FinanceAccountType = 'CASH' | 'BANK' | 'PAYMENT_GATEWAY' | 'DIGITAL_WALLET';
+export type FinanceAccountType = 'CASH' | 'BANK' | 'CARD' | 'PAYMENT_GATEWAY' | 'DIGITAL_WALLET';
 export type FinanceAccountClass = 'ASSET' | 'LIABILITY' | 'EQUITY' | 'REVENUE' | 'EXPENSE';
 export type FinanceNormalBalance = 'DEBIT' | 'CREDIT';
 export type FinanceLineType = 'DEBIT' | 'CREDIT';
@@ -1573,15 +1573,16 @@ export const financeApi = createApi({
     getAccounts: builder.query<AccountsResponse, void>({
       query: () => '/finance/accounts',
       transformResponse: (response: any) => {
-        if (Array.isArray(response)) {
+        const payload = response?.data !== undefined ? response.data : response;
+        if (Array.isArray(payload)) {
           return {
-            items: response,
-            totalBalance: response.reduce((sum, a) => sum + Number(a.currentBalance || 0), 0),
+            items: payload,
+            totalBalance: payload.reduce((sum: number, a: any) => sum + Number(a.currentBalance || 0), 0),
           };
         }
         return {
-          items: Array.isArray(response?.items) ? response.items : [],
-          totalBalance: Number(response?.totalBalance || 0),
+          items: Array.isArray(payload?.items) ? payload.items : [],
+          totalBalance: Number(payload?.totalBalance || 0),
         };
       },
       providesTags: ['FinanceAccounts'],
@@ -1605,6 +1606,9 @@ export const financeApi = createApi({
         method: 'POST',
         body,
       }),
+      transformResponse: (response: any) => {
+        return response?.data !== undefined ? response.data : response;
+      },
       invalidatesTags: ['FinanceAccounts', 'FinanceOverview'],
     }),
 
@@ -1626,6 +1630,44 @@ export const financeApi = createApi({
         method: 'PATCH',
         body,
       }),
+      transformResponse: (response: any) => {
+        return response?.data !== undefined ? response.data : response;
+      },
+      invalidatesTags: ['FinanceAccounts', 'FinanceOverview'],
+    }),
+
+    depositToAccount: builder.mutation<
+      { account: FinanceAccount; transaction: FinanceTransaction },
+      {
+        accountId: string;
+        amount: number;
+        depositDate?: string;
+        source?: string;
+        categoryCode?: string;
+        reference?: string;
+        paymentMethod?: string;
+        notes?: string;
+      }
+    >({
+      query: ({ accountId, ...body }) => ({
+        url: `/finance/accounts/${accountId}/deposit`,
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response: any) => {
+        return response?.data !== undefined ? response.data : response;
+      },
+      invalidatesTags: ['FinanceAccounts', 'FinanceOverview', 'FinanceTransactions'],
+    }),
+
+    deleteAccount: builder.mutation<{ success: boolean; message: string; deactivated?: boolean }, string>({
+      query: (id) => ({
+        url: `/finance/accounts/${id}`,
+        method: 'DELETE',
+      }),
+      transformResponse: (response: any) => {
+        return response?.data !== undefined ? response.data : response;
+      },
       invalidatesTags: ['FinanceAccounts', 'FinanceOverview'],
     }),
 
@@ -1641,21 +1683,25 @@ export const financeApi = createApi({
           params,
         };
       },
+      transformResponse: (response: any) => {
+        return response?.data !== undefined ? response.data : response;
+      },
     }),
 
     // Transfers
     getTransfers: builder.query<TransfersResponse, void>({
       query: () => '/finance/transfers',
       transformResponse: (response: any) => {
-        if (Array.isArray(response)) {
+        const payload = response?.data !== undefined ? response.data : response;
+        if (Array.isArray(payload)) {
           return {
-            items: response,
-            totalTransferred: response.reduce((sum, t) => sum + Number(t.amount || 0), 0),
+            items: payload,
+            totalTransferred: payload.reduce((sum: number, t: any) => sum + Number(t.amount || 0), 0),
           };
         }
         return {
-          items: Array.isArray(response?.items) ? response.items : [],
-          totalTransferred: Number(response?.totalTransferred || 0),
+          items: Array.isArray(payload?.items) ? payload.items : [],
+          totalTransferred: Number(payload?.totalTransferred || 0),
         };
       },
       providesTags: ['FinanceTransfers'],
@@ -1678,6 +1724,9 @@ export const financeApi = createApi({
         method: 'POST',
         body,
       }),
+      transformResponse: (response: any) => {
+        return response?.data !== undefined ? response.data : response;
+      },
       invalidatesTags: ['FinanceTransfers', 'FinanceAccounts', 'FinanceOverview', 'FinanceTransactions', 'FinanceReports'],
     }),
 
@@ -1873,6 +1922,8 @@ export const {
   useGetAccountsQuery,
   useCreateAccountMutation,
   useUpdateAccountMutation,
+  useDepositToAccountMutation,
+  useDeleteAccountMutation,
   useGetAccountStatementQuery,
   useGetTransfersQuery,
   useCreateTransferMutation,

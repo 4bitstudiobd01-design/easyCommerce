@@ -65,3 +65,33 @@ export class UpdateFinanceAccountDto {
   @IsOptional()
   notes?: string;
 }
+
+export class DepositToFinanceAccountDto {
+  @IsNumber()
+  @Type(() => Number)
+  amount: number;
+
+  @IsString()
+  @IsOptional()
+  depositDate?: string;
+
+  @IsString()
+  @IsOptional()
+  source?: string;
+
+  @IsString()
+  @IsOptional()
+  categoryCode?: string;
+
+  @IsString()
+  @IsOptional()
+  reference?: string;
+
+  @IsString()
+  @IsOptional()
+  paymentMethod?: string;
+
+  @IsString()
+  @IsOptional()
+  notes?: string;
+}
