@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store';
 import { useValidatePublicCouponMutation } from '@/features/coupon/api/couponApi';
+import { useTrackAbandonedCartMutation } from '@/features/order/api/orderApi';
 import { useGetPublicStoreProductsQuery } from '@/features/storefront/api/storefrontApi';
 import { CustomerAuthModal } from '@/features/storefront/components/CustomerAuthModal';
 import { ShopEaseNavbar } from '@/features/storefront/components/ShopEaseNavbar';
@@ -75,6 +76,7 @@ export function CheckoutView({ storeSlugFromRoute }: { storeSlugFromRoute?: stri
   );
   const [couponError, setCouponError] = useState('');
   const [validateCoupon, { isLoading: isValidatingCoupon }] = useValidatePublicCouponMutation();
+  const [trackAbandonedCart] = useTrackAbandonedCartMutation();
 
   const isSubmitting = false;
 
@@ -257,6 +259,38 @@ export function CheckoutView({ storeSlugFromRoute }: { storeSlugFromRoute?: stri
         appliedCoupon: showCouponFieldAtCheckout ? appliedCoupon : null,
       }),
     );
+
+    // Record this as an abandoned cart — the customer has entered full checkout
+    // details but hasn't placed the order yet. Fire-and-forget: a failure here
+    // must never block the customer from reaching the review page. The backend
+    // dedupes on (tenantId, phone) and clears it once the order is placed.
+    if (storeSlug) {
+      const trackedPhone = countryCode + phoneNumber.replace(/\D/g, '');
+      const shippingAddress = [address, cityArea, district, division, zipCode]
+        .map((p) => (p || '').trim())
+        .filter(Boolean)
+        .join(', ');
+      trackAbandonedCart({
+        storeSlug,
+        customerPhone: trackedPhone,
+        customerName: fullName || undefined,
+        customerEmail: emailAddress || undefined,
+        shippingAddress: shippingAddress || undefined,
+        itemsJson: activeCartItems.map((item) => ({
+          productId: item.productId,
+          variantId: item.variantId,
+          name: (item as any).productTitle || (item as any).title || 'Product',
+          unitPrice: item.price || (item as any).basePrice || 0,
+          quantity: item.quantity,
+          lineTotal: (item.price || (item as any).basePrice || 0) * item.quantity,
+        })),
+        totalAmount,
+      })
+        .unwrap()
+        .catch(() => {
+          // Silent — abandoned-cart tracking is analytics, not part of checkout.
+        });
+    }
 
     router.push(storeSlug ? `/store/${storeSlug}/checkout/review` : '/checkout/review');
   };

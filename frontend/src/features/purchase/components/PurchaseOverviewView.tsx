@@ -2,7 +2,6 @@
 
 import React, { useMemo } from 'react';
 import Link from 'next/link';
-import { toast } from 'sonner';
 import {
   ShoppingCart,
   FileText,
@@ -31,7 +30,6 @@ import {
 } from 'recharts';
 import {
   useGetPurchaseOverviewQuery,
-  useSeedPurchaseDemoMutation,
   type PurchaseOrderStatus,
 } from '../api/purchaseApi';
 import { PurchaseTabsHeader, type PurchaseTabKey } from './PurchaseTabsHeader';
@@ -90,9 +88,6 @@ interface PurchaseOverviewViewProps {
 
 export function PurchaseOverviewView({ activeTab = 'overview', onNavigateTab }: PurchaseOverviewViewProps = {}) {
   const { data, isLoading } = useGetPurchaseOverviewQuery();
-  const [seedDemo, { isLoading: isSeeding }] = useSeedPurchaseDemoMutation();
-
-  const isDev = process.env.NODE_ENV !== 'production';
 
   const trend = useMemo(
     () =>
@@ -156,17 +151,6 @@ export function PurchaseOverviewView({ activeTab = 'overview', onNavigateTab }: 
       data.recentPurchases.length > 0 ||
       donutTotal > 0);
 
-  const runSeed = async () => {
-    try {
-      const res = await seedDemo().unwrap();
-      toast.success(res.message ?? 'Demo data seeded.');
-    } catch (err) {
-      toast.error(
-        (err as { data?: { message?: string } })?.data?.message ??
-          'Could not seed demo data.',
-      );
-    }
-  };
 
   return (
     <div className="space-y-6 pb-12 text-slate-800">
@@ -264,16 +248,6 @@ export function PurchaseOverviewView({ activeTab = 'overview', onNavigateTab }: 
               <Plus className="w-4 h-4" />
               Record a purchase
             </Link>
-            {isDev && (
-              <button
-                type="button"
-                onClick={runSeed}
-                disabled={isSeeding}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-xl transition shadow-2xs disabled:opacity-60"
-              >
-                {isSeeding ? 'Seeding…' : 'Load demo data'}
-              </button>
-            )}
           </div>
         </div>
       ) : (

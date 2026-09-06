@@ -13,7 +13,6 @@ import {
   Loader2,
   AlertCircle,
   X,
-  Database,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -23,7 +22,6 @@ import {
   useGetCourierProvidersQuery,
   useCancelShipmentMutation,
   useSyncShipmentMutation,
-  useSeedShipmentDemoDataMutation,
   type Shipment,
   type ShipmentFilters,
   type ShipmentStatus,
@@ -210,10 +208,6 @@ export const ShipmentsView = () => {
 
   const [cancelShipment, { isLoading: isCancellingShipment }] = useCancelShipmentMutation();
   const [syncShipment] = useSyncShipmentMutation();
-  const [seedDemoData, { isLoading: isSeeding }] = useSeedShipmentDemoDataMutation();
-
-  // The demo-data seeder is a development aid only — never exposed in production.
-  const isDev = process.env.NODE_ENV !== 'production';
 
   const shipments = shipmentsData?.data ?? [];
   const meta = shipmentsData?.meta ?? { page: 1, limit: limitParam, total: 0, totalPages: 0 };
@@ -339,20 +333,6 @@ export const ShipmentsView = () => {
     }
   };
 
-  const handleSeedDemoData = async () => {
-    try {
-      const result = await seedDemoData().unwrap();
-      toast.success(
-        `Seeded ${result.shipmentsCreated} shipments across ${result.ordersCreated} orders.`,
-      );
-    } catch (err) {
-      const message =
-        (err as { data?: { message?: string } })?.data?.message ??
-        'Could not seed demo shipments.';
-      toast.error(message);
-    }
-  };
-
   const errorStatus = (shipmentsError as { status?: number } | undefined)?.status;
   const errorMessage =
     errorStatus === 401
@@ -383,12 +363,6 @@ export const ShipmentsView = () => {
   const rangeStart = meta.total === 0 ? 0 : (meta.page - 1) * meta.limit + 1;
   const rangeEnd = Math.min(meta.page * meta.limit, meta.total);
 
-  // The empty dataset is what makes the seeder worth offering, so the control
-  // only appears when the merchant genuinely has nothing to look at — and only
-  // in development.
-  const showSeedAction =
-    isDev && !isShipmentsLoading && !isShipmentsError && meta.total === 0 && !hasActiveFilters;
-
   return (
     <div className="space-y-5 pb-12">
       {/* 1. PAGE HEADER */}
@@ -401,22 +375,6 @@ export const ShipmentsView = () => {
         </div>
 
         <div className="flex items-center gap-2.5 self-start sm:self-auto">
-          {showSeedAction && (
-            <button
-              type="button"
-              onClick={handleSeedDemoData}
-              disabled={isSeeding}
-              className="px-3.5 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-2xs transition-colors active:scale-95 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-            >
-              {isSeeding ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" aria-hidden="true" />
-              ) : (
-                <Database className="w-3.5 h-3.5" aria-hidden="true" />
-              )}
-              {isSeeding ? 'Seeding...' : 'Load Demo Data'}
-            </button>
-          )}
-
           <button
             type="button"
             onClick={handleExport}

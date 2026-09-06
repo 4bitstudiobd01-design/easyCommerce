@@ -20,7 +20,6 @@ import { CreateShipmentService } from './services/create-shipment.service';
 import { CancelShipmentService } from './services/cancel-shipment.service';
 import { ExportShipmentsService } from './services/export-shipments.service';
 import { SyncConsignmentService } from './services/sync-consignment.service';
-import { SeedShipmentDemoDataService } from './services/seed-shipment-demo-data.service';
 import { CredentialsCryptoService } from './services/credentials-crypto.service';
 import { CourierIntegrationMapperService } from './services/courier-integration-mapper.service';
 import { ListCourierIntegrationsService } from './services/list-courier-integrations.service';
@@ -31,7 +30,6 @@ import { SetDefaultCourierService } from './services/set-default-courier.service
 import { TestCourierConnectionService } from './services/test-courier-connection.service';
 import { RecordCourierApiCallService } from './services/record-courier-api-call.service';
 import { ResolveCourierCredentialsService } from './services/resolve-courier-credentials.service';
-import { SeedCourierDemoDataService } from './services/seed-courier-demo-data.service';
 
 import { CourierProviderRegistry } from './adapters/courier-provider.registry';
 import { SteadfastCourierAdapter } from './adapters/steadfast.adapter';
@@ -78,7 +76,6 @@ import { PermissionsGuard } from '../../common/guards/permissions.guard';
     CancelShipmentService,
     ExportShipmentsService,
     SyncConsignmentService,
-    SeedShipmentDemoDataService,
     CredentialsCryptoService,
     CourierIntegrationMapperService,
     ListCourierIntegrationsService,
@@ -89,7 +86,6 @@ import { PermissionsGuard } from '../../common/guards/permissions.guard';
     TestCourierConnectionService,
     RecordCourierApiCallService,
     ResolveCourierCredentialsService,
-    SeedCourierDemoDataService,
     CourierProviderRegistry,
     SteadfastCourierAdapter,
     PathaoCourierAdapter,

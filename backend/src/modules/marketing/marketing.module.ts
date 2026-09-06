@@ -7,7 +7,6 @@ import { ConnectPixelService } from './services/connect-pixel.service';
 import { DisconnectPixelService } from './services/disconnect-pixel.service';
 import { ToggleTrackingEventService } from './services/toggle-tracking-event.service';
 import { DispatchTestEventService } from './services/dispatch-test-event.service';
-import { SeedMarketingDemoDataService } from './services/seed-marketing-demo-data.service';
 import { MarketingPixel } from './entities/marketing-pixel.entity';
 import { MarketingEventConfig } from './entities/marketing-event-config.entity';
 import { MarketingEventLog } from './entities/marketing-event-log.entity';
@@ -32,7 +31,6 @@ import { TenantModule } from '../tenant/tenant.module';
     DisconnectPixelService,
     ToggleTrackingEventService,
     DispatchTestEventService,
-    SeedMarketingDemoDataService,
   ],
   exports: [
     GetMarketingDashboardService,

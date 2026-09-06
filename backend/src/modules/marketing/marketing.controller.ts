@@ -17,14 +17,12 @@ import { ConnectPixelService } from './services/connect-pixel.service';
 import { DisconnectPixelService } from './services/disconnect-pixel.service';
 import { ToggleTrackingEventService } from './services/toggle-tracking-event.service';
 import { DispatchTestEventService } from './services/dispatch-test-event.service';
-import { SeedMarketingDemoDataService } from './services/seed-marketing-demo-data.service';
 import { ConnectPixelDto } from './dto/connect-pixel.dto';
 import { ToggleEventDto } from './dto/toggle-event.dto';
 import { DispatchTestEventDto } from './dto/dispatch-test-event.dto';
 import { MarketingProviderEnum } from './entities/marketing-pixel.entity';
 import { MarketingEventNameEnum } from './entities/marketing-event-config.entity';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @ApiTags('Marketing')
 @ApiBearerAuth()
@@ -38,7 +36,6 @@ export class MarketingController {
     private readonly disconnectPixelService: DisconnectPixelService,
     private readonly toggleEventService: ToggleTrackingEventService,
     private readonly testEventService: DispatchTestEventService,
-    private readonly seedMarketingDemoDataService: SeedMarketingDemoDataService,
   ) {}
 
   @Get('dashboard')
@@ -109,14 +106,5 @@ export class MarketingController {
     @Headers('x-store-id') storeId: string,
   ) {
     return this.testEventService.testAll(tenantId, storeId);
-  }
-
-  @Post('seed-demo')
-  @ApiOperation({ summary: 'Seed demo pixels, event configs and event logs (dev only)' })
-  async seedDemo(
-    @CurrentUser('sub') userId: string,
-    @Headers('x-store-id') storeId?: string,
-  ) {
-    return this.seedMarketingDemoDataService.execute(userId, storeId);
   }
 }

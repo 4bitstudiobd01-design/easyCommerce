@@ -23,7 +23,6 @@ import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CreateCategoryService } from './services/create-category.service';
-import { SeedCategoryDemoDataService } from './services/seed-category-demo-data.service';
 import { FindCategoryByIdService } from './services/find-category-by-id.service';
 import { ListCategoriesService, CategoryListResult } from './services/list-categories.service';
 import { GetCategoryKpisService } from './services/get-category-kpis.service';
@@ -153,7 +152,6 @@ import { ProductImageEntity } from './entities/product-image.entity';
 export class CatalogController {
   constructor(
     private readonly createCategoryService: CreateCategoryService,
-    private readonly seedCategoryDemoDataService: SeedCategoryDemoDataService,
     private readonly findCategoryByIdService: FindCategoryByIdService,
     private readonly listCategoriesService: ListCategoriesService,
     private readonly getCategoryKpisService: GetCategoryKpisService,
@@ -256,8 +254,11 @@ export class CatalogController {
   @ApiOperation({ summary: 'Get storefront-visible categories for a store, in merchant-defined order' })
   @ApiResponse({ status: 200, description: 'Active, storefront-visible categories sorted by sortOrder' })
   @ApiResponse({ status: 404, description: 'Store not found' })
-  async getPublicStoreCategories(@Param('slug') slug: string): Promise<PublicStoreCategory[]> {
-    return this.findPublicStoreCategoriesService.execute(slug);
+  async getPublicStoreCategories(
+    @Param('slug') slug: string,
+    @Query('limit') limit?: number,
+  ): Promise<PublicStoreCategory[]> {
+    return this.findPublicStoreCategoriesService.execute(slug, limit ? Number(limit) : undefined);
   }
 
   @Post('products/:id/reviews')
@@ -276,6 +277,55 @@ export class CatalogController {
   @ApiResponse({ status: 200, description: 'List of approved reviews for the product' })
   async getApprovedReviews(@Param('id') productId: string) {
     return this.listProductReviewsService.listApprovedForProduct(productId);
+  }
+
+  @Get('reviews/merchant')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List every review for the merchant store (any moderation state)' })
+  @ApiResponse({ status: 200, description: 'All reviews across the merchant catalog' })
+  async getMerchantReviews(@CurrentUser('sub') userId: string): Promise<ReviewEntity[]> {
+    const store = await this.findStoreByUserService.execute(userId);
+    if (!store) {
+      throw new BadRequestException('Merchant must create a store first.');
+    }
+    return this.listProductReviewsService.listAllForMerchant(store.tenantId);
+  }
+
+  @Patch('reviews/:id/approval')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Approve or unapprove a customer review' })
+  @ApiResponse({ status: 200, description: 'Review moderation state updated' })
+  @ApiResponse({ status: 404, description: 'Review not found for this store' })
+  async moderateReview(
+    @CurrentUser('sub') userId: string,
+    @Param('id') reviewId: string,
+    @Body('isApproved') isApproved: boolean,
+  ): Promise<ReviewEntity> {
+    const store = await this.findStoreByUserService.execute(userId);
+    if (!store) {
+      throw new BadRequestException('Merchant must create a store first.');
+    }
+    return this.moderateReviewService.toggleApproval(reviewId, store.tenantId, isApproved);
+  }
+
+  @Delete('reviews/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete a customer review' })
+  @ApiResponse({ status: 200, description: 'Review deleted' })
+  @ApiResponse({ status: 404, description: 'Review not found for this store' })
+  async deleteReview(
+    @CurrentUser('sub') userId: string,
+    @Param('id') reviewId: string,
+  ): Promise<{ message: string }> {
+    const store = await this.findStoreByUserService.execute(userId);
+    if (!store) {
+      throw new BadRequestException('Merchant must create a store first.');
+    }
+    await this.moderateReviewService.deleteReview(reviewId, store.tenantId);
+    return { message: 'Review deleted successfully.' };
   }
 
   // --- ATTRIBUTE DEFINITION & CATEGORY BINDING ENDPOINTS (CHUNK 6) ---
@@ -726,19 +776,6 @@ export class CatalogController {
   ): Promise<CategoryEntity> {
     const tenantId = await this.getMerchantTenantId(userId, storeId);
     return this.createCategoryService.execute(tenantId, dto);
-  }
-
-  @Post('categories/seed-demo')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Seed a demo category tree (dev only)' })
-  @RequirePermissions('products:write')
-  async seedDemoCategories(
-    @CurrentUser('sub') userId: string,
-    @Headers('x-store-id') storeId?: string,
-  ) {
-    const tenantId = await this.getMerchantTenantId(userId, storeId);
-    return this.seedCategoryDemoDataService.execute(tenantId);
   }
 
   @Get('categories/tree')

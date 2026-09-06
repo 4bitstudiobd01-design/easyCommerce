@@ -28,7 +28,6 @@ import { ListInventoryHistoryService } from './services/list-inventory-history.s
 import { GetProductVariantInventoryService } from './services/get-product-variant-inventory.service';
 import { BulkAdjustStockService } from './services/bulk-adjust-stock.service';
 import { GetInventorySettingsOverviewService } from './services/get-inventory-settings-overview.service';
-import { SeedInventoryDemoDataService } from './services/seed-inventory-demo-data.service';
 import { FindStoreByUserService } from '../tenant/services/find-store-by-user.service';
 import { CreateWarehouseDto } from './dto/create-warehouse.dto';
 import { UpdateWarehouseDto } from './dto/update-warehouse.dto';
@@ -45,7 +44,6 @@ import { InventoryHistoryResponseDto } from './dto/inventory-history-response.dt
 import { ListProductVariantInventoryQueryDto } from './dto/list-product-variant-inventory-query.dto';
 import { ProductVariantInventoryResponseDto } from './dto/product-variant-inventory-response.dto';
 import { InventorySettingsOverviewResponseDto } from './dto/inventory-settings-overview-response.dto';
-import { SeedInventoryDemoDataResponseDto } from './dto/seed-inventory-demo-data-response.dto';
 
 @ApiTags('Inventory Control')
 @Controller('inventory')
@@ -66,7 +64,6 @@ export class InventoryController {
     private readonly listInventoryHistoryService: ListInventoryHistoryService,
     private readonly getProductVariantInventoryService: GetProductVariantInventoryService,
     private readonly getInventorySettingsOverviewService: GetInventorySettingsOverviewService,
-    private readonly seedInventoryDemoDataService: SeedInventoryDemoDataService,
     private readonly findStoreByUserService: FindStoreByUserService,
   ) {}
 
@@ -365,21 +362,6 @@ export class InventoryController {
   ): Promise<InventorySettingsOverviewResponseDto> {
     const tenantId = await this.getMerchantTenantId(userId, storeId);
     return this.getInventorySettingsOverviewService.execute(tenantId);
-  }
-
-  @Post('settings/seed-demo-data')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Seed realistic demo products, variants, stocks, and movement history' })
-  @ApiResponse({ status: 200, description: 'Demo data seeded successfully', type: SeedInventoryDemoDataResponseDto })
-  @ApiResponse({ status: 401, description: 'Missing or invalid authentication token' })
-  @ApiResponse({ status: 403, description: 'Demo seeder disabled in production environment' })
-  async seedInventoryDemoData(
-    @CurrentUser('sub') userId: string,
-    @Headers('x-store-id') storeId?: string,
-  ): Promise<SeedInventoryDemoDataResponseDto> {
-    const tenantId = await this.getMerchantTenantId(userId, storeId);
-    return this.seedInventoryDemoDataService.execute(tenantId, userId);
   }
 
   @Get(':id')

@@ -992,21 +992,6 @@ export const catalogApi = createApi({
       invalidatesTags: ['Category'],
       transformResponse: (response: { data: Category }) => response.data,
     }),
-    seedCategoryDemoData: builder.mutation<
-      { success: boolean; message: string; categoriesCreated: number },
-      void
-    >({
-      query: () => ({
-        url: '/categories/seed-demo',
-        method: 'POST',
-      }),
-      invalidatesTags: ['Category'],
-      transformResponse: (
-        response:
-          | { data: { success: boolean; message: string; categoriesCreated: number } }
-          | { success: boolean; message: string; categoriesCreated: number },
-      ) => ('data' in response ? response.data : response),
-    }),
     updateCategory: builder.mutation<Category, { id: string; data: UpdateCategoryRequest }>({
       query: ({ id, data }) => ({
         url: `/categories/${id}`,
@@ -1339,10 +1324,10 @@ export const catalogApi = createApi({
       transformResponse: (response: { data: Review[] }) => response.data || [],
     }),
     createReview: builder.mutation<Review, CreateReviewRequest>({
-      query: (body) => ({
-        url: '/reviews',
+      query: ({ productId, customerName, reviewerName, ...rest }) => ({
+        url: `/products/${productId}/reviews`,
         method: 'POST',
-        body,
+        body: { ...rest, reviewerName: reviewerName || customerName },
       }),
       invalidatesTags: (_result, _err, { productId }) => [{ type: 'Review', id: productId }],
       transformResponse: (response: { data: Review }) => response.data,
@@ -1388,7 +1373,6 @@ export const {
   useGetParentCategoriesQuery,
   useGetCategoryByIdQuery,
   useCreateCategoryMutation,
-  useSeedCategoryDemoDataMutation,
   useUpdateCategoryMutation,
   useReorderCategoryMutation,
   useUploadCategoryMediaMutation,

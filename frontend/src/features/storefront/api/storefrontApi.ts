@@ -41,8 +41,9 @@ export const storefrontApi = createApi({
       providesTags: (result, error, arg) => [{ type: 'PublicStorefront', id: arg.productSlug }],
       transformResponse: (response: { data: PublicStoreProductResponse }) => response.data,
     }),
-    getPublicStoreCategories: builder.query<PublicStoreCategory[], { slug: string }>({
-      query: ({ slug }) => `/store/${slug}/categories`,
+    getPublicStoreCategories: builder.query<PublicStoreCategory[], { slug: string; limit?: number }>({
+      query: ({ slug, limit }) =>
+        `/store/${slug}/categories${limit !== undefined ? `?limit=${limit}` : ''}`,
       providesTags: ['PublicStorefront'],
       transformResponse: (response: { data: PublicStoreCategory[] }) => response.data || [],
     }),

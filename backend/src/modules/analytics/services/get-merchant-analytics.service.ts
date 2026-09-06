@@ -60,17 +60,32 @@ export class GetMerchantAnalyticsService {
 
   /**
    * `dateFrom`/`dateTo` default to the trailing 7 days (this service's original
-   * behaviour). The "previous" period is the immediately preceding window of
-   * equal length, used to compute period-over-period comparison lines/badges.
+   * behaviour). The comparison window is either the immediately preceding period
+   * of equal length (`compare: 'previous'`, default) or the same calendar dates
+   * one year earlier (`compare: 'previousYear'`).
    */
-  async execute(tenantId: string, dateFrom?: Date, dateTo?: Date): Promise<MerchantAnalyticsOverview> {
+  async execute(
+    tenantId: string,
+    dateFrom?: Date,
+    dateTo?: Date,
+    compare: 'previous' | 'previousYear' = 'previous',
+  ): Promise<MerchantAnalyticsOverview> {
     const rangeTo = dateTo ?? new Date();
     const rangeFrom = dateFrom ?? new Date(rangeTo.getTime() - 6 * 24 * 60 * 60 * 1000);
     rangeFrom.setHours(0, 0, 0, 0);
 
     const spanMs = rangeTo.getTime() - rangeFrom.getTime();
-    const previousTo = new Date(rangeFrom.getTime() - 1);
-    const previousFrom = new Date(previousTo.getTime() - spanMs);
+    let previousFrom: Date;
+    let previousTo: Date;
+    if (compare === 'previousYear') {
+      previousFrom = new Date(rangeFrom);
+      previousFrom.setFullYear(previousFrom.getFullYear() - 1);
+      previousTo = new Date(rangeTo);
+      previousTo.setFullYear(previousTo.getFullYear() - 1);
+    } else {
+      previousTo = new Date(rangeFrom.getTime() - 1);
+      previousFrom = new Date(previousTo.getTime() - spanMs);
+    }
 
     const [orders, previousOrders] = await Promise.all([
       this.orderRepository.find({

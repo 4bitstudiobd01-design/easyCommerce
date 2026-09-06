@@ -326,15 +326,6 @@ export interface PurchaseOverviewParams {
   to?: string;
 }
 
-export interface SeedPurchaseDemoResult {
-  success: boolean;
-  message: string;
-  suppliersCreated: number;
-  purchaseOrdersCreated: number;
-  billsCreated: number;
-  paymentsCreated: number;
-}
-
 export interface Paginated<T> {
   items: T[];
   total: number;
@@ -362,22 +353,11 @@ export const purchaseApi = createApi({
     'PurchaseOverview',
   ],
   endpoints: (builder) => ({
-    // ── Overview & seed ──
+    // ── Overview ──
     getPurchaseOverview: builder.query<PurchaseOverview, PurchaseOverviewParams | void>({
       query: (params) => ({ url: '/purchase/overview', params: params || undefined }),
       providesTags: ['PurchaseOverview'],
       transformResponse: unwrap<PurchaseOverview>,
-    }),
-    seedPurchaseDemo: builder.mutation<SeedPurchaseDemoResult, void>({
-      query: () => ({ url: '/purchase/seed-demo', method: 'POST' }),
-      invalidatesTags: [
-        'Supplier',
-        'PurchaseOrder',
-        'Purchase',
-        'SupplierPayment',
-        'PurchaseOverview',
-      ],
-      transformResponse: unwrap<SeedPurchaseDemoResult>,
     }),
 
     // ── Suppliers ──
@@ -548,7 +528,6 @@ export const purchaseApi = createApi({
 
 export const {
   useGetPurchaseOverviewQuery,
-  useSeedPurchaseDemoMutation,
   useGetSuppliersQuery,
   useGetSupplierStatsQuery,
   useCreateSupplierMutation,

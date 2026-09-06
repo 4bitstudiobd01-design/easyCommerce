@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import React, { useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { useGetPublicStoreProductsQuery } from '@/features/storefront/api/storefrontApi';
-import { ProductDetailModal } from '@/features/storefront/components/ProductDetailModal';
 import { CartDrawer } from '@/features/storefront/components/CartDrawer';
 import { StorefrontPixelTracker } from '@/features/storefront/components/StorefrontPixelTracker';
 import { JsonLdScript } from '@/features/seo/components/JsonLdScript';
@@ -18,6 +17,7 @@ import { recordStorefrontVisit } from '@/features/storefront/utils/attribution';
 
 export default function ShopPage() {
   const params = useParams();
+  const router = useRouter();
   const slug = (params.slug as string) || '';
   const dispatch = useDispatch();
 
@@ -28,8 +28,6 @@ export default function ShopPage() {
   const { data: storeSeo } = useGetStoreSeoQuery(slug, {
     skip: !slug,
   });
-
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   useEffect(() => {
     if (!slug) return;
@@ -112,6 +110,11 @@ export default function ShopPage() {
     dispatch(addToCart({ product, quantity: 1, storeSlug: slug }));
   };
 
+  const handleOpenProduct = (product: Product) => {
+    const productSlug = (product as any).slug || product.id;
+    router.push(`/store/${slug}/product/${productSlug}`);
+  };
+
   return (
     <>
       {storeSeo?.jsonLdSchema && (
@@ -123,12 +126,6 @@ export default function ShopPage() {
         googleTagManagerId={(store as any).googleTagManagerId}
       />
       <CartDrawer primaryColor={primaryColor} />
-      <ProductDetailModal
-        product={selectedProduct}
-        storeSlug={slug}
-        primaryColor={primaryColor}
-        onClose={() => setSelectedProduct(null)}
-      />
       <React.Suspense fallback={<div className="min-h-screen bg-slate-50" />}>
         <ShopEaseShopView
           storeName={store.name}
@@ -145,7 +142,7 @@ export default function ShopPage() {
           twitterUrl={(store as any).twitterUrl}
           youtubeUrl={(store as any).youtubeUrl}
           footerDescription={(store as any).footerDescription}
-          onSelectProduct={(p) => setSelectedProduct(p)}
+          onSelectProduct={handleOpenProduct}
           onAddToCart={handleAddToCart}
         />
       </React.Suspense>

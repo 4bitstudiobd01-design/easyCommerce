@@ -17,13 +17,10 @@ import {
   X,
   Upload,
   Download,
-  Database,
-  Loader2,
 } from 'lucide-react';
 import {
   useGetCategoryListQuery,
   useGetCategoryKpisQuery,
-  useSeedCategoryDemoDataMutation,
   CategoryStatus,
 } from '../api/catalogApi';
 import { CategoryBrowser } from './CategoryBrowser';
@@ -113,11 +110,6 @@ export function CategoryManagementApp() {
     refetch: refetchKpis,
   } = useGetCategoryKpisQuery();
 
-  const [seedCategoryDemoData, { isLoading: isSeeding }] = useSeedCategoryDemoDataMutation();
-
-  // The demo-data seeder is a development aid only — never exposed in production.
-  const isDev = process.env.NODE_ENV !== 'production';
-
   const categories = listData?.data || [];
   const meta = listData?.meta || {
     page: 1,
@@ -182,24 +174,6 @@ export function CategoryManagementApp() {
     refetchKpis();
   };
 
-  const handleSeedDemoData = async () => {
-    try {
-      const res = await seedCategoryDemoData().unwrap();
-      toast.success(
-        res.categoriesCreated > 0
-          ? `Seeded ${res.categoriesCreated} demo categories.`
-          : res.message,
-      );
-      handleRefreshAll();
-    } catch (err: any) {
-      toast.error(err?.data?.message || 'Failed to seed demo categories.');
-    }
-  };
-
-  // Only worth offering when the store genuinely has nothing set up — and only in dev.
-  const showSeedAction =
-    isDev && !isListLoading && !isListError && !isFiltered && meta.total === 0;
-
   return (
     <div className="space-y-6 pb-12">
       {/* 1. HEADER */}
@@ -248,24 +222,6 @@ export function CategoryManagementApp() {
               <Download className="w-3.5 h-3.5 text-blue-600" />
               <span>Export</span>
             </button>
-
-            {/* Demo Data Button — development only, shown when the store has no categories */}
-            {showSeedAction && (
-              <button
-                type="button"
-                onClick={handleSeedDemoData}
-                disabled={isSeeding}
-                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 shadow-xs transition-colors disabled:opacity-50"
-                title="Seed a demo category tree (development only)"
-              >
-                {isSeeding ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" />
-                ) : (
-                  <Database className="w-3.5 h-3.5 text-blue-600" />
-                )}
-                <span>{isSeeding ? 'Seeding…' : 'Load Demo Data'}</span>
-              </button>
-            )}
 
             {/* Primary Action Button */}
             <Link

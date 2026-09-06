@@ -14,13 +14,11 @@ import {
   MessageSquare,
   X,
   Sparkles,
-  Database,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   useGetMerchantAbandonedCartsQuery,
   useSendRecoverySmsMutation,
-  useSeedAbandonedCartDemoDataMutation,
   type AbandonedCart,
 } from '../api/orderApi';
 import { AbandonedCartKpiCards } from './AbandonedCartKpiCards';
@@ -95,22 +93,6 @@ export const AbandonedCartsView = () => {
   } = useGetMerchantAbandonedCartsQuery();
 
   const [sendRecoverySms] = useSendRecoverySmsMutation();
-  const [seedAbandonedCartDemoData, { isLoading: isSeeding }] = useSeedAbandonedCartDemoDataMutation();
-
-  // The demo-data seeder is a development aid only — never exposed in production.
-  const isDev = process.env.NODE_ENV !== 'production';
-
-  const handleSeedDemoData = async () => {
-    try {
-      const res = await seedAbandonedCartDemoData().unwrap();
-      toast.success(
-        res.cartsCreated > 0 ? `Seeded ${res.cartsCreated} demo abandoned carts.` : res.message,
-      );
-      refetch();
-    } catch (err: any) {
-      toast.error(err?.data?.message || 'Failed to seed demo abandoned carts.');
-    }
-  };
 
   const updateUrlParams = useCallback(
     (next: Record<string, string | null>) => {
@@ -328,23 +310,6 @@ export const AbandonedCartsView = () => {
             />
             Refresh
           </button>
-
-          {isDev && !isApiLoading && !isApiError && carts.length === 0 && (
-            <button
-              type="button"
-              onClick={handleSeedDemoData}
-              disabled={isSeeding}
-              className="px-3.5 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-2xs transition-colors active:scale-95 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              title="Seed demo abandoned carts (development only)"
-            >
-              {isSeeding ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" aria-hidden="true" />
-              ) : (
-                <Database className="w-3.5 h-3.5 text-blue-600" aria-hidden="true" />
-              )}
-              {isSeeding ? 'Seeding…' : 'Load Demo Data'}
-            </button>
-          )}
 
           <button
             type="button"

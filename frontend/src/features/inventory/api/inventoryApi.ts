@@ -442,15 +442,6 @@ export interface InventorySettingsOverviewResponse {
   securityGuarantees: InventorySecurityGuarantees;
 }
 
-export interface SeedInventoryDemoDataResponse {
-  success: boolean;
-  message: string;
-  productsCreated: number;
-  variantsCreated: number;
-  inventoryStocksCreated: number;
-  movementsCreated: number;
-}
-
 export const inventoryApi = createApi({
   reducerPath: 'inventoryApi',
   baseQuery: createBaseQueryWithReauth(process.env.NEXT_PUBLIC_API_URL?.replace('/orders', '') || 'http://localhost:5001/api/v1'),
@@ -636,23 +627,6 @@ export const inventoryApi = createApi({
           : (response as any)?.data || response,
     }),
 
-    seedInventoryDemoData: builder.mutation<SeedInventoryDemoDataResponse, void>({
-      query: () => ({
-        url: '/inventory/settings/seed-demo-data',
-        method: 'POST',
-      }),
-      invalidatesTags: [
-        'Stock',
-        'InventoryList',
-        'InventoryKpis',
-        'InventoryHistory',
-        'ProductVariantInventory',
-        'InventorySettings',
-      ],
-      transformResponse: (response: { data: SeedInventoryDemoDataResponse } | SeedInventoryDemoDataResponse) =>
-        ('data' in (response as any)) ? (response as any).data : response,
-    }),
-
     createStockTransfer: builder.mutation<StockTransfer, CreateStockTransferRequest>({
       query: (body) => ({
         url: '/inventory/transfers',
@@ -689,7 +663,6 @@ export const {
   useGetInventoryHistoryQuery,
   useGetProductVariantInventoryQuery,
   useGetInventorySettingsOverviewQuery,
-  useSeedInventoryDemoDataMutation,
   useGetInventoryKpisQuery,
   useGetWarehousesQuery,
   useCreateWarehouseMutation,

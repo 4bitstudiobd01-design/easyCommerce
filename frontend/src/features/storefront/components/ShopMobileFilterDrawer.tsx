@@ -24,8 +24,10 @@ interface ShopMobileFilterDrawerProps {
   selectedCategory: string;
   onSelectCategory: (category: string) => void;
   priceRange: [number, number];
+  priceBounds?: [number, number];
   onPriceRangeChange: (range: [number, number]) => void;
   brands?: string[];
+  brandCounts?: Record<string, number>;
   selectedBrands: string[];
   onToggleBrand: (brandName: string) => void;
   selectedMinRating: number;
@@ -43,8 +45,10 @@ export function ShopMobileFilterDrawer({
   selectedCategory,
   onSelectCategory,
   priceRange,
+  priceBounds = [0, 5000],
   onPriceRangeChange,
   brands = [],
+  brandCounts = {},
   selectedBrands,
   onToggleBrand,
   selectedMinRating,
@@ -57,10 +61,13 @@ export function ShopMobileFilterDrawer({
 
   if (!isOpen) return null;
 
+  const [minBound, maxBound] = priceBounds;
+  const priceStep = Math.max(1, Math.round((maxBound - minBound) / 100) || 1);
+
   const hasActiveFilters =
     selectedCategory !== 'ALL' ||
-    priceRange[0] > 0 ||
-    priceRange[1] < 5000 ||
+    priceRange[0] > minBound ||
+    priceRange[1] < maxBound ||
     selectedBrands.length > 0 ||
     selectedMinRating > 0;
 
@@ -154,17 +161,19 @@ export function ShopMobileFilterDrawer({
                 Price Range
               </h3>
               <span className="text-xs font-bold" style={{ color: primaryColor }}>
-                ৳{priceRange[0]} - ৳{priceRange[1]}
+                ৳{priceRange[0].toLocaleString()} - ৳{priceRange[1].toLocaleString()}
               </span>
             </div>
 
             <input
               type="range"
-              min={0}
-              max={5000}
-              step={100}
+              min={minBound}
+              max={maxBound}
+              step={priceStep}
               value={priceRange[1]}
-              onChange={(e) => onPriceRangeChange([priceRange[0], Number(e.target.value)])}
+              onChange={(e) =>
+                onPriceRangeChange([priceRange[0], Math.max(priceRange[0], Number(e.target.value))])
+              }
               className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
               style={{ accentColor: primaryColor }}
             />
@@ -172,12 +181,16 @@ export function ShopMobileFilterDrawer({
             <div className="flex items-center gap-3">
               <div className="flex-1 bg-slate-50 border border-slate-200 rounded-xl p-2 text-center">
                 <span className="text-[10px] text-slate-400 font-bold block">MIN</span>
-                <span className="text-xs font-black text-slate-800">৳{priceRange[0]}</span>
+                <span className="text-xs font-black text-slate-800">
+                  ৳{priceRange[0].toLocaleString()}
+                </span>
               </div>
               <span className="text-slate-300 font-bold">-</span>
               <div className="flex-1 bg-slate-50 border border-slate-200 rounded-xl p-2 text-center">
                 <span className="text-[10px] text-slate-400 font-bold block">MAX</span>
-                <span className="text-xs font-black text-slate-800">৳{priceRange[1]}</span>
+                <span className="text-xs font-black text-slate-800">
+                  ৳{priceRange[1].toLocaleString()}
+                </span>
               </div>
             </div>
           </div>
@@ -191,6 +204,7 @@ export function ShopMobileFilterDrawer({
               <div className="flex flex-wrap gap-2">
                 {brands.map((brandName) => {
                   const isSelected = selectedBrands.includes(brandName);
+                  const count = brandCounts[brandName];
                   return (
                     <button
                       key={brandName}
@@ -202,6 +216,11 @@ export function ShopMobileFilterDrawer({
                       style={isSelected ? { backgroundColor: primaryColor } : undefined}
                     >
                       <span>{brandName}</span>
+                      {count != null && (
+                        <span className={isSelected ? 'opacity-80' : 'text-slate-400'}>
+                          ({count})
+                        </span>
+                      )}
                     </button>
                   );
                 })}

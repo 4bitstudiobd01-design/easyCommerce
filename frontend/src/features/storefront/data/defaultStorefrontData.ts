@@ -24,60 +24,53 @@ export interface ShopEaseProduct extends Omit<Product, 'images' | 'tenantId' | '
 
 export const SHOPEASE_CATEGORIES: ShopEaseCategory[] = [
   {
+    id: 'cat-women-dresses',
+    name: 'Women Dresses',
+    slug: 'women-dresses',
+    imageUrl: 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=400&auto=format&fit=crop&q=80',
+    itemCount: 120,
+  },
+  {
+    id: 'cat-tops-tshirts',
+    name: 'Tops & T-shirts',
+    slug: 'tops-tshirts',
+    imageUrl: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=400&auto=format&fit=crop&q=80',
+    itemCount: 150,
+  },
+  {
+    id: 'cat-denim-wear',
+    name: 'Denim Wear',
+    slug: 'denim-wear',
+    imageUrl: 'https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=400&auto=format&fit=crop&q=80',
+    itemCount: 80,
+  },
+  {
+    id: 'cat-shoes-footwear',
+    name: 'Shoes & Footwear',
+    slug: 'shoes-footwear',
+    imageUrl: 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=400&auto=format&fit=crop&q=80',
+    itemCount: 100,
+  },
+  {
+    id: 'cat-bags-accessories',
+    name: 'Bags & Accessories',
+    slug: 'bags-accessories',
+    imageUrl: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400&auto=format&fit=crop&q=80',
+    itemCount: 90,
+  },
+  {
     id: 'cat-electronics',
     name: 'Electronics',
     slug: 'electronics',
     imageUrl: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=400&auto=format&fit=crop&q=80',
-    itemCount: 32,
-  },
-  {
-    id: 'cat-fashion',
-    name: 'Fashion',
-    slug: 'fashion',
-    imageUrl: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=400&auto=format&fit=crop&q=80',
-    itemCount: 48,
-  },
-  {
-    id: 'cat-home-living',
-    name: 'Home & Living',
-    slug: 'home-living',
-    imageUrl: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&auto=format&fit=crop&q=80',
-    itemCount: 24,
+    itemCount: 45,
   },
   {
     id: 'cat-beauty',
-    name: 'Beauty',
+    name: 'Beauty & Wellness',
     slug: 'beauty',
     imageUrl: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=400&auto=format&fit=crop&q=80',
-    itemCount: 18,
-  },
-  {
-    id: 'cat-sports',
-    name: 'Sports',
-    slug: 'sports',
-    imageUrl: 'https://images.unsplash.com/photo-1511886929837-354d827aae26?w=400&auto=format&fit=crop&q=80',
-    itemCount: 16,
-  },
-  {
-    id: 'cat-grocery',
-    name: 'Grocery',
-    slug: 'grocery',
-    imageUrl: 'https://images.unsplash.com/photo-1610348725531-843dff563e2c?w=400&auto=format&fit=crop&q=80',
-    itemCount: 20,
-  },
-  {
-    id: 'cat-automotive',
-    name: 'Automotive',
-    slug: 'automotive',
-    imageUrl: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&auto=format&fit=crop&q=80',
-    itemCount: 12,
-  },
-  {
-    id: 'cat-toys-kids',
-    name: 'Toys & Kids',
-    slug: 'toys-kids',
-    imageUrl: 'https://images.unsplash.com/photo-1558877063-97992797e8cb?w=400&auto=format&fit=crop&q=80',
-    itemCount: 14,
+    itemCount: 60,
   },
 ];
 
@@ -112,7 +105,11 @@ export const SHOPEASE_FEATURED_PRODUCTS: ShopEaseProduct[] = [
     rating: 4.6,
     reviewsCount: 128,
     brandName: 'Baseus',
-    images: ['https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&auto=format&fit=crop&q=80'],
+    images: [
+      'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1572536147248-ac59a8abfa4b?w=600&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80',
+    ],
     description: 'High-fidelity wireless earbuds with deep bass, crystal-clear sound, touch control, and 30-hour battery life.',
     category: {
       id: 'cat-electronics',
@@ -133,7 +130,11 @@ export const SHOPEASE_FEATURED_PRODUCTS: ShopEaseProduct[] = [
     rating: 4.7,
     reviewsCount: 96,
     brandName: 'Haylou',
-    images: ['https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=600&auto=format&fit=crop&q=80'],
+    images: [
+      'https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=600&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=600&auto=format&fit=crop&q=80',
+    ],
     description: 'Sleek all-metal body smart watch with heart-rate monitoring, 12 sports modes, 30 days standby battery life, and IP68 waterproof.',
     category: {
       id: 'cat-electronics',
@@ -154,7 +155,11 @@ export const SHOPEASE_FEATURED_PRODUCTS: ShopEaseProduct[] = [
     rating: 4.8,
     reviewsCount: 154,
     brandName: 'Sony',
-    images: ['https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80'],
+    images: [
+      'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=600&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=600&auto=format&fit=crop&q=80',
+    ],
     description: 'Industry leading active noise cancellation with premium studio sound clarity and 40-hour playback.',
     category: {
       id: 'cat-electronics',
@@ -177,7 +182,11 @@ export const SHOPEASE_FEATURED_PRODUCTS: ShopEaseProduct[] = [
     rating: 4.5,
     reviewsCount: 72,
     brandName: 'Arctic Hunter',
-    images: ['https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&auto=format&fit=crop&q=80'],
+    images: [
+      'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1622560480605-d83c853bc5c3?w=600&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1546938576-6e6a64f317cc?w=600&auto=format&fit=crop&q=80',
+    ],
     description: 'Waterproof, anti-theft business laptop backpack with USB charging port, breathable back padding, and multiple compartments.',
     category: {
       id: 'cat-fashion',
@@ -198,7 +207,11 @@ export const SHOPEASE_FEATURED_PRODUCTS: ShopEaseProduct[] = [
     rating: 4.4,
     reviewsCount: 88,
     brandName: 'Arctic Hunter',
-    images: ['https://images.unsplash.com/photo-1560769629-975ec94e6a86?w=600&auto=format&fit=crop&q=80'],
+    images: [
+      'https://images.unsplash.com/photo-1560769629-975ec94e6a86?w=600&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=600&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?w=600&auto=format&fit=crop&q=80',
+    ],
     description: 'Breathable, lightweight everyday casual walking sneakers with cushioned memory foam insole and non-slip rubber sole.',
     category: {
       id: 'cat-fashion',
@@ -219,7 +232,11 @@ export const SHOPEASE_FEATURED_PRODUCTS: ShopEaseProduct[] = [
     rating: 4.6,
     reviewsCount: 142,
     brandName: 'Apple',
-    images: ['https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=600&auto=format&fit=crop&q=80'],
+    images: [
+      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=600&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=600&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=600&auto=format&fit=crop&q=80',
+    ],
     description: '100% combed organic ring-spun cotton t-shirt with premium ribbed crew neck and relaxed fit.',
     category: {
       id: 'cat-fashion',
@@ -326,7 +343,12 @@ export const SHOPEASE_FEATURED_PRODUCTS: ShopEaseProduct[] = [
     rating: 4.8,
     reviewsCount: 92,
     brandName: 'Samsung',
-    images: ['https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=600&auto=format&fit=crop&q=80'],
+    images: [
+      'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=600&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1608248597359-bbad20a06ef7?w=600&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1509967419530-da38b4704bc6?w=600&auto=format&fit=crop&q=80',
+    ],
     description: '99% pure organic aloe vera gel for deep hydration, sunburn relief, and hair care nourishment.',
     category: {
       id: 'cat-beauty',

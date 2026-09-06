@@ -194,14 +194,6 @@ export interface CreateShipmentRequest {
   items?: ShipmentItemRequest[];
 }
 
-export interface SeedShipmentDemoDataResponse {
-  success: boolean;
-  message: string;
-  ordersCreated: number;
-  shipmentsCreated: number;
-  eventsCreated: number;
-}
-
 export type CourierConnectionStatus = 'Connected' | 'Disconnected' | 'Error';
 
 export type CourierApiHealth = 'Healthy' | 'Fair' | 'Poor' | 'N/A';
@@ -289,13 +281,6 @@ export interface CourierConnectionTestResponse {
   integration: CourierDashboardItem;
 }
 
-export interface SeedCourierDemoDataResponse {
-  success: boolean;
-  message: string;
-  integrationsCreated: number;
-  /** Providers left untouched because they were already configured. */
-  integrationsSkipped: number;
-}
 
 /** Unwraps the platform's `{ success, data }` envelope when present. */
 const unwrap = <T,>(response: unknown): T => {
@@ -402,15 +387,6 @@ export const logisticsApi = createApi({
         { type: 'Shipment', id },
       ],
       transformResponse: (response: unknown) => unwrap<ShipmentDetails>(response),
-    }),
-
-    seedShipmentDemoData: builder.mutation<SeedShipmentDemoDataResponse, void>({
-      query: () => ({
-        url: '/logistics/shipments/seed-demo-data',
-        method: 'POST',
-      }),
-      invalidatesTags: ['Shipment', 'ShipmentSummary'],
-      transformResponse: (response: unknown) => unwrap<SeedShipmentDemoDataResponse>(response),
     }),
 
     // --- Order-screen entry points (kept so the Orders UI keeps working) ---
@@ -540,30 +516,6 @@ export const logisticsApi = createApi({
       },
     }),
 
-    seedCourierDemoData: builder.mutation<SeedCourierDemoDataResponse, void>({
-      query: () => ({
-        url: '/logistics/courier-integrations/seed-demo-data',
-        method: 'POST',
-      }),
-      invalidatesTags: ['CourierIntegration', 'CourierProvider'],
-      // The platform's response interceptor lifts any payload carrying a
-      // top-level `message` into the envelope and keeps only its `data`, which
-      // is empty here — so the summary is read off the envelope itself rather
-      // than from an unwrapped body that would be null.
-      transformResponse: (response: unknown): SeedCourierDemoDataResponse => {
-        const envelope = (response ?? {}) as {
-          message?: string;
-          data?: Partial<SeedCourierDemoDataResponse> | null;
-        };
-        const body = envelope.data ?? {};
-        return {
-          success: body.success ?? true,
-          message: body.message ?? envelope.message ?? 'Courier demo data seeded.',
-          integrationsCreated: body.integrationsCreated ?? 0,
-          integrationsSkipped: body.integrationsSkipped ?? 0,
-        };
-      },
-    }),
   }),
 });
 
@@ -575,7 +527,6 @@ export const {
   useCreateShipmentMutation,
   useCancelShipmentMutation,
   useSyncShipmentMutation,
-  useSeedShipmentDemoDataMutation,
   useBookCourierMutation,
   useSyncConsignmentMutation,
   useGetCouriersDashboardQuery,
@@ -584,5 +535,4 @@ export const {
   useToggleCourierIntegrationMutation,
   useSetDefaultCourierMutation,
   useTestCourierConnectionMutation,
-  useSeedCourierDemoDataMutation,
 } = logisticsApi;

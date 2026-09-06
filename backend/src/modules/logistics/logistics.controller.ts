@@ -28,14 +28,12 @@ import { GetShipmentDetailsService } from './services/get-shipment-details.servi
 import { CancelShipmentService } from './services/cancel-shipment.service';
 import { ExportShipmentsService } from './services/export-shipments.service';
 import { SyncConsignmentService } from './services/sync-consignment.service';
-import { SeedShipmentDemoDataService } from './services/seed-shipment-demo-data.service';
 import { ListCourierIntegrationsService } from './services/list-courier-integrations.service';
 import { GetCourierIntegrationService } from './services/get-courier-integration.service';
 import { UpsertCourierIntegrationService } from './services/upsert-courier-integration.service';
 import { ToggleCourierIntegrationService } from './services/toggle-courier-integration.service';
 import { SetDefaultCourierService } from './services/set-default-courier.service';
 import { TestCourierConnectionService } from './services/test-courier-connection.service';
-import { SeedCourierDemoDataService } from './services/seed-courier-demo-data.service';
 import { CourierProviderRegistry } from './adapters/courier-provider.registry';
 import { CourierProviderEnum } from './entities/consignment.entity';
 
@@ -45,7 +43,6 @@ import { ListShipmentsQueryDto } from './dto/list-shipments-query.dto';
 import { ShipmentListResponseDto } from './dto/shipment-list-response.dto';
 import { ShipmentSummaryResponseDto } from './dto/shipment-summary-response.dto';
 import { ShipmentDetailsResponseDto } from './dto/shipment-details-response.dto';
-import { SeedShipmentDemoDataResponseDto } from './dto/seed-shipment-demo-data-response.dto';
 import {
   UpsertCourierIntegrationDto,
   ToggleCourierIntegrationDto,
@@ -54,7 +51,6 @@ import {
   CouriersDashboardResponseDto,
   CourierIntegrationDto,
   CourierConnectionTestResponseDto,
-  SeedCourierDemoDataResponseDto,
 } from './dto/courier-integration-response.dto';
 
 /**
@@ -76,14 +72,12 @@ export class LogisticsController {
     private readonly cancelShipmentService: CancelShipmentService,
     private readonly exportShipmentsService: ExportShipmentsService,
     private readonly syncConsignmentService: SyncConsignmentService,
-    private readonly seedShipmentDemoDataService: SeedShipmentDemoDataService,
     private readonly listCourierIntegrationsService: ListCourierIntegrationsService,
     private readonly getCourierIntegrationService: GetCourierIntegrationService,
     private readonly upsertCourierIntegrationService: UpsertCourierIntegrationService,
     private readonly toggleCourierIntegrationService: ToggleCourierIntegrationService,
     private readonly setDefaultCourierService: SetDefaultCourierService,
     private readonly testCourierConnectionService: TestCourierConnectionService,
-    private readonly seedCourierDemoDataService: SeedCourierDemoDataService,
     private readonly courierProviderRegistry: CourierProviderRegistry,
     private readonly findStoreByUserService: FindStoreByUserService,
   ) {}
@@ -177,25 +171,6 @@ export class LogisticsController {
     return res.send(result.content);
   }
 
-  @Post('shipments/seed-demo-data')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @ApiBearerAuth()
-  @RequirePermissions('orders:manage')
-  @ApiOperation({ summary: 'Seed realistic shipment demo data for this merchant' })
-  @ApiResponse({ status: 201, description: 'Demo data seeded', type: SeedShipmentDemoDataResponseDto })
-  @ApiResponse({ status: 403, description: 'Demo seeder disabled in production environment' })
-  async seedShipmentDemoData(
-    @CurrentUser('sub') userId: string,
-    @Headers('x-store-id') storeId?: string,
-  ): Promise<SeedShipmentDemoDataResponseDto> {
-    const store = await this.getMerchantStore(userId, storeId);
-    return this.seedShipmentDemoDataService.execute(
-      store.tenantId,
-      store.slug,
-      store.address,
-    );
-  }
-
   @Get('shipments/:id')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
@@ -281,21 +256,6 @@ export class LogisticsController {
   ): Promise<CouriersDashboardResponseDto> {
     const store = await this.getMerchantStore(userId, storeId);
     return this.listCourierIntegrationsService.execute(store.tenantId);
-  }
-
-  @Post('courier-integrations/seed-demo-data')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @ApiBearerAuth()
-  @RequirePermissions('settings:write')
-  @ApiOperation({ summary: 'Seed sandbox courier integrations so the Couriers tab has data' })
-  @ApiResponse({ status: 201, description: 'Demo integrations seeded', type: SeedCourierDemoDataResponseDto })
-  @ApiResponse({ status: 403, description: 'Demo seeder disabled in production environment' })
-  async seedCourierDemoData(
-    @CurrentUser('sub') userId: string,
-    @Headers('x-store-id') storeId?: string,
-  ): Promise<SeedCourierDemoDataResponseDto> {
-    const store = await this.getMerchantStore(userId, storeId);
-    return this.seedCourierDemoDataService.execute(store.tenantId);
   }
 
   @Get('courier-integrations/:provider')

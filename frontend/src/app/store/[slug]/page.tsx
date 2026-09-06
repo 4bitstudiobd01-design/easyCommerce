@@ -5,7 +5,6 @@ import { useParams, useRouter } from 'next/navigation';
 import { useGetPublicStoreProductsQuery } from '@/features/storefront/api/storefrontApi';
 import { StorefrontNavbar } from '@/features/storefront/components/StorefrontNavbar';
 import { ProductCard } from '@/features/storefront/components/ProductCard';
-import { ProductDetailModal } from '@/features/storefront/components/ProductDetailModal';
 import { CartDrawer } from '@/features/storefront/components/CartDrawer';
 import { StorefrontPixelTracker } from '@/features/storefront/components/StorefrontPixelTracker';
 import { recordStorefrontVisit } from '@/features/storefront/utils/attribution';
@@ -39,9 +38,13 @@ export default function StorefrontPage() {
 
   const cartItems = useSelector((state: RootState) => state.cart.items);
 
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  const openProduct = (p: Product) => {
+    const productSlug = (p as any).slug || p.id;
+    router.push(`/store/${slug}/product/${productSlug}`);
+  };
 
   useEffect(() => {
     if (!slug) return;
@@ -132,14 +135,13 @@ export default function StorefrontPage() {
           googleTagManagerId={(store as any).googleTagManagerId}
         />
         <CartDrawer primaryColor={primaryColor} />
-        <ProductDetailModal product={selectedProduct} storeSlug={slug} primaryColor={primaryColor} onClose={() => setSelectedProduct(null)} />
         <LuxuryFashionTheme
           storeName={store.name}
           slug={store.slug}
           category={store.category}
           products={filteredProducts}
           categories={categories}
-          onSelectProduct={(p) => setSelectedProduct(p)}
+          onSelectProduct={openProduct}
           onAddToCart={handleThemeAddToCart}
         />
       </>
@@ -156,14 +158,13 @@ export default function StorefrontPage() {
           googleTagManagerId={(store as any).googleTagManagerId}
         />
         <CartDrawer primaryColor={primaryColor} />
-        <ProductDetailModal product={selectedProduct} storeSlug={slug} primaryColor={primaryColor} onClose={() => setSelectedProduct(null)} />
         <TechHubTheme
           storeName={store.name}
           slug={store.slug}
           category={store.category}
           products={filteredProducts}
           categories={categories}
-          onSelectProduct={(p) => setSelectedProduct(p)}
+          onSelectProduct={openProduct}
           onAddToCart={handleThemeAddToCart}
         />
       </>
@@ -180,14 +181,13 @@ export default function StorefrontPage() {
           googleTagManagerId={(store as any).googleTagManagerId}
         />
         <CartDrawer primaryColor={primaryColor} />
-        <ProductDetailModal product={selectedProduct} storeSlug={slug} primaryColor={primaryColor} onClose={() => setSelectedProduct(null)} />
         <OrganicGroceryTheme
           storeName={store.name}
           slug={store.slug}
           category={store.category}
           products={filteredProducts}
           categories={categories}
-          onSelectProduct={(p) => setSelectedProduct(p)}
+          onSelectProduct={openProduct}
           onAddToCart={handleThemeAddToCart}
         />
       </>
@@ -204,14 +204,13 @@ export default function StorefrontPage() {
           googleTagManagerId={(store as any).googleTagManagerId}
         />
         <CartDrawer primaryColor={primaryColor} />
-        <ProductDetailModal product={selectedProduct} storeSlug={slug} primaryColor={primaryColor} onClose={() => setSelectedProduct(null)} />
         <MinimalDarkTheme
           storeName={store.name}
           slug={store.slug}
           category={store.category}
           products={filteredProducts}
           categories={categories}
-          onSelectProduct={(p) => setSelectedProduct(p)}
+          onSelectProduct={openProduct}
           onAddToCart={handleThemeAddToCart}
         />
       </>
@@ -247,7 +246,7 @@ export default function StorefrontPage() {
         footerDescription={store.footerDescription}
         products={filteredProducts}
         categories={categories}
-        onSelectProduct={(p) => router.push(`/store/${slug}/product/${p.slug}`)}
+        onSelectProduct={openProduct}
         onAddToCart={handleThemeAddToCart}
         showHeroSection={(store as any).showHeroSection}
         showCategoriesSection={(store as any).showCategoriesSection}

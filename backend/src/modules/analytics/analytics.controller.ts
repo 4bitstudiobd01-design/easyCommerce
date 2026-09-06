@@ -59,7 +59,7 @@ export class AnalyticsController {
   ) {
     const tenantId = await this.getMerchantTenantId(userId, storeId);
     const { dateFrom, dateTo } = this.parseDateRange(query);
-    return this.getMerchantAnalyticsService.execute(tenantId, dateFrom, dateTo);
+    return this.getMerchantAnalyticsService.execute(tenantId, dateFrom, dateTo, query.compare);
   }
 
   @Get('net-profit')
@@ -82,10 +82,12 @@ export class AnalyticsController {
   @ApiResponse({ status: 200, description: 'New vs returning customer trend' })
   async getNewVsReturningTrend(
     @CurrentUser('sub') userId: string,
+    @Query('days') days?: string,
     @Headers('x-store-id') storeId?: string,
   ) {
     const tenantId = await this.getMerchantTenantId(userId, storeId);
-    return this.getCustomerAnalyticsService.getNewVsReturningTrend(tenantId);
+    const parsedDays = days ? Math.min(Math.max(Number(days) || 7, 1), 366) : 7;
+    return this.getCustomerAnalyticsService.getNewVsReturningTrend(tenantId, parsedDays);
   }
 
   @Get('customers/new-vs-returning-summary')
@@ -141,9 +143,11 @@ export class AnalyticsController {
   @ApiResponse({ status: 200, description: 'Insight list, 0-4 items depending on data availability' })
   async getInsights(
     @CurrentUser('sub') userId: string,
+    @Query() query: AnalyticsQueryDto,
     @Headers('x-store-id') storeId?: string,
   ) {
     const tenantId = await this.getMerchantTenantId(userId, storeId);
-    return this.getAnalyticsInsightsService.execute(tenantId);
+    const { dateFrom, dateTo } = this.parseDateRange(query);
+    return this.getAnalyticsInsightsService.execute(tenantId, dateFrom, dateTo);
   }
 }

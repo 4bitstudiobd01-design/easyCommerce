@@ -80,7 +80,7 @@ export const ShopEaseHero = ({
   if (hasCarousel) {
     const slide = slides[activeSlide % slides.length];
     return (
-      <section className="relative overflow-hidden bg-gradient-to-b from-slate-50/70 via-white to-slate-50/30 py-4 sm:py-8 lg:py-10 border-b border-slate-100">
+      <section className="relative bg-gradient-to-b from-slate-50/70 via-white to-slate-50/30 pt-4 sm:pt-6 lg:pt-8 pb-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="group relative w-full h-[300px] sm:h-[400px] lg:h-[460px] rounded-3xl overflow-hidden bg-slate-100 border border-slate-200/80 shadow-[0_12px_40px_rgba(0,0,0,0.08)]">
             {slide.imageUrl ? (
@@ -100,7 +100,7 @@ export const ShopEaseHero = ({
             <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent" />
 
             {/* Slide content — a product overlay, or a banner CTA */}
-            <div className="absolute inset-x-0 bottom-0 p-5 sm:p-8 lg:p-10 space-y-3">
+            <div className="absolute inset-x-0 bottom-0 p-5 sm:p-8 lg:p-10 pb-14 sm:pb-16 lg:pb-20 space-y-3">
               {slide.type === 'product' && (
                 <div className="max-w-lg space-y-1.5">
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[10px] font-black uppercase tracking-wider">
@@ -131,7 +131,7 @@ export const ShopEaseHero = ({
             </div>
 
             {slides.length > 1 && (
-              <div className="absolute bottom-5 right-5 sm:right-8 flex items-center gap-1.5">
+              <div className="absolute bottom-14 right-5 sm:right-8 flex items-center gap-1.5 z-10">
                 {slides.map((s, i) => (
                   <button
                     key={s.id}
@@ -152,7 +152,7 @@ export const ShopEaseHero = ({
   }
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-slate-50/70 via-white to-slate-50/30 py-6 sm:py-10 lg:py-16 border-b border-slate-100">
+    <section className="relative bg-gradient-to-b from-slate-50/70 via-white to-slate-50/30 pt-6 sm:pt-10 lg:pt-16 pb-0">
       {/* Subtle Ambient Background Glow */}
       <div
         className="absolute top-0 right-1/4 w-96 h-96 rounded-full blur-3xl pointer-events-none"

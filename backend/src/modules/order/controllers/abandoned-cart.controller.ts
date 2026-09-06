@@ -1,7 +1,6 @@
 import { Controller, Post, Get, Body, Param, UseGuards, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AbandonedCartService } from '../services/abandoned-cart.service';
-import { SeedAbandonedCartDemoDataService } from '../services/seed-abandoned-cart-demo-data.service';
 import { FindStoreByUserService } from '../../tenant/services/find-store-by-user.service';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
@@ -12,7 +11,6 @@ import { TrackAbandonedCartDto } from '../dto/track-abandoned-cart.dto';
 export class AbandonedCartController {
   constructor(
     private readonly abandonedCartService: AbandonedCartService,
-    private readonly seedAbandonedCartDemoDataService: SeedAbandonedCartDemoDataService,
     private readonly findStoreByUserService: FindStoreByUserService,
   ) {}
 
@@ -44,17 +42,6 @@ export class AbandonedCartController {
   async getMerchantAbandonedCarts(@CurrentUser('sub') userId: string) {
     const tenantId = await this.getMerchantTenantId(userId);
     return this.abandonedCartService.getMerchantAbandonedCarts(tenantId);
-  }
-
-  // Seed demo abandoned carts (dev only)
-  @Post('seed-demo')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Seed demo abandoned carts (dev only)' })
-  @ApiResponse({ status: 201, description: 'Seed result with counts' })
-  async seedDemo(@CurrentUser('sub') userId: string) {
-    const tenantId = await this.getMerchantTenantId(userId);
-    return this.seedAbandonedCartDemoDataService.execute(tenantId);
   }
 
   // Send 1-click recovery SMS

@@ -5,6 +5,7 @@ import { Product } from '@/features/catalog/api/catalogApi';
 import { useGetPublicStoreCategoriesQuery, useGetPublicStoreProductsQuery } from '../api/storefrontApi';
 import { ShopEaseNavbar } from '../components/ShopEaseNavbar';
 import { ShopEaseHero } from '../components/ShopEaseHero';
+import { ShopEaseFeaturesBar } from '../components/ShopEaseFeaturesBar';
 import { ShopEaseCategories } from '../components/ShopEaseCategories';
 import { ShopEaseFeaturedProducts } from '../components/ShopEaseFeaturedProducts';
 import { ShopEaseProductSection } from '../components/ShopEaseProductSection';
@@ -85,9 +86,9 @@ export const DefaultStorefrontTheme = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // Merchant-ordered categories from the real catalog (sorted by the admin's sortOrder).
+  // Merchant-ordered categories from the real catalog (sorted by the admin's sortOrder, limit to 10 for homepage).
   const { data: merchantCategories } = useGetPublicStoreCategoriesQuery(
-    { slug },
+    { slug, limit: 10 },
     { skip: !slug },
   );
 
@@ -151,15 +152,41 @@ export const DefaultStorefrontTheme = ({
   // Structured categories with images for the category slider/grid — merchant's
   // admin-defined order takes priority over the product-derived fallback.
   const structuredCategories = useMemo(() => {
+    // Count products per category
+    const countMap = new Map<string, number>();
+    products.forEach((p) => {
+      const catName = p.category?.name;
+      if (catName) {
+        countMap.set(catName, (countMap.get(catName) || 0) + 1);
+      }
+    });
+
+    let list: Array<{ id: string; name: string; imageUrl: string; itemCount: number }> = [];
+
     if (merchantCategories && merchantCategories.length > 0) {
-      return merchantCategories.map((c) => ({
+      list = merchantCategories.map((c) => ({
         id: c.id,
         name: c.name,
-        imageUrl: c.image || 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=300',
+        imageUrl: c.image || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=300',
+        itemCount: countMap.get(c.name) || (c as any).productCount || (c as any).productsCount || 0,
+      }));
+    } else if (categoriesFromProducts.length > 0) {
+      list = categoriesFromProducts.map((c) => ({
+        ...c,
+        itemCount: countMap.get(c.name) || 0,
+      }));
+    } else {
+      list = SHOPEASE_CATEGORIES.map((c) => ({
+        id: c.id,
+        name: c.name,
+        imageUrl: c.imageUrl,
+        itemCount: c.itemCount,
       }));
     }
-    return categoriesFromProducts;
-  }, [merchantCategories, categoriesFromProducts]);
+
+    // Homepage limit: Show at most 10 categories (rest viewable on View All Categories page)
+    return list.slice(0, 10);
+  }, [merchantCategories, categoriesFromProducts, products]);
 
   // Use only live store products
   const allProducts: ShopEaseProduct[] = useMemo(() => {
@@ -233,7 +260,12 @@ export const DefaultStorefrontTheme = ({
           />
         )}
 
-        {/* 3. CATEGORIES (Show only if store has categories) */}
+        {/* 3. TRUST & PERKS FLOATING BAR (Exactly 50% on hero banner, 50% below) */}
+        <div className={showHeroSection ? 'relative z-30 -translate-y-1/2 -mb-8 sm:-mb-10 lg:-mb-12' : 'my-6'}>
+          <ShopEaseFeaturesBar primaryColor={primaryColor} />
+        </div>
+
+        {/* 4. CATEGORIES (Matching Image 1) */}
         {showCategoriesSection && structuredCategories.length > 0 && (
           <ShopEaseCategories
             categories={structuredCategories}

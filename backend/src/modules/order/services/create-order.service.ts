@@ -15,6 +15,7 @@ import { RecordCustomerActivityService } from '../../customer/services/record-cu
 import { normalizeChannel } from '../../../common/utils/normalize-channel.util';
 import { LeadEntity, LeadStageEnum } from '../../customer/entities/lead.entity';
 import { GenerateOrderNumberService } from './generate-order-number.service';
+import { AbandonedCartService } from './abandoned-cart.service';
 
 @Injectable()
 export class CreateOrderService {
@@ -36,6 +37,7 @@ export class CreateOrderService {
     private readonly findOrCreateCustomerService: FindOrCreateCustomerService,
     private readonly generateOrderNumberService: GenerateOrderNumberService,
     private readonly recordCustomerActivityService: RecordCustomerActivityService,
+    private readonly abandonedCartService: AbandonedCartService,
   ) {}
 
   async execute(dto: CreateOrderDto): Promise<OrderEntity> {
@@ -230,9 +232,13 @@ export class CreateOrderService {
       }
     }
 
+    // Close out any abandoned cart this customer left before checking out.
+    await this.abandonedCartService.markRecoveredByPhone(tenantId, savedOrder.customerPhone);
+
     // Trigger Order Placement SMS
     try {
       await this.triggerOrderStatusSmsService.execute({
+        orderId: savedOrder.id,
         orderNumber: savedOrder.orderNumber,
         customerPhone: savedOrder.customerPhone,
         customerName: savedOrder.customerName,

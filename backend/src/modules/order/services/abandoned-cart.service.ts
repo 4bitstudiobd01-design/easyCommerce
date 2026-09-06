@@ -60,6 +60,24 @@ export class AbandonedCartService {
     return this.abandonedCartRepository.save(cart);
   }
 
+  /**
+   * Marks any open abandoned cart for this phone as recovered once the customer
+   * actually places an order. Keyed on (tenantId, customerPhone) — the same key
+   * trackIncompleteCart dedupes on. Best-effort: never throws, so a failure here
+   * can't break order creation.
+   */
+  async markRecoveredByPhone(tenantId: string, customerPhone: string): Promise<void> {
+    if (!customerPhone) return;
+    try {
+      await this.abandonedCartRepository.update(
+        { tenantId, customerPhone, isRecovered: false },
+        { isRecovered: true },
+      );
+    } catch {
+      // Non-blocking — recovery tagging is a nice-to-have, not part of the order.
+    }
+  }
+
   async getMerchantAbandonedCarts(tenantId: string): Promise<AbandonedCartEntity[]> {
     return this.abandonedCartRepository.find({
       where: { tenantId, isRecovered: false },

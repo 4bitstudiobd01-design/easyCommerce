@@ -40,7 +40,6 @@ import { GetBillStatsService } from './services/get-bill-stats.service';
 import { RecordSupplierPaymentService } from './services/record-supplier-payment.service';
 import { ListSupplierPaymentsService } from './services/list-supplier-payments.service';
 import { GetPurchaseOverviewService } from './services/get-purchase-overview.service';
-import { SeedPurchaseDemoDataService } from './services/seed-purchase-demo-data.service';
 
 import {
   CreateSupplierDto,
@@ -93,7 +92,6 @@ export class PurchaseController {
     private readonly recordSupplierPaymentService: RecordSupplierPaymentService,
     private readonly listSupplierPaymentsService: ListSupplierPaymentsService,
     private readonly getPurchaseOverviewService: GetPurchaseOverviewService,
-    private readonly seedPurchaseDemoDataService: SeedPurchaseDemoDataService,
   ) {}
 
   private async getStoreContext(
@@ -107,7 +105,7 @@ export class PurchaseController {
     return store;
   }
 
-  // ─── Overview & seed ───────────────────────────────────────────
+  // ─── Overview ──────────────────────────────────────────────────
 
   @Get('overview')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -122,20 +120,6 @@ export class PurchaseController {
   ) {
     const store = await this.getStoreContext(userId, headerStoreId);
     return this.getPurchaseOverviewService.execute(store.id, query);
-  }
-
-  @Post('seed-demo')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @ApiBearerAuth()
-  @RequirePermissions('purchases:manage')
-  @ApiOperation({ summary: 'Seed demo suppliers, purchase orders and bills (dev only)' })
-  @ApiResponse({ status: 201, description: 'Seed result with counts' })
-  async seedDemo(
-    @CurrentUser('sub') userId: string,
-    @Headers('x-store-id') headerStoreId: string,
-  ) {
-    const store = await this.getStoreContext(userId, headerStoreId);
-    return this.seedPurchaseDemoDataService.execute(store.tenantId, store.id, userId);
   }
 
   // ─── Suppliers ─────────────────────────────────────────────────

@@ -28,7 +28,6 @@ import { ListInventoryHistoryService } from './services/list-inventory-history.s
 import { GetProductVariantInventoryService } from './services/get-product-variant-inventory.service';
 import { BulkAdjustStockService } from './services/bulk-adjust-stock.service';
 import { GetInventorySettingsOverviewService } from './services/get-inventory-settings-overview.service';
-import { SeedInventoryDemoDataService } from './services/seed-inventory-demo-data.service';
 import { InventoryController } from './inventory.controller';
 import { StockTransferController } from './controllers/stock-transfer.controller';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -78,7 +77,6 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     ListInventoryHistoryService,
     GetProductVariantInventoryService,
     GetInventorySettingsOverviewService,
-    SeedInventoryDemoDataService,
     JwtAuthGuard,
   ],
   exports: [
@@ -98,7 +96,6 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     ListInventoryHistoryService,
     GetProductVariantInventoryService,
     GetInventorySettingsOverviewService,
-    SeedInventoryDemoDataService,
     TypeOrmModule,
   ],
 })

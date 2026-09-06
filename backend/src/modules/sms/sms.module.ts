@@ -10,6 +10,7 @@ import { TriggerOrderStatusSmsService } from './services/trigger-order-status-sm
 import { ListSmsLogsService } from './services/list-sms-logs.service';
 import { ListPushNotificationsService } from './services/list-push-notifications.service';
 import { MarkPushNotificationsReadService } from './services/mark-push-notifications-read.service';
+import { MarkPushNotificationReadService } from './services/mark-push-notification-read.service';
 import { NotificationDispatcherService } from './services/notification-dispatcher.service';
 import { BulkSmsBdDriver } from './drivers/bulksmsbd.driver';
 import { GreenwebSmsDriver } from './drivers/greenweb.driver';
@@ -39,6 +40,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     ListSmsLogsService,
     ListPushNotificationsService,
     MarkPushNotificationsReadService,
+    MarkPushNotificationReadService,
     NotificationDispatcherService,
     BulkSmsBdDriver,
     GreenwebSmsDriver,

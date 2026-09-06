@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsIn, IsOptional, IsString } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class AnalyticsQueryDto {
@@ -11,4 +11,12 @@ export class AnalyticsQueryDto {
   @IsOptional()
   @IsString()
   dateTo?: string;
+
+  @ApiPropertyOptional({
+    description: 'Comparison window: preceding period of equal length, or same dates last year',
+    enum: ['previous', 'previousYear'],
+  })
+  @IsOptional()
+  @IsIn(['previous', 'previousYear'])
+  compare?: 'previous' | 'previousYear';
 }

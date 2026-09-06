@@ -46,7 +46,6 @@ import { GetBillStatsService } from './services/get-bill-stats.service';
 import { RecordSupplierPaymentService } from './services/record-supplier-payment.service';
 import { ListSupplierPaymentsService } from './services/list-supplier-payments.service';
 import { GetPurchaseOverviewService } from './services/get-purchase-overview.service';
-import { SeedPurchaseDemoDataService } from './services/seed-purchase-demo-data.service';
 
 /**
  * Purchase — suppliers, purchase orders, bills and supplier payments for a merchant store.
@@ -112,10 +111,9 @@ import { SeedPurchaseDemoDataService } from './services/seed-purchase-demo-data.
     RecordSupplierPaymentService,
     ListSupplierPaymentsService,
     GetPurchaseOverviewService,
-    SeedPurchaseDemoDataService,
     JwtAuthGuard,
     PermissionsGuard,
   ],
-  exports: [SeedPurchaseDemoDataService],
+  exports: [],
 })
 export class PurchaseModule {}

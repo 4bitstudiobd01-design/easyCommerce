@@ -15,8 +15,10 @@ interface ShopSidebarFilterProps {
   selectedCategory: string;
   onSelectCategory: (category: string) => void;
   priceRange: [number, number];
+  priceBounds?: [number, number];
   onPriceRangeChange: (range: [number, number]) => void;
   brands?: string[];
+  brandCounts?: Record<string, number>;
   selectedBrands: string[];
   onToggleBrand: (brandName: string) => void;
   selectedMinRating: number;
@@ -31,8 +33,10 @@ export const ShopSidebarFilter = ({
   selectedCategory,
   onSelectCategory,
   priceRange,
+  priceBounds = [0, 5000],
   onPriceRangeChange,
   brands = [],
+  brandCounts = {},
   selectedBrands,
   onToggleBrand,
   selectedMinRating,
@@ -46,13 +50,16 @@ export const ShopSidebarFilter = ({
   const [isRatingsOpen, setIsRatingsOpen] = useState(true);
   const [showAllBrands, setShowAllBrands] = useState(false);
 
+  const [minBound, maxBound] = priceBounds;
+  const priceStep = Math.max(1, Math.round((maxBound - minBound) / 100) || 1);
+
   const availableBrands = brands.length > 0 ? brands : [];
   const displayBrands = showAllBrands ? availableBrands : availableBrands.slice(0, 5);
 
   const hasActiveFilters =
     selectedCategory !== 'ALL' ||
-    priceRange[0] > 0 ||
-    priceRange[1] < 5000 ||
+    priceRange[0] > minBound ||
+    priceRange[1] < maxBound ||
     selectedBrands.length > 0 ||
     selectedMinRating > 0;
 
@@ -138,30 +145,44 @@ export const ShopSidebarFilter = ({
 
         {isPriceOpen && (
           <div className="space-y-3 pt-1">
-            {/* Range Slider */}
+            {/* Range Slider (upper bound) */}
             <div className="px-1">
               <input
                 type="range"
-                min="0"
-                max="5000"
-                step="100"
+                min={minBound}
+                max={maxBound}
+                step={priceStep}
                 value={priceRange[1]}
-                onChange={(e) => onPriceRangeChange([priceRange[0], Number(e.target.value)])}
+                onChange={(e) =>
+                  onPriceRangeChange([
+                    priceRange[0],
+                    Math.max(priceRange[0], Number(e.target.value)),
+                  ])
+                }
                 className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                 style={{ accentColor: primaryColor }}
               />
+              <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-1">
+                <span>৳{minBound.toLocaleString()}</span>
+                <span>৳{maxBound.toLocaleString()}</span>
+              </div>
             </div>
 
-            {/* Inputs: ৳ 0 - ৳ 5,000 */}
+            {/* Min / Max numeric inputs */}
             <div className="flex items-center gap-2">
               <div className="flex-1 flex items-center bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-700 font-medium">
                 <span className="text-slate-400 mr-1">৳</span>
                 <input
                   type="number"
-                  min="0"
+                  min={minBound}
                   max={priceRange[1]}
                   value={priceRange[0]}
-                  onChange={(e) => onPriceRangeChange([Number(e.target.value), priceRange[1]])}
+                  onChange={(e) =>
+                    onPriceRangeChange([
+                      Math.min(Number(e.target.value), priceRange[1]),
+                      priceRange[1],
+                    ])
+                  }
                   className="w-full bg-transparent focus:outline-none text-slate-800 text-xs font-bold"
                 />
               </div>
@@ -171,9 +192,14 @@ export const ShopSidebarFilter = ({
                 <input
                   type="number"
                   min={priceRange[0]}
-                  max="5000"
+                  max={maxBound}
                   value={priceRange[1]}
-                  onChange={(e) => onPriceRangeChange([priceRange[0], Number(e.target.value)])}
+                  onChange={(e) =>
+                    onPriceRangeChange([
+                      priceRange[0],
+                      Math.max(Number(e.target.value), priceRange[0]),
+                    ])
+                  }
                   className="w-full bg-transparent focus:outline-none text-slate-800 text-xs font-bold"
                 />
               </div>
@@ -205,6 +231,7 @@ export const ShopSidebarFilter = ({
               <ul className="space-y-2 text-xs">
                 {displayBrands.map((brandName) => {
                   const isChecked = selectedBrands.includes(brandName);
+                  const count = brandCounts[brandName];
                   return (
                     <li key={brandName} className="flex items-center justify-between">
                       <label className="flex items-center gap-2.5 cursor-pointer select-none text-slate-700 hover:text-slate-900">
@@ -222,6 +249,9 @@ export const ShopSidebarFilter = ({
                           {brandName}
                         </span>
                       </label>
+                      {count != null && (
+                        <span className="text-[11px] text-slate-400 font-semibold">({count})</span>
+                      )}
                     </li>
                   );
                 })}

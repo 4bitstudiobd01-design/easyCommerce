@@ -3,6 +3,7 @@
 import React from 'react';
 import { ArrowUp, ArrowDown, TrendingUp, Store, Sparkles, Lightbulb } from 'lucide-react';
 import { useGetAnalyticsInsightsQuery, type InsightSeverity } from '../api/analyticsApi';
+import { useAnalyticsDateParams } from '../context/AnalyticsFiltersContext';
 import { Skeleton } from '@/components/ui/Skeleton';
 
 const ICONS: Record<string, React.ElementType> = {
@@ -20,7 +21,8 @@ const severityStyle = (severity: InsightSeverity, type: string): { icon: React.E
 };
 
 export function InsightsList() {
-  const { data, isLoading } = useGetAnalyticsInsightsQuery();
+  const dateParams = useAnalyticsDateParams();
+  const { data, isLoading } = useGetAnalyticsInsightsQuery(dateParams);
 
   if (isLoading) {
     return (

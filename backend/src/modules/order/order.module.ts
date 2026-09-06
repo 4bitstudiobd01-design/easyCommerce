@@ -34,8 +34,6 @@ import { TrackPublicOrderService } from './services/track-public-order.service';
 import { GenerateOrderInvoiceService } from './services/generate-order-invoice.service';
 import { GenerateThermalLabelService } from './services/generate-thermal-label.service';
 import { AbandonedCartService } from './services/abandoned-cart.service';
-import { SeedAbandonedCartDemoDataService } from './services/seed-abandoned-cart-demo-data.service';
-import { SeedOrderDemoDataService } from './services/seed-order-demo-data.service';
 import { EditOrderService } from './services/edit-order.service';
 import { OrderStateService } from './services/order-state.service';
 import { OrderCalculationService } from './services/order-calculation.service';
@@ -105,8 +103,6 @@ import { GenerateOrderNumberService } from './services/generate-order-number.ser
     GenerateOrderInvoiceService,
     GenerateThermalLabelService,
     AbandonedCartService,
-    SeedAbandonedCartDemoDataService,
-    SeedOrderDemoDataService,
     OrderStateService,
     OrderCalculationService,
     EditOrderService,

@@ -19,6 +19,8 @@ interface ShopProductGridProps {
   onPageChange: (page: number) => void;
   totalProductsCount: number;
   onOpenDetail?: (product: Product) => void;
+  hasActiveFilters?: boolean;
+  onResetFilters?: () => void;
 }
 
 export const ShopProductGrid = ({
@@ -34,6 +36,8 @@ export const ShopProductGrid = ({
   onPageChange,
   totalProductsCount,
   onOpenDetail,
+  hasActiveFilters,
+  onResetFilters,
 }: ShopProductGridProps) => {
   const startItem = totalProductsCount === 0 ? 0 : (currentPage - 1) * 8 + 1;
   const endItem = Math.min(currentPage * 8, totalProductsCount);
@@ -116,6 +120,16 @@ export const ShopProductGrid = ({
           <p className="text-xs text-slate-500">
             Try loosening your filters, changing price range, or searching for another keyword.
           </p>
+          {hasActiveFilters && onResetFilters && (
+            <button
+              type="button"
+              onClick={onResetFilters}
+              className="inline-flex items-center gap-1.5 mt-1 h-9 px-4 text-white text-xs font-bold rounded-xl transition-all active:scale-95"
+              style={{ backgroundColor: primaryColor }}
+            >
+              Clear all filters
+            </button>
+          )}
         </div>
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4">

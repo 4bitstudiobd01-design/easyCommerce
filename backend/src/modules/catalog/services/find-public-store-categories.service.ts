@@ -21,7 +21,7 @@ export class FindPublicStoreCategoriesService {
     private readonly findStoreBySlugService: FindStoreBySlugService,
   ) {}
 
-  async execute(slug: string): Promise<PublicStoreCategory[]> {
+  async execute(slug: string, limit?: number): Promise<PublicStoreCategory[]> {
     const store = await this.findStoreBySlugService.execute(slug);
 
     const categories = await this.categoryRepository.find({
@@ -32,6 +32,7 @@ export class FindPublicStoreCategoriesService {
         showInStorefront: true,
       },
       order: { sortOrder: 'ASC', name: 'ASC' },
+      ...(limit ? { take: Number(limit) } : {}),
     });
 
     return categories.map((c) => ({
