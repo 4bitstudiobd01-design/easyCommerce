@@ -24,10 +24,12 @@ interface Props {
   onClose: () => void;
   invoice: FinanceInvoice | null;
   onRecordPayment?: (invoice: FinanceInvoice) => void;
+  onUpdateStatus?: (invoice: FinanceInvoice) => void;
 }
 
 const STATUS_BADGE: Record<FinanceInvoiceStatus, { bg: string; text: string; icon: React.ReactNode }> = {
   DRAFT: { bg: 'bg-slate-100 border-slate-200', text: 'text-slate-700', icon: <Clock className="w-3.5 h-3.5" /> },
+  PENDING: { bg: 'bg-amber-50 border-amber-200', text: 'text-amber-800', icon: <Clock className="w-3.5 h-3.5 text-amber-600" /> },
   UNPAID: { bg: 'bg-amber-50 border-amber-200', text: 'text-amber-800', icon: <AlertCircle className="w-3.5 h-3.5" /> },
   PARTIALLY_PAID: { bg: 'bg-sky-50 border-sky-200', text: 'text-sky-800', icon: <Clock className="w-3.5 h-3.5" /> },
   PAID: { bg: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-800', icon: <CheckCircle className="w-3.5 h-3.5" /> },
@@ -43,7 +45,13 @@ function formatMoney(value: number | string | null | undefined): string {
   });
 }
 
-export function InvoiceDetailModal({ isOpen, onClose, invoice, onRecordPayment }: Props) {
+export function InvoiceDetailModal({
+  isOpen,
+  onClose,
+  invoice,
+  onRecordPayment,
+  onUpdateStatus,
+}: Props) {
   const { data: stores = [] } = useGetMyStoresQuery();
   const { data: freshInvoice } = useGetInvoiceQuery(invoice?.id || '', {
     skip: !isOpen || !invoice?.id,
@@ -97,6 +105,16 @@ export function InvoiceDetailModal({ isOpen, onClose, invoice, onRecordPayment }
           </div>
 
           <div className="flex items-center gap-2">
+            {onUpdateStatus && (
+              <button
+                type="button"
+                onClick={() => onUpdateStatus(activeInvoice)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition cursor-pointer"
+              >
+                <FileText className="w-3.5 h-3.5 text-slate-500" />
+                Update Status
+              </button>
+            )}
             <button
               type="button"
               onClick={handlePrint}
@@ -109,7 +127,7 @@ export function InvoiceDetailModal({ isOpen, onClose, invoice, onRecordPayment }
               <button
                 type="button"
                 onClick={() => onRecordPayment(activeInvoice)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/20 transition cursor-pointer"
               >
                 <CreditCard className="w-3.5 h-3.5" />
                 Record Payment

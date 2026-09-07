@@ -11,6 +11,9 @@ import {
   X,
   CheckCircle2,
   Loader2,
+  Landmark,
+  ArrowDownRight,
+  AlertTriangle,
 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import {
@@ -35,12 +38,6 @@ export function CreateExpenseModal({ isOpen, onClose, initialAccountId }: Props)
   );
   const [categoryCode, setCategoryCode] = useState('MARKETING');
   const [accountId, setAccountId] = useState(initialAccountId || '');
-
-  React.useEffect(() => {
-    if (initialAccountId) {
-      setAccountId(initialAccountId);
-    }
-  }, [initialAccountId, isOpen]);
   const [description, setDescription] = useState('');
   const [reference, setReference] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
@@ -62,10 +59,45 @@ export function CreateExpenseModal({ isOpen, onClose, initialAccountId }: Props)
   const [createExpense, { isLoading }] = useCreateExpenseMutation();
   const [uploadReceipt] = useUploadReceiptFileMutation();
 
-  const accounts: FinanceAccount[] = Array.isArray(accountsData)
-    ? accountsData
-    : (accountsData as any)?.items || [];
+  const rawAccounts = (accountsData as any)?.data !== undefined ? (accountsData as any).data : accountsData;
+  const accounts: FinanceAccount[] = Array.isArray(rawAccounts)
+    ? rawAccounts
+    : (rawAccounts as any)?.items || [];
   const categoryList: FinanceCategory[] = Array.isArray(categories) ? categories : [];
+
+  React.useEffect(() => {
+    if (initialAccountId) {
+      setAccountId(initialAccountId);
+    } else if (accounts.length > 0 && !accountId) {
+      const defAcc =
+        accounts.find((a) => a.isDefault && a.isActive) ||
+        accounts.find((a) => a.isActive) ||
+        accounts[0];
+      if (defAcc) {
+        setAccountId(defAcc.id);
+      }
+    }
+  }, [initialAccountId, accounts, accountId, isOpen]);
+
+  const handleAccountChange = (newAccId: string) => {
+    setAccountId(newAccId);
+    const selected = accounts.find((a) => a.id === newAccId);
+    if (selected) {
+      if (selected.type === 'CASH') setPaymentMethod('CASH');
+      else if (selected.type === 'DIGITAL_WALLET') {
+        const prov = (selected.bankOrProviderName || selected.name || '').toUpperCase();
+        if (prov.includes('NAGAD')) setPaymentMethod('NAGAD');
+        else setPaymentMethod('BKASH');
+      } else if (selected.type === 'PAYMENT_GATEWAY') setPaymentMethod('BANK');
+      else setPaymentMethod('BANK');
+    }
+  };
+
+  const selectedAccount = accounts.find((a) => a.id === accountId);
+  const currentBal = selectedAccount ? Number(selectedAccount.currentBalance || 0) : 0;
+  const expenseAmt = Number(amount || 0);
+  const remainingBal = currentBal - expenseAmt;
+  const isInsufficient = Boolean(selectedAccount && expenseAmt > 0 && remainingBal < 0);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -231,23 +263,102 @@ export function CreateExpenseModal({ isOpen, onClose, initialAccountId }: Props)
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-              Paid From Account
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-semibold text-slate-700 uppercase">
+                Deduct From Account *
+              </label>
+              {selectedAccount && (
+                <span className="text-[10px] font-bold text-rose-700 uppercase bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
+                  {selectedAccount.type.replace('_', ' ')}
+                </span>
+              )}
+            </div>
             <select
               value={accountId}
-              onChange={(e) => setAccountId(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+              onChange={(e) => handleAccountChange(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 cursor-pointer"
             >
-              <option value="">-- Direct / Cash / Petty Cash --</option>
-              {accounts.map((acc) => (
-                <option key={acc.id} value={acc.id}>
-                  {acc.name} ({acc.currency} {Number(acc.currentBalance).toLocaleString(undefined, { minimumFractionDigits: 2 })})
-                </option>
-              ))}
+              {accounts.length === 0 ? (
+                <option value="">No accounts available</option>
+              ) : (
+                <>
+                  <option value="">-- Direct Cash / Unassigned --</option>
+                  {accounts.map((acc) => (
+                    <option key={acc.id} value={acc.id}>
+                      {acc.name} ({acc.currency} {Number(acc.currentBalance).toLocaleString(undefined, { minimumFractionDigits: 2 })})
+                    </option>
+                  ))}
+                </>
+              )}
             </select>
           </div>
         </div>
+
+        {/* Live Balance Deduction Preview & Insufficient Balance Warning */}
+        {selectedAccount && (
+          <div
+            className={`p-3.5 rounded-2xl border transition ${
+              isInsufficient
+                ? 'bg-amber-50/90 border-amber-200 text-amber-950'
+                : 'bg-rose-50/60 border-rose-200/80 text-slate-800'
+            }`}
+          >
+            <div className="flex items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2.5">
+                <div
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                    isInsufficient
+                      ? 'bg-amber-100 text-amber-700'
+                      : 'bg-rose-100 text-rose-600'
+                  }`}
+                >
+                  {isInsufficient ? (
+                    <AlertTriangle className="w-4 h-4" />
+                  ) : (
+                    <Landmark className="w-4 h-4" />
+                  )}
+                </div>
+                <div>
+                  <p className="font-bold text-slate-900">{selectedAccount.name}</p>
+                  <p className="text-[11px] text-slate-500">
+                    Current Balance:{' '}
+                    <span className="font-semibold text-slate-700">
+                      {selectedAccount.currency}{' '}
+                      {currentBal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </span>
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <span
+                  className={`text-[10px] font-bold uppercase tracking-wider block ${
+                    isInsufficient ? 'text-amber-700' : 'text-rose-600'
+                  }`}
+                >
+                  Projected Remaining
+                </span>
+                <span
+                  className={`font-black text-sm flex items-center justify-end gap-1 ${
+                    isInsufficient ? 'text-amber-700' : 'text-rose-700'
+                  }`}
+                >
+                  <ArrowDownRight className="w-4 h-4" />
+                  {selectedAccount.currency}{' '}
+                  {remainingBal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+            </div>
+
+            {isInsufficient && (
+              <div className="mt-2 pt-2 border-t border-amber-200/60 flex items-center gap-1.5 text-[11px] font-semibold text-amber-800">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-600" />
+                <span>
+                  Warning: Expense amount exceeds available balance. Account will enter negative balance!
+                </span>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -388,7 +499,7 @@ export function CreateExpenseModal({ isOpen, onClose, initialAccountId }: Props)
           <button
             type="submit"
             disabled={isLoading || isUploadingFile}
-            className="px-5 py-2.5 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 rounded-xl shadow-sm transition cursor-pointer flex items-center gap-1.5"
+            className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-xl shadow-md shadow-blue-600/20 transition cursor-pointer flex items-center gap-1.5"
           >
             {isLoading ? 'Recording...' : 'Record Expense'}
           </button>

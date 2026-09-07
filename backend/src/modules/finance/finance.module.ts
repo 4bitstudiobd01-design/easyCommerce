@@ -38,6 +38,7 @@ import { CreateTransactionService } from './services/create-transaction.service'
 import { DeleteTransactionService } from './services/delete-transaction.service';
 import { ListIncomeService } from './services/list-income.service';
 import { CreateIncomeService } from './services/create-income.service';
+import { UpdateIncomeService } from './services/update-income.service';
 import { ListExpensesService } from './services/list-expenses.service';
 import { CreateExpenseService } from './services/create-expense.service';
 import { UpdateExpenseService } from './services/update-expense.service';
@@ -138,6 +139,7 @@ import { DisburseSalaryPaymentService } from './services/disburse-salary-payment
     DeleteTransactionService,
     ListIncomeService,
     CreateIncomeService,
+    UpdateIncomeService,
     ListExpensesService,
     CreateExpenseService,
     UpdateExpenseService,

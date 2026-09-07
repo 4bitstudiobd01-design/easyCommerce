@@ -258,7 +258,7 @@ export function ConfirmCashSalaryPaymentModal({
             <button
               type="submit"
               disabled={isDisbursing}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all cursor-pointer disabled:opacity-50"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition-all cursor-pointer disabled:opacity-50"
             >
               <Banknote className="w-4 h-4" />
               <span>{isDisbursing ? 'Processing Cash Payout...' : `Confirm Cash Payout (৳${netAmount.toLocaleString()})`}</span>

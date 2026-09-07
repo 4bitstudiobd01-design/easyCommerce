@@ -247,7 +247,7 @@ export function DepositToAccountModal({ isOpen, onClose, account }: Props) {
           <button
             type="submit"
             disabled={isLoading}
-            className="px-5 py-2.5 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-xl shadow-md shadow-emerald-600/20 transition flex items-center gap-2"
+            className="px-5 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-xl shadow-md shadow-blue-600/20 transition flex items-center gap-2"
           >
             {isLoading ? 'Depositing...' : 'Add Money to Account'}
           </button>

@@ -21,6 +21,8 @@ import { FileEntity } from '../../file/entities/file.entity';
 @Entity('fin_transactions')
 @Index('IDX_fin_transactions_tenantId_storeId', ['tenantId', 'storeId'])
 @Index('IDX_fin_transactions_date', ['storeId', 'transactionDate'])
+@Index('IDX_fin_transactions_store_type_date', ['storeId', 'type', 'transactionDate'])
+@Index('IDX_fin_transactions_store_account', ['storeId', 'accountId'])
 export class FinanceTransactionEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;

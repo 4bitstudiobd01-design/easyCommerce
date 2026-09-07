@@ -330,7 +330,7 @@ export function FinanceExpensesView() {
           <button
             type="button"
             onClick={() => setIsCreateOpen(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/20 transition cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             Record Expense
@@ -859,7 +859,7 @@ export function FinanceExpensesView() {
                       onClick={() => setPage(pageNum)}
                       className={`min-w-[32px] h-8 px-2 rounded-lg text-xs font-bold transition cursor-pointer ${
                         isCurrent
-                          ? 'bg-rose-600 text-white shadow-xs'
+                          ? 'bg-blue-600 text-white shadow-xs'
                           : 'border border-slate-200 bg-white hover:bg-slate-100 text-slate-700'
                       }`}
                     >

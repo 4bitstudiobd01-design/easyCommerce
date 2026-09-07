@@ -348,7 +348,7 @@ export function CreateJournalEntryModal({ isOpen, onClose }: CreateJournalEntryM
             <button
               type="submit"
               disabled={isLoading || !isBalanced}
-              className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-500/20 transition disabled:opacity-50"
+              className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/20 transition disabled:opacity-50"
             >
               {isLoading ? 'Posting...' : 'Post Journal Entry'}
             </button>

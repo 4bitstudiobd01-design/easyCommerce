@@ -31,9 +31,11 @@ import {
 import { CreateInvoiceModal } from './CreateInvoiceModal';
 import { InvoiceDetailModal } from './InvoiceDetailModal';
 import { RecordInvoicePaymentModal } from './RecordInvoicePaymentModal';
+import { UpdateInvoiceStatusModal } from './UpdateInvoiceStatusModal';
 
 const STATUS_BADGE: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
   DRAFT: { bg: 'bg-slate-100 border-slate-200', text: 'text-slate-700', icon: <Clock className="w-3 h-3" /> },
+  PENDING: { bg: 'bg-amber-50 border-amber-200', text: 'text-amber-800', icon: <Clock className="w-3 h-3 text-amber-600" /> },
   UNPAID: { bg: 'bg-amber-50 border-amber-200', text: 'text-amber-800', icon: <AlertCircle className="w-3 h-3" /> },
   PARTIALLY_PAID: { bg: 'bg-sky-50 border-sky-200', text: 'text-sky-800', icon: <Clock className="w-3 h-3" /> },
   PAID: { bg: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-800', icon: <CheckCircle className="w-3 h-3" /> },
@@ -95,6 +97,7 @@ export function FinanceInvoicesView() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<FinanceInvoice | null>(null);
   const [paymentInvoice, setPaymentInvoice] = useState<FinanceInvoice | null>(null);
+  const [statusUpdateInvoice, setStatusUpdateInvoice] = useState<FinanceInvoice | null>(null);
 
   // Query
   const isOutstandingActive = status === 'OUTSTANDING';
@@ -170,6 +173,7 @@ export function FinanceInvoicesView() {
       highlight: true,
       badge: summary?.allTimeOutstandingCount ? `${summary.allTimeOutstandingCount}` : undefined,
     },
+    { label: 'Pending', value: 'PENDING' },
     { label: 'Unpaid', value: 'UNPAID' },
     { label: 'Partially Paid', value: 'PARTIALLY_PAID' },
     { label: 'Paid', value: 'PAID' },
@@ -378,11 +382,7 @@ export function FinanceInvoicesView() {
                 }}
                 className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl text-xs font-bold transition cursor-pointer ${
                   isActive
-                    ? chip.highlight
-                      ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
-                      : 'bg-slate-900 text-white shadow-xs'
-                    : chip.highlight
-                    ? 'bg-blue-50 text-blue-800 border border-blue-200 hover:bg-blue-100'
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
                     : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
                 }`}
               >
@@ -512,12 +512,15 @@ export function FinanceInvoicesView() {
                         </span>
                       </td>
                       <td className="py-3.5 px-4 text-center">
-                        <span
-                          className={`inline-flex items-center gap-1 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${statusMeta.bg} ${statusMeta.text}`}
+                        <button
+                          type="button"
+                          onClick={() => setStatusUpdateInvoice(invoice)}
+                          className={`inline-flex items-center gap-1 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border transition hover:opacity-85 hover:scale-105 cursor-pointer shadow-2xs ${statusMeta.bg} ${statusMeta.text}`}
+                          title="Click to update payment status"
                         >
                           {statusMeta.icon}
                           {invoice.status.replace('_', ' ')}
-                        </span>
+                        </button>
                       </td>
                       <td className="py-3.5 px-4 text-right font-mono font-black text-slate-900 text-xs whitespace-nowrap">
                         {formatMoney(tot)}
@@ -534,11 +537,21 @@ export function FinanceInvoicesView() {
                       </td>
                       <td className="py-3.5 px-4 text-center">
                         <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setStatusUpdateInvoice(invoice)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-[11px] font-bold transition shadow-2xs cursor-pointer"
+                            title="Update payment status"
+                          >
+                            <FileText className="w-3 h-3 text-slate-500" />
+                            Status
+                          </button>
+
                           {bal > 0 && invoice.status !== 'VOID' && (
                             <button
                               type="button"
                               onClick={() => setPaymentInvoice(invoice)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[11px] font-bold transition shadow-xs cursor-pointer"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[11px] font-bold transition shadow-xs cursor-pointer"
                               title="Record payment against this invoice"
                             >
                               <CreditCard className="w-3 h-3" />
@@ -685,12 +698,22 @@ export function FinanceInvoicesView() {
           setSelectedInvoice(null);
           setPaymentInvoice(inv);
         }}
+        onUpdateStatus={(inv) => {
+          setSelectedInvoice(null);
+          setStatusUpdateInvoice(inv);
+        }}
       />
 
       <RecordInvoicePaymentModal
         isOpen={Boolean(paymentInvoice)}
         onClose={() => setPaymentInvoice(null)}
         invoice={paymentInvoice}
+      />
+
+      <UpdateInvoiceStatusModal
+        isOpen={Boolean(statusUpdateInvoice)}
+        onClose={() => setStatusUpdateInvoice(null)}
+        invoice={statusUpdateInvoice}
       />
     </div>
   );

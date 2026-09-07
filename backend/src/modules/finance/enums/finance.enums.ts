@@ -73,6 +73,7 @@ export enum FinanceCategoryTypeEnum {
 
 export enum FinanceInvoiceStatusEnum {
   DRAFT = 'DRAFT',
+  PENDING = 'PENDING',
   UNPAID = 'UNPAID',
   PARTIALLY_PAID = 'PARTIALLY_PAID',
   PAID = 'PAID',
@@ -82,6 +83,7 @@ export enum FinanceInvoiceStatusEnum {
 
 export enum FinanceBillStatusEnum {
   DRAFT = 'DRAFT',
+  PENDING = 'PENDING',
   UNPAID = 'UNPAID',
   PARTIALLY_PAID = 'PARTIALLY_PAID',
   PAID = 'PAID',

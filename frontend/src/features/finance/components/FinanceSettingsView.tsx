@@ -289,7 +289,7 @@ export function FinanceSettingsView() {
           <button
             type="submit"
             disabled={isUpdating}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl shadow-md transition disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/20 transition disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
             {isUpdating ? 'Saving...' : 'Save Settings'}

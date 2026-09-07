@@ -83,7 +83,12 @@ export class ListExpensesService {
       summaryQb.andWhere('txn.transactionDate <= :endDate', { endDate: query.endDate });
     }
 
-    const allFilteredExpenses = await summaryQb.getMany();
+    // Optimized DB-level category breakdown and total computation
+    const groupResults = await summaryQb
+      .select('txn.categoryCode', 'categoryCode')
+      .addSelect('COALESCE(SUM(CAST(txn.amount AS NUMERIC)), 0)', 'totalAmount')
+      .groupBy('txn.categoryCode')
+      .getRawMany();
 
     const categoryBreakdown: Record<string, number> = {
       COGS: 0,
@@ -102,15 +107,11 @@ export class ListExpensesService {
     };
     let totalExpense = 0;
 
-    for (const t of allFilteredExpenses) {
-      const amt = Number(t.amount || 0);
+    for (const row of groupResults) {
+      const amt = Number(row.totalAmount || 0);
       totalExpense += amt;
-      const cat = (t.categoryCode || 'OTHER').toUpperCase();
-      if (categoryBreakdown[cat] !== undefined) {
-        categoryBreakdown[cat] += amt;
-      } else {
-        categoryBreakdown[cat] = amt;
-      }
+      const cat = (row.categoryCode || 'OTHER').toUpperCase();
+      categoryBreakdown[cat] = (categoryBreakdown[cat] || 0) + amt;
     }
 
     const roundedBreakdown: Record<string, number> = {};

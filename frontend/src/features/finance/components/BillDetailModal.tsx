@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Receipt, CheckCircle, Clock, AlertCircle, AlertTriangle, CreditCard } from 'lucide-react';
+import { Receipt, CheckCircle, Clock, AlertCircle, AlertTriangle, CreditCard, FileText } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { FinanceBill, FinanceBillStatus, useGetBillQuery } from '../api/financeApi';
 
@@ -10,10 +10,12 @@ interface Props {
   onClose: () => void;
   bill: FinanceBill | null;
   onPayBill?: (bill: FinanceBill) => void;
+  onUpdateStatus?: (bill: FinanceBill) => void;
 }
 
 const STATUS_BADGE: Record<FinanceBillStatus, { bg: string; text: string; icon: React.ReactNode }> = {
   DRAFT: { bg: 'bg-slate-100 border-slate-200', text: 'text-slate-700', icon: <Clock className="w-3.5 h-3.5" /> },
+  PENDING: { bg: 'bg-amber-50 border-amber-200', text: 'text-amber-800', icon: <Clock className="w-3.5 h-3.5 text-amber-600" /> },
   UNPAID: { bg: 'bg-amber-50 border-amber-200', text: 'text-amber-800', icon: <AlertCircle className="w-3.5 h-3.5" /> },
   PARTIALLY_PAID: { bg: 'bg-sky-50 border-sky-200', text: 'text-sky-800', icon: <Clock className="w-3.5 h-3.5" /> },
   PAID: { bg: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-800', icon: <CheckCircle className="w-3.5 h-3.5" /> },
@@ -26,7 +28,7 @@ function formatMoney(amount: number | string | null | undefined): string {
   return '৳' + val.toLocaleString('en-BD', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-export function BillDetailModal({ isOpen, onClose, bill, onPayBill }: Props) {
+export function BillDetailModal({ isOpen, onClose, bill, onPayBill, onUpdateStatus }: Props) {
   const { data: freshBill } = useGetBillQuery(bill?.id || '', {
     skip: !isOpen || !bill?.id,
   });
@@ -41,10 +43,10 @@ export function BillDetailModal({ isOpen, onClose, bill, onPayBill }: Props) {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Supplier Bill #${activeBill.billNumber}`}
-      subtitle={`Supplier: ${activeBill.supplierName} • Due on ${activeBill.dueDate}`}
-      icon={<Receipt className="w-5 h-5" />}
-      size="xl"
+      title={`Bill Details: #${activeBill.billNumber}`}
+      subtitle={`Vendor: ${activeBill.supplierName} • Due on ${activeBill.dueDate}`}
+      icon={<Receipt className="w-5 h-5 text-amber-600" />}
+      size="lg"
     >
       <div className="p-6 space-y-6">
         {/* Top bar with Status */}
@@ -58,12 +60,23 @@ export function BillDetailModal({ isOpen, onClose, bill, onPayBill }: Props) {
             </span>
           </div>
 
-          <div>
+          <div className="flex items-center gap-2">
+            {onUpdateStatus && (
+              <button
+                type="button"
+                onClick={() => onUpdateStatus(activeBill)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl shadow-2xs transition cursor-pointer"
+              >
+                <FileText className="w-3.5 h-3.5 text-slate-500" />
+                Update Status
+              </button>
+            )}
+
             {bal > 0 && activeBill.status !== 'VOID' && onPayBill && (
               <button
                 type="button"
                 onClick={() => onPayBill(activeBill)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/20 transition cursor-pointer"
               >
                 <CreditCard className="w-3.5 h-3.5" />
                 Record Payment

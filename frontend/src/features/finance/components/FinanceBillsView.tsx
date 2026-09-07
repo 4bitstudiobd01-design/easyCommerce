@@ -21,6 +21,7 @@ import {
   Filter,
   DollarSign,
   AlertTriangle,
+  FileText,
 } from 'lucide-react';
 import {
   useGetBillsQuery,
@@ -31,9 +32,11 @@ import {
 import { CreateBillModal } from './CreateBillModal';
 import { BillDetailModal } from './BillDetailModal';
 import { RecordBillPaymentModal } from './RecordBillPaymentModal';
+import { UpdateBillStatusModal } from './UpdateBillStatusModal';
 
 const STATUS_BADGE: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
   DRAFT: { bg: 'bg-slate-100 border-slate-200', text: 'text-slate-700', icon: <Clock className="w-3 h-3" /> },
+  PENDING: { bg: 'bg-amber-50 border-amber-200', text: 'text-amber-800', icon: <Clock className="w-3 h-3 text-amber-600" /> },
   UNPAID: { bg: 'bg-amber-50 border-amber-200', text: 'text-amber-800', icon: <AlertCircle className="w-3 h-3" /> },
   PARTIALLY_PAID: { bg: 'bg-sky-50 border-sky-200', text: 'text-sky-800', icon: <Clock className="w-3 h-3" /> },
   PAID: { bg: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-800', icon: <CheckCircle className="w-3 h-3" /> },
@@ -96,6 +99,7 @@ export function FinanceBillsView() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedBill, setSelectedBill] = useState<FinanceBill | null>(null);
   const [paymentBill, setPaymentBill] = useState<FinanceBill | null>(null);
+  const [statusUpdateBill, setStatusUpdateBill] = useState<FinanceBill | null>(null);
 
   // Query
   const isOutstandingActive = status === 'OUTSTANDING';
@@ -172,6 +176,7 @@ export function FinanceBillsView() {
       highlight: true,
       badge: summary?.allTimeOutstandingCount ? `${summary.allTimeOutstandingCount}` : undefined,
     },
+    { label: 'Pending', value: 'PENDING' },
     { label: 'Unpaid', value: 'UNPAID' },
     { label: 'Partially Paid', value: 'PARTIALLY_PAID' },
     { label: 'Paid', value: 'PAID' },
@@ -212,7 +217,7 @@ export function FinanceBillsView() {
           <button
             type="button"
             onClick={() => setIsCreateOpen(true)}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-black rounded-2xl shadow-md shadow-amber-600/20 transition cursor-pointer"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black rounded-2xl shadow-md shadow-blue-600/20 transition cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             Record Supplier Bill
@@ -380,11 +385,7 @@ export function FinanceBillsView() {
                 }}
                 className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl text-xs font-bold transition cursor-pointer ${
                   isActive
-                    ? chip.highlight
-                      ? 'bg-amber-600 text-white shadow-md shadow-amber-600/20'
-                      : 'bg-slate-900 text-white shadow-xs'
-                    : chip.highlight
-                    ? 'bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100'
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
                     : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
                 }`}
               >
@@ -529,12 +530,15 @@ export function FinanceBillsView() {
                         </span>
                       </td>
                       <td className="py-3.5 px-4 text-center">
-                        <span
-                          className={`inline-flex items-center gap-1 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${statusMeta.bg} ${statusMeta.text}`}
+                        <button
+                          type="button"
+                          onClick={() => setStatusUpdateBill(bill)}
+                          className={`inline-flex items-center gap-1 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border transition hover:opacity-85 hover:scale-105 cursor-pointer shadow-2xs ${statusMeta.bg} ${statusMeta.text}`}
+                          title="Click to update payment status"
                         >
                           {statusMeta.icon}
                           {bill.status.replace('_', ' ')}
-                        </span>
+                        </button>
                       </td>
                       <td className="py-3.5 px-4 text-right font-mono font-black text-slate-900 text-xs whitespace-nowrap">
                         {formatMoney(tot)}
@@ -551,11 +555,21 @@ export function FinanceBillsView() {
                       </td>
                       <td className="py-3.5 px-4 text-center">
                         <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setStatusUpdateBill(bill)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-[11px] font-bold transition shadow-2xs cursor-pointer"
+                            title="Update payment status"
+                          >
+                            <FileText className="w-3 h-3 text-slate-500" />
+                            Status
+                          </button>
+
                           {bal > 0 && bill.status !== 'VOID' && (
                             <button
                               type="button"
                               onClick={() => setPaymentBill(bill)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-[11px] font-bold transition shadow-xs cursor-pointer"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[11px] font-bold transition shadow-xs cursor-pointer"
                               title="Record payment against this bill"
                             >
                               <CreditCard className="w-3 h-3" />
@@ -657,7 +671,7 @@ export function FinanceBillsView() {
                       onClick={() => setPage(pageNum)}
                       className={`min-w-[32px] h-8 px-2 rounded-lg text-xs font-bold transition cursor-pointer ${
                         isCurrent
-                          ? 'bg-amber-600 text-white shadow-xs'
+                          ? 'bg-blue-600 text-white shadow-xs'
                           : 'border border-slate-200 bg-white hover:bg-slate-100 text-slate-700'
                       }`}
                     >
@@ -702,12 +716,22 @@ export function FinanceBillsView() {
           setSelectedBill(null);
           setPaymentBill(b);
         }}
+        onUpdateStatus={(b) => {
+          setSelectedBill(null);
+          setStatusUpdateBill(b);
+        }}
       />
 
       <RecordBillPaymentModal
         isOpen={Boolean(paymentBill)}
         onClose={() => setPaymentBill(null)}
         bill={paymentBill}
+      />
+
+      <UpdateBillStatusModal
+        isOpen={Boolean(statusUpdateBill)}
+        onClose={() => setStatusUpdateBill(null)}
+        bill={statusUpdateBill}
       />
     </div>
   );

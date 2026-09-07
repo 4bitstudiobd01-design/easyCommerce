@@ -2,36 +2,37 @@
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { TrendingUp, Landmark, Plus, ArrowUpRight, AlertCircle, Wallet } from 'lucide-react';
+import { TrendingUp, Landmark, ArrowUpRight } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import {
-  useCreateIncomeMutation,
+  useUpdateIncomeMutation,
   useGetAccountsQuery,
   useGetCategoriesQuery,
   FinanceCategory,
   FinanceAccount,
+  FinanceTransaction,
 } from '../api/financeApi';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  initialAccountId?: string;
+  income: FinanceTransaction | null;
 }
 
-export function CreateIncomeModal({ isOpen, onClose, initialAccountId }: Props) {
+export function EditIncomeModal({ isOpen, onClose, income }: Props) {
   const [amount, setAmount] = useState('');
   const [transactionDate, setTransactionDate] = useState(
     new Date().toISOString().split('T')[0],
   );
   const [categoryCode, setCategoryCode] = useState('PRODUCT_SALES');
-  const [accountId, setAccountId] = useState(initialAccountId || '');
+  const [accountId, setAccountId] = useState('');
   const [description, setDescription] = useState('');
   const [reference, setReference] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
 
   const { data: accountsData } = useGetAccountsQuery();
   const { data: categories } = useGetCategoriesQuery({ type: 'INCOME' });
-  const [createIncome, { isLoading }] = useCreateIncomeMutation();
+  const [updateIncome, { isLoading }] = useUpdateIncomeMutation();
 
   const rawAccounts = (accountsData as any)?.data !== undefined ? (accountsData as any).data : accountsData;
   const accounts: FinanceAccount[] = Array.isArray(rawAccounts)
@@ -39,22 +40,39 @@ export function CreateIncomeModal({ isOpen, onClose, initialAccountId }: Props) 
     : (rawAccounts as any)?.items || [];
   const categoryList: FinanceCategory[] = Array.isArray(categories) ? categories : [];
 
-  // Auto-select initial or default account
   useEffect(() => {
-    if (initialAccountId) {
-      setAccountId(initialAccountId);
-    } else if (accounts.length > 0 && !accountId) {
-      const defAcc =
-        accounts.find((a) => a.isDefault && a.isActive) ||
-        accounts.find((a) => a.isActive) ||
-        accounts[0];
-      if (defAcc) {
-        setAccountId(defAcc.id);
-      }
+    if (income) {
+      setAmount(String(income.amount || ''));
+      setTransactionDate(
+        income.transactionDate
+          ? String(income.transactionDate).split('T')[0]
+          : new Date().toISOString().split('T')[0],
+      );
+      setCategoryCode(income.categoryCode || 'PRODUCT_SALES');
+      setAccountId(income.accountId || '');
+      setDescription(income.description || '');
+      setReference(income.reference || '');
+      setPaymentMethod(income.paymentMethod || 'CASH');
     }
-  }, [initialAccountId, accounts, accountId, isOpen]);
+  }, [income, isOpen]);
 
-  // Sync payment method default based on selected account
+  const selectedAccount = accounts.find((a) => a.id === accountId);
+  const currentBal = selectedAccount ? Number(selectedAccount.currentBalance || 0) : 0;
+  const oldAmt = income ? Number(income.amount || 0) : 0;
+  const newAmt = Number(amount || 0);
+
+  // Projected balance calculation
+  let projectedBal = currentBal;
+  if (selectedAccount) {
+    if (income?.accountId === accountId) {
+      // Same account: diff added
+      projectedBal = currentBal + (newAmt - oldAmt);
+    } else {
+      // Account changed: new full amount added to this new account
+      projectedBal = currentBal + newAmt;
+    }
+  }
+
   const handleAccountChange = (newAccId: string) => {
     setAccountId(newAccId);
     const selected = accounts.find((a) => a.id === newAccId);
@@ -69,13 +87,10 @@ export function CreateIncomeModal({ isOpen, onClose, initialAccountId }: Props) 
     }
   };
 
-  const selectedAccount = accounts.find((a) => a.id === accountId);
-  const currentBal = selectedAccount ? Number(selectedAccount.currentBalance || 0) : 0;
-  const incomeAmt = Number(amount || 0);
-  const projectedBal = currentBal + (incomeAmt > 0 ? incomeAmt : 0);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!income) return;
+
     const numAmount = Number(amount);
     if (!numAmount || numAmount <= 0) {
       toast.error('Please enter a valid amount greater than 0.');
@@ -83,7 +98,8 @@ export function CreateIncomeModal({ isOpen, onClose, initialAccountId }: Props) 
     }
 
     try {
-      await createIncome({
+      await updateIncome({
+        id: income.id,
         amount: numAmount,
         transactionDate,
         categoryCode,
@@ -93,22 +109,21 @@ export function CreateIncomeModal({ isOpen, onClose, initialAccountId }: Props) 
         paymentMethod: paymentMethod || undefined,
       }).unwrap();
 
-      toast.success('Income recorded and added to account balance successfully.');
+      toast.success('Income transaction and account balances reconciled successfully.');
       onClose();
-      setAmount('');
-      setDescription('');
-      setReference('');
     } catch (err: any) {
-      toast.error(err?.data?.message || 'Failed to record income.');
+      toast.error(err?.data?.message || 'Failed to update income record.');
     }
   };
+
+  if (!isOpen || !income) return null;
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Record Income"
-      subtitle="Log incoming revenue and add funds to your financial payment account"
+      title={`Edit Income #${income.transactionNumber}`}
+      subtitle="Modify income details; financial accounts will be reconciled automatically"
       icon={<TrendingUp className="w-5 h-5 text-emerald-600" />}
       size="lg"
     >
@@ -176,7 +191,7 @@ export function CreateIncomeModal({ isOpen, onClose, initialAccountId }: Props) 
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="block text-xs font-semibold text-slate-700 uppercase">
-                Receiving Account (Add Money To) *
+                Receiving Account *
               </label>
               {selectedAccount && (
                 <span className="text-[10px] font-bold text-emerald-700 uppercase bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
@@ -189,23 +204,17 @@ export function CreateIncomeModal({ isOpen, onClose, initialAccountId }: Props) 
               onChange={(e) => handleAccountChange(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 cursor-pointer"
             >
-              {accounts.length === 0 ? (
-                <option value="">No accounts available</option>
-              ) : (
-                <>
-                  <option value="">-- Direct Cash / Unassigned --</option>
-                  {accounts.map((acc) => (
-                    <option key={acc.id} value={acc.id}>
-                      {acc.name} ({acc.currency} {Number(acc.currentBalance).toLocaleString(undefined, { minimumFractionDigits: 2 })})
-                    </option>
-                  ))}
-                </>
-              )}
+              <option value="">-- Direct Cash / Unassigned --</option>
+              {accounts.map((acc) => (
+                <option key={acc.id} value={acc.id}>
+                  {acc.name} ({acc.currency} {Number(acc.currentBalance).toLocaleString(undefined, { minimumFractionDigits: 2 })})
+                </option>
+              ))}
             </select>
           </div>
         </div>
 
-        {/* Live Balance Projection Pill */}
+        {/* Live Balance Projection */}
         {selectedAccount && (
           <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 flex items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2.5">
@@ -215,13 +224,13 @@ export function CreateIncomeModal({ isOpen, onClose, initialAccountId }: Props) 
               <div>
                 <p className="font-bold text-slate-900">{selectedAccount.name}</p>
                 <p className="text-[11px] text-slate-500">
-                  Current: <span className="font-semibold text-slate-700">{selectedAccount.currency} {currentBal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  Current Balance: <span className="font-semibold text-slate-700">{selectedAccount.currency} {currentBal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                 </p>
               </div>
             </div>
             <div className="text-right">
               <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider block">
-                Projected New Balance
+                Adjusted Balance
               </span>
               <span className="font-black text-emerald-700 text-sm flex items-center justify-end gap-1">
                 <ArrowUpRight className="w-4 h-4" />
@@ -244,7 +253,7 @@ export function CreateIncomeModal({ isOpen, onClose, initialAccountId }: Props) 
             >
               <option value="">-- Select Method --</option>
               <option value="CASH">Cash in Hand</option>
-              <option value="BANK">Bank Transfer / EFT / Cheque</option>
+              <option value="BANK">Bank Transfer / EFT</option>
               <option value="BKASH">bKash</option>
               <option value="NAGAD">Nagad</option>
               <option value="ROCKET">Rocket</option>
@@ -269,13 +278,13 @@ export function CreateIncomeModal({ isOpen, onClose, initialAccountId }: Props) 
         {/* Description */}
         <div>
           <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-            Description / Notes
+            Description
           </label>
           <textarea
             rows={2}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Income details, customer note, or bank transfer reference..."
+            placeholder="Income details or customer notes..."
             className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
           />
         </div>
@@ -293,7 +302,7 @@ export function CreateIncomeModal({ isOpen, onClose, initialAccountId }: Props) 
             disabled={isLoading}
             className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-xl shadow-md shadow-blue-600/20 transition cursor-pointer flex items-center gap-1.5"
           >
-            {isLoading ? 'Recording...' : 'Record & Deposit Income'}
+            {isLoading ? 'Saving...' : 'Save & Update Balance'}
           </button>
         </div>
       </form>

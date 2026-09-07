@@ -222,7 +222,7 @@ export function FinanceOverviewView() {
           <button
             type="button"
             onClick={() => setIsIncomeOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Income</span>
@@ -231,7 +231,7 @@ export function FinanceOverviewView() {
           <button
             type="button"
             onClick={() => setIsExpenseOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Expense</span>
@@ -240,7 +240,7 @@ export function FinanceOverviewView() {
           <button
             type="button"
             onClick={() => setIsTransferOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
           >
             <ArrowLeftRight className="w-3.5 h-3.5" />
             <span>Transfer Fund</span>

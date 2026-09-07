@@ -424,7 +424,7 @@ export function SalaryPaymentsView() {
                             e.stopPropagation();
                             setSelectedRunId(run.id);
                           }}
-                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-emerald-600 hover:text-white text-slate-700 text-xs font-bold transition-all cursor-pointer group-hover:bg-emerald-600 group-hover:text-white"
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-700 text-xs font-bold transition-all cursor-pointer group-hover:bg-blue-600 group-hover:text-white"
                         >
                           <span>Disburse / View</span>
                           <ArrowRight className="w-3.5 h-3.5" />

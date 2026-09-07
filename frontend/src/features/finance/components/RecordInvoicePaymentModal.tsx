@@ -183,7 +183,7 @@ export function RecordInvoicePaymentModal({ isOpen, onClose, invoice }: Props) {
           <button
             type="submit"
             disabled={isLoading}
-            className="px-5 py-2.5 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-xl shadow-sm transition"
+            className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-xl shadow-md shadow-blue-600/20 transition"
           >
             {isLoading ? 'Recording...' : 'Record Payment'}
           </button>

@@ -398,7 +398,7 @@ export function FinanceHistoryView() {
                 setPage(1);
               }}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
-                typeFilter === 'ALL' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                typeFilter === 'ALL' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               All Records ({totalCount})
@@ -410,7 +410,7 @@ export function FinanceHistoryView() {
                 setPage(1);
               }}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
-                typeFilter === 'INCOME' ? 'bg-emerald-600 text-white shadow-xs' : 'text-emerald-700 hover:bg-emerald-50'
+                typeFilter === 'INCOME' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <TrendingUp className="w-3.5 h-3.5" />
@@ -423,7 +423,7 @@ export function FinanceHistoryView() {
                 setPage(1);
               }}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
-                typeFilter === 'EXPENSE' ? 'bg-rose-600 text-white shadow-xs' : 'text-rose-700 hover:bg-rose-50'
+                typeFilter === 'EXPENSE' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <TrendingDown className="w-3.5 h-3.5" />

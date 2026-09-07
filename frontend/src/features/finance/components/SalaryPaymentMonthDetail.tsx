@@ -181,7 +181,7 @@ export function SalaryPaymentMonthDetail({ runId, onBack }: SalaryPaymentMonthDe
               className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold shadow-xs transition-all ${
                 isLockedForCurrentUser
                   ? 'bg-slate-200 text-slate-500 cursor-not-allowed opacity-70'
-                  : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20 cursor-pointer'
+                  : 'bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/20 cursor-pointer'
               }`}
             >
               {isLockedForCurrentUser ? <Lock className="w-4 h-4" /> : <Banknote className="w-4 h-4" />}
@@ -499,7 +499,7 @@ export function SalaryPaymentMonthDetail({ runId, onBack }: SalaryPaymentMonthDe
                             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold shadow-xs transition-all ${
                               isLockedForCurrentUser
                                 ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
-                                : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20 cursor-pointer'
+                                : 'bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/20 cursor-pointer'
                             }`}
                           >
                             {isLockedForCurrentUser ? <Lock className="w-3.5 h-3.5" /> : <Banknote className="w-3.5 h-3.5" />}
@@ -562,7 +562,7 @@ export function SalaryPaymentMonthDetail({ runId, onBack }: SalaryPaymentMonthDe
                 type="button"
                 disabled={isBulkDisbursing || isLockedForCurrentUser}
                 onClick={handleBulkPayout}
-                className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all cursor-pointer disabled:opacity-50"
+                className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition-all cursor-pointer disabled:opacity-50"
               >
                 {isBulkDisbursing ? 'Processing...' : 'Confirm Bulk Cash Payment'}
               </button>

@@ -28,6 +28,7 @@ import {
   Calendar,
   Layers,
   ChevronRight,
+  TrendingUp,
 } from 'lucide-react';
 import { RootState } from '@/store';
 import { useGetMyPermissionsQuery } from '@/features/staff/api/staffApi';
@@ -45,6 +46,7 @@ import { DepositToAccountModal } from './DepositToAccountModal';
 import { EditAccountModal } from './EditAccountModal';
 import { AccountStatementModal } from './AccountStatementModal';
 import { CreateExpenseModal } from './CreateExpenseModal';
+import { CreateIncomeModal } from './CreateIncomeModal';
 import { CreateTransferModal } from './CreateTransferModal';
 
 type TabView = 'ACCOUNTS' | 'TRANSACTIONS' | 'TRANSFERS';
@@ -63,6 +65,7 @@ export function FinanceAccountsView() {
   const [isCreateAccountOpen, setIsCreateAccountOpen] = useState(false);
   const [depositModalAccount, setDepositModalAccount] = useState<FinanceAccount | null>(null);
   const [isDepositOpen, setIsDepositOpen] = useState(false);
+  const [incomeAccountId, setIncomeAccountId] = useState<string | null>(null);
   const [expenseAccountId, setExpenseAccountId] = useState<string | null>(null);
   const [transferAccountId, setTransferAccountId] = useState<string | null>(null);
   const [statementAccountId, setStatementAccountId] = useState<string | null>(null);
@@ -227,32 +230,46 @@ export function FinanceAccountsView() {
   // ─── 2. MAIN FINANCIAL ACCOUNTS HUB ─────────────────────────────
   return (
     <div className="space-y-6">
-      {/* Top Header Card */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-xs">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 text-white flex items-center justify-center shadow-lg shadow-slate-900/10">
-            <Landmark className="w-6 h-6 text-teal-400" />
+      {/* Top Header Card — Professional two-section layout */}
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+        {/* Title Row */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-6 pt-5 pb-4 border-b border-slate-100">
+          <div className="flex items-center gap-4">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-700 text-white flex items-center justify-center shadow-lg shadow-slate-900/15 flex-shrink-0">
+              <Landmark className="w-5 h-5 text-teal-400" />
+            </div>
+            <div>
+              <h1 className="text-xl font-black text-slate-900 tracking-tight leading-tight">
+                Financial Accounts &amp; Wallets
+              </h1>
+              <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+                Bank accounts, cards, cash drawers &amp; mobile gateways
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-              Financial Accounts & Wallets
-            </h1>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">
-              Manage bank accounts, debit/credit cards, cash drawers, and mobile gateways (bKash, Nagad)
-            </p>
-          </div>
+          <button
+            type="button"
+            onClick={() => setIsCreateAccountOpen(true)}
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/20 transition-all duration-150 flex-shrink-0"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Add Account
+          </button>
         </div>
 
-        {/* Global Action Buttons */}
-        <div className="flex items-center gap-2 flex-wrap">
+        {/* Action Toolbar Row */}
+        <div className="flex items-center gap-1 px-4 py-2.5">
           <button
             type="button"
             onClick={handleRefreshAll}
-            className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl transition"
             title="Refresh accounts"
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-150"
           >
-            <RefreshCw className={`w-4 h-4 ${isFetchingAccounts ? 'animate-spin text-blue-600' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${isFetchingAccounts ? 'animate-spin text-blue-500' : ''}`} />
+            <span className="hidden sm:inline">Refresh</span>
           </button>
+
+          <div className="w-px h-5 bg-slate-200 mx-1 flex-shrink-0" />
 
           <button
             type="button"
@@ -260,37 +277,30 @@ export function FinanceAccountsView() {
               setDepositModalAccount(defaultAccount || accounts[0] || null);
               setIsDepositOpen(true);
             }}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold rounded-2xl transition shadow-xs"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-150 border border-transparent hover:border-blue-200"
           >
-            <ArrowDownLeft className="w-4 h-4 text-emerald-600" />
-            + Add Money
+            <ArrowDownLeft className="w-3.5 h-3.5 text-blue-600" />
+            Add Money
           </button>
 
           <button
             type="button"
             onClick={() => setExpenseAccountId(defaultAccount?.id || (accounts[0] ? accounts[0].id : ''))}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-2xl transition shadow-xs"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-150 border border-transparent hover:border-blue-200"
           >
-            <ArrowUpRight className="w-4 h-4 text-rose-600" />
-            - Record Expense
+            <ArrowUpRight className="w-3.5 h-3.5 text-blue-600" />
+            Record Expense
           </button>
+
+          <div className="w-px h-5 bg-slate-200 mx-1 flex-shrink-0" />
 
           <button
             type="button"
             onClick={() => setTransferAccountId(defaultAccount?.id || (accounts[0] ? accounts[0].id : ''))}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-2xl transition"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-150 border border-transparent hover:border-blue-200"
           >
-            <ArrowLeftRight className="w-4 h-4 text-slate-600" />
-            ⇄ Transfer
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setIsCreateAccountOpen(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-2xl shadow-md shadow-blue-600/20 transition"
-          >
-            <Plus className="w-4 h-4" />
-            + Add Account
+            <ArrowLeftRight className="w-3.5 h-3.5 text-blue-600" />
+            Transfer Funds
           </button>
         </div>
       </div>
@@ -360,7 +370,7 @@ export function FinanceAccountsView() {
             onClick={() => setActiveTab('ACCOUNTS')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${
               activeTab === 'ACCOUNTS'
-                ? 'bg-slate-900 text-white shadow-xs'
+                ? 'bg-blue-600 text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
@@ -373,7 +383,7 @@ export function FinanceAccountsView() {
             onClick={() => setActiveTab('TRANSACTIONS')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${
               activeTab === 'TRANSACTIONS'
-                ? 'bg-slate-900 text-white shadow-xs'
+                ? 'bg-blue-600 text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
@@ -386,7 +396,7 @@ export function FinanceAccountsView() {
             onClick={() => setActiveTab('TRANSFERS')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${
               activeTab === 'TRANSFERS'
-                ? 'bg-slate-900 text-white shadow-xs'
+                ? 'bg-blue-600 text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
@@ -601,34 +611,44 @@ export function FinanceAccountsView() {
                       </div>
 
                       {/* Action Grid */}
-                      <div className="grid grid-cols-4 gap-1.5 pt-1">
+                      <div className="grid grid-cols-5 gap-1.5 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setIncomeAccountId(account.id)}
+                          className="flex flex-col items-center justify-center p-2 rounded-xl bg-white hover:bg-blue-50 text-slate-700 hover:text-blue-600 border border-slate-200/80 hover:border-blue-200 transition shadow-2xs group/btn"
+                          title="Record Income into this account"
+                        >
+                          <TrendingUp className="w-4 h-4 mb-0.5 text-blue-600 group-hover/btn:scale-110 transition-transform" />
+                          <span className="text-[10px] font-bold">Income</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setExpenseAccountId(account.id)}
+                          className="flex flex-col items-center justify-center p-2 rounded-xl bg-white hover:bg-blue-50 text-slate-700 hover:text-blue-600 border border-slate-200/80 hover:border-blue-200 transition shadow-2xs group/btn"
+                          title="Spend or pay expense from this account"
+                        >
+                          <ArrowUpRight className="w-4 h-4 mb-0.5 text-blue-600 group-hover/btn:scale-110 transition-transform" />
+                          <span className="text-[10px] font-bold">Expense</span>
+                        </button>
+
                         <button
                           type="button"
                           onClick={() => {
                             setDepositModalAccount(account);
                             setIsDepositOpen(true);
                           }}
-                          className="flex flex-col items-center justify-center p-2 rounded-xl bg-white hover:bg-emerald-50 text-emerald-700 border border-slate-200/80 hover:border-emerald-200 transition shadow-2xs group/btn"
+                          className="flex flex-col items-center justify-center p-2 rounded-xl bg-white hover:bg-blue-50 text-slate-700 hover:text-blue-600 border border-slate-200/80 hover:border-blue-200 transition shadow-2xs group/btn"
                           title="Deposit money into this account"
                         >
-                          <ArrowDownLeft className="w-4 h-4 mb-0.5 text-emerald-600 group-hover/btn:scale-110 transition-transform" />
+                          <ArrowDownLeft className="w-4 h-4 mb-0.5 text-blue-600 group-hover/btn:scale-110 transition-transform" />
                           <span className="text-[10px] font-bold">Deposit</span>
                         </button>
 
                         <button
                           type="button"
-                          onClick={() => setExpenseAccountId(account.id)}
-                          className="flex flex-col items-center justify-center p-2 rounded-xl bg-white hover:bg-rose-50 text-rose-700 border border-slate-200/80 hover:border-rose-200 transition shadow-2xs group/btn"
-                          title="Spend or pay expense from this account"
-                        >
-                          <ArrowUpRight className="w-4 h-4 mb-0.5 text-rose-600 group-hover/btn:scale-110 transition-transform" />
-                          <span className="text-[10px] font-bold">Expense</span>
-                        </button>
-
-                        <button
-                          type="button"
                           onClick={() => setTransferAccountId(account.id)}
-                          className="flex flex-col items-center justify-center p-2 rounded-xl bg-white hover:bg-blue-50 text-blue-700 border border-slate-200/80 hover:border-blue-200 transition shadow-2xs group/btn"
+                          className="flex flex-col items-center justify-center p-2 rounded-xl bg-white hover:bg-blue-50 text-slate-700 hover:text-blue-600 border border-slate-200/80 hover:border-blue-200 transition shadow-2xs group/btn"
                           title="Transfer money to another account"
                         >
                           <ArrowLeftRight className="w-4 h-4 mb-0.5 text-blue-600 group-hover/btn:scale-110 transition-transform" />
@@ -638,11 +658,11 @@ export function FinanceAccountsView() {
                         <button
                           type="button"
                           onClick={() => setStatementAccountId(account.id)}
-                          className="flex flex-col items-center justify-center p-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200/80 transition shadow-2xs group/btn"
+                          className="flex flex-col items-center justify-center p-2 rounded-xl bg-white hover:bg-blue-50 text-slate-700 hover:text-blue-600 border border-slate-200/80 hover:border-blue-200 transition shadow-2xs group/btn"
                           title="View complete transaction statement"
                         >
-                          <FileText className="w-4 h-4 mb-0.5 text-slate-600 group-hover/btn:scale-110 transition-transform" />
-                          <span className="text-[10px] font-bold">Statement</span>
+                          <FileText className="w-4 h-4 mb-0.5 text-blue-600 group-hover/btn:scale-110 transition-transform" />
+                          <span className="text-[10px] font-bold">Ledger</span>
                         </button>
                       </div>
 
@@ -879,7 +899,14 @@ export function FinanceAccountsView() {
         account={depositModalAccount}
       />
 
-      {/* 3. Record Expense Modal (with initial account preselected) */}
+      {/* 3. Record Income Modal (with initial account preselected) */}
+      <CreateIncomeModal
+        isOpen={Boolean(incomeAccountId)}
+        onClose={() => setIncomeAccountId(null)}
+        initialAccountId={incomeAccountId || undefined}
+      />
+
+      {/* 4. Record Expense Modal (with initial account preselected) */}
       <CreateExpenseModal
         isOpen={Boolean(expenseAccountId)}
         onClose={() => setExpenseAccountId(null)}

@@ -143,7 +143,7 @@ export function ChartOfAccountsView() {
               onClick={() => setSelectedClass(tab.key)}
               className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
                 selectedClass === tab.key
-                  ? 'bg-slate-900 text-white'
+                  ? 'bg-blue-600 text-white shadow-xs'
                   : 'text-slate-600 hover:bg-slate-100'
               }`}
             >

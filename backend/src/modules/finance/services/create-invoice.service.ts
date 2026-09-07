@@ -86,7 +86,7 @@ export class CreateInvoiceService {
       paidAmount: String(paidAmount),
       balanceDue: String(balanceDue),
       currency: dto.currency || 'BDT',
-      status: dto.status || FinanceInvoiceStatusEnum.UNPAID,
+      status: dto.status || FinanceInvoiceStatusEnum.PENDING,
       notes: dto.notes,
       terms: dto.terms,
       items,

@@ -22,8 +22,8 @@ export type FinancePartyType = 'CUSTOMER' | 'SUPPLIER' | 'EMPLOYEE' | 'COURIER' 
 export type FinanceTransactionType = 'INCOME' | 'EXPENSE' | 'PAYMENT' | 'REFUND' | 'TRANSFER' | 'ADJUSTMENT';
 export type FinanceTransactionStatus = 'COMPLETED' | 'PENDING' | 'CANCELLED';
 export type FinanceCategoryType = 'INCOME' | 'EXPENSE';
-export type FinanceInvoiceStatus = 'DRAFT' | 'UNPAID' | 'PARTIALLY_PAID' | 'PAID' | 'OVERDUE' | 'VOID';
-export type FinanceBillStatus = 'DRAFT' | 'UNPAID' | 'PARTIALLY_PAID' | 'PAID' | 'OVERDUE' | 'VOID';
+export type FinanceInvoiceStatus = 'DRAFT' | 'PENDING' | 'UNPAID' | 'PARTIALLY_PAID' | 'PAID' | 'OVERDUE' | 'VOID';
+export type FinanceBillStatus = 'DRAFT' | 'PENDING' | 'UNPAID' | 'PARTIALLY_PAID' | 'PAID' | 'OVERDUE' | 'VOID';
 export type FinanceTransferStatus = 'COMPLETED' | 'CANCELLED';
 export type FinanceSourceType =
   | 'MANUAL'
@@ -1213,6 +1213,35 @@ export const financeApi = createApi({
       invalidatesTags: ['FinanceIncome', 'FinanceTransactions', 'FinanceOverview', 'FinanceAccounts', 'FinanceReports'],
     }),
 
+    updateIncome: builder.mutation<
+      FinanceTransaction,
+      {
+        id: string;
+        amount?: number;
+        categoryCode?: string;
+        accountId?: string;
+        description?: string;
+        reference?: string;
+        paymentMethod?: string;
+        transactionDate?: string;
+      }
+    >({
+      query: ({ id, ...body }) => ({
+        url: `/finance/income/${id}`,
+        method: 'PATCH',
+        body,
+      }),
+      invalidatesTags: ['FinanceIncome', 'FinanceTransactions', 'FinanceOverview', 'FinanceAccounts', 'FinanceReports'],
+    }),
+
+    deleteIncome: builder.mutation<void, string>({
+      query: (id) => ({
+        url: `/finance/income/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['FinanceIncome', 'FinanceTransactions', 'FinanceOverview', 'FinanceAccounts', 'FinanceReports'],
+    }),
+
     getExpenses: builder.query<
       ExpensesResponse,
       {
@@ -1422,13 +1451,32 @@ export const financeApi = createApi({
       invalidatesTags: ['FinanceInvoices', 'FinanceOverview', 'FinanceReports'],
     }),
 
-    updateInvoiceStatus: builder.mutation<FinanceInvoice, { id: string; status: FinanceInvoiceStatus }>({
-      query: ({ id, status }) => ({
+    updateInvoiceStatus: builder.mutation<
+      FinanceInvoice,
+      {
+        id: string;
+        status: FinanceInvoiceStatus;
+        accountId?: string;
+        paymentMethod?: string;
+        paymentDate?: string;
+        notes?: string;
+        reference?: string;
+      }
+    >({
+      query: ({ id, ...body }) => ({
         url: `/finance/invoices/${id}/status`,
         method: 'PATCH',
-        body: { status },
+        body,
       }),
-      invalidatesTags: ['FinanceInvoices', 'FinanceOverview', 'FinanceReports'],
+      invalidatesTags: [
+        'FinanceInvoices',
+        'FinanceAccounts',
+        'FinanceIncome',
+        'FinanceTransactions',
+        'FinanceOverview',
+        'FinanceReports',
+        'FinanceGeneralLedger',
+      ],
     }),
 
     recordInvoicePayment: builder.mutation<
@@ -1526,13 +1574,32 @@ export const financeApi = createApi({
       invalidatesTags: ['FinanceBills', 'FinanceOverview', 'FinanceReports'],
     }),
 
-    updateBillStatus: builder.mutation<FinanceBill, { id: string; status: FinanceBillStatus }>({
-      query: ({ id, status }) => ({
+    updateBillStatus: builder.mutation<
+      FinanceBill,
+      {
+        id: string;
+        status: FinanceBillStatus;
+        accountId?: string;
+        paymentMethod?: string;
+        paymentDate?: string;
+        notes?: string;
+        reference?: string;
+      }
+    >({
+      query: ({ id, ...body }) => ({
         url: `/finance/bills/${id}/status`,
         method: 'PATCH',
-        body: { status },
+        body,
       }),
-      invalidatesTags: ['FinanceBills', 'FinanceOverview', 'FinanceReports'],
+      invalidatesTags: [
+        'FinanceBills',
+        'FinanceAccounts',
+        'FinanceExpenses',
+        'FinanceTransactions',
+        'FinanceOverview',
+        'FinanceReports',
+        'FinanceGeneralLedger',
+      ],
     }),
 
     recordBillPayment: builder.mutation<
@@ -1902,6 +1969,8 @@ export const {
   useDeleteTransactionMutation,
   useGetIncomeQuery,
   useCreateIncomeMutation,
+  useUpdateIncomeMutation,
+  useDeleteIncomeMutation,
   useGetExpensesQuery,
   useCreateExpenseMutation,
   useUpdateExpenseMutation,

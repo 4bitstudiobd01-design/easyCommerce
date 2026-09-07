@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { FinanceChartOfAccountEntity } from '../entities/finance-chart-of-account.entity';
+import { FinanceAccountEntity } from '../entities/finance-account.entity';
 import { FinanceBillEntity } from '../entities/finance-bill.entity';
 import { FinanceBillItemEntity } from '../entities/finance-bill-item.entity';
 import { PostJournalEntryService } from './post-journal-entry.service';
@@ -23,6 +24,8 @@ export class SyncModuleFinanceService {
   constructor(
     @InjectRepository(FinanceChartOfAccountEntity)
     private readonly coaRepository: Repository<FinanceChartOfAccountEntity>,
+    @InjectRepository(FinanceAccountEntity)
+    private readonly accountRepository: Repository<FinanceAccountEntity>,
     @InjectRepository(FinanceBillEntity)
     private readonly financeBillRepository: Repository<FinanceBillEntity>,
     @InjectRepository(FinanceBillItemEntity)
@@ -461,9 +464,24 @@ export class SyncModuleFinanceService {
       const coaCode = (payload.categoryCode && catCodeMap[payload.categoryCode]) || '6090';
 
       const accExpense = await this.getAccountByCode(payload.storeId, coaCode);
-      const accPayment = payload.accountId
-        ? await this.coaRepository.findOne({ where: { id: payload.accountId, storeId: payload.storeId } })
-        : (await this.getAccountByCode(payload.storeId, '1010')) || (await this.getAccountByCode(payload.storeId, '1020'));
+      let accPayment: FinanceChartOfAccountEntity | null = null;
+      if (payload.accountId) {
+        const finAcc = await this.accountRepository.findOne({ where: { id: payload.accountId, storeId: payload.storeId } });
+        if (finAcc) {
+          const typeCoaMap: Record<string, string> = {
+            CASH: '1010',
+            BANK: '1020',
+            CARD: '1020',
+            DIGITAL_WALLET: '1030',
+            PAYMENT_GATEWAY: '1040',
+          };
+          const targetCode = typeCoaMap[finAcc.type] || '1020';
+          accPayment = await this.getAccountByCode(payload.storeId, targetCode);
+        }
+      }
+      if (!accPayment) {
+        accPayment = (await this.getAccountByCode(payload.storeId, '1010')) || (await this.getAccountByCode(payload.storeId, '1020'));
+      }
 
       if (!accExpense || !accPayment) return;
 
@@ -521,9 +539,24 @@ export class SyncModuleFinanceService {
       const coaCode = (payload.categoryCode && catCodeMap[payload.categoryCode]) || '4030';
 
       const accRevenue = await this.getAccountByCode(payload.storeId, coaCode);
-      const accAsset = payload.accountId
-        ? await this.coaRepository.findOne({ where: { id: payload.accountId, storeId: payload.storeId } })
-        : (await this.getAccountByCode(payload.storeId, '1020')) || (await this.getAccountByCode(payload.storeId, '1010'));
+      let accAsset: FinanceChartOfAccountEntity | null = null;
+      if (payload.accountId) {
+        const finAcc = await this.accountRepository.findOne({ where: { id: payload.accountId, storeId: payload.storeId } });
+        if (finAcc) {
+          const typeCoaMap: Record<string, string> = {
+            CASH: '1010',
+            BANK: '1020',
+            CARD: '1020',
+            DIGITAL_WALLET: '1030',
+            PAYMENT_GATEWAY: '1040',
+          };
+          const targetCode = typeCoaMap[finAcc.type] || '1020';
+          accAsset = await this.getAccountByCode(payload.storeId, targetCode);
+        }
+      }
+      if (!accAsset) {
+        accAsset = (await this.getAccountByCode(payload.storeId, '1020')) || (await this.getAccountByCode(payload.storeId, '1010'));
+      }
 
       if (!accRevenue || !accAsset) return;
 

@@ -25,6 +25,7 @@ import { CreateTransactionService } from './services/create-transaction.service'
 import { DeleteTransactionService } from './services/delete-transaction.service';
 import { ListIncomeService } from './services/list-income.service';
 import { CreateIncomeService } from './services/create-income.service';
+import { UpdateIncomeService } from './services/update-income.service';
 import { ListExpensesService } from './services/list-expenses.service';
 import { CreateExpenseService } from './services/create-expense.service';
 import { UpdateExpenseService } from './services/update-expense.service';
@@ -85,16 +86,19 @@ import { CreateFinanceCategoryDto } from './dto/category.dto';
 import {
   CreateFinanceTransactionDto,
   CreateIncomeDto,
+  UpdateIncomeDto,
   CreateExpenseDto,
   UpdateExpenseDto,
 } from './dto/transaction.dto';
 import {
   CreateFinanceInvoiceDto,
   RecordInvoicePaymentDto,
+  UpdateFinanceInvoiceStatusDto,
 } from './dto/invoice.dto';
 import {
   CreateFinanceBillDto,
   RecordBillPaymentDto,
+  UpdateFinanceBillStatusDto,
 } from './dto/bill.dto';
 import { CreateFinanceTransferDto } from './dto/transfer.dto';
 import { UpdateFinanceSettingsDto } from './dto/settings.dto';
@@ -143,6 +147,7 @@ export class FinanceController {
     private readonly deleteTransactionService: DeleteTransactionService,
     private readonly listIncomeService: ListIncomeService,
     private readonly createIncomeService: CreateIncomeService,
+    private readonly updateIncomeService: UpdateIncomeService,
     private readonly listExpensesService: ListExpensesService,
     private readonly createExpenseService: CreateExpenseService,
     private readonly updateExpenseService: UpdateExpenseService,
@@ -411,6 +416,35 @@ export class FinanceController {
     return this.createIncomeService.execute(store.tenantId, store.id, userId, dto);
   }
 
+  @Patch('income/:id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('finance:transactions:manage', 'finance:manage')
+  @ApiOperation({ summary: 'Update manual income transaction' })
+  async updateIncome(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateIncomeDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.updateIncomeService.execute(store.id, id, userId, dto);
+  }
+
+  @Delete('income/:id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('finance:transactions:manage', 'finance:manage')
+  @ApiOperation({ summary: 'Delete income transaction' })
+  async deleteIncome(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') id: string,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.deleteTransactionService.execute(store.id, id, userId);
+  }
+
   @Get('expenses')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
@@ -520,10 +554,10 @@ export class FinanceController {
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') headerStoreId: string,
     @Param('id') id: string,
-    @Body('status') status: FinanceInvoiceStatusEnum,
+    @Body() dto: UpdateFinanceInvoiceStatusDto,
   ) {
     const store = await this.getStoreContext(userId, headerStoreId);
-    return this.updateInvoiceStatusService.execute(store.id, id, status);
+    return this.updateInvoiceStatusService.execute(store.id, id, userId, dto);
   }
 
   @Post('invoices/:id/payments')
@@ -607,10 +641,10 @@ export class FinanceController {
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') headerStoreId: string,
     @Param('id') id: string,
-    @Body('status') status: FinanceBillStatusEnum,
+    @Body() dto: UpdateFinanceBillStatusDto,
   ) {
     const store = await this.getStoreContext(userId, headerStoreId);
-    return this.updateBillStatusService.execute(store.id, id, status);
+    return this.updateBillStatusService.execute(store.id, id, userId, dto);
   }
 
   @Post('bills/:id/payments')
