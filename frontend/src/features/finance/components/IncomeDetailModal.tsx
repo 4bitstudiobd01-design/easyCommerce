@@ -2,24 +2,22 @@
 
 import React, { useState } from 'react';
 import {
-  TrendingDown,
+  TrendingUp,
   Calendar,
   Wallet,
-  CreditCard,
+  Landmark,
   Tag,
   FileText,
   User,
-  Clock,
   Hash,
   ShieldCheck,
   Edit,
   Trash2,
-  Lock,
   Paperclip,
   Download,
   ExternalLink,
   Eye,
-  Image as ImageIcon,
+  CheckCircle2,
 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { FinanceTransaction } from '../api/financeApi';
@@ -27,50 +25,33 @@ import { FinanceTransaction } from '../api/financeApi';
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  expense: FinanceTransaction | null;
-  isAdmin?: boolean;
-  onEdit?: (expense: FinanceTransaction) => void;
-  onDelete?: (expense: FinanceTransaction) => void;
+  income: FinanceTransaction | null;
+  onEdit?: (income: FinanceTransaction) => void;
+  onDelete?: (income: FinanceTransaction) => void;
 }
 
-export function ExpenseDetailModal({
+export function IncomeDetailModal({
   isOpen,
   onClose,
-  expense,
-  isAdmin = false,
+  income,
   onEdit,
   onDelete,
 }: Props) {
   const [isImageZoomed, setIsImageZoomed] = useState(false);
 
-  if (!isOpen || !expense) return null;
-
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth() + 1;
-
-  const isPast = (() => {
-    if (!expense.transactionDate) return false;
-    const d = new Date(expense.transactionDate);
-    return (
-      d.getFullYear() < currentYear ||
-      (d.getFullYear() === currentYear && d.getMonth() < currentMonth - 1)
-    );
-  })();
-
-  const canModify = !isPast || isAdmin;
+  if (!isOpen || !income) return null;
 
   const creatorName =
-    expense.createdByUser?.fullName || expense.createdByUser?.email || 'System / Auto Generated';
-  const creatorEmail = expense.createdByUser?.email || 'system@bitcommerce.internal';
-  const creatorId = expense.createdByUser?.id || expense.createdByUserId || 'SYSTEM-AUTOMATION';
+    income.createdByUser?.fullName || income.createdByUser?.email || 'System / Auto Generated';
+  const creatorEmail = income.createdByUser?.email || 'system@bitcommerce.internal';
+  const creatorId = income.createdByUser?.id || income.createdByUserId || 'SYSTEM-AUTOMATION';
 
   const formatAmount = (val: number | string) => {
     const num = Number(val || 0);
     return `৳${num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
-  const receipt = expense.receiptFile;
+  const receipt = income.receiptFile;
   const isImageReceipt =
     receipt?.mimeType?.startsWith('image/') ||
     (receipt?.url && receipt.url.match(/\.(jpeg|jpg|png|webp|gif)$/i));
@@ -78,29 +59,35 @@ export function ExpenseDetailModal({
     receipt?.mimeType?.includes('pdf') ||
     (receipt?.url && receipt.url.match(/\.pdf$/i));
 
+  const categoryLabel =
+    income.category?.name ||
+    (income.categoryCode
+      ? income.categoryCode.replace(/_/g, ' ')
+      : 'General Revenue');
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Expense Voucher #${expense.transactionNumber}`}
-      subtitle={`Recorded on ${String(expense.transactionDate || '').split('T')[0]} • ${expense.category?.name || expense.categoryCode || 'General Expense'}`}
-      icon={<TrendingDown className="w-5 h-5 text-blue-600" />}
+      title={`Income Voucher #${income.transactionNumber}`}
+      subtitle={`Recorded on ${String(income.transactionDate || '').split('T')[0]} • ${categoryLabel}`}
+      icon={<TrendingUp className="w-5 h-5 text-blue-600" />}
       size="lg"
     >
       <div className="p-6 space-y-6">
-        {/* Status & Source Tags Bar */}
+        {/* Status & Source Tags Bar - using primary (blue) and secondary (slate) colors */}
         <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-100">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-800 border border-slate-200">
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
-              EXPENSE
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
+              INCOME
             </span>
             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
               <ShieldCheck className="w-3.5 h-3.5 mr-1 text-slate-600" />
-              {expense.status || 'COMPLETED'}
+              {income.status || 'COMPLETED'}
             </span>
             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-black bg-slate-100 text-slate-700 border border-slate-200 uppercase">
-              {expense.sourceType || 'MANUAL'}
+              {income.sourceType || 'MANUAL'}
             </span>
             {receipt && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
@@ -110,56 +97,62 @@ export function ExpenseDetailModal({
             )}
           </div>
 
-          {isPast && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
-              <Clock className="w-3 h-3 text-slate-600" />
-              Past Month Record
-            </span>
-          )}
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
+            <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
+            Credited to Ledger
+          </span>
         </div>
 
-        {/* Top Highlight Card: Secondary Slate / Dark theme with crisp typography */}
-        <div className="bg-gradient-to-br from-slate-900 to-slate-800 p-6 rounded-2xl text-white shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        {/* Top Highlight Card: Primary Brand Gradient (Blue) */}
+        <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-6 rounded-2xl text-white shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <p className="text-xs uppercase font-bold text-slate-300 tracking-wider">
-              Total Expenditure (Paid)
+            <p className="text-xs uppercase font-bold text-blue-100 tracking-wider">
+              Total Revenue Received
             </p>
             <p className="text-3xl font-black mt-1 tracking-tight text-white">
-              -{formatAmount(expense.amount)}
+              +{formatAmount(income.amount)}
             </p>
-            <p className="text-xs text-slate-300 font-medium mt-1">
-              Method: <span className="font-bold text-white uppercase">{expense.paymentMethod || 'CASH'}</span>
+            <p className="text-xs text-blue-100 font-medium mt-1">
+              Method:{' '}
+              <span className="font-bold text-white uppercase">
+                {income.paymentMethod || 'CASH'}
+              </span>
             </p>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-xs border border-white/15 p-3.5 rounded-xl text-right sm:text-left min-w-[180px]">
-            <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-300">
-              Paid From Account
+          <div className="bg-white/15 backdrop-blur-xs border border-white/20 p-3.5 rounded-xl text-right sm:text-left min-w-[200px]">
+            <p className="text-[10px] font-extrabold uppercase tracking-wider text-blue-100">
+              Deposited In Account
             </p>
-            <p className="text-sm font-black text-white mt-0.5">
-              {expense.account?.name || 'Cash on Hand'}
-            </p>
-            <p className="text-[11px] text-slate-300 font-mono">
-              {expense.account?.bankOrProviderName ? `${expense.account.bankOrProviderName}` : 'Internal Register'}
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <Landmark className="w-4 h-4 text-white shrink-0" />
+              <p className="text-sm font-black text-white truncate">
+                {income.account?.name || 'Cash on Hand'}
+              </p>
+            </div>
+            <p className="text-[11px] text-blue-100 font-mono mt-0.5">
+              {income.account?.bankOrProviderName
+                ? `${income.account.bankOrProviderName} • ${income.account.type || 'Internal'}`
+                : 'Direct Register Account'}
             </p>
           </div>
         </div>
 
-        {/* Creator / Added By Information Box */}
+        {/* Creator / Added By Information Box - Secondary Slate container with Primary Blue accents */}
         <div className="bg-slate-50 p-4.5 rounded-2xl border border-slate-200">
           <div className="flex items-center justify-between mb-3">
             <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
               <User className="w-3.5 h-3.5 text-blue-600" />
-              Expense Creator & Audit Trail
+              Recorded By & Audit Trail
             </span>
-            <span className="text-[10px] font-mono font-bold text-slate-400 bg-white px-2 py-0.5 rounded-md border border-slate-200">
+            <span className="text-[10px] font-mono font-bold text-slate-500 bg-white px-2 py-0.5 rounded-md border border-slate-200">
               Audit ID Verified
             </span>
           </div>
 
           <div className="flex items-start gap-3.5">
             <div className="w-11 h-11 rounded-2xl bg-blue-600 text-white font-black text-base flex items-center justify-center shrink-0 shadow-xs">
-              {creatorName[0].toUpperCase()}
+              {creatorName[0]?.toUpperCase() || 'U'}
             </div>
             <div className="space-y-0.5 flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2">
@@ -171,11 +164,11 @@ export function ExpenseDetailModal({
               <p className="text-xs text-slate-500 font-medium truncate">{creatorEmail}</p>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1.5 text-[11px] text-slate-600">
                 <span className="font-mono bg-white px-2 py-0.5 rounded border border-slate-200 text-slate-700">
-                  User ID: <span className="font-bold text-slate-900">{creatorId}</span>
+                  User ID: <span className="font-bold text-slate-900">{creatorId.substring(0, 12)}</span>
                 </span>
-                {expense.createdAt && (
+                {income.createdAt && (
                   <span className="text-slate-400">
-                    Logged: {new Date(expense.createdAt).toLocaleString()}
+                    Logged: {new Date(income.createdAt).toLocaleString()}
                   </span>
                 )}
               </div>
@@ -183,78 +176,76 @@ export function ExpenseDetailModal({
           </div>
         </div>
 
-        {/* Expense Attributes Grid */}
+        {/* Income Attributes Grid - Secondary neutral cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="p-4 rounded-xl bg-slate-50/70 border border-slate-200">
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-              Category
+              Category / Income Stream
             </span>
             <div className="flex items-center gap-2">
-              <Tag className="w-4 h-4 text-slate-500" />
+              <Tag className="w-4 h-4 text-blue-600" />
               <span className="text-sm font-bold text-slate-900">
-                {expense.category?.name || expense.categoryCode?.replace(/_/g, ' ') || 'General'}
+                {categoryLabel}
               </span>
             </div>
           </div>
 
-          <div className="p-4 rounded-xl bg-slate-50/70 border border-slate-200">
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-              Expense Date
+              Income Received Date
             </span>
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-slate-500" />
               <span className="text-sm font-bold text-slate-900">
-                {String(expense.transactionDate || '').split('T')[0]}
+                {String(income.transactionDate || '').split('T')[0]}
               </span>
             </div>
           </div>
 
-          <div className="p-4 rounded-xl bg-slate-50/70 border border-slate-200">
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-              Reference / Voucher #
+              Reference / Tracking #
             </span>
             <div className="flex items-center gap-2">
               <Hash className="w-4 h-4 text-slate-500" />
               <span className="text-sm font-bold text-slate-900 font-mono">
-                {expense.reference || 'None (Internal)'}
+                {income.reference || 'None (Direct Inflow)'}
               </span>
             </div>
           </div>
 
-          <div className="p-4 rounded-xl bg-slate-50/70 border border-slate-200">
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
               Source Stream
             </span>
             <div className="flex items-center gap-2">
               <FileText className="w-4 h-4 text-slate-500" />
               <span className="text-sm font-bold text-slate-900">
-                {expense.sourceType === 'PAYROLL'
-                  ? 'HRM Salary Payroll Run'
-                  : expense.sourceType === 'BILL'
-                  ? 'Supplier Purchase Bill'
-                  : expense.sourceType === 'ORDER'
-                  ? 'Order Logistics Freight'
-                  : 'Manual Business Expense'}
+                {income.sourceType === 'INVOICE'
+                  ? 'Customer Invoice Settlement'
+                  : income.sourceType === 'ORDER'
+                  ? 'Store Order Payment (COD/Online)'
+                  : 'Manual Income Entry'}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Description / Reason */}
-        <div className="p-4 rounded-xl bg-slate-50/70 border border-slate-200">
+        {/* Description / Purpose */}
+        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-            Expense Description & Purpose
+            Income Description & Purpose
           </span>
           <p className="text-xs font-medium text-slate-800 leading-relaxed">
-            {expense.description || 'No detailed notes provided for this transaction.'}
+            {income.description || 'No detailed notes provided for this transaction.'}
           </p>
         </div>
 
         {/* Attached Voucher / Receipt File (Image or PDF) */}
         {receipt && receipt.url && (
-          <div className="p-4.5 rounded-2xl bg-blue-50/60 border border-blue-200 space-y-3">
+          <div className="p-4.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-blue-900 flex items-center gap-1.5">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
                 <Paperclip className="w-3.5 h-3.5 text-blue-600" />
                 Attached Receipt Voucher / Supporting Document
               </span>
@@ -262,7 +253,7 @@ export function ExpenseDetailModal({
                 href={receipt.url}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1 text-xs font-bold text-blue-700 hover:text-blue-900 hover:underline"
+                className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline"
               >
                 <span>Open in New Tab</span>
                 <ExternalLink className="w-3 h-3" />
@@ -273,7 +264,7 @@ export function ExpenseDetailModal({
               <div className="space-y-2">
                 <div
                   onClick={() => setIsImageZoomed(!isImageZoomed)}
-                  className="relative group rounded-xl overflow-hidden border border-blue-200 bg-white cursor-pointer"
+                  className="relative group rounded-xl overflow-hidden border border-slate-200 bg-white cursor-pointer"
                 >
                   <img
                     src={receipt.url}
@@ -287,19 +278,19 @@ export function ExpenseDetailModal({
                     <span>{isImageZoomed ? 'Click to Shrink' : 'Click to Expand'}</span>
                   </div>
                 </div>
-                <p className="text-[11px] text-blue-800 font-mono text-center">
+                <p className="text-[11px] text-slate-600 font-mono text-center">
                   {receipt.fileName || 'voucher_image.jpg'}
                 </p>
               </div>
             ) : isPdfReceipt ? (
-              <div className="p-4 rounded-xl bg-white border border-blue-200 flex items-center justify-between gap-3">
+              <div className="p-4 rounded-xl bg-white border border-slate-200 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
                     <FileText className="w-5 h-5" />
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-slate-900 truncate">
-                      {receipt.fileName || 'Expense_Receipt_Document.pdf'}
+                      {receipt.fileName || 'Income_Receipt_Document.pdf'}
                     </p>
                     <p className="text-[10px] text-slate-400 font-mono">PDF Attachment Document</p>
                   </div>
@@ -317,7 +308,7 @@ export function ExpenseDetailModal({
                 </a>
               </div>
             ) : (
-              <div className="p-3.5 rounded-xl bg-white border border-blue-200 flex items-center justify-between gap-3">
+              <div className="p-3.5 rounded-xl bg-white border border-slate-200 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 min-w-0">
                   <FileText className="w-4 h-4 text-blue-600 shrink-0" />
                   <span className="text-xs font-bold text-slate-900 truncate">
@@ -348,40 +339,31 @@ export function ExpenseDetailModal({
           </button>
 
           <div className="flex items-center gap-2">
-            {canModify ? (
-              <>
-                {onEdit && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onClose();
-                      onEdit(expense);
-                    }}
-                    className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
-                  >
-                    <Edit className="w-3.5 h-3.5" />
-                    <span>Edit Expense</span>
-                  </button>
-                )}
-                {onDelete && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onClose();
-                      onDelete(expense);
-                    }}
-                    className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-xl border border-rose-200 transition cursor-pointer"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Delete</span>
-                  </button>
-                )}
-              </>
-            ) : (
-              <div className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 text-slate-500 rounded-xl text-xs font-medium">
-                <Lock className="w-3.5 h-3.5 text-slate-400" />
-                <span>Past Month (Admin Only Modification)</span>
-              </div>
+            {onEdit && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onEdit(income);
+                }}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
+              >
+                <Edit className="w-3.5 h-3.5" />
+                <span>Edit Income</span>
+              </button>
+            )}
+            {onDelete && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onDelete(income);
+                }}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-700 text-xs font-bold rounded-xl border border-slate-200 hover:border-rose-200 transition cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete</span>
+              </button>
             )}
           </div>
         </div>

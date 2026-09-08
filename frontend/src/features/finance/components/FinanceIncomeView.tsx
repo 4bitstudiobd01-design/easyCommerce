@@ -25,6 +25,7 @@ import {
 } from '../api/financeApi';
 import { CreateIncomeModal } from './CreateIncomeModal';
 import { EditIncomeModal } from './EditIncomeModal';
+import { IncomeDetailModal } from './IncomeDetailModal';
 
 function formatMoney(amount: number | string, prefix = '৳') {
   const val = Number(amount || 0);
@@ -39,6 +40,7 @@ export function FinanceIncomeView() {
   const [endDate, setEndDate] = useState('');
   const [page, setPage] = useState(1);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [selectedDetailIncome, setSelectedDetailIncome] = useState<FinanceTransaction | null>(null);
   const [editingIncome, setEditingIncome] = useState<FinanceTransaction | null>(null);
 
   const { data, isLoading, isFetching, refetch } = useGetIncomeQuery({
@@ -262,58 +264,63 @@ export function FinanceIncomeView() {
             <table className="w-full text-left text-xs text-slate-600">
               <thead className="bg-slate-50 border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                 <tr>
-                  <th className="px-6 py-3.5">Date</th>
-                  <th className="px-6 py-3.5">Txn #</th>
-                  <th className="px-6 py-3.5">Category</th>
-                  <th className="px-6 py-3.5">Description</th>
-                  <th className="px-6 py-3.5">Receiving Account</th>
-                  <th className="px-6 py-3.5">Method</th>
-                  <th className="px-6 py-3.5 text-right">Amount (BDT)</th>
-                  <th className="px-6 py-3.5 text-center">Actions</th>
+                  <th className="px-3.5 py-3 whitespace-nowrap">Date</th>
+                  <th className="px-3.5 py-3 whitespace-nowrap">Txn #</th>
+                  <th className="px-3.5 py-3 whitespace-nowrap">Category</th>
+                  <th className="px-3.5 py-3">Description</th>
+                  <th className="px-3.5 py-3 whitespace-nowrap">Receiving Account</th>
+                  <th className="px-3.5 py-3 whitespace-nowrap">Method</th>
+                  <th className="px-3.5 py-3 text-right whitespace-nowrap">Amount (BDT)</th>
+                  <th className="px-3.5 py-3 text-center whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {incomeList.map((t) => (
-                  <tr key={t.id} className="hover:bg-slate-50/80 transition">
-                    <td className="px-6 py-3.5 text-slate-500 font-medium whitespace-nowrap">
+                  <tr
+                    key={t.id}
+                    onClick={() => setSelectedDetailIncome(t)}
+                    className="hover:bg-blue-50/40 transition cursor-pointer group"
+                    title="Click row to view full details"
+                  >
+                    <td className="px-3.5 py-3 text-slate-500 font-medium whitespace-nowrap">
                       {String(t.transactionDate || '').split('T')[0]}
                     </td>
-                    <td className="px-6 py-3.5 font-mono font-bold text-slate-900 whitespace-nowrap">
+                    <td className="px-3.5 py-3 font-mono font-bold text-slate-900 whitespace-nowrap group-hover:text-blue-600 transition-colors">
                       {t.transactionNumber}
                     </td>
-                    <td className="px-6 py-3.5">
-                      <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-700">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <td className="px-3.5 py-3 whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1.5 font-semibold text-slate-800">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
                         {t.category?.name || t.categoryCode?.replace(/_/g, ' ')}
                       </span>
                     </td>
-                    <td className="px-6 py-3.5 max-w-xs">
+                    <td className="px-3.5 py-3 min-w-[140px] max-w-xs">
                       <div className="flex items-center gap-1.5">
                         {t.sourceType === 'INVOICE' ? (
                           <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-blue-50 text-blue-700 border border-blue-200 shrink-0">
                             INVOICE
                           </span>
                         ) : t.sourceType === 'ORDER' ? (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-purple-50 text-purple-700 border border-purple-200 shrink-0">
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-slate-100 text-slate-700 border border-slate-200 shrink-0">
                             ORDER
                           </span>
                         ) : null}
-                        <span className="font-medium text-slate-900 block truncate" title={t.description || ''}>
+                        <span className="font-medium text-slate-800 block truncate" title={t.description || ''}>
                           {t.description || t.reference || '—'}
                         </span>
                       </div>
                       {t.reference && t.reference !== t.description && (
-                        <span className="text-[10px] text-slate-400 font-mono block mt-0.5">
+                        <span className="text-[10px] text-slate-400 font-mono block mt-0.5 truncate">
                           Ref: {t.reference}
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-3.5 whitespace-nowrap">
+                    <td className="px-3.5 py-3 whitespace-nowrap">
                       {t.account ? (
                         <div className="flex items-center gap-1.5">
-                          <Landmark className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <Landmark className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                           <span className="font-semibold text-slate-800">{t.account.name}</span>
-                          <span className="text-[10px] uppercase font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.2 rounded">
+                          <span className="text-[10px] uppercase font-bold text-slate-600 bg-slate-100 border border-slate-200 px-1.5 py-0.2 rounded">
                             {t.account.type}
                           </span>
                         </div>
@@ -321,17 +328,23 @@ export function FinanceIncomeView() {
                         <span className="text-slate-400 italic">Direct Cash / Unassigned</span>
                       )}
                     </td>
-                    <td className="px-6 py-3.5 text-slate-500 font-medium whitespace-nowrap">
+                    <td className="px-3.5 py-3 text-slate-500 font-medium whitespace-nowrap">
                       {t.paymentMethod || 'CASH'}
                     </td>
-                    <td className="px-6 py-3.5 font-black text-right text-emerald-600 whitespace-nowrap">
+                    <td className="px-3.5 py-3 font-black text-right text-slate-900 whitespace-nowrap">
                       {formatMoney(t.amount, '+৳')}
                     </td>
-                    <td className="px-6 py-3.5 whitespace-nowrap text-center">
+                    <td
+                      className="px-3.5 py-3 whitespace-nowrap text-center"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <div className="flex items-center justify-center gap-1">
                         <button
                           type="button"
-                          onClick={() => setEditingIncome(t)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingIncome(t);
+                          }}
                           className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition cursor-pointer"
                           title="Edit Income"
                         >
@@ -340,7 +353,10 @@ export function FinanceIncomeView() {
                         <button
                           type="button"
                           disabled={isDeleting}
-                          onClick={() => handleDelete(t.id, t.transactionNumber)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(t.id, t.transactionNumber);
+                          }}
                           className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
                           title="Delete Income"
                         >
@@ -381,6 +397,21 @@ export function FinanceIncomeView() {
           </div>
         )}
       </div>
+
+      {/* Income Detail Modal */}
+      <IncomeDetailModal
+        isOpen={Boolean(selectedDetailIncome)}
+        onClose={() => setSelectedDetailIncome(null)}
+        income={selectedDetailIncome}
+        onEdit={(inc) => {
+          setSelectedDetailIncome(null);
+          setEditingIncome(inc);
+        }}
+        onDelete={(inc) => {
+          setSelectedDetailIncome(null);
+          handleDelete(inc.id, inc.transactionNumber);
+        }}
+      />
 
       {/* Create Income Modal */}
       <CreateIncomeModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />

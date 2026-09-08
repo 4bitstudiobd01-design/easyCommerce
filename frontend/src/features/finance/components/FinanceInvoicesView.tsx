@@ -3,15 +3,10 @@
 import React, { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import {
-  FileText,
   Plus,
   RefreshCw,
   Search,
-  CheckCircle,
-  Clock,
   AlertCircle,
-  AlertTriangle,
-  Eye,
   CreditCard,
   ChevronLeft,
   ChevronRight,
@@ -21,6 +16,7 @@ import {
   Calendar,
   DollarSign,
   ShoppingCart,
+  FileText,
 } from 'lucide-react';
 import {
   useGetInvoicesQuery,
@@ -32,16 +28,7 @@ import { CreateInvoiceModal } from './CreateInvoiceModal';
 import { InvoiceDetailModal } from './InvoiceDetailModal';
 import { RecordInvoicePaymentModal } from './RecordInvoicePaymentModal';
 import { UpdateInvoiceStatusModal } from './UpdateInvoiceStatusModal';
-
-const STATUS_BADGE: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
-  DRAFT: { bg: 'bg-slate-100 border-slate-200', text: 'text-slate-700', icon: <Clock className="w-3 h-3" /> },
-  PENDING: { bg: 'bg-amber-50 border-amber-200', text: 'text-amber-800', icon: <Clock className="w-3 h-3 text-amber-600" /> },
-  UNPAID: { bg: 'bg-amber-50 border-amber-200', text: 'text-amber-800', icon: <AlertCircle className="w-3 h-3" /> },
-  PARTIALLY_PAID: { bg: 'bg-sky-50 border-sky-200', text: 'text-sky-800', icon: <Clock className="w-3 h-3" /> },
-  PAID: { bg: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-800', icon: <CheckCircle className="w-3 h-3" /> },
-  OVERDUE: { bg: 'bg-rose-50 border-rose-200', text: 'text-rose-800', icon: <AlertTriangle className="w-3 h-3 text-rose-600" /> },
-  VOID: { bg: 'bg-slate-100 border-slate-200', text: 'text-slate-500', icon: <AlertCircle className="w-3 h-3" /> },
-};
+import { InvoiceStatusDropdown } from './InvoiceStatusDropdown';
 
 type PeriodPreset = 'CURRENT_MONTH' | 'PREVIOUS_MONTH' | 'THIS_YEAR' | 'CUSTOM';
 
@@ -466,22 +453,22 @@ export function FinanceInvoicesView() {
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                 {invoices.map((invoice) => {
-                  const statusMeta = STATUS_BADGE[invoice.status] || STATUS_BADGE.UNPAID;
                   const bal = Number(invoice.balanceDue || 0);
                   const paid = Number(invoice.paidAmount || 0);
                   const tot = Number(invoice.totalAmount || 0);
                   const isOverdue = invoice.dueDate < todayStr && bal > 0 && invoice.status !== 'PAID' && invoice.status !== 'VOID';
 
                   return (
-                    <tr key={invoice.id} className="hover:bg-slate-50/60 transition">
-                      <td className="py-3.5 px-4 font-mono font-bold text-blue-700 whitespace-nowrap">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedInvoice(invoice)}
-                          className="hover:underline cursor-pointer"
-                        >
+                    <tr
+                      key={invoice.id}
+                      onClick={() => setSelectedInvoice(invoice)}
+                      className="hover:bg-blue-50/40 transition cursor-pointer group"
+                      title="Click row to view invoice details"
+                    >
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <span className="font-mono font-bold text-blue-700 group-hover:text-blue-800 group-hover:underline">
                           #{invoice.invoiceNumber}
-                        </button>
+                        </span>
                       </td>
                       <td className="py-3.5 px-4">
                         <p className="font-black text-slate-900 text-xs">{invoice.customerName}</p>
@@ -511,16 +498,12 @@ export function FinanceInvoicesView() {
                           {invoice.dueDate}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 text-center">
-                        <button
-                          type="button"
-                          onClick={() => setStatusUpdateInvoice(invoice)}
-                          className={`inline-flex items-center gap-1 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border transition hover:opacity-85 hover:scale-105 cursor-pointer shadow-2xs ${statusMeta.bg} ${statusMeta.text}`}
-                          title="Click to update payment status"
-                        >
-                          {statusMeta.icon}
-                          {invoice.status.replace('_', ' ')}
-                        </button>
+                      <td className="py-3.5 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                        <InvoiceStatusDropdown
+                          invoice={invoice}
+                          onOpenStatusModal={(inv) => setStatusUpdateInvoice(inv)}
+                          onOpenPaymentModal={(inv) => setPaymentInvoice(inv)}
+                        />
                       </td>
                       <td className="py-3.5 px-4 text-right font-mono font-black text-slate-900 text-xs whitespace-nowrap">
                         {formatMoney(tot)}
@@ -535,18 +518,8 @@ export function FinanceInvoicesView() {
                           </p>
                         </div>
                       </td>
-                      <td className="py-3.5 px-4 text-center">
+                      <td className="py-3.5 px-4 text-center" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => setStatusUpdateInvoice(invoice)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-[11px] font-bold transition shadow-2xs cursor-pointer"
-                            title="Update payment status"
-                          >
-                            <FileText className="w-3 h-3 text-slate-500" />
-                            Status
-                          </button>
-
                           {bal > 0 && invoice.status !== 'VOID' && (
                             <button
                               type="button"
@@ -558,15 +531,6 @@ export function FinanceInvoicesView() {
                               Pay
                             </button>
                           )}
-
-                          <button
-                            type="button"
-                            onClick={() => setSelectedInvoice(invoice)}
-                            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition cursor-pointer"
-                            title="View Invoice Details"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
 
                           <button
                             type="button"

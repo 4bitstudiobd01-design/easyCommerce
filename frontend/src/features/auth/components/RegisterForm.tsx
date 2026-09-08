@@ -33,7 +33,7 @@ const STORE_DOMAIN = '.bitcommerce.app';
  */
 const PHONE_PATTERN = /^1[3-9]\d{8}$/;
 
-/** Strips any `+880`/`880`/leading-0` a user might paste in, leaving the bare subscriber number. */
+/** Strips any '+880'/'880'/'leading-0' a user might paste in, leaving the bare subscriber number. */
 function normalizePhone(value: string): string {
   const digitsOnly = value.trim().replace(/[\s-]/g, '');
   return digitsOnly.replace(/^(?:\+?880|0)/, '');

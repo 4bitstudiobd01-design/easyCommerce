@@ -24,6 +24,8 @@ export class ListIncomeService {
       .createQueryBuilder('txn')
       .leftJoinAndSelect('txn.account', 'account')
       .leftJoinAndSelect('txn.category', 'category')
+      .leftJoinAndSelect('txn.createdByUser', 'createdByUser')
+      .leftJoinAndSelect('txn.receiptFile', 'receiptFile')
       .where('txn.storeId = :storeId', { storeId })
       .andWhere('txn.type = :type', { type: FinanceTransactionTypeEnum.INCOME });
 

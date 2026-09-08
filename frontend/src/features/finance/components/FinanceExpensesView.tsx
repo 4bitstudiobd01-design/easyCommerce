@@ -34,7 +34,6 @@ import {
   ShieldAlert,
   Lock,
   User as UserIcon,
-  Eye,
   Paperclip,
 } from 'lucide-react';
 import {
@@ -206,33 +205,33 @@ export function FinanceExpensesView() {
     switch (source) {
       case 'PAYROLL':
         return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black bg-pink-50 text-pink-700 border border-pink-200">
-            [Payroll]
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+            Payroll
           </span>
         );
       case 'BILL':
       case 'PURCHASE':
         return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black bg-amber-50 text-amber-700 border border-amber-200">
-            [Purchase Bill]
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+            Purchase Bill
           </span>
         );
       case 'ORDER':
         return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200">
-            [Order Shipping]
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+            Order Shipping
           </span>
         );
       case 'HR_EXPENSE':
         return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black bg-indigo-50 text-indigo-700 border border-indigo-200">
-            [HR Claim]
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+            HR Claim
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black bg-slate-100 text-slate-700 border border-slate-200">
-            [Manual Entry]
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+            Manual Entry
           </span>
         );
     }
@@ -659,16 +658,14 @@ export function FinanceExpensesView() {
             <table className="w-full text-left text-xs text-slate-600">
               <thead className="bg-slate-50 border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                 <tr>
-                  <th className="px-5 py-3.5">Date</th>
-                  <th className="px-5 py-3.5">Txn #</th>
-                  <th className="px-4 py-3.5">Source</th>
-                  <th className="px-4 py-3.5">Category</th>
-                  <th className="px-5 py-3.5">Description</th>
-                  <th className="px-4 py-3.5">Account</th>
-                  <th className="px-4 py-3.5">Method</th>
-                  <th className="px-4 py-3.5">Recorded By</th>
-                  <th className="px-5 py-3.5 text-right">Amount (BDT)</th>
-                  <th className="px-4 py-3.5 text-center">Actions</th>
+                  <th className="px-3.5 py-3 whitespace-nowrap">Date</th>
+                  <th className="px-3.5 py-3 whitespace-nowrap">Txn #</th>
+                  <th className="px-3.5 py-3 whitespace-nowrap">Category & Source</th>
+                  <th className="px-3.5 py-3">Description</th>
+                  <th className="px-3.5 py-3 whitespace-nowrap">Account & Method</th>
+                  <th className="px-3.5 py-3 whitespace-nowrap">Recorded By</th>
+                  <th className="px-3.5 py-3 text-right whitespace-nowrap">Amount (BDT)</th>
+                  <th className="px-3.5 py-3 text-center whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -685,18 +682,18 @@ export function FinanceExpensesView() {
                     <tr
                       key={t.id}
                       onClick={() => setSelectedDetailExpense(t)}
-                      className="hover:bg-rose-50/40 transition cursor-pointer group"
+                      className="hover:bg-blue-50/40 transition cursor-pointer group"
                       title="Click row to view full details"
                     >
-                      <td className="px-5 py-3.5 text-slate-500 font-medium whitespace-nowrap">
-                        {String(t.transactionDate || '').split('T')[0]}
+                      <td className="px-3.5 py-3 text-slate-500 font-medium whitespace-nowrap">
+                        <span>{String(t.transactionDate || '').split('T')[0]}</span>
                         {isPast && (
-                          <span className="ml-1.5 inline-block text-[9px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">
+                          <span className="ml-1.5 inline-block text-[9px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200">
                             Past Month
                           </span>
                         )}
                       </td>
-                      <td className="px-5 py-3.5 font-mono font-bold text-slate-900 whitespace-nowrap group-hover:text-rose-600 transition-colors">
+                      <td className="px-3.5 py-3 font-mono font-bold text-slate-900 whitespace-nowrap group-hover:text-blue-600 transition-colors">
                         <div className="flex items-center gap-1.5">
                           <span>{t.transactionNumber}</span>
                           {(t.receiptFileId || t.receiptFile) && (
@@ -709,40 +706,41 @@ export function FinanceExpensesView() {
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3.5">
-                        {getSourceBadge(t.sourceType || 'MANUAL')}
-                      </td>
-                      <td className="px-4 py-3.5">
-                        <span className="inline-flex items-center gap-1.5 font-semibold text-slate-800">
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                      <td className="px-3.5 py-3 whitespace-nowrap">
+                        <div className="font-semibold text-slate-900 text-xs">
                           {t.category?.name || t.categoryCode?.replace(/_/g, ' ')}
-                        </span>
+                        </div>
+                        <div className="mt-0.5">
+                          {getSourceBadge(t.sourceType || 'MANUAL')}
+                        </div>
                       </td>
-                      <td className="px-5 py-3.5 max-w-xs">
-                        <span className="font-medium text-slate-900 block truncate" title={t.description || ''}>
+                      <td className="px-3.5 py-3 min-w-[140px] max-w-xs">
+                        <span className="font-medium text-slate-800 block truncate" title={t.description || ''}>
                           {t.description || '—'}
                         </span>
                         {t.reference && (
-                          <span className="text-[10px] text-slate-400 font-mono block">
+                          <span className="text-[10px] text-slate-400 font-mono block truncate">
                             Ref: {t.reference}
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3.5 font-medium text-slate-700 whitespace-nowrap">
-                        {t.account?.name || 'Cash on Hand'}
-                      </td>
-                      <td className="px-4 py-3.5 text-slate-500 font-medium whitespace-nowrap">
-                        {t.paymentMethod || 'CASH'}
+                      <td className="px-3.5 py-3 whitespace-nowrap">
+                        <div className="font-medium text-slate-800 text-xs">
+                          {t.account?.name || 'Cash on Hand'}
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-mono uppercase mt-0.5">
+                          {t.paymentMethod || 'CASH'}
+                        </div>
                       </td>
 
-                      {/* Recorded By Column (User Name and ID) */}
-                      <td className="px-4 py-3.5 whitespace-nowrap">
+                      {/* Recorded By Column */}
+                      <td className="px-3.5 py-3 whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           <div className="w-6 h-6 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] font-black text-slate-600 shrink-0">
-                            {creatorName[0].toUpperCase()}
+                            {creatorName[0]?.toUpperCase() || 'U'}
                           </div>
                           <div className="min-w-0">
-                            <span className="font-semibold text-slate-900 block truncate text-[11px]" title={creatorName}>
+                            <span className="font-semibold text-slate-900 block truncate text-[11px] max-w-[110px]" title={creatorName}>
                               {creatorName}
                             </span>
                             <span className="text-[9px] text-slate-400 font-mono block">
@@ -752,25 +750,16 @@ export function FinanceExpensesView() {
                         </div>
                       </td>
 
-                      <td className="px-5 py-3.5 font-black text-right text-rose-600 whitespace-nowrap">
+                      <td className="px-3.5 py-3 font-black text-right text-slate-900 whitespace-nowrap">
                         {formatMoney(t.amount, '-৳')}
                       </td>
 
-                      {/* Actions: View Details, Edit & Delete */}
+                      {/* Actions: Edit & Delete */}
                       <td
-                        className="px-4 py-3.5 text-center whitespace-nowrap"
+                        className="px-3.5 py-3 text-center whitespace-nowrap"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="flex items-center justify-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => setSelectedDetailExpense(t)}
-                            className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition cursor-pointer"
-                            title="View Full Details"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                          </button>
-
                           {canEdit ? (
                             <>
                               <button

@@ -24,8 +24,11 @@ import {
   useGetCategoriesQuery,
   FinanceCategory,
   FinanceAccount,
+  FinanceTransaction,
 } from '../api/financeApi';
 import { CreateTransactionModal } from './CreateTransactionModal';
+import { IncomeDetailModal } from './IncomeDetailModal';
+import { ExpenseDetailModal } from './ExpenseDetailModal';
 
 export function FinanceTransactionsTable() {
   const [type, setType] = useState('');
@@ -37,6 +40,8 @@ export function FinanceTransactionsTable() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [selectedIncome, setSelectedIncome] = useState<FinanceTransaction | null>(null);
+  const [selectedExpense, setSelectedExpense] = useState<FinanceTransaction | null>(null);
 
   const { data, isLoading, isFetching, refetch } = useGetTransactionsQuery({
     type: type || undefined,
@@ -278,14 +283,30 @@ export function FinanceTransactionsTable() {
                 {transactions.map((t) => {
                   const isCredit = t.type === 'INCOME' || t.type === 'PAYMENT';
                   const isTransfer = t.type === 'TRANSFER';
+                  const isClickable = !isTransfer;
                   const amt = Number(t.amount || 0);
 
+                  const handleRowClick = () => {
+                    if (t.type === 'INCOME' || t.type === 'PAYMENT') {
+                      setSelectedIncome(t);
+                    } else if (t.type === 'EXPENSE') {
+                      setSelectedExpense(t);
+                    }
+                  };
+
                   return (
-                    <tr key={t.id} className="hover:bg-slate-50 transition">
+                    <tr
+                      key={t.id}
+                      onClick={isClickable ? handleRowClick : undefined}
+                      className={`transition ${
+                        isClickable ? 'cursor-pointer hover:bg-slate-50/80 group' : 'hover:bg-slate-50'
+                      }`}
+                      title={isClickable ? 'Click row to view details' : undefined}
+                    >
                       <td className="px-5 py-3.5 text-xs text-slate-600 whitespace-nowrap">
                         {t.transactionDate}
                       </td>
-                      <td className="px-5 py-3.5 text-xs font-mono font-bold text-slate-900">
+                      <td className={`px-5 py-3.5 text-xs font-mono font-bold text-slate-900 ${isClickable ? 'group-hover:text-blue-600 transition-colors' : ''}`}>
                         {t.transactionNumber}
                       </td>
                       <td className="px-5 py-3.5">
@@ -328,12 +349,18 @@ export function FinanceTransactionsTable() {
                       >
                         {isCredit ? '+' : isTransfer ? '' : '-'}৳{amt.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </td>
-                      <td className="px-5 py-3.5 text-center">
+                      <td
+                        className="px-5 py-3.5 text-center"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         {t.sourceType === 'MANUAL' && (
                           <button
                             type="button"
-                            onClick={() => handleDelete(t.id)}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(t.id);
+                            }}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
                             title="Delete transaction"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -448,6 +475,27 @@ export function FinanceTransactionsTable() {
           )}
         </div>
       </div>
+
+      {/* Modals */}
+      <IncomeDetailModal
+        isOpen={Boolean(selectedIncome)}
+        onClose={() => setSelectedIncome(null)}
+        income={selectedIncome}
+        onDelete={(inc) => {
+          setSelectedIncome(null);
+          handleDelete(inc.id);
+        }}
+      />
+
+      <ExpenseDetailModal
+        isOpen={Boolean(selectedExpense)}
+        onClose={() => setSelectedExpense(null)}
+        expense={selectedExpense}
+        onDelete={(exp) => {
+          setSelectedExpense(null);
+          handleDelete(exp.id);
+        }}
+      />
 
       <CreateTransactionModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
     </div>

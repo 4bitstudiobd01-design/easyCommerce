@@ -59,6 +59,8 @@ import { CreateTransferModal } from './CreateTransferModal';
 import { CreateInvoiceModal } from './CreateInvoiceModal';
 import { CreateBillModal } from './CreateBillModal';
 import { CreateJournalEntryModal } from './CreateJournalEntryModal';
+import { IncomeDetailModal } from './IncomeDetailModal';
+import { ExpenseDetailModal } from './ExpenseDetailModal';
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -108,6 +110,8 @@ export function FinanceOverviewView() {
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   const [isBillOpen, setIsBillOpen] = useState(false);
   const [isJournalOpen, setIsJournalOpen] = useState(false);
+  const [selectedIncome, setSelectedIncome] = useState<FinanceTransaction | null>(null);
+  const [selectedExpense, setSelectedExpense] = useState<FinanceTransaction | null>(null);
 
   const summary = data?.summary;
   const growth = data?.growth;
@@ -658,13 +662,26 @@ export function FinanceOverviewView() {
                     const creatorId =
                       t.createdByUser?.id || t.createdByUserId || 'SYS';
 
+                    const isClickable = t.type === 'INCOME' || t.type === 'EXPENSE';
+                    const handleRowClick = () => {
+                      if (t.type === 'INCOME') setSelectedIncome(t);
+                      else if (t.type === 'EXPENSE') setSelectedExpense(t);
+                    };
+
                     return (
-                      <tr key={t.id} className="hover:bg-slate-50/70 transition">
+                      <tr
+                        key={t.id}
+                        onClick={isClickable ? handleRowClick : undefined}
+                        className={`transition ${isClickable ? 'hover:bg-slate-50 cursor-pointer group' : 'hover:bg-slate-50/70'}`}
+                        title={isClickable ? 'Click to view details' : undefined}
+                      >
                         <td className="px-4 py-3 font-medium text-slate-500 text-[11px] whitespace-nowrap">
                           {t.transactionDate}
                         </td>
                         <td className="px-4 py-3">
-                          <span className="font-bold text-slate-900 block truncate max-w-[200px]">{t.description}</span>
+                          <span className={`font-bold text-slate-900 block truncate max-w-[200px] ${isClickable ? 'group-hover:text-blue-600 transition-colors' : ''}`}>
+                            {t.description}
+                          </span>
                           <span className="text-[10px] text-slate-400 font-mono">{t.transactionNumber}</span>
                         </td>
                         <td className="px-3 py-3">
@@ -712,6 +729,19 @@ export function FinanceOverviewView() {
           </div>
         </div>
       </div>
+
+      {/* Detail Modals */}
+      <IncomeDetailModal
+        isOpen={Boolean(selectedIncome)}
+        onClose={() => setSelectedIncome(null)}
+        income={selectedIncome}
+      />
+
+      <ExpenseDetailModal
+        isOpen={Boolean(selectedExpense)}
+        onClose={() => setSelectedExpense(null)}
+        expense={selectedExpense}
+      />
 
       {/* Action Modals */}
       {isIncomeOpen && <CreateIncomeModal isOpen={isIncomeOpen} onClose={() => setIsIncomeOpen(false)} />}

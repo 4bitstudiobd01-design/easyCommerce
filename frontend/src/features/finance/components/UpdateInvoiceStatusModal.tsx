@@ -21,6 +21,7 @@ import {
   useUpdateInvoiceStatusMutation,
   useGetAccountsQuery,
 } from '../api/financeApi';
+import { AccountSelectDropdown } from './AccountSelectDropdown';
 
 interface Props {
   isOpen: boolean;
@@ -208,33 +209,32 @@ export function UpdateInvoiceStatusModal({ isOpen, onClose, invoice }: Props) {
         {isMarkingPaid && (
           <div className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 space-y-4">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-emerald-600" />
-              <p className="text-xs font-black text-emerald-950 uppercase tracking-wider">
+              <Sparkles className="w-4 h-4 text-blue-600" />
+              <p className="text-xs font-black text-slate-900 uppercase tracking-wider">
                 Deposit into Receiving Account
               </p>
             </div>
 
             {/* Account Selector */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                 Select Account to Receive Income *
               </label>
-              <select
+              <AccountSelectDropdown
+                accounts={accounts}
                 value={accountId}
-                onChange={(e) => {
-                  setAccountId(e.target.value);
-                  const acc = accounts.find((a) => a.id === e.target.value);
-                  if (acc) setPaymentMethod(acc.type || 'BANK');
+                onChange={(newId: string, acc?: FinanceAccount) => {
+                  setAccountId(newId);
+                  if (acc?.type) {
+                    if (acc.type === 'DIGITAL_WALLET') setPaymentMethod('BKASH');
+                    else if (acc.type === 'CASH') setPaymentMethod('CASH');
+                    else if (acc.type === 'CARD') setPaymentMethod('SSLCOMMERZ');
+                    else setPaymentMethod('BANK');
+                  }
                 }}
-                required
-                className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 cursor-pointer"
-              >
-                {accounts.map((acc) => (
-                  <option key={acc.id} value={acc.id}>
-                    {acc.name} ({acc.type}) — Balance: {formatMoney(acc.currentBalance)}
-                  </option>
-                ))}
-              </select>
+                allowUnassigned={false}
+                placeholder="Select receiving account..."
+              />
             </div>
 
             {/* Live Balance Addition Preview */}
@@ -250,16 +250,16 @@ export function UpdateInvoiceStatusModal({ isOpen, onClose, invoice }: Props) {
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between text-xs text-emerald-700">
+                <div className="flex items-center justify-between text-xs text-blue-700">
                   <span className="font-medium">+ Invoice Amount to Deposit:</span>
-                  <span className="font-mono font-black text-emerald-700">
+                  <span className="font-mono font-black text-blue-700">
                     {formatMoney(invoiceAmount)}
                   </span>
                 </div>
 
                 <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
                   <span className="font-extrabold text-slate-800">Projected New Balance:</span>
-                  <span className="font-mono font-black text-emerald-700 text-sm">
+                  <span className="font-mono font-black text-blue-700 text-sm">
                     {formatMoney(newBalance)}
                   </span>
                 </div>

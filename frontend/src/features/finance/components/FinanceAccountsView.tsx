@@ -177,7 +177,7 @@ export function FinanceAccountsView() {
       ? (transactionsData as any).data.items
       : [];
     if (ledgerAccountFilter === 'ALL') return raw;
-    return raw.filter((t) => t.accountId === ledgerAccountFilter || t.toAccountId === ledgerAccountFilter);
+    return raw.filter((t: any) => t.accountId === ledgerAccountFilter || t.toAccountId === ledgerAccountFilter);
   }, [transactionsData, ledgerAccountFilter]);
 
   const transfersList: FinanceTransfer[] = useMemo(() => {
