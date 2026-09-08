@@ -59,6 +59,8 @@ const PERMISSION_GROUPS: {
       { key: 'coupons:read', label: 'View Coupons', desc: 'কুপন দেখতে পারবে' },
       { key: 'coupons:write', label: 'Manage Coupons', desc: 'কুপন তৈরি ও এডিট' },
       { key: 'analytics:read', label: 'View Analytics', desc: 'এনালিটিক্স ও নেট প্রফিট' },
+      { key: 'marketing:read', label: 'View Marketing', desc: 'পিক্সেল ও সেলস-বাই-সোর্স রিপোর্ট দেখা' },
+      { key: 'marketing:manage', label: 'Manage Marketing', desc: 'পিক্সেল কনফিগার, পেজ রুল ও অ্যাড স্পেন্ড এডিট' },
     ],
   },
   {

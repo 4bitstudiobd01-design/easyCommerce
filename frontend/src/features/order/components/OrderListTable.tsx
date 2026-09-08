@@ -68,6 +68,9 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
   const urlPaymentStatus = searchParams.get('paymentStatus');
   const urlCourier = searchParams.get('courier');
   const urlBranchId = searchParams.get('branchId');
+  const urlChannel = searchParams.get('channel');
+  const urlUtmSource = searchParams.get('utmSource');
+  const urlUtmCampaign = searchParams.get('utmCampaign');
   const urlDateRange = searchParams.get('dateRange');
   const urlSearch = searchParams.get('search') || '';
   const urlSortOrder = (searchParams.get('sortOrder') as 'ASC' | 'DESC') || 'DESC';
@@ -107,6 +110,9 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
     paymentStatus: urlPaymentStatus === 'ALL' ? undefined : urlPaymentStatus || undefined,
     courier: urlCourier === 'ALL' ? undefined : urlCourier || undefined,
     branchId: urlBranchId === 'ALL' ? undefined : urlBranchId || undefined,
+    channel: urlChannel || undefined,
+    utmSource: urlUtmSource || undefined,
+    utmCampaign: urlUtmCampaign || undefined,
     dateFrom,
     search: debouncedSearch || undefined,
     sortBy: 'createdAt',
@@ -257,6 +263,9 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
     urlDateRange && urlDateRange !== 'ALL'
       ? { key: 'dateRange', label: `Date: ${dateRangeLabels[urlDateRange] ?? urlDateRange}` }
       : null,
+    urlChannel ? { key: 'channel', label: `Channel: ${urlChannel.replace(/_/g, ' ')}` } : null,
+    urlUtmSource ? { key: 'utmSource', label: `Source: ${urlUtmSource}` } : null,
+    urlUtmCampaign ? { key: 'utmCampaign', label: `Campaign: ${urlUtmCampaign}` } : null,
     urlSearch ? { key: 'search', label: `Search: ${urlSearch}` } : null,
   ].filter((chip): chip is { key: string; label: string } => chip !== null);
 
@@ -688,6 +697,9 @@ export function OrderListTable({ onDispatchCourierClick, onCreateOrderClick }: O
                 paymentStatus: null,
                 courier: null,
                 branchId: null,
+                channel: null,
+                utmSource: null,
+                utmCampaign: null,
                 dateRange: null,
                 search: null,
               });

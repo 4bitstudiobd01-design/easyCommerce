@@ -6,6 +6,12 @@ import {
   TrafficSourceGroupBy,
 } from '../../tracking/services/get-traffic-sources.service';
 import { MarketingAdSpend, AdSpendDimensionEnum } from '../entities/marketing-ad-spend.entity';
+import { MarketingPixel } from '../entities/marketing-pixel.entity';
+import {
+  MarketingEventLog,
+  MarketingEventStatusEnum,
+  MarketingEventTransportEnum,
+} from '../entities/marketing-event-log.entity';
 
 export interface SourceSalesRow {
   dimension: TrafficSourceGroupBy;
@@ -22,6 +28,25 @@ export interface SourceSalesRow {
   cpa: number | null;
 }
 
+/**
+ * Store-wide server-side Purchase delivery health for the report window — one row
+ * per capiEnabled pixel. Not per-source (an event log row's utmSource is optional
+ * and unreliable to bucket), but per-pixel, so a merchant sees "Meta CAPI: 42
+ * delivered / 3 failed" alongside the source table.
+ */
+export interface PixelDeliveryHealth {
+  pixelId: string;
+  provider: string;
+  label: string | null;
+  purchaseSent: number;
+  purchaseFailed: number;
+}
+
+export interface SourceSalesReport {
+  rows: SourceSalesRow[];
+  deliveryHealth: PixelDeliveryHealth[];
+}
+
 const GROUP_BY_TO_DIMENSION: Record<TrafficSourceGroupBy, AdSpendDimensionEnum> = {
   channel: AdSpendDimensionEnum.CHANNEL,
   source: AdSpendDimensionEnum.SOURCE,
@@ -34,6 +59,10 @@ export class GetSourceSalesReportService {
     private readonly getTrafficSourcesService: GetTrafficSourcesService,
     @InjectRepository(MarketingAdSpend)
     private readonly adSpendRepository: Repository<MarketingAdSpend>,
+    @InjectRepository(MarketingPixel)
+    private readonly pixelRepository: Repository<MarketingPixel>,
+    @InjectRepository(MarketingEventLog)
+    private readonly eventLogRepository: Repository<MarketingEventLog>,
   ) {}
 
   /**
@@ -49,7 +78,7 @@ export class GetSourceSalesReportService {
     dateFrom: Date,
     dateTo: Date,
     groupBy: TrafficSourceGroupBy = 'channel',
-  ): Promise<SourceSalesRow[]> {
+  ): Promise<SourceSalesReport> {
     if (!tenantId || !storeId) {
       throw new BadRequestException('tenantId and storeId headers are required');
     }
@@ -89,7 +118,7 @@ export class GetSourceSalesReportService {
       }
     }
 
-    return trafficRows.map((row) => {
+    const rows: SourceSalesRow[] = trafficRows.map((row) => {
       const spendInfo = spendByValue.get(row.dimensionValue);
       const spend = spendInfo ? spendInfo.amount : 0;
       const roas = spend > 0 ? Math.round((row.revenue / spend) * 100) / 100 : null;
@@ -109,5 +138,56 @@ export class GetSourceSalesReportService {
         cpa,
       };
     });
+
+    const deliveryHealth = await this.buildDeliveryHealth(tenantId, storeId, dateFrom, dateTo);
+
+    return { rows, deliveryHealth };
+  }
+
+  /** Per-pixel server-side Purchase SENT/FAILED counts in the window. */
+  private async buildDeliveryHealth(
+    tenantId: string,
+    storeId: string,
+    dateFrom: Date,
+    dateTo: Date,
+  ): Promise<PixelDeliveryHealth[]> {
+    const pixels = await this.pixelRepository.find({
+      where: { tenantId, storeId, capiEnabled: true },
+      order: { provider: 'ASC', createdAt: 'ASC' },
+    });
+    if (pixels.length === 0) return [];
+
+    const raw = await this.eventLogRepository
+      .createQueryBuilder('log')
+      .select('log.pixelId', 'pixelId')
+      .addSelect('log.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .where('log.tenantId = :tenantId', { tenantId })
+      .andWhere('log.storeId = :storeId', { storeId })
+      .andWhere('log.transport = :transport', {
+        transport: MarketingEventTransportEnum.SERVER,
+      })
+      .andWhere('log.eventName = :eventName', { eventName: 'Purchase' })
+      .andWhere('log.createdAt >= :dateFrom', { dateFrom })
+      .andWhere('log.createdAt <= :dateTo', { dateTo })
+      .groupBy('log.pixelId')
+      .addGroupBy('log.status')
+      .getRawMany<{ pixelId: string; status: string; count: string }>();
+
+    const counts = new Map<string, { sent: number; failed: number }>();
+    for (const r of raw) {
+      const c = counts.get(r.pixelId) ?? { sent: 0, failed: 0 };
+      if (r.status === MarketingEventStatusEnum.SENT) c.sent += Number(r.count);
+      else c.failed += Number(r.count);
+      counts.set(r.pixelId, c);
+    }
+
+    return pixels.map((p) => ({
+      pixelId: p.id,
+      provider: p.provider,
+      label: p.label,
+      purchaseSent: counts.get(p.id)?.sent ?? 0,
+      purchaseFailed: counts.get(p.id)?.failed ?? 0,
+    }));
   }
 }

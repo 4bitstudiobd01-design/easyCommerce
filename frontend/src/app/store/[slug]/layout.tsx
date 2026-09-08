@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { PixelLoader } from '@/features/storefront/components/PixelLoader';
 
 interface Props {
   params: { slug: string };
@@ -71,6 +72,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default function StorefrontLayout({ children }: Props) {
-  return <>{children}</>;
+export default function StorefrontLayout({ params, children }: Props) {
+  return (
+    <>
+      <PixelLoader slug={params.slug} />
+      {children}
+    </>
+  );
 }

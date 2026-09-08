@@ -45,6 +45,8 @@ const PRESET_ROLES: {
       'coupons:read',
       'coupons:write',
       'analytics:read',
+      'marketing:read',
+      'marketing:manage',
     ],
   },
   {
@@ -63,7 +65,7 @@ const PRESET_ROLES: {
     id: 'CUSTOMER_SUPPORT',
     name: 'Customer Support (কাস্টমার সাপোর্ট)',
     description: 'কাস্টমার রিভিউ, কাস্টমার লিস্ট ও অর্ডার ভিউ এক্সেস',
-    permissions: ['orders:read', 'reviews:read', 'reviews:moderate', 'customers:read'],
+    permissions: ['orders:read', 'reviews:read', 'reviews:moderate', 'customers:read', 'marketing:read'],
   },
   {
     id: 'CUSTOM',
@@ -112,6 +114,8 @@ const PERMISSION_GROUPS: {
       { key: 'coupons:read', label: 'View Coupons', desc: 'ডিসকাউন্ট কুপন দেখতে পারবে' },
       { key: 'coupons:write', label: 'Manage Coupons', desc: 'নতুন কুপন তৈরি ও এডিট করতে পারবে' },
       { key: 'analytics:read', label: 'View Analytics', desc: 'সেলস ও প্রফিট মার্জিন এনালিটিক্স' },
+      { key: 'marketing:read', label: 'View Marketing', desc: 'পিক্সেল ও সেলস-বাই-সোর্স রিপোর্ট দেখতে পারবে' },
+      { key: 'marketing:manage', label: 'Manage Marketing', desc: 'পিক্সেল কনফিগার, পেজ রুল ও অ্যাড স্পেন্ড এডিট' },
     ],
   },
   {

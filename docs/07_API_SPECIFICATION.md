@@ -79,6 +79,10 @@
   }
   ```
 * `GET /v1/orders/:id` - Get order status & tracking
+* `GET /v1/orders` - Merchant order list. Query: `page`, `limit` (max 100), `search`,
+  `status`, `paymentStatus`, `courier`, `branchId`, `channel`, `utmSource`,
+  `utmCampaign`, `dateFrom`, `dateTo`, `sortBy`, `sortOrder`. The `channel` /
+  `utmSource` / `utmCampaign` filters back the Sales-by-Source report drill-down.
 * `POST /v1/admin/orders/:id/fulfill` - Trigger courier booking
 
 ### Payments — Merchant Dashboard (implemented)
@@ -133,9 +137,11 @@ Manage, Accountant/Fulfilment = none). Credential fields (`accessToken`, `apiSec
 `hasCredentials: boolean` flag is returned instead.
 
 **Dashboard**
-* `GET /v1/marketing/dashboard` - KPI cards (Connected Pixels, Active Pixels, Events
-  Today, Events Failed, Success Rate) + the provider integration list. Unchanged shape
-  minus the removed `trackingEvents` array.
+* `GET /v1/marketing/dashboard` - KPI cards only (`marketing:read`): **Connected
+  Pixels** `{count, total}` = CONNECTED vs all `MarketingPixel` rows; **Active Pixels**
+  = `CONNECTED && isActive`; **Events Today / Events Failed / Success Rate** from
+  `MarketingEventLog`. Store scope resolved server-side from the JWT + `X-Store-Id`
+  (no `X-Tenant-Id` needed). `integrations` returns `[]` (legacy, unused).
 
 **Pixels (multi-instance)**
 * `GET /v1/marketing/pixels` - List every configured pixel instance for the store.
@@ -177,9 +183,10 @@ Manage, Accountant/Fulfilment = none). Credential fields (`accessToken`, `apiSec
   * `409` if `label` collides with an existing pixel of the same provider in the store.
 * `GET /v1/marketing/pixels/:id` - One pixel with its page rules. `404` for another
   tenant's pixel (existence never leaked).
-* `PATCH /v1/marketing/pixels/:id` - Partial update (label, pixelId, credentials,
-  `capiEnabled`, `pageScopeMode`, `isActive`). Omitting `credentials` leaves the stored
-  secret untouched; sending `credentials: null` clears it.
+* `PUT /v1/marketing/pixels/:id` - Partial update (label, pixelId, credentials,
+  `capiEnabled`, `pageScopeMode`, `isActive`, `status`). Omitting `credentials` leaves
+  the stored secret untouched; `credentials: null` clears all; a single field sent as
+  `""` / `null` clears just that field (merged over the stored bag).
 * `DELETE /v1/marketing/pixels/:id` - Remove a pixel instance. Its `MarketingEventLog`
   history is retained with `pixelId` set null; its page rules cascade-delete.
 * `POST /v1/marketing/pixels/:id/test` - Fire a single simulated event through this
@@ -226,67 +233,61 @@ Manage, Accountant/Fulfilment = none). Credential fields (`accessToken`, `apiSec
   period.
   * Query: `groupBy` (`channel|source|campaign`), `dateRange`/`dateFrom`/`dateTo`,
     `page`, `limit`.
+  * Query: `groupBy` (`channel|source|campaign`), `dateFrom`/`dateTo`.
   ```json
   {
     "success": true,
     "data": {
-      "data": [{
+      "rows": [{
         "dimension": "source", "dimensionValue": "facebook",
         "sessions": 1240, "orders": 96, "revenue": 432000, "currency": "BDT",
         "conversionRate": 7.7,
         "spend": 90000, "roas": 4.8, "cpa": 937.5
       }],
-      "meta": { "page": 1, "limit": 20, "total": 6, "totalPages": 1 }
+      "deliveryHealth": [
+        { "pixelId": "uuid", "provider": "META", "label": "Main Meta Pixel",
+          "purchaseSent": 92, "purchaseFailed": 4 }
+      ]
     }
   }
   ```
   * `roas` / `cpa` are `null` when `spend` is 0 or no `MarketingAdSpend` row overlaps.
+  * `deliveryHealth` is one entry per `capiEnabled` pixel — the count of
+    `transport = SERVER` `Purchase` event-log rows in the window, `SENT` vs `FAILED`.
 * `GET /v1/marketing/ad-spend` - List the merchant's ad-spend entries.
   Query: `dimension`, `dateRange`/`dateFrom`/`dateTo`. `marketing:read`.
-* `PUT /v1/marketing/ad-spend` - Upsert one spend entry (`marketing:manage`).
+* `PUT /v1/marketing/ad-spend` - Upsert one spend entry (`marketing:manage`). Entries
+  are **per calendar month** — `periodStart` = 1st, `periodEnd` = last day. With no
+  `id`, an existing row for the same `(dimension, dimensionValue, exact period)` is
+  overwritten rather than duplicated, so re-saving a month edits it in place.
   ```json
-  { "dimension": "source", "dimensionValue": "facebook",
+  { "dimension": "SOURCE", "dimensionValue": "facebook",
     "periodStart": "2026-09-01", "periodEnd": "2026-09-30",
     "amount": 90000, "currency": "BDT", "note": "Eid campaign" }
   ```
 * `DELETE /v1/marketing/ad-spend/:id` - Remove one entry (`marketing:manage`).
 
 **Event log & attribution reporting**
-* `GET /v1/marketing/logs` - Paginated `MarketingEventLog` (newest first).
+* `GET /v1/marketing/logs` - Paginated `MarketingEventLog` (newest first),
+  `marketing:read`. Each row carries `pixelLabel` (resolved), `provider`, `eventName`,
+  `transport`, `status`, `httpStatus`, `errorMessage`, `orderRef`, `utmSource`,
+  `createdAt`.
   * Query: `page`, `limit` (max 100), `pixelId`, `provider`, `eventName`, `transport`
-    (`BROWSER|SERVER`), `status` (`SENT|FAILED`), `dateRange`, `dateFrom`, `dateTo`.
-* `GET /v1/marketing/attribution/orders` - "Which order came from which platform":
-  per-order rows joining `orders` (by id) to their `utmSource`/`channel` and the count
-  of successfully-delivered `Purchase` events per pixel.
-  * Query: `dateRange`/`dateFrom`/`dateTo`, `channel`, `utmSource`, `page`, `limit`.
-  ```json
-  {
-    "success": true,
-    "data": {
-      "data": [{
-        "orderId": "uuid", "orderRef": "EC-1042",
-        "grandTotal": 4500, "currency": "BDT",
-        "channel": "social", "utmSource": "facebook", "utmCampaign": "eid-2026",
-        "sessionId": "uuid",
-        "pixelDeliveries": [
-          { "pixelId": "uuid", "provider": "META", "label": "Main Meta Pixel", "purchaseSent": true },
-          { "pixelId": "uuid", "provider": "TIKTOK", "label": "TikTok Pixel", "purchaseSent": false }
-        ]
-      }],
-      "meta": { "page": 1, "limit": 20, "total": 128, "totalPages": 7 }
-    }
-  }
-  ```
-* `GET /v1/marketing/attribution/summary` - Channel/source-wise rollup: sessions,
-  orders, revenue, conversion rate, and Purchase-event delivery health per pixel.
-  Reuses the existing `storefront_sessions` ⨝ `orders` join (see `tracking` module's
-  `GetTrafficSourcesService`) plus `MarketingEventLog` delivery counts.
+    (`BROWSER|SERVER`), `status` (`SENT|FAILED`), `dateFrom`, `dateTo`.
+
+*(A dedicated `GET /v1/marketing/attribution/orders` per-order pixel-attribution table
+was folded into the Sales-by-Source drill-down (row → filtered order list) + the
+`deliveryHealth` strip. `GET /v1/marketing/attribution/summary` is likewise covered by
+`source-sales`. Revisit if order-level pixel attribution is explicitly requested.)*
 
 **Storefront (public, unauthenticated)**
 * `GET /v1/storefront/:slug/pixels` - The active pixels + their page rules for a store,
   **without** any credential material — consumed by the storefront pixel loader to
   decide which `<script>` tags to inject and which events to fire per page. `tenantId`
-  resolved server-side from `:slug`.
+  resolved server-side from `:slug`. Response:
+  `{ pixels: [{ id, provider, pixelId, pageScopeMode, pageRules[] }], eventConfig: { <EventName>: boolean } }`
+  — `eventConfig` is the store-wide master switch per standard event; a name missing
+  from the map means "on".
 * `POST /v1/marketing/events/ingest` - Public browser-event beacon (fires alongside the
   existing `POST /v1/tracking/visit`). Records a `MarketingEventLog` row with
   `transport = BROWSER` and, when `capiEnabled`, enqueues the server-side mirror.
@@ -297,16 +298,21 @@ Manage, Accountant/Fulfilment = none). Credential fields (`accessToken`, `apiSec
   ```
 
 **Server-side dispatch (internal)**
-* Not a public route. Two triggers feed it:
-  * `order.created` / `order.paid` domain events → `Purchase` server-side for every
-    `capiEnabled` pixel whose rules allow the checkout/thank-you page.
-  * the public `POST /v1/marketing/events/ingest` beacon → mirrors `PageView`,
-    `ViewContent`, `AddToCart`, `InitiateCheckout` server-side for `capiEnabled` pixels.
-* For each, the module decrypts credentials, picks the provider adapter (Meta CAPI /
-  TikTok Events API / GA4 Measurement Protocol / Google Ads), POSTs, and writes a
-  `MarketingEventLog` row with `transport = SERVER`, `httpStatus`, `errorMessage`.
-* `POST /v1/marketing/pixels/:id/test` also drives a real server-side dispatch when the
-  pixel has credentials, so a merchant can verify each provider connection.
+* Not a public route. Three triggers feed it:
+  * `CreateOrderService` enqueues a `Purchase` job on the `marketing-capi` BullMQ
+    queue after an order is saved (best-effort; a lost job never fails checkout).
+    `MarketingCapiProcessor` fans it to every `capiEnabled` pixel whose page rules
+    allow `/checkout/success`; 4 attempts with exponential backoff.
+  * the public `POST /v1/marketing/events/ingest` beacon → for `capiEnabled` pixels,
+    mirrors `PageView` / `ViewContent` / `AddToCart` / `InitiateCheckout`
+    server-side (fire-and-forget; a failure is a `FAILED` log row, no retry).
+  * `POST /v1/marketing/pixels/:id/test` → a real server round-trip when the pixel
+    has credentials, so a merchant can verify each provider connection.
+* For each, `DispatchServerEventService` decrypts credentials, checks the provider
+  adapter's `canDispatch`, POSTs (Meta CAPI / TikTok Events API / GA4 Measurement
+  Protocol / Google Ads — PII SHA-256 hashed first), and writes a `MarketingEventLog`
+  row with `transport = SERVER`, `status`, `httpStatus`, `errorMessage`, hashed
+  `payloadJson`. It never throws.
 
 ### Payment & Courier Webhooks
 * `POST /v1/webhooks/payments/bkash` - bKash callback listener

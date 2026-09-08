@@ -121,46 +121,8 @@ export class UpdateStoreDto {
   @MaxLength(160)
   metaDescription?: string;
 
-  // Marketing Pixels & Conversions API
-  @ApiProperty({ example: '123456789012345', required: false })
-  @IsOptional()
-  @IsString()
-  facebookPixelId?: string;
-
-  @ApiProperty({ example: 'EAAG...', required: false })
-  @IsOptional()
-  @IsString()
-  facebookCapiToken?: string;
-
-  @ApiProperty({ example: 'TEST12345', required: false })
-  @IsOptional()
-  @IsString()
-  facebookTestEventCode?: string;
-
-  @ApiProperty({ example: 'C1234567890', required: false })
-  @IsOptional()
-  @IsString()
-  tiktokPixelId?: string;
-
-  @ApiProperty({ example: 'GTM-XXXXXXX', required: false })
-  @IsOptional()
-  @IsString()
-  googleTagManagerId?: string;
-
-  @ApiProperty({ example: 'G-1234567890', required: false })
-  @IsOptional()
-  @IsString()
-  googleAnalyticsId?: string;
-
-  @ApiProperty({ example: 'snap_pixel_123', required: false })
-  @IsOptional()
-  @IsString()
-  snapchatPixelId?: string;
-
-  @ApiProperty({ example: 'pin_tag_456', required: false })
-  @IsOptional()
-  @IsString()
-  pinterestTagId?: string;
+  // Marketing pixels are now managed via /v1/marketing/pixels (multi-instance,
+  // per-page rules, encrypted CAPI credentials) — no longer editable on the store.
 
   @ApiProperty({ example: '#2563eb', required: false })
   @IsOptional()

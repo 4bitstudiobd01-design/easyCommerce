@@ -319,7 +319,7 @@ export const orderApi = createApi({
       },
       transformResponse: (response: { data: PublicOrderTracking[] }) => response.data,
     }),
-    getMerchantOrders: builder.query<{ data: Order[]; meta: any }, { page?: number; limit?: number; status?: string; paymentStatus?: string; courier?: string; branchId?: string; dateFrom?: string; dateTo?: string; search?: string; sortBy?: string; sortOrder?: string; } | void>({
+    getMerchantOrders: builder.query<{ data: Order[]; meta: any }, { page?: number; limit?: number; status?: string; paymentStatus?: string; courier?: string; branchId?: string; channel?: string; utmSource?: string; utmCampaign?: string; dateFrom?: string; dateTo?: string; search?: string; sortBy?: string; sortOrder?: string; } | void>({
       query: (params) => ({
         url: '',
         params: params || {},

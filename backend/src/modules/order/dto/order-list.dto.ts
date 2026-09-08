@@ -44,6 +44,21 @@ export class OrderListDto {
   @IsUUID()
   branchId?: string;
 
+  @ApiPropertyOptional({ description: 'Filter by attribution channel bucket (e.g. social, paid_search, direct)' })
+  @IsOptional()
+  @IsString()
+  channel?: string;
+
+  @ApiPropertyOptional({ description: 'Filter by UTM source (e.g. facebook, google)' })
+  @IsOptional()
+  @IsString()
+  utmSource?: string;
+
+  @ApiPropertyOptional({ description: 'Filter by UTM campaign' })
+  @IsOptional()
+  @IsString()
+  utmCampaign?: string;
+
   @ApiPropertyOptional({ description: 'Start date for filtering orders (ISO string)' })
   @IsOptional()
   @IsString()

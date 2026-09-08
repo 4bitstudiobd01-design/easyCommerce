@@ -74,8 +74,10 @@
   (home/product/collection/cart/checkout/thank-you/…) **and** URL glob pattern, with
   include/exclude rules. Store-wide standard-event master switches (PageView,
   ViewContent, AddToCart, InitiateCheckout, Purchase). Browser + server-side (CAPI)
-  event dispatch with an append-only event log. See `docs/06` §3.9b and `docs/07`
-  "Marketing — Pixels, Tracking & Attribution".
+  event dispatch with an append-only, filterable event log. Managed entirely via
+  `/v1/marketing/pixels*` — the former flat `stores.*PixelId` columns have been
+  dropped. See `docs/06` §3.9b, `docs/07` "Marketing — Pixels, Tracking &
+  Attribution", and `docs/PIXEL_AND_MARKETING_WORKFLOW.md` for the build log.
 * **MKT-003 Order Attribution & Sales-by-Source**: "Which order came from which
   platform" — a channel / UTM-source / UTM-campaign breakdown of sessions, orders,
   revenue and conversion rate (joining `storefront_sessions` to `orders` by exact

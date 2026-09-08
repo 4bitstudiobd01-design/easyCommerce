@@ -6,7 +6,6 @@ import { useGetPublicStoreProductsQuery } from '@/features/storefront/api/storef
 import { StorefrontNavbar } from '@/features/storefront/components/StorefrontNavbar';
 import { ProductCard } from '@/features/storefront/components/ProductCard';
 import { CartDrawer } from '@/features/storefront/components/CartDrawer';
-import { StorefrontPixelTracker } from '@/features/storefront/components/StorefrontPixelTracker';
 import { recordStorefrontVisit } from '@/features/storefront/utils/attribution';
 import { JsonLdScript } from '@/features/seo/components/JsonLdScript';
 import { useGetStoreSeoQuery } from '@/features/seo/api/seoApi';
@@ -129,11 +128,6 @@ export default function StorefrontPage() {
     return (
       <>
         {storeSeo?.jsonLdSchema && <JsonLdScript schema={storeSeo.jsonLdSchema} id="storefront-jsonld" />}
-        <StorefrontPixelTracker
-          facebookPixelId={(store as any).facebookPixelId}
-          tiktokPixelId={(store as any).tiktokPixelId}
-          googleTagManagerId={(store as any).googleTagManagerId}
-        />
         <CartDrawer primaryColor={primaryColor} />
         <LuxuryFashionTheme
           storeName={store.name}
@@ -152,11 +146,6 @@ export default function StorefrontPage() {
     return (
       <>
         {storeSeo?.jsonLdSchema && <JsonLdScript schema={storeSeo.jsonLdSchema} id="storefront-jsonld" />}
-        <StorefrontPixelTracker
-          facebookPixelId={(store as any).facebookPixelId}
-          tiktokPixelId={(store as any).tiktokPixelId}
-          googleTagManagerId={(store as any).googleTagManagerId}
-        />
         <CartDrawer primaryColor={primaryColor} />
         <TechHubTheme
           storeName={store.name}
@@ -175,11 +164,6 @@ export default function StorefrontPage() {
     return (
       <>
         {storeSeo?.jsonLdSchema && <JsonLdScript schema={storeSeo.jsonLdSchema} id="storefront-jsonld" />}
-        <StorefrontPixelTracker
-          facebookPixelId={(store as any).facebookPixelId}
-          tiktokPixelId={(store as any).tiktokPixelId}
-          googleTagManagerId={(store as any).googleTagManagerId}
-        />
         <CartDrawer primaryColor={primaryColor} />
         <OrganicGroceryTheme
           storeName={store.name}
@@ -198,11 +182,6 @@ export default function StorefrontPage() {
     return (
       <>
         {storeSeo?.jsonLdSchema && <JsonLdScript schema={storeSeo.jsonLdSchema} id="storefront-jsonld" />}
-        <StorefrontPixelTracker
-          facebookPixelId={(store as any).facebookPixelId}
-          tiktokPixelId={(store as any).tiktokPixelId}
-          googleTagManagerId={(store as any).googleTagManagerId}
-        />
         <CartDrawer primaryColor={primaryColor} />
         <MinimalDarkTheme
           storeName={store.name}
@@ -223,11 +202,6 @@ export default function StorefrontPage() {
       {storeSeo?.jsonLdSchema && (
         <JsonLdScript schema={storeSeo.jsonLdSchema} id="storefront-jsonld" />
       )}
-      <StorefrontPixelTracker
-        facebookPixelId={(store as any).facebookPixelId}
-        tiktokPixelId={(store as any).tiktokPixelId}
-        googleTagManagerId={(store as any).googleTagManagerId}
-      />
       <CartDrawer primaryColor={primaryColor} />
       <DefaultStorefrontTheme
         storeName={store.name}

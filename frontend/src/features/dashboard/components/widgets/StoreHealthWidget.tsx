@@ -2,12 +2,14 @@ import React from 'react';
 import { WidgetCard } from '@/features/admin/components/core/WidgetCard';
 import { HeartPulse, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { useGetMyStoreQuery } from '@/features/tenant/api/tenantApi';
+import { useGetPixelsQuery } from '@/features/marketing/api/marketingApi';
 
 export function StoreHealthWidget() {
   const { data: store, isLoading } = useGetMyStoreQuery();
+  const { data: pixels } = useGetPixelsQuery();
 
   const hasCourier = Boolean(store?.steadfastApiKey || store?.pathaoClientId);
-  const hasPixel = Boolean(store?.facebookPixelId || store?.tiktokPixelId || store?.googleTagManagerId);
+  const hasPixel = (pixels ?? []).some((p) => p.status === 'CONNECTED' && p.isActive);
 
   const healthItems = [
     { label: 'Store Profile', status: store ? 'Set up' : 'Not set up', isGood: Boolean(store) },

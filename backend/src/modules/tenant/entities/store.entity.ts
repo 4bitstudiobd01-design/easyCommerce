@@ -99,30 +99,11 @@ export class StoreEntity {
   @Column({ type: 'text', nullable: true })
   metaDescription?: string;
 
-  // Marketing Pixels & Conversions API (CAPI)
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  facebookPixelId?: string;
-
-  @Column({ type: 'text', nullable: true })
-  facebookCapiToken?: string;
-
-  @Column({ type: 'varchar', length: 100, nullable: true })
-  facebookTestEventCode?: string;
-
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  tiktokPixelId?: string;
-
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  googleTagManagerId?: string;
-
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  googleAnalyticsId?: string;
-
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  snapchatPixelId?: string;
-
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  pinterestTagId?: string;
+  // Marketing pixels moved to the `marketing_pixels` table (multi-instance,
+  // per-page rules, encrypted CAPI credentials). The former flat columns
+  // (facebookPixelId / facebookCapiToken / facebookTestEventCode / tiktokPixelId /
+  // googleTagManagerId / googleAnalyticsId / snapchatPixelId / pinterestTagId)
+  // were data-migrated and dropped in DropLegacyStorePixelColumns.
 
   // Visual Theme Styling & Theme System
   @Column({ type: 'varchar', length: 100, default: 'DEFAULT_MODERN' })

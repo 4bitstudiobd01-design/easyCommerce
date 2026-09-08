@@ -44,11 +44,6 @@ export interface Store {
   primaryColor?: string;
   fontFamily?: string;
   heroBanners?: HeroBanner[];
-  facebookPixelId?: string;
-  facebookCapiToken?: string;
-  facebookTestEventCode?: string;
-  tiktokPixelId?: string;
-  googleTagManagerId?: string;
   currency: string;
   steadfastApiKey?: string;
   steadfastSecretKey?: string;
@@ -240,11 +235,6 @@ export interface UpdateStoreRequest {
   primaryColor?: string;
   fontFamily?: string;
   heroBanners?: HeroBanner[];
-  facebookPixelId?: string;
-  facebookCapiToken?: string;
-  facebookTestEventCode?: string;
-  tiktokPixelId?: string;
-  googleTagManagerId?: string;
   steadfastApiKey?: string;
   steadfastSecretKey?: string;
   pathaoClientId?: string;

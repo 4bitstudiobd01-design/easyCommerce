@@ -16,6 +16,7 @@ import { normalizeChannel } from '../../../common/utils/normalize-channel.util';
 import { LeadEntity, LeadStageEnum } from '../../customer/entities/lead.entity';
 import { GenerateOrderNumberService } from './generate-order-number.service';
 import { AbandonedCartService } from './abandoned-cart.service';
+import { MarketingCapiProducer } from '../../../common/marketing/marketing-capi.producer';
 
 @Injectable()
 export class CreateOrderService {
@@ -38,6 +39,7 @@ export class CreateOrderService {
     private readonly generateOrderNumberService: GenerateOrderNumberService,
     private readonly recordCustomerActivityService: RecordCustomerActivityService,
     private readonly abandonedCartService: AbandonedCartService,
+    private readonly marketingCapiProducer: MarketingCapiProducer,
   ) {}
 
   async execute(dto: CreateOrderDto): Promise<OrderEntity> {
@@ -282,6 +284,37 @@ export class CreateOrderService {
       }
     } catch (leadErr) {
       // Non-blocking lead conversion
+    }
+
+    // Hand the marketing module a Purchase conversion for server-side (CAPI)
+    // dispatch. Enqueue-only + best-effort — a lost conversion event must never
+    // fail checkout.
+    try {
+      await this.marketingCapiProducer.enqueueOrderConversion({
+        type: 'ORDER_CONVERSION',
+        tenantId,
+        storeId: store.id,
+        orderId: savedOrder.id,
+        orderRef: `#${savedOrder.orderNumber}`,
+        eventName: 'Purchase',
+        value: Number(savedOrder.grandTotal),
+        currency: 'BDT',
+        contentIds: (savedOrder.items ?? [])
+          .map((it) => it.variantId || it.productId || undefined)
+          .filter((x): x is string => Boolean(x)),
+        numItems: savedOrder.items?.length ?? 1,
+        sessionId: savedOrder.sessionId ?? undefined,
+        user: {
+          email: savedOrder.customerEmail,
+          phone: savedOrder.customerPhone,
+          firstName: savedOrder.customerName?.split(' ')[0],
+          lastName: savedOrder.customerName?.split(' ').slice(1).join(' ') || undefined,
+          city: savedOrder.city,
+          country: 'BD',
+        },
+      });
+    } catch (capiErr) {
+      // Non-blocking marketing dispatch
     }
 
     return savedOrder;

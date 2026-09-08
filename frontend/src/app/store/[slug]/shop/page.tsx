@@ -4,7 +4,6 @@ import React, { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useGetPublicStoreProductsQuery } from '@/features/storefront/api/storefrontApi';
 import { CartDrawer } from '@/features/storefront/components/CartDrawer';
-import { StorefrontPixelTracker } from '@/features/storefront/components/StorefrontPixelTracker';
 import { JsonLdScript } from '@/features/seo/components/JsonLdScript';
 import { useGetStoreSeoQuery } from '@/features/seo/api/seoApi';
 import { addToCart } from '@/features/storefront/slices/cartSlice';
@@ -120,11 +119,6 @@ export default function ShopPage() {
       {storeSeo?.jsonLdSchema && (
         <JsonLdScript schema={storeSeo.jsonLdSchema} id="storefront-shop-jsonld" />
       )}
-      <StorefrontPixelTracker
-        facebookPixelId={(store as any).facebookPixelId}
-        tiktokPixelId={(store as any).tiktokPixelId}
-        googleTagManagerId={(store as any).googleTagManagerId}
-      />
       <CartDrawer primaryColor={primaryColor} />
       <React.Suspense fallback={<div className="min-h-screen bg-slate-50" />}>
         <ShopEaseShopView

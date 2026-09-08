@@ -11,7 +11,6 @@ import { ShopEaseNavbar } from '@/features/storefront/components/ShopEaseNavbar'
 import { ShopEaseFooter } from '@/features/storefront/components/ShopEaseFooter';
 import { CartDrawer } from '@/features/storefront/components/CartDrawer';
 import { StorefrontMobileBottomNav } from '@/features/storefront/components/StorefrontMobileBottomNav';
-import { StorefrontPixelTracker } from '@/features/storefront/components/StorefrontPixelTracker';
 import { SHOPEASE_CATEGORIES } from '@/features/storefront/data/defaultStorefrontData';
 import { ArrowLeft, ArrowRight, Sparkles, Store } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -137,11 +136,6 @@ export default function AllCategoriesPage() {
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 flex flex-col">
-      <StorefrontPixelTracker
-        facebookPixelId={(store as any).facebookPixelId}
-        tiktokPixelId={(store as any).tiktokPixelId}
-        googleTagManagerId={(store as any).googleTagManagerId}
-      />
       <CartDrawer primaryColor={primaryColor} />
 
       {/* NAVBAR */}

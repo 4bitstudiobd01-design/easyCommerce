@@ -344,17 +344,17 @@ rows by id only.
   successfully deliver to Meta for orders attributed to `utm_source=facebook`" — it
   augments, and never replaces, the two stores above.
 
-#### Store-entity pixel fields — migration note
+#### Store-entity pixel fields — REMOVED
 
 `stores.facebookPixelId`, `facebookCapiToken`, `facebookTestEventCode`,
 `tiktokPixelId`, `googleTagManagerId`, `googleAnalyticsId`, `snapchatPixelId`,
-`pinterestTagId` are **superseded** by `MarketingPixel` rows and become **read-only
-legacy**. A one-time data migration copies any non-null value into an equivalent
-`MarketingPixel` row (`label = "Imported <provider>"`, `pageScopeMode = ALL`,
-`status = CONNECTED`). The columns are retained (not dropped) for one release as a
-fallback/rollback path, then removed in a later migration. `MarketingPixel` is the
-single source of truth from this design onward — the storefront pixel loader reads
-**only** from `MarketingPixel`.
+`pinterestTagId` were the pre-redesign flat pixel config. A one-time backfill
+(`scripts/backfill-marketing-pixels.ts`) copied every non-null value into an
+equivalent `MarketingPixel` row (`label = "Imported <provider>"`,
+`pageScopeMode = ALL`, `status = CONNECTED`), after which
+`DropLegacyStorePixelColumns1788905900000` **dropped all eight columns**.
+`MarketingPixel` is the single source of truth — the storefront pixel loader reads
+**only** the public `GET /v1/storefront/:slug/pixels` (which reads `MarketingPixel`).
 
 ---
 
