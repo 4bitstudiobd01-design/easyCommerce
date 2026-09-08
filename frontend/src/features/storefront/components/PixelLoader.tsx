@@ -42,20 +42,38 @@ function eventEnabled(cfg: Record<string, boolean>, name: string): boolean {
   return cfg[name] !== false; // missing = on
 }
 
-/** Fire a provider's browser pixel for one event. */
-function fireBrowserEvent(pixel: StorefrontPixel, eventName: string) {
+/**
+ * Fire a provider's browser pixel for one event. Retries a few times because the
+ * provider base <script> may not have defined fbq/ttq/gtag yet on first paint.
+ */
+function fireBrowserEvent(pixel: StorefrontPixel, eventName: string, attempt = 0) {
   const w = window as any;
+  const ready =
+    (pixel.provider === 'META' && typeof w.fbq === 'function') ||
+    (pixel.provider === 'TIKTOK' && w.ttq && typeof w.ttq.track === 'function') ||
+    ((pixel.provider === 'GOOGLE_ANALYTICS' || pixel.provider === 'GOOGLE_ADS') &&
+      typeof w.gtag === 'function');
+
+  if (!ready) {
+    if (attempt < 6) setTimeout(() => fireBrowserEvent(pixel, eventName, attempt + 1), 500);
+    return;
+  }
+
   try {
-    if (pixel.provider === 'META' && w.fbq) {
-      w.fbq('trackSingle', pixel.pixelId, eventName);
-    } else if (pixel.provider === 'TIKTOK' && w.ttq) {
+    if (pixel.provider === 'META') {
+      // The base script already fired a plain PageView across every init'd Meta
+      // pixel; only the page-type events need a per-pixel trackSingle here.
+      if (eventName !== 'PageView') {
+        w.fbq('trackSingle', pixel.pixelId, eventName);
+      }
+    } else if (pixel.provider === 'TIKTOK') {
       if (eventName === 'PageView') w.ttq.page();
       else w.ttq.track(eventName);
-    } else if (pixel.provider === 'GOOGLE_ANALYTICS' && typeof w.gtag === 'function') {
+    } else if (pixel.provider === 'GOOGLE_ANALYTICS') {
       w.gtag('event', eventName === 'PageView' ? 'page_view' : eventName, {
         send_to: pixel.pixelId,
       });
-    } else if (pixel.provider === 'GOOGLE_ADS' && typeof w.gtag === 'function') {
+    } else if (pixel.provider === 'GOOGLE_ADS') {
       w.gtag('event', 'conversion', { send_to: pixel.pixelId });
     }
   } catch {
@@ -167,20 +185,24 @@ export function PixelLoader({ slug }: PixelLoaderProps) {
 
   return (
     <>
-      {providersToLoad.has('META') &&
-        activeForPage
-          .filter((p) => p.provider === 'META')
-          .slice(0, 1)
-          .map((p) => (
-            <Script
-              key="fb-pixel-base"
-              id="fb-pixel-base"
-              strategy="afterInteractive"
-              dangerouslySetInnerHTML={{
-                __html: `!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${p.pixelId}');`,
-              }}
-            />
-          ))}
+      {providersToLoad.has('META') && (
+        <Script
+          key="fb-pixel-base"
+          id="fb-pixel-base"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html:
+              `!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');` +
+              activeForPage
+                .filter((p) => p.provider === 'META')
+                .map((p) => `fbq('init','${p.pixelId}');`)
+                .join('') +
+              // A plain track after init so Meta Pixel Helper detects the pixel(s);
+              // per-pixel PageView is also fired from fireBrowserEvent via trackSingle.
+              `fbq('track','PageView');`,
+          }}
+        />
+      )}
 
       {providersToLoad.has('TIKTOK') &&
         activeForPage
