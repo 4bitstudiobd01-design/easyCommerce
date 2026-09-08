@@ -6,8 +6,18 @@ interface Props {
   children: React.ReactNode;
 }
 
+/**
+ * Absolute base for resolving relative OG / Twitter image URLs. Prefers an
+ * explicit site URL, falls back to localhost in dev so Next stops warning.
+ */
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  process.env.NEXT_PUBLIC_APP_URL ||
+  'http://localhost:3000';
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const slug = params.slug;
+  const metadataBase = new URL(SITE_URL);
 
   try {
     const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://easycoerzserver.vercel.app/api/v1';
@@ -20,6 +30,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       const seo = json.data || json;
 
       return {
+        metadataBase,
         title: seo.metaTitle || `${seo.storeName} | Official Storefront`,
         description:
           seo.metaDescription ||
@@ -67,6 +78,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   return {
+    metadataBase,
     title: `${slug} | Storefront`,
     description: `Official online storefront on BitCommerce.`,
   };

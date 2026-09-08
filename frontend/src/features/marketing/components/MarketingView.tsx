@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useGetMarketingDashboardQuery } from '../api/marketingApi';
 import { MarketingKpiCards } from './MarketingKpiCards';
 import { PixelInstanceList } from './PixelInstanceList';
@@ -9,8 +10,27 @@ import { SalesBySourceTab } from './SalesBySourceTab';
 type MarketingTab = 'pixels' | 'sales-by-source';
 
 export function MarketingView() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { data, isLoading } = useGetMarketingDashboardQuery();
-  const [activeTab, setActiveTab] = useState<MarketingTab>('pixels');
+
+  const tabParam = searchParams.get('tab');
+  const activeTab: MarketingTab =
+    tabParam === 'sales-by-source' || tabParam === 'sources' || tabParam === 'sales_by_source'
+      ? 'sales-by-source'
+      : 'pixels';
+
+  const handleTabChange = (tab: MarketingTab) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (tab === 'pixels') {
+      params.delete('tab');
+    } else {
+      params.set('tab', tab);
+    }
+    const query = params.toString();
+    router.push(`${pathname}${query ? `?${query}` : ''}`, { scroll: false });
+  };
 
   return (
     <div className="flex flex-col h-full bg-white">
@@ -26,7 +46,7 @@ export function MarketingView() {
       <div className="bg-white border-b border-slate-200 px-8 flex items-center gap-8 text-[13px] font-bold">
         <button
           type="button"
-          onClick={() => setActiveTab('pixels')}
+          onClick={() => handleTabChange('pixels')}
           className={`py-3 -mb-[1px] border-b-2 transition-colors ${
             activeTab === 'pixels'
               ? 'border-blue-600 text-blue-600'
@@ -37,7 +57,7 @@ export function MarketingView() {
         </button>
         <button
           type="button"
-          onClick={() => setActiveTab('sales-by-source')}
+          onClick={() => handleTabChange('sales-by-source')}
           className={`py-3 -mb-[1px] border-b-2 transition-colors ${
             activeTab === 'sales-by-source'
               ? 'border-blue-600 text-blue-600'
