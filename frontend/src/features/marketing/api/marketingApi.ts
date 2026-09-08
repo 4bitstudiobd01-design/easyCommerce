@@ -29,16 +29,6 @@ export interface ConnectedIntegration {
   lastEventAt?: string;
 }
 
-export interface TrackingEvent {
-  id: string;
-  eventName: string;
-  description: string;
-  isActive: boolean;
-  eventsToday: number;
-  lastTriggeredAt: string;
-  successRate: number;
-}
-
 export interface MarketingDashboardResponse {
   kpis: {
     connectedPixels: MarketingKpi;
@@ -48,42 +38,17 @@ export interface MarketingDashboardResponse {
     successRate: MarketingKpi;
   };
   integrations: ConnectedIntegration[];
-  trackingEvents: TrackingEvent[];
-}
-
-export interface EventLogItem {
-  id: string;
-  eventName: string;
-  source: string;
-  orderRef: string;
-  status: 'SENT' | 'FAILED';
-  payloadJson?: Record<string, any>;
-  createdAt: string;
-}
-
-export interface EventLogsResponse {
-  data: EventLogItem[];
-  total: number;
 }
 
 export const marketingApi = createApi({
   reducerPath: 'marketingApi',
   baseQuery: createBaseQueryWithReauth(API_ROOT),
-  tagTypes: ['MarketingDashboard', 'MarketingLogs'],
+  tagTypes: ['MarketingDashboard'],
   endpoints: (builder) => ({
     getMarketingDashboard: builder.query<MarketingDashboardResponse, void>({
       query: () => '/marketing/dashboard',
       providesTags: ['MarketingDashboard'],
       transformResponse: (response: unknown) => unwrap<MarketingDashboardResponse>(response),
-    }),
-
-    getMarketingLogs: builder.query<EventLogsResponse, { limit?: number; offset?: number }>({
-      query: (params) => ({
-        url: '/marketing/logs',
-        params,
-      }),
-      providesTags: ['MarketingLogs'],
-      transformResponse: (response: unknown) => unwrap<EventLogsResponse>(response),
     }),
 
     connectPixel: builder.mutation<
@@ -95,7 +60,7 @@ export const marketingApi = createApi({
         method: 'POST',
         body,
       }),
-      invalidatesTags: ['MarketingDashboard', 'MarketingLogs'],
+      invalidatesTags: ['MarketingDashboard'],
     }),
 
     disconnectPixel: builder.mutation<{ message: string }, string>({
@@ -103,46 +68,13 @@ export const marketingApi = createApi({
         url: `/marketing/pixels/${provider}/disconnect`,
         method: 'DELETE',
       }),
-      invalidatesTags: ['MarketingDashboard', 'MarketingLogs'],
-    }),
-
-    toggleEvent: builder.mutation<void, { eventName: string; isActive: boolean }>({
-      query: ({ eventName, isActive }) => ({
-        url: `/marketing/events/${eventName}`,
-        method: 'PATCH',
-        body: { isActive },
-      }),
       invalidatesTags: ['MarketingDashboard'],
-    }),
-
-    testEvent: builder.mutation<
-      { message: string; logs?: EventLogItem[] },
-      { eventName: string; provider?: string; orderRef?: string; customPayload?: any }
-    >({
-      query: (body) => ({
-        url: '/marketing/events/test',
-        method: 'POST',
-        body,
-      }),
-      invalidatesTags: ['MarketingDashboard', 'MarketingLogs'],
-    }),
-
-    testAllPixels: builder.mutation<{ message: string; logs?: EventLogItem[] }, void>({
-      query: () => ({
-        url: '/marketing/events/test-all',
-        method: 'POST',
-      }),
-      invalidatesTags: ['MarketingDashboard', 'MarketingLogs'],
     }),
   }),
 });
 
 export const {
   useGetMarketingDashboardQuery,
-  useGetMarketingLogsQuery,
   useConnectPixelMutation,
   useDisconnectPixelMutation,
-  useToggleEventMutation,
-  useTestEventMutation,
-  useTestAllPixelsMutation,
 } = marketingApi;

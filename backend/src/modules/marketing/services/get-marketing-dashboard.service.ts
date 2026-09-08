@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThanOrEqual } from 'typeorm';
 import { MarketingPixel, MarketingPixelStatusEnum, MarketingProviderEnum } from '../entities/marketing-pixel.entity';
-import { MarketingEventConfig, MarketingEventNameEnum } from '../entities/marketing-event-config.entity';
 import { MarketingEventLog, MarketingEventStatusEnum } from '../entities/marketing-event-log.entity';
 
 @Injectable()
@@ -10,8 +9,6 @@ export class GetMarketingDashboardService {
   constructor(
     @InjectRepository(MarketingPixel)
     private readonly pixelRepository: Repository<MarketingPixel>,
-    @InjectRepository(MarketingEventConfig)
-    private readonly eventConfigRepository: Repository<MarketingEventConfig>,
     @InjectRepository(MarketingEventLog)
     private readonly eventLogRepository: Repository<MarketingEventLog>,
   ) {}
@@ -30,12 +27,7 @@ export class GetMarketingDashboardService {
         where: { tenantId, storeId },
       });
 
-      // 2. Fetch real event configs from DB
-      const dbConfigs = await this.eventConfigRepository.find({
-        where: { tenantId, storeId },
-      });
-
-      // 3. Count real logs today
+      // 2. Count real logs today
       const totalEventsToday = await this.eventLogRepository.count({
         where: {
           tenantId,
@@ -76,7 +68,7 @@ export class GetMarketingDashboardService {
         },
       };
 
-      // 4. Map real integrations
+      // 3. Map real integrations
       const integrations = Object.values(MarketingProviderEnum).map((provider) => {
         const found = dbPixels.find((p) => p.provider === provider);
         const meta = providerMeta[provider];
@@ -101,46 +93,6 @@ export class GetMarketingDashboardService {
           description: meta.description,
         };
       });
-
-      // 5. Map standard events with real DB configs and logs
-      const standardEvents = [
-        { name: MarketingEventNameEnum.PageView, desc: 'Page or product viewed' },
-        { name: MarketingEventNameEnum.ViewContent, desc: 'Product detail viewed' },
-        { name: MarketingEventNameEnum.AddToCart, desc: 'Product added to cart' },
-        { name: MarketingEventNameEnum.InitiateCheckout, desc: 'Checkout started' },
-        { name: MarketingEventNameEnum.Purchase, desc: 'Order completed' },
-      ];
-
-      const trackingEvents = await Promise.all(
-        standardEvents.map(async (evt, idx) => {
-          const config = dbConfigs.find((c) => c.eventName === evt.name);
-          const isActive = config ? config.isActive : true;
-
-          const eventCountToday = await this.eventLogRepository.count({
-            where: {
-              tenantId,
-              storeId,
-              eventName: evt.name,
-              createdAt: MoreThanOrEqual(todayStart),
-            },
-          });
-
-          const lastLog = await this.eventLogRepository.findOne({
-            where: { tenantId, storeId, eventName: evt.name },
-            order: { createdAt: 'DESC' },
-          });
-
-          return {
-            id: `evt_${idx + 1}`,
-            eventName: evt.name,
-            description: evt.desc,
-            isActive,
-            eventsToday: eventCountToday,
-            lastTriggeredAt: lastLog ? lastLog.createdAt.toISOString() : undefined,
-            successRate: 100,
-          };
-        }),
-      );
 
       const successRate = totalEventsToday > 0
         ? Number((((totalEventsToday - failedEventsToday) / totalEventsToday) * 100).toFixed(1))
@@ -180,7 +132,6 @@ export class GetMarketingDashboardService {
           },
         },
         integrations,
-        trackingEvents,
       };
     } catch {
       return this.getEmptyDashboard();
@@ -225,13 +176,6 @@ export class GetMarketingDashboardService {
           status: 'DISCONNECTED' as const,
           description: 'Track TikTok ad conversions and build custom audiences.',
         },
-      ],
-      trackingEvents: [
-        { id: 'e1', eventName: 'PageView', description: 'Page or product viewed', isActive: true, eventsToday: 0, successRate: 100 },
-        { id: 'e2', eventName: 'ViewContent', description: 'Product detail viewed', isActive: true, eventsToday: 0, successRate: 100 },
-        { id: 'e3', eventName: 'AddToCart', description: 'Product added to cart', isActive: true, eventsToday: 0, successRate: 100 },
-        { id: 'e4', eventName: 'InitiateCheckout', description: 'Checkout started', isActive: true, eventsToday: 0, successRate: 100 },
-        { id: 'e5', eventName: 'Purchase', description: 'Order completed', isActive: true, eventsToday: 0, successRate: 100 },
       ],
     };
   }

@@ -1,20 +1,18 @@
 import React from 'react';
 import { ConnectedIntegration } from '../api/marketingApi';
-import { Settings, Play, MoreHorizontal } from 'lucide-react';
+import { Settings, MoreHorizontal } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 
 interface ConnectedIntegrationsProps {
   integrations?: ConnectedIntegration[];
   isLoading?: boolean;
   onConnect?: (integration: ConnectedIntegration) => void;
-  onTest?: (integration: ConnectedIntegration) => void;
 }
 
 export function ConnectedIntegrations({
   integrations,
   isLoading,
   onConnect,
-  onTest,
 }: ConnectedIntegrationsProps) {
   if (isLoading || !integrations) {
     return (
@@ -131,14 +129,6 @@ export function ConnectedIntegrations({
                   >
                     <Settings className="w-3.5 h-3.5" />
                     Configure
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onTest && onTest(integration)}
-                    className="flex-1 h-8 px-3 rounded-lg border border-slate-200 text-slate-700 font-bold text-[11px] hover:bg-slate-50 transition-colors bg-white flex items-center justify-center gap-1.5"
-                  >
-                    <Play className="w-3.5 h-3.5" />
-                    Test Events
                   </button>
                   <button
                     type="button"
