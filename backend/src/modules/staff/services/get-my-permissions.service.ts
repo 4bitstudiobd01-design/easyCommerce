@@ -18,6 +18,8 @@ const ALL_PERMISSIONS: StaffPermissionType[] = [
   'coupons:read',
   'coupons:write',
   'analytics:read',
+  'marketing:read',
+  'marketing:manage',
   'settings:read',
   'settings:write',
   'staff:manage',

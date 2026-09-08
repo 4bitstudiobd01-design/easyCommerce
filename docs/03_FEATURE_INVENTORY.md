@@ -68,7 +68,20 @@
 * **SHP-003 Shipping Rules**: Flat rate, weight-based, location-based (Inside Dhaka / Outside Dhaka).
 
 ### 9. Marketing & Analytics Module
-* **MKT-001 Tracking & Pixels**: Facebook Pixel & Conversion API (CAPI), Google Analytics 4, TikTok Pixel.
+* **MKT-001 Tracking & Pixels**: Multi-instance pixel management (same provider addable
+  more than once) for Meta Pixel + Conversions API (CAPI), Google Analytics 4, Google
+  Ads, TikTok Pixel + Events API. Per-pixel page targeting by page type
+  (home/product/collection/cart/checkout/thank-you/…) **and** URL glob pattern, with
+  include/exclude rules. Store-wide standard-event master switches (PageView,
+  ViewContent, AddToCart, InitiateCheckout, Purchase). Browser + server-side (CAPI)
+  event dispatch with an append-only event log. See `docs/06` §3.9b and `docs/07`
+  "Marketing — Pixels, Tracking & Attribution".
+* **MKT-003 Order Attribution & Sales-by-Source**: "Which order came from which
+  platform" — a channel / UTM-source / UTM-campaign breakdown of sessions, orders,
+  revenue and conversion rate (joining `storefront_sessions` to `orders` by exact
+  `sessionId`), plus merchant-entered ad spend per dimension for ROAS and CPA.
+  Ships **first** (Phase A), ahead of the pixel rebuild, since it needs only data that
+  already exists. Phase 5 later adds a per-pixel Purchase-delivery health column.
 * **MKT-002 Marketing Campaigns**: SMS marketing integration, abandoned cart recovery notifications.
 
 ### 10. Reports & Business Intelligence
@@ -94,6 +107,7 @@
 | **Payments & Refunds** | ✅ | ✅ | View & Refund | ❌ | View & Refund |
 | **Shipping & Courier Booking** | ✅ | ✅ | Manage | Book & Print Labels | ❌ |
 | **Customer Data & CRM** | ✅ | ✅ | View & Manage | View Addresses | Read Only |
+| **Marketing, Pixels & Attribution** | ✅ | ✅ (`marketing:manage`) | Manage (`marketing:manage`) | ❌ | Read Only (`marketing:read`) |
 | **Billing & Subscriptions** | ✅ | ✅ | ❌ | ❌ | ❌ |
 | **Staff & Role Management** | ✅ | ✅ | ❌ | ❌ | ❌ |
 

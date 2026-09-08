@@ -107,7 +107,10 @@ export class AnalyticsController {
   @Get('traffic-sources')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Storefront visit sessions and conversion rate, broken down by channel' })
+  @ApiOperation({
+    summary:
+      'Storefront visit sessions and conversion rate, broken down by channel (default), UTM source, or UTM campaign',
+  })
   @ApiResponse({ status: 200, description: 'Traffic source breakdown' })
   async getTrafficSources(
     @CurrentUser('sub') userId: string,
@@ -118,7 +121,7 @@ export class AnalyticsController {
     const { dateFrom, dateTo } = this.parseDateRange(query);
     const to = dateTo ?? new Date();
     const from = dateFrom ?? new Date(to.getTime() - 6 * 24 * 60 * 60 * 1000);
-    return this.getTrafficSourcesService.execute(tenantId, from, to);
+    return this.getTrafficSourcesService.execute(tenantId, from, to, query.groupBy ?? 'channel');
   }
 
   @Get('kpi-summary')

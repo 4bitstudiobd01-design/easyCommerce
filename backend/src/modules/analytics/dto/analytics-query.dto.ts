@@ -19,4 +19,13 @@ export class AnalyticsQueryDto {
   @IsOptional()
   @IsIn(['previous', 'previousYear'])
   compare?: 'previous' | 'previousYear';
+
+  @ApiPropertyOptional({
+    description: 'Traffic-source breakdown dimension (traffic-sources endpoint only)',
+    enum: ['channel', 'source', 'campaign'],
+    default: 'channel',
+  })
+  @IsOptional()
+  @IsIn(['channel', 'source', 'campaign'])
+  groupBy?: 'channel' | 'source' | 'campaign';
 }

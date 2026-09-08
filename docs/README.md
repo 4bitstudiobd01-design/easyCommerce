@@ -18,6 +18,7 @@ Welcome to the official system documentation for **BitCommerce**. This directory
 | [**`07_API_SPECIFICATION.md`**](./07_API_SPECIFICATION.md) | RESTful API standards, JSON response envelopes, DTO schemas, & HTTP codes. | Fullstack Engineers | Building API endpoints & RTK Query. |
 | [**`08_DEVELOPMENT_GUIDE.md`**](./08_DEVELOPMENT_GUIDE.md) | Local environment setup, Feature/Module folder structure, & Vertical Slice workflow. | New Developers | Setting up local environment & coding. |
 | [**`09_ROADMAP.md`**](./09_ROADMAP.md) | Phased implementation timeline, completed milestones, & Sprint 0 status. | Project Leads | Planning sprints & tracking progress. |
+| [**`10_MARKETING_PIXEL_IMPLEMENTATION_PLAN.md`**](./10_MARKETING_PIXEL_IMPLEMENTATION_PLAN.md) | Phased build plan for multi-instance pixels, per-page targeting, server-side CAPI, & order attribution. | Fullstack Engineers | Implementing the Marketing pixel-tracking slice. |
 
 ---
 
