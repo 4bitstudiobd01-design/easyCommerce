@@ -22,6 +22,7 @@ import {
   Printer,
   Trash2,
   PackageCheck,
+  Landmark,
 } from 'lucide-react';
 import {
   useGetPurchaseOrdersQuery,
@@ -40,9 +41,13 @@ import {
   toLineInputs,
   type LineItemDraft,
 } from './LineItemEditor';
+import { SupplierSelectDropdown } from './SupplierSelectDropdown';
+import { CustomDropdown } from './CustomDropdown';
 
 const STATUS_LABELS: Record<PurchaseOrderStatus, string> = {
   DRAFT: 'Draft',
+  PENDING_APPROVAL: 'Pending Finance Approval',
+  APPROVED: 'Finance Approved',
   SENT: 'Sent',
   PARTIALLY_RECEIVED: 'Partially Received',
   FULLY_RECEIVED: 'Fully Received',
@@ -51,6 +56,8 @@ const STATUS_LABELS: Record<PurchaseOrderStatus, string> = {
 
 const STATUS_BADGE: Record<PurchaseOrderStatus, string> = {
   DRAFT: 'bg-slate-100 text-slate-600 border-slate-200/60',
+  PENDING_APPROVAL: 'bg-amber-50 text-amber-700 border-amber-200/60 font-medium',
+  APPROVED: 'bg-emerald-50 text-emerald-700 border-emerald-200/60 font-semibold',
   SENT: 'bg-blue-50 text-blue-600 border-blue-200/60',
   PARTIALLY_RECEIVED: 'bg-purple-50 text-purple-600 border-purple-200/60',
   FULLY_RECEIVED: 'bg-emerald-50 text-emerald-600 border-emerald-200/60',
@@ -117,15 +124,20 @@ export function PurchaseOrdersView() {
   const [poSupplierId, setPoSupplierId] = useState('');
   const [poOrderDate, setPoOrderDate] = useState(today());
   const [poExpectedDate, setPoExpectedDate] = useState('');
-  const [poStatus, setPoStatus] = useState<'DRAFT' | 'SENT'>('SENT');
+  const [poStatus, setPoStatus] = useState<'DRAFT' | 'SENT' | 'PENDING_APPROVAL'>('PENDING_APPROVAL');
   const [poNotes, setPoNotes] = useState('');
   const [poLines, setPoLines] = useState<LineItemDraft[]>([makeEmptyLine()]);
+
+  const poGrandTotal = useMemo(
+    () => poLines.reduce((sum, l) => sum + l.quantity * l.unitCost, 0),
+    [poLines],
+  );
 
   const resetPoForm = () => {
     setPoSupplierId('');
     setPoOrderDate(today());
     setPoExpectedDate('');
-    setPoStatus('SENT');
+    setPoStatus('PENDING_APPROVAL');
     setPoNotes('');
     setPoLines([makeEmptyLine()]);
   };
@@ -138,6 +150,7 @@ export function PurchaseOrdersView() {
       toast.error('Choose a supplier and add at least one valid line item.');
       return;
     }
+
     try {
       await createPurchaseOrder({
         supplierId: poSupplierId,
@@ -147,7 +160,11 @@ export function PurchaseOrdersView() {
         notes: poNotes.trim() || undefined,
         lines: toLineInputs(poLines),
       }).unwrap();
-      toast.success('Purchase order created.');
+      toast.success(
+        poStatus === 'PENDING_APPROVAL'
+          ? 'Purchase order created & Finance requisition submitted!'
+          : 'Purchase order created.',
+      );
       setIsNewPoOpen(false);
       resetPoForm();
     } catch (err) {
@@ -183,18 +200,18 @@ export function PurchaseOrdersView() {
         note: 'This month',
       },
       {
-        label: 'Draft',
+        label: 'Pending Approval',
         icon: Clock,
-        tone: 'bg-amber-50 text-amber-500',
-        count: stats?.draft.count ?? 0,
-        amount: stats ? money(stats.draft.amount) : '—',
+        tone: 'bg-amber-50 text-amber-600',
+        count: stats?.pendingApproval?.count ?? 0,
+        amount: stats?.pendingApproval ? money(stats.pendingApproval.amount) : '—',
       },
       {
-        label: 'Sent',
-        icon: Send,
-        tone: 'bg-blue-50 text-blue-500',
-        count: stats?.sent.count ?? 0,
-        amount: stats ? money(stats.sent.amount) : '—',
+        label: 'Finance Approved',
+        icon: CheckCircle2,
+        tone: 'bg-emerald-50 text-emerald-600',
+        count: stats?.approved?.count ?? 0,
+        amount: stats?.approved ? money(stats.approved.amount) : '—',
       },
       {
         label: 'Partially Received',
@@ -205,8 +222,8 @@ export function PurchaseOrdersView() {
       },
       {
         label: 'Fully Received',
-        icon: CheckCircle2,
-        tone: 'bg-emerald-50 text-emerald-600',
+        icon: PackageCheck,
+        tone: 'bg-blue-50 text-blue-600',
         count: stats?.fullyReceived.count ?? 0,
         amount: stats ? money(stats.fullyReceived.amount) : '—',
       },
@@ -281,48 +298,46 @@ export function PurchaseOrdersView() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 w-full xl:w-auto justify-start xl:justify-end">
-          <div className="relative flex items-center">
-            <label className="text-[10px] uppercase font-bold text-slate-400 absolute -top-2 left-2 px-1 bg-white leading-none">
-              Status
-            </label>
-            <select
+          <div className="min-w-[140px]">
+            <CustomDropdown
+              size="sm"
               value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
+              onChange={(val) => {
+                setStatusFilter(val);
                 setCurrentPage(1);
               }}
-              className="text-xs font-semibold bg-white border border-slate-200 rounded-xl pl-3 pr-8 py-2 text-slate-700 outline-none hover:border-slate-300 appearance-none shadow-2xs cursor-pointer min-w-[120px]"
-            >
-              <option>All Status</option>
-              <option>Draft</option>
-              <option>Sent</option>
-              <option>Partially Received</option>
-              <option>Fully Received</option>
-              <option>Cancelled</option>
-            </select>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              options={[
+                { value: 'All Status', label: 'All Status' },
+                { value: 'Pending Finance Approval', label: 'Pending Approval', badge: 'Pending', badgeColor: 'bg-amber-50 text-amber-700' },
+                { value: 'Finance Approved', label: 'Approved', badge: 'Approved', badgeColor: 'bg-emerald-50 text-emerald-700' },
+                { value: 'Draft', label: 'Draft', badge: 'Draft', badgeColor: 'bg-slate-100 text-slate-700' },
+                { value: 'Sent', label: 'Sent', badge: 'Sent', badgeColor: 'bg-blue-50 text-blue-700' },
+                { value: 'Partially Received', label: 'Partially Received', badge: 'Partial', badgeColor: 'bg-purple-50 text-purple-700' },
+                { value: 'Fully Received', label: 'Fully Received', badge: 'Received', badgeColor: 'bg-emerald-50 text-emerald-700' },
+                { value: 'Cancelled', label: 'Cancelled', badge: 'Cancelled', badgeColor: 'bg-rose-50 text-rose-700' },
+              ]}
+            />
           </div>
 
-          <div className="relative flex items-center">
-            <label className="text-[10px] uppercase font-bold text-slate-400 absolute -top-2 left-2 px-1 bg-white leading-none">
-              Supplier
-            </label>
-            <select
+          <div className="min-w-[170px]">
+            <CustomDropdown
+              size="sm"
+              searchable
+              searchPlaceholder="Search supplier..."
               value={supplierFilter}
-              onChange={(e) => {
-                setSupplierFilter(e.target.value);
+              onChange={(val) => {
+                setSupplierFilter(val);
                 setCurrentPage(1);
               }}
-              className="text-xs font-semibold bg-white border border-slate-200 rounded-xl pl-3 pr-8 py-2 text-slate-700 outline-none hover:border-slate-300 appearance-none shadow-2xs cursor-pointer min-w-[130px]"
-            >
-              <option value="All Suppliers">All Suppliers</option>
-              {suppliers.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              options={[
+                { value: 'All Suppliers', label: 'All Suppliers' },
+                ...suppliers.map((s) => ({
+                  value: s.id,
+                  label: s.name,
+                  subtitle: s.phone || s.location,
+                })),
+              ]}
+            />
           </div>
 
           <button
@@ -389,7 +404,7 @@ export function PurchaseOrdersView() {
                 orders.map((o) => {
                   const pct = Math.round(Number(o.receivedPct));
                   const canReceive =
-                    o.status === 'SENT' || o.status === 'PARTIALLY_RECEIVED';
+                    o.status === 'APPROVED' || o.status === 'SENT' || o.status === 'PARTIALLY_RECEIVED';
                   return (
                     <tr key={o.id} className="hover:bg-slate-50/70 transition">
                       <td className="px-4 py-4 font-bold text-slate-900 font-mono text-[11px]">
@@ -528,20 +543,20 @@ export function PurchaseOrdersView() {
           </p>
 
           <div className="flex items-center gap-3">
-            <div className="relative flex items-center">
-              <select
-                value={perPage}
-                onChange={(e) => {
-                  setPerPage(Number(e.target.value));
+            <div className="w-32">
+              <CustomDropdown
+                size="sm"
+                value={String(perPage)}
+                onChange={(val) => {
+                  setPerPage(Number(val));
                   setCurrentPage(1);
                 }}
-                className="text-xs font-semibold bg-white border border-slate-200 rounded-lg pl-3 pr-7 py-1.5 text-slate-700 outline-none hover:border-slate-300 appearance-none shadow-2xs cursor-pointer"
-              >
-                <option value={10}>10 per page</option>
-                <option value={20}>20 per page</option>
-                <option value={50}>50 per page</option>
-              </select>
-              <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                options={[
+                  { value: '10', label: '10 per page' },
+                  { value: '20', label: '20 per page' },
+                  { value: '50', label: '50 per page' },
+                ]}
+              />
             </div>
 
             <div className="flex items-center gap-1">
@@ -571,7 +586,7 @@ export function PurchaseOrdersView() {
 
       {isNewPoOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-xl border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col">
+          <div className="bg-white rounded-2xl w-full max-w-4xl shadow-xl border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col">
             <div className="p-5 border-b border-slate-100 flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-slate-900">New Purchase Order</h3>
@@ -592,20 +607,14 @@ export function PurchaseOrdersView() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Select Supplier
+                    Select Supplier <span className="text-rose-500">*</span>
                   </label>
-                  <select
+                  <SupplierSelectDropdown
+                    suppliers={suppliers}
                     value={poSupplierId}
-                    onChange={(e) => setPoSupplierId(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-blue-600 focus:outline-none"
-                  >
-                    <option value="">Choose a supplier</option>
-                    {suppliers.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(id) => setPoSupplierId(id)}
+                    placeholder="Choose a supplier"
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -615,7 +624,7 @@ export function PurchaseOrdersView() {
                     type="date"
                     value={poOrderDate}
                     onChange={(e) => setPoOrderDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-blue-600 focus:outline-none"
+                    className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-1 focus:ring-blue-600 focus:border-blue-600 focus:outline-hidden transition shadow-2xs"
                   />
                 </div>
               </div>
@@ -629,21 +638,43 @@ export function PurchaseOrdersView() {
                     type="date"
                     value={poExpectedDate}
                     onChange={(e) => setPoExpectedDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-blue-600 focus:outline-none"
+                    className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-1 focus:ring-blue-600 focus:border-blue-600 focus:outline-hidden transition shadow-2xs"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
                     Status
                   </label>
-                  <select
+                  <CustomDropdown
                     value={poStatus}
-                    onChange={(e) => setPoStatus(e.target.value as 'DRAFT' | 'SENT')}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-blue-600 focus:outline-none"
-                  >
-                    <option value="SENT">Sent</option>
-                    <option value="DRAFT">Draft</option>
-                  </select>
+                    onChange={(val) => setPoStatus(val as 'DRAFT' | 'SENT' | 'PENDING_APPROVAL')}
+                    options={[
+                      {
+                        value: 'PENDING_APPROVAL',
+                        label: 'Submit for Finance Approval',
+                        subtitle: 'Queues budget requisition for Finance approval',
+                        icon: <Clock className="w-3.5 h-3.5 text-amber-500" />,
+                        badge: 'Pending',
+                        badgeColor: 'bg-amber-50 text-amber-700 border border-amber-200/60',
+                      },
+                      {
+                        value: 'DRAFT',
+                        label: 'Draft',
+                        subtitle: 'Internal draft order without requesting funds',
+                        icon: <FileText className="w-3.5 h-3.5 text-slate-500" />,
+                        badge: 'Draft',
+                        badgeColor: 'bg-slate-100 text-slate-700 border border-slate-200/60',
+                      },
+                      {
+                        value: 'SENT',
+                        label: 'Direct Sent',
+                        subtitle: 'Issued directly without requisition',
+                        icon: <Send className="w-3.5 h-3.5 text-blue-600" />,
+                        badge: 'Sent',
+                        badgeColor: 'bg-blue-50 text-blue-700 border border-blue-200/60',
+                      },
+                    ]}
+                  />
                 </div>
               </div>
 
@@ -652,6 +683,28 @@ export function PurchaseOrdersView() {
                   Line Items
                 </label>
                 <LineItemEditor value={poLines} onChange={setPoLines} />
+              </div>
+
+              {/* Finance Approval Requisition Notice */}
+              <div className="bg-blue-50/60 border border-blue-200/70 rounded-2xl p-4 flex items-start gap-3">
+                <div className="w-8 h-8 rounded-xl bg-blue-100 border border-blue-200 flex items-center justify-center text-blue-600 shrink-0 mt-0.5">
+                  <Landmark className="w-4 h-4" />
+                </div>
+                <div className="min-w-0 text-xs">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-bold text-slate-900">Finance Budget & Disbursement Flow</h4>
+                    <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-md bg-blue-100 text-blue-700 border border-blue-200">
+                      Finance Approval Required
+                    </span>
+                  </div>
+                  <p className="text-slate-600 mt-1 leading-relaxed">
+                    Submitting this purchase order will automatically queue a budget requisition in the{' '}
+                    <span className="font-bold text-slate-800">Finance</span> module. The Finance team
+                    will review the total amount (৳ {poGrandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}),
+                    select which bank or cash account to deduct payment from, and approve disbursement.
+                    Once approved, this order will update to <span className="font-bold text-emerald-600">Finance Approved</span> and appear ready for receipt.
+                  </p>
+                </div>
               </div>
 
               <div>

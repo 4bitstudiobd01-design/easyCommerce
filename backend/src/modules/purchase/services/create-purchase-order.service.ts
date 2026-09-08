@@ -13,6 +13,8 @@ import { PurchaseCounterKindEnum } from '../entities/purchase-counter.entity';
 import { CreatePurchaseOrderDto } from '../dto/purchase-order.dto';
 import { AllocatePurchaseNumberService } from './allocate-purchase-number.service';
 import { fromCents, toCents } from './purchase-money.util';
+import { FinanceRequisitionEntity } from '../../finance/entities/finance-requisition.entity';
+import { FinanceRequisitionStatusEnum } from '../../finance/enums/finance.enums';
 
 /**
  * Raises a purchase order on a supplier with product line items. Header totals are computed
@@ -114,7 +116,9 @@ export class CreatePurchaseOrderService {
           status:
             dto.status === 'SENT'
               ? PurchaseOrderStatusEnum.SENT
-              : PurchaseOrderStatusEnum.DRAFT,
+              : dto.status === 'DRAFT'
+              ? PurchaseOrderStatusEnum.DRAFT
+              : PurchaseOrderStatusEnum.PENDING_APPROVAL,
           subtotal: fromCents(subtotalCents),
           totalAmount: fromCents(subtotalCents),
           receivedValue: '0.00',
@@ -126,6 +130,43 @@ export class CreatePurchaseOrderService {
       await lineRepo.save(
         lineRows.map((row) => lineRepo.create({ ...row, purchaseOrderId: po.id })),
       );
+
+      // If submitted for Finance approval (default for non-draft), create requisition
+      if (po.status === PurchaseOrderStatusEnum.PENDING_APPROVAL) {
+        const reqRepo = manager.getRepository(FinanceRequisitionEntity);
+        const year = new Date().getFullYear();
+        const reqCount = await reqRepo.count({ where: { storeId } });
+        const reqNumber = `REQ-${year}-${String(reqCount + 1).padStart(4, '0')}`;
+
+        await reqRepo.save(
+          reqRepo.create({
+            tenantId,
+            storeId,
+            requisitionNumber: reqNumber,
+            title: `PO ${poNumber}: Restock from ${supplier.name}`,
+            category: 'PURCHASE',
+            purchaseOrderId: po.id,
+            poNumber: po.poNumber,
+            supplierId: supplier.id,
+            supplierName: supplier.name,
+            requestedAmount: po.totalAmount,
+            requestDate: po.orderDate,
+            requiredDate: po.expectedDate,
+            status: FinanceRequisitionStatusEnum.PENDING,
+            notes: po.notes,
+            items: lineRows.map((l) => ({
+              productId: l.productId,
+              variantId: l.variantId,
+              productName: l.productName,
+              sku: l.sku,
+              quantity: l.quantity,
+              unitCost: Number(l.unitCost),
+              lineTotal: Number(l.lineTotal),
+            })),
+            createdByUserId: userId,
+          }),
+        );
+      }
 
       return poRepo.findOne({
         where: { id: po.id },

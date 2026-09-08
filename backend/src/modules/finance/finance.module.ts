@@ -19,6 +19,8 @@ import { FinanceChartOfAccountEntity } from './entities/finance-chart-of-account
 import { FinanceJournalEntryEntity } from './entities/finance-journal-entry.entity';
 import { FinanceJournalLineEntity } from './entities/finance-journal-line.entity';
 import { FinancePeriodLockEntity } from './entities/finance-period-lock.entity';
+import { FinanceRequisitionEntity } from './entities/finance-requisition.entity';
+import { PurchaseOrderEntity } from '../purchase/entities/purchase-order.entity';
 import { InventoryStockEntity } from '../inventory/entities/inventory-stock.entity';
 import { ProductEntity } from '../catalog/entities/product.entity';
 import { PayrollRunEntity } from '../hrm/entities/payroll-run.entity';
@@ -30,6 +32,13 @@ import { StaffMemberEntity } from '../staff/entities/staff.entity';
 import { FileEntity } from '../file/entities/file.entity';
 
 import { FinanceController } from './finance.controller';
+
+import { ListRequisitionsService } from './services/list-requisitions.service';
+import { GetRequisitionService } from './services/get-requisition.service';
+import { GetRequisitionStatsService } from './services/get-requisition-stats.service';
+import { CreateRequisitionService } from './services/create-requisition.service';
+import { ApproveRequisitionService } from './services/approve-requisition.service';
+import { RejectRequisitionService } from './services/reject-requisition.service';
 
 import { RecordSyncedFinanceTransactionService } from './services/record-synced-finance-transaction.service';
 import { GetFinanceOverviewService } from './services/get-finance-overview.service';
@@ -109,6 +118,8 @@ import { DisburseSalaryPaymentService } from './services/disburse-salary-payment
       FinanceJournalEntryEntity,
       FinanceJournalLineEntity,
       FinancePeriodLockEntity,
+      FinanceRequisitionEntity,
+      PurchaseOrderEntity,
       InventoryStockEntity,
       ProductEntity,
       PayrollRunEntity,
@@ -189,6 +200,12 @@ import { DisburseSalaryPaymentService } from './services/disburse-salary-payment
     GetSalaryPaymentRunDetailService,
     DisburseSalaryPaymentService,
     ExportFinanceDataService,
+    ListRequisitionsService,
+    GetRequisitionService,
+    GetRequisitionStatsService,
+    CreateRequisitionService,
+    ApproveRequisitionService,
+    RejectRequisitionService,
   ],
   exports: [
     RecordSyncedFinanceTransactionService,
@@ -203,6 +220,13 @@ import { DisburseSalaryPaymentService } from './services/disburse-salary-payment
     DisburseSalaryPaymentService,
     DepositToAccountService,
     DeleteAccountService,
+    ListRequisitionsService,
+    GetRequisitionService,
+    GetRequisitionStatsService,
+    CreateRequisitionService,
+    ApproveRequisitionService,
+    RejectRequisitionService,
+    TypeOrmModule,
   ],
 })
 export class FinanceModule implements OnModuleInit {
@@ -215,6 +239,49 @@ export class FinanceModule implements OnModuleInit {
       );
     } catch (e) {
       // Ignored if type or value already exists
+    }
+
+    try {
+      await this.dataSource.query(`
+        CREATE TABLE IF NOT EXISTS "fin_requisitions" (
+          "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
+          "tenantId" uuid NOT NULL,
+          "storeId" uuid NOT NULL,
+          "requisitionNumber" character varying(50) NOT NULL,
+          "title" character varying(255) NOT NULL,
+          "category" character varying(50) NOT NULL DEFAULT 'PURCHASE',
+          "purchaseOrderId" uuid,
+          "poNumber" character varying(50),
+          "supplierId" uuid,
+          "supplierName" character varying(200),
+          "requestedAmount" numeric(14,2) NOT NULL DEFAULT 0,
+          "requestDate" date NOT NULL,
+          "requiredDate" date,
+          "status" character varying(30) NOT NULL DEFAULT 'PENDING',
+          "priority" character varying(30) NOT NULL DEFAULT 'NORMAL',
+          "notes" text,
+          "items" jsonb DEFAULT '[]',
+          "paidFromAccountId" uuid,
+          "paymentMethod" character varying(50),
+          "paymentReference" character varying(150),
+          "disbursedAmount" numeric(14,2),
+          "financeTransactionId" uuid,
+          "rejectionReason" text,
+          "approvedAt" TIMESTAMP WITH TIME ZONE,
+          "approvedByUserId" uuid,
+          "approvedByName" character varying(150),
+          "createdByUserId" uuid,
+          "createdByName" character varying(150),
+          "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+          "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+          CONSTRAINT "PK_fin_requisitions" PRIMARY KEY ("id")
+        );
+        CREATE INDEX IF NOT EXISTS "IDX_fin_requisitions_tenantId_storeId" ON "fin_requisitions" ("tenantId", "storeId");
+        CREATE INDEX IF NOT EXISTS "IDX_fin_requisitions_storeId_status" ON "fin_requisitions" ("storeId", "status");
+        CREATE INDEX IF NOT EXISTS "IDX_fin_requisitions_storeId_reqNumber" ON "fin_requisitions" ("storeId", "requisitionNumber");
+      `);
+    } catch (e) {
+      // Table already exists
     }
   }
 }

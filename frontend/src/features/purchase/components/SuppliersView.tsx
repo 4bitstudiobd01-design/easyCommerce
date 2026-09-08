@@ -28,6 +28,7 @@ import {
   type SupplierListItem,
   type SupplierStatus,
 } from '../api/purchaseApi';
+import { CustomDropdown } from './CustomDropdown';
 
 const SORT_MAP: Record<string, 'name_asc' | 'name_desc' | 'purchases_desc' | 'due_desc'> = {
   'Name (A-Z)': 'name_asc',
@@ -266,42 +267,33 @@ export function SuppliersView() {
           <Search className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2" />
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-start md:justify-end">
-          <div className="relative flex items-center">
-            <label className="text-[10px] uppercase font-bold text-slate-400 absolute -top-2 left-2 px-1 bg-white leading-none">
-              Status
-            </label>
-            <select
+        <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-start md:justify-end">
+          <div className="min-w-[130px]">
+            <CustomDropdown
+              size="sm"
               value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
+              onChange={(val) => {
+                setStatusFilter(val);
                 setCurrentPage(1);
               }}
-              className="text-xs font-semibold bg-white border border-slate-200 rounded-xl pl-3 pr-8 py-2 text-slate-700 outline-none hover:border-slate-300 appearance-none shadow-2xs cursor-pointer min-w-[110px]"
-            >
-              <option value="All">All</option>
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-            </select>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              options={[
+                { value: 'All', label: 'All Status' },
+                { value: 'Active', label: 'Active', badge: 'Active', badgeColor: 'bg-emerald-50 text-emerald-700' },
+                { value: 'Inactive', label: 'Inactive', badge: 'Inactive', badgeColor: 'bg-slate-100 text-slate-700' },
+              ]}
+            />
           </div>
 
-          <div className="relative flex items-center">
-            <label className="text-[10px] uppercase font-bold text-slate-400 absolute -top-2 left-2 px-1 bg-white leading-none">
-              Sort By
-            </label>
-            <select
+          <div className="min-w-[170px]">
+            <CustomDropdown
+              size="sm"
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="text-xs font-semibold bg-white border border-slate-200 rounded-xl pl-3 pr-8 py-2 text-slate-700 outline-none hover:border-slate-300 appearance-none shadow-2xs cursor-pointer min-w-[140px]"
-            >
-              {Object.keys(SORT_MAP).map((label) => (
-                <option key={label} value={label}>
-                  {label}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              onChange={(val) => setSortBy(val)}
+              options={Object.keys(SORT_MAP).map((label) => ({
+                value: label,
+                label,
+              }))}
+            />
           </div>
         </div>
       </div>
@@ -461,20 +453,20 @@ export function SuppliersView() {
           </p>
 
           <div className="flex items-center gap-3">
-            <div className="relative flex items-center">
-              <select
-                value={perPage}
-                onChange={(e) => {
-                  setPerPage(Number(e.target.value));
+            <div className="w-32">
+              <CustomDropdown
+                size="sm"
+                value={String(perPage)}
+                onChange={(val) => {
+                  setPerPage(Number(val));
                   setCurrentPage(1);
                 }}
-                className="text-xs font-semibold bg-white border border-slate-200 rounded-lg pl-3 pr-7 py-1.5 text-slate-700 outline-none hover:border-slate-300 appearance-none shadow-2xs cursor-pointer"
-              >
-                <option value={10}>10 per page</option>
-                <option value={20}>20 per page</option>
-                <option value={50}>50 per page</option>
-              </select>
-              <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                options={[
+                  { value: '10', label: '10 per page' },
+                  { value: '20', label: '20 per page' },
+                  { value: '50', label: '50 per page' },
+                ]}
+              />
             </div>
 
             <div className="flex items-center gap-1">

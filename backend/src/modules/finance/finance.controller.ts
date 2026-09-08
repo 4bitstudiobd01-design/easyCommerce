@@ -131,6 +131,18 @@ import {
   SalaryPaymentSummaryResponseDto,
 } from './dto/salary-payment.dto';
 import {
+  CreateFinanceRequisitionDto,
+  ApproveFinanceRequisitionDto,
+  RejectFinanceRequisitionDto,
+  ListRequisitionsQueryDto,
+} from './dto/finance-requisition.dto';
+import { ListRequisitionsService } from './services/list-requisitions.service';
+import { GetRequisitionService } from './services/get-requisition.service';
+import { GetRequisitionStatsService } from './services/get-requisition-stats.service';
+import { CreateRequisitionService } from './services/create-requisition.service';
+import { ApproveRequisitionService } from './services/approve-requisition.service';
+import { RejectRequisitionService } from './services/reject-requisition.service';
+import {
   FinanceInvoiceStatusEnum,
   FinanceBillStatusEnum,
   FinanceCategoryTypeEnum,
@@ -194,6 +206,12 @@ export class FinanceController {
     private readonly getSalaryPaymentRunDetailService: GetSalaryPaymentRunDetailService,
     private readonly disburseSalaryPaymentService: DisburseSalaryPaymentService,
     private readonly exportFinanceDataService: ExportFinanceDataService,
+    private readonly listRequisitionsService: ListRequisitionsService,
+    private readonly getRequisitionService: GetRequisitionService,
+    private readonly getRequisitionStatsService: GetRequisitionStatsService,
+    private readonly createRequisitionService: CreateRequisitionService,
+    private readonly approveRequisitionService: ApproveRequisitionService,
+    private readonly rejectRequisitionService: RejectRequisitionService,
   ) {}
 
   private async getStoreContext(userId: string, headerStoreId?: string) {
@@ -1056,5 +1074,107 @@ export class FinanceController {
   ) {
     const store = await this.getStoreContext(userId, headerStoreId);
     return this.disburseSalaryPaymentService.disburseBulk(store.tenantId, store.id, userId, dto);
+  }
+
+  // ─── REQUISITIONS & PURCHASE APPROVALS ─────────────────────────
+
+  @Get('requisitions')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('finance:read', 'finance:manage')
+  @ApiOperation({ summary: 'List finance and purchase requisitions' })
+  async listRequisitions(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Query() query: ListRequisitionsQueryDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.listRequisitionsService.execute(store.id, query);
+  }
+
+  @Get('requisitions/stats')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('finance:read', 'finance:manage')
+  @ApiOperation({ summary: 'Summary KPIs for finance requisitions' })
+  async getRequisitionStats(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.getRequisitionStatsService.execute(store.id);
+  }
+
+  @Get('requisitions/:id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('finance:read', 'finance:manage')
+  @ApiOperation({ summary: 'Get single requisition details' })
+  async getRequisition(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') id: string,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.getRequisitionService.execute(store.id, id);
+  }
+
+  @Post('requisitions')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('finance:manage')
+  @ApiOperation({ summary: 'Create manual finance requisition' })
+  async createRequisition(
+    @CurrentUser('sub') userId: string,
+    @CurrentUser('name') userName: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Body() dto: CreateFinanceRequisitionDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.createRequisitionService.execute(
+      store.tenantId,
+      store.id,
+      userId,
+      userName,
+      dto,
+    );
+  }
+
+  @Post('requisitions/:id/approve')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('finance:transactions:manage', 'finance:manage')
+  @ApiOperation({ summary: 'Approve and disburse funds for a requisition' })
+  async approveRequisition(
+    @CurrentUser('sub') userId: string,
+    @CurrentUser('name') userName: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') id: string,
+    @Body() dto: ApproveFinanceRequisitionDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.approveRequisitionService.execute(
+      store.tenantId,
+      store.id,
+      userId,
+      userName,
+      id,
+      dto,
+    );
+  }
+
+  @Post('requisitions/:id/reject')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('finance:manage')
+  @ApiOperation({ summary: 'Reject a requisition' })
+  async rejectRequisition(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') id: string,
+    @Body() dto: RejectFinanceRequisitionDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.rejectRequisitionService.execute(store.id, id, dto);
   }
 }

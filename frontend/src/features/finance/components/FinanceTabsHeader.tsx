@@ -16,6 +16,7 @@ import {
   BarChart3,
   History,
   Settings,
+  ClipboardCheck,
 } from 'lucide-react';
 
 const FINANCE_TABS = [
@@ -60,6 +61,12 @@ const FINANCE_TABS = [
     href: '/dashboard/finance/bills',
     matchHref: ['/dashboard/finance/bills'],
     icon: Receipt,
+  },
+  {
+    name: 'Requisitions',
+    href: '/dashboard/finance/requisitions',
+    matchHref: ['/dashboard/finance/requisitions'],
+    icon: ClipboardCheck,
   },
   {
     name: 'Accounts',

@@ -5,6 +5,8 @@ import { createBaseQueryWithReauth } from '@/store/baseQueryWithReauth';
 export type SupplierStatus = 'ACTIVE' | 'INACTIVE';
 export type PurchaseOrderStatus =
   | 'DRAFT'
+  | 'PENDING_APPROVAL'
+  | 'APPROVED'
   | 'SENT'
   | 'PARTIALLY_RECEIVED'
   | 'FULLY_RECEIVED'
@@ -116,6 +118,8 @@ export interface PurchaseOrderStatBucket {
 
 export interface PurchaseOrderStats {
   draft: PurchaseOrderStatBucket;
+  pendingApproval: PurchaseOrderStatBucket;
+  approved: PurchaseOrderStatBucket;
   sent: PurchaseOrderStatBucket;
   partiallyReceived: PurchaseOrderStatBucket;
   fullyReceived: PurchaseOrderStatBucket;

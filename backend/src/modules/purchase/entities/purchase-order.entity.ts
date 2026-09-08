@@ -11,6 +11,8 @@ import { PurchaseOrderLineEntity } from './purchase-order-line.entity';
 
 export enum PurchaseOrderStatusEnum {
   DRAFT = 'DRAFT',
+  PENDING_APPROVAL = 'PENDING_APPROVAL',
+  APPROVED = 'APPROVED',
   SENT = 'SENT',
   PARTIALLY_RECEIVED = 'PARTIALLY_RECEIVED',
   FULLY_RECEIVED = 'FULLY_RECEIVED',

@@ -805,6 +805,62 @@ export interface DisburseSalaryPaymentResponse {
   payrollPaymentStatus: PayrollPaymentStatus;
 }
 
+export type FinanceRequisitionStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+export type FinanceRequisitionPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
+
+export interface FinanceRequisitionItem {
+  productId?: string;
+  variantId?: string;
+  productName: string;
+  sku?: string;
+  quantity: number;
+  unitCost: number;
+  lineTotal: number;
+}
+
+export interface FinanceRequisition {
+  id: string;
+  tenantId: string;
+  storeId: string;
+  requisitionNumber: string;
+  title: string;
+  category: string;
+  purchaseOrderId?: string;
+  poNumber?: string;
+  supplierId?: string;
+  supplierName?: string;
+  requestedAmount: string;
+  requestDate: string;
+  requiredDate?: string;
+  status: FinanceRequisitionStatus;
+  priority: FinanceRequisitionPriority;
+  notes?: string;
+  items: FinanceRequisitionItem[];
+  paidFromAccountId?: string;
+  paymentMethod?: string;
+  paymentReference?: string;
+  disbursedAmount?: string;
+  financeTransactionId?: string;
+  rejectionReason?: string;
+  approvedAt?: string;
+  approvedByUserId?: string;
+  approvedByName?: string;
+  createdByUserId?: string;
+  createdByName?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RequisitionStatsSummary {
+  pendingCount: number;
+  pendingAmount: number;
+  approvedCount: number;
+  approvedAmount: number;
+  rejectedCount: number;
+  totalRequestedCount: number;
+  totalRequestedAmount: number;
+}
+
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   (process.env.NEXT_PUBLIC_API_BASE_URL ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1` : 'http://localhost:5000/api/v1');
@@ -829,6 +885,7 @@ export const financeApi = createApi({
     'FinanceCategories',
     'FinancePeriodLocks',
     'FinanceSalaryPayments',
+    'FinanceRequisitions',
   ],
   endpoints: (builder) => ({
     getFinanceOverview: builder.query<FinanceOverview, { month?: number; year?: number } | void>({
@@ -1943,6 +2000,100 @@ export const financeApi = createApi({
         'FinanceExpenses',
       ],
     }),
+
+    // Requisitions
+    getRequisitions: builder.query<
+      { items: FinanceRequisition[]; total: number; page: number; limit: number; totalPages: number },
+      { search?: string; status?: FinanceRequisitionStatus; page?: number; limit?: number } | void
+    >({
+      query: (params) => ({
+        url: '/finance/requisitions',
+        params: params || {},
+      }),
+      transformResponse: (response: any) => (response?.data !== undefined ? response.data : response),
+      providesTags: ['FinanceRequisitions'],
+    }),
+
+    getRequisitionStats: builder.query<RequisitionStatsSummary, void>({
+      query: () => ({ url: '/finance/requisitions/stats' }),
+      transformResponse: (response: any) => (response?.data !== undefined ? response.data : response),
+      providesTags: ['FinanceRequisitions'],
+    }),
+
+    getRequisition: builder.query<FinanceRequisition, string>({
+      query: (id) => ({ url: `/finance/requisitions/${id}` }),
+      transformResponse: (response: any) => (response?.data !== undefined ? response.data : response),
+      providesTags: (_res, _err, id) => [{ type: 'FinanceRequisitions', id }],
+    }),
+
+    createRequisition: builder.mutation<
+      FinanceRequisition,
+      {
+        title: string;
+        category?: string;
+        supplierName?: string;
+        supplierId?: string;
+        purchaseOrderId?: string;
+        poNumber?: string;
+        requestedAmount: number;
+        requestDate: string;
+        requiredDate?: string;
+        priority?: FinanceRequisitionPriority;
+        notes?: string;
+        items?: FinanceRequisitionItem[];
+      }
+    >({
+      query: (body) => ({
+        url: '/finance/requisitions',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response: any) => (response?.data !== undefined ? response.data : response),
+      invalidatesTags: ['FinanceRequisitions'],
+    }),
+
+    approveRequisition: builder.mutation<
+      FinanceRequisition,
+      {
+        id: string;
+        accountId: string;
+        paymentMethod?: string;
+        paymentReference?: string;
+        notes?: string;
+      }
+    >({
+      query: ({ id, ...body }) => ({
+        url: `/finance/requisitions/${id}/approve`,
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response: any) => (response?.data !== undefined ? response.data : response),
+      invalidatesTags: [
+        'FinanceRequisitions',
+        'FinanceTransactions',
+        'FinanceAccounts',
+        'FinanceOverview',
+        'FinanceExpenses',
+        'FinanceReports',
+        'FinanceGeneralLedger',
+      ],
+    }),
+
+    rejectRequisition: builder.mutation<
+      FinanceRequisition,
+      {
+        id: string;
+        reason: string;
+      }
+    >({
+      query: ({ id, ...body }) => ({
+        url: `/finance/requisitions/${id}/reject`,
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response: any) => (response?.data !== undefined ? response.data : response),
+      invalidatesTags: ['FinanceRequisitions'],
+    }),
   }),
 });
 
@@ -2006,4 +2157,10 @@ export const {
   useDisburseSalaryPaymentMutation,
   useDisburseSalaryPaymentBulkMutation,
   useExportFinanceTransactionsMutation,
+  useGetRequisitionsQuery,
+  useGetRequisitionStatsQuery,
+  useGetRequisitionQuery,
+  useCreateRequisitionMutation,
+  useApproveRequisitionMutation,
+  useRejectRequisitionMutation,
 } = financeApi;

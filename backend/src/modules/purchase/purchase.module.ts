@@ -1,4 +1,5 @@
-import { forwardRef, Module } from '@nestjs/common';
+import { forwardRef, Module, OnModuleInit } from '@nestjs/common';
+import { DataSource } from 'typeorm';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -118,6 +119,21 @@ import { SeedPurchaseDemoDataService } from './services/seed-purchase-demo-data.
     JwtAuthGuard,
     PermissionsGuard,
   ],
-  exports: [SeedPurchaseDemoDataService],
+  exports: [SeedPurchaseDemoDataService, TypeOrmModule],
 })
-export class PurchaseModule {}
+export class PurchaseModule implements OnModuleInit {
+  constructor(private readonly dataSource: DataSource) {}
+
+  async onModuleInit() {
+    try {
+      await this.dataSource.query(
+        `ALTER TYPE "public"."pur_purchase_orders_status_enum" ADD VALUE IF NOT EXISTS 'PENDING_APPROVAL'`,
+      );
+      await this.dataSource.query(
+        `ALTER TYPE "public"."pur_purchase_orders_status_enum" ADD VALUE IF NOT EXISTS 'APPROVED'`,
+      );
+    } catch (e) {
+      // Ignored if type or value already exists
+    }
+  }
+}

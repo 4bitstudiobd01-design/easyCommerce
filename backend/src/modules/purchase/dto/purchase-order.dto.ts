@@ -46,8 +46,8 @@ export class CreatePurchaseOrderDto {
   expectedDate?: string;
 
   @IsOptional()
-  @IsIn(['DRAFT', 'SENT'])
-  status?: 'DRAFT' | 'SENT';
+  @IsIn(['DRAFT', 'SENT', 'PENDING_APPROVAL', 'APPROVED'])
+  status?: 'DRAFT' | 'SENT' | 'PENDING_APPROVAL' | 'APPROVED';
 
   @IsOptional()
   @IsString()

@@ -13,6 +13,8 @@ export interface PurchaseOrderStatBucket {
 
 export interface PurchaseOrderStats {
   draft: PurchaseOrderStatBucket;
+  pendingApproval: PurchaseOrderStatBucket;
+  approved: PurchaseOrderStatBucket;
   sent: PurchaseOrderStatBucket;
   partiallyReceived: PurchaseOrderStatBucket;
   fullyReceived: PurchaseOrderStatBucket;
@@ -57,6 +59,9 @@ export class GetPurchaseOrderStatsService {
 
     return {
       draft: byStatus.get(PurchaseOrderStatusEnum.DRAFT) ?? { ...EMPTY },
+      pendingApproval:
+        byStatus.get(PurchaseOrderStatusEnum.PENDING_APPROVAL) ?? { ...EMPTY },
+      approved: byStatus.get(PurchaseOrderStatusEnum.APPROVED) ?? { ...EMPTY },
       sent: byStatus.get(PurchaseOrderStatusEnum.SENT) ?? { ...EMPTY },
       partiallyReceived:
         byStatus.get(PurchaseOrderStatusEnum.PARTIALLY_RECEIVED) ?? { ...EMPTY },

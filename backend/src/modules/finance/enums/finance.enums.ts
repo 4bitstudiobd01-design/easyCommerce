@@ -105,4 +105,19 @@ export enum FinanceSourceTypeEnum {
   PAYROLL = 'PAYROLL',
   TRANSFER = 'TRANSFER',
   ADJUSTMENT = 'ADJUSTMENT',
+  REQUISITION = 'REQUISITION',
+}
+
+export enum FinanceRequisitionStatusEnum {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum FinanceRequisitionPriorityEnum {
+  LOW = 'LOW',
+  NORMAL = 'NORMAL',
+  HIGH = 'HIGH',
+  URGENT = 'URGENT',
 }
