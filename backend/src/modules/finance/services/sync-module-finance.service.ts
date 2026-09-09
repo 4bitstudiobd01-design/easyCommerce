@@ -452,13 +452,18 @@ export class SyncModuleFinanceService {
       // Map categoryCode to OPEX/COGS account code
       const catCodeMap: Record<string, string> = {
         COGS: '5010',
-        MARKETING: '6030',
+        PACKAGING: '5020',
         SHIPPING: '5040',
         SALARY: '6010',
         EMPLOYEE_EXPENSE: '6020',
+        OFFICE_ADMIN: '6020',
+        MARKETING: '6030',
+        SOFTWARE: '6040',
         RENT: '6050',
         UTILITIES: '6060',
-        SOFTWARE: '6040',
+        EQUIPMENT: '6070',
+        MAINTENANCE: '6070',
+        INVENTORY_LOSS: '6080',
         OTHER: '6090',
       };
       const coaCode = (payload.categoryCode && catCodeMap[payload.categoryCode]) || '6090';
@@ -534,6 +539,8 @@ export class SyncModuleFinanceService {
       const catCodeMap: Record<string, string> = {
         PRODUCT_SALES: '4010',
         SHIPPING: '4020',
+        SHIPPING_INCOME: '4020',
+        WHOLESALE_REVENUE: '4030',
         OTHER: '4030',
       };
       const coaCode = (payload.categoryCode && catCodeMap[payload.categoryCode]) || '4030';

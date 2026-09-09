@@ -84,6 +84,7 @@ export const Sidebar = ({
     if (path === '/dashboard/accounting' && pathname === '/dashboard/accounting') return true;
     if (path === '/dashboard/purchase' && pathname === '/dashboard/purchase') return true;
     if (path === '/dashboard/finance/overview' && (pathname === '/dashboard/finance' || pathname === '/dashboard/finance/overview')) return true;
+    if (path === '/dashboard/accounts/overview' && (pathname === '/dashboard/accounts' || pathname === '/dashboard/accounts/overview')) return true;
     if (path !== '/dashboard' && path !== '/dashboard/accounting' && path !== '/dashboard/purchase' && pathname.startsWith(path)) return true;
     return false;
   };
@@ -837,6 +838,11 @@ export const Sidebar = ({
           )}
 
           {/* 4. FINANCE (Single Route in Sidebar; all tabs accessible via upper navigation bar) */}
+          {!isDesktopCollapsed && (
+            <div className="px-3 pb-1 pt-4 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              Financials
+            </div>
+          )}
           <Link 
             href="/dashboard/finance/overview" 
             className={navItemClass('/dashboard/finance')}
@@ -861,6 +867,21 @@ export const Sidebar = ({
                 {pendingRequisitionsCount}
               </span>
             )}
+          </Link>
+
+          {/* 4b. ACCOUNTS (Single Route in Sidebar; all tabs accessible via upper navigation bar) */}
+          <Link
+            href="/dashboard/accounts/overview"
+            className={navItemClass('/dashboard/accounts')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Accounts")}
+            onFocus={(e) => handleTooltipEnter(e, "Accounts")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <BookOpen className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Accounts</span>}
+            </div>
           </Link>
 
           {/* 5. ACCOUNTING ACCORDION (Hidden from active navigation per simplified Finance MVP integration; code preserved for reuse) */}

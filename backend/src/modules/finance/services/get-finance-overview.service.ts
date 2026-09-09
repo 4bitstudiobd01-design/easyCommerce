@@ -22,6 +22,7 @@ import {
 } from '../enums/finance.enums';
 import { SeedDefaultChartOfAccountsService } from './seed-default-chart-of-accounts.service';
 import { SeedRealisticFinanceDataService } from './seed-realistic-finance-data.service';
+import { getMonthDateRange } from '../utils/finance-date.utils';
 
 export interface FinanceOverviewQueryDto {
   month?: number;
@@ -95,15 +96,17 @@ export class GetFinanceOverviewService {
     let periodLabel: string;
 
     if (query?.month && query.month > 0) {
-      currentPeriodStart = new Date(targetYear, targetMonth - 1, 1).toISOString().split('T')[0];
-      currentPeriodEnd = new Date(targetYear, targetMonth, 0).toISOString().split('T')[0];
+      const currentRange = getMonthDateRange(targetYear, targetMonth);
+      currentPeriodStart = currentRange.startDate;
+      currentPeriodEnd = currentRange.endDate;
       periodLabel = `${MONTH_NAMES[targetMonth - 1]} ${targetYear}`;
 
       // Previous month
       const prevMonth = targetMonth === 1 ? 12 : targetMonth - 1;
       const prevYear = targetMonth === 1 ? targetYear - 1 : targetYear;
-      prevPeriodStart = new Date(prevYear, prevMonth - 1, 1).toISOString().split('T')[0];
-      prevPeriodEnd = new Date(prevYear, prevMonth, 0).toISOString().split('T')[0];
+      const prevRange = getMonthDateRange(prevYear, prevMonth);
+      prevPeriodStart = prevRange.startDate;
+      prevPeriodEnd = prevRange.endDate;
     } else {
       // Full Year / All Active Period
       currentPeriodStart = `${targetYear}-01-01`;

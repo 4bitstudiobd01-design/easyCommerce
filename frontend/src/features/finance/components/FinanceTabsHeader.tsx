@@ -5,18 +5,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
-  Receipt,
   ArrowLeftRight,
-  TrendingUp,
-  TrendingDown,
-  Banknote,
-  FileText,
-  Landmark,
+  ClipboardCheck,
+  CheckSquare,
+  Droplets,
   Scale,
   BarChart3,
-  History,
-  Settings,
-  ClipboardCheck,
+  Target,
 } from 'lucide-react';
 import { useGetRequisitionStatsQuery } from '../api/financeApi';
 
@@ -29,40 +24,10 @@ const FINANCE_TABS = [
     icon: LayoutDashboard,
   },
   {
-    name: 'Transactions',
-    href: '/dashboard/finance/transactions',
-    matchHref: ['/dashboard/finance/transactions'],
-    icon: ArrowLeftRight,
-  },
-  {
-    name: 'Income',
-    href: '/dashboard/finance/income',
-    matchHref: ['/dashboard/finance/income'],
-    icon: TrendingUp,
-  },
-  {
-    name: 'Expenses',
-    href: '/dashboard/finance/expenses',
-    matchHref: ['/dashboard/finance/expenses'],
-    icon: TrendingDown,
-  },
-  {
-    name: 'Salary Payments',
-    href: '/dashboard/finance/salaries',
-    matchHref: ['/dashboard/finance/salaries'],
-    icon: Banknote,
-  },
-  {
-    name: 'Invoices',
-    href: '/dashboard/finance/invoices',
-    matchHref: ['/dashboard/finance/invoices'],
-    icon: FileText,
-  },
-  {
-    name: 'Bills',
-    href: '/dashboard/finance/bills',
-    matchHref: ['/dashboard/finance/bills'],
-    icon: Receipt,
+    name: 'Budget',
+    href: '/dashboard/finance/budget',
+    matchHref: ['/dashboard/finance/budget'],
+    icon: Target,
   },
   {
     name: 'Requisitions',
@@ -71,13 +36,19 @@ const FINANCE_TABS = [
     icon: ClipboardCheck,
   },
   {
-    name: 'Accounts',
-    href: '/dashboard/finance/accounts',
-    matchHref: ['/dashboard/finance/accounts'],
-    icon: Landmark,
+    name: 'Approvals',
+    href: '/dashboard/finance/approvals',
+    matchHref: ['/dashboard/finance/approvals'],
+    icon: CheckSquare,
   },
   {
-    name: 'Transfers',
+    name: 'Cash Flow',
+    href: '/dashboard/finance/cash-flow',
+    matchHref: ['/dashboard/finance/cash-flow'],
+    icon: Droplets,
+  },
+  {
+    name: 'Fund Transfers',
     href: '/dashboard/finance/transfers',
     matchHref: ['/dashboard/finance/transfers'],
     icon: Scale,
@@ -87,18 +58,6 @@ const FINANCE_TABS = [
     href: '/dashboard/finance/reports',
     matchHref: ['/dashboard/finance/reports'],
     icon: BarChart3,
-  },
-  {
-    name: 'History',
-    href: '/dashboard/finance/history',
-    matchHref: ['/dashboard/finance/history'],
-    icon: History,
-  },
-  {
-    name: 'Settings',
-    href: '/dashboard/finance/settings',
-    matchHref: ['/dashboard/finance/settings'],
-    icon: Settings,
   },
 ];
 
@@ -141,6 +100,17 @@ export function FinanceTabsHeader() {
                       isActive
                         ? 'bg-white text-rose-600'
                         : 'bg-rose-500 text-white shadow-xs'
+                    } animate-pulse`}
+                  >
+                    {pendingCount}
+                  </span>
+                )}
+                {tab.name === 'Approvals' && pendingCount > 0 && (
+                  <span
+                    className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-extrabold leading-none ${
+                      isActive
+                        ? 'bg-white text-amber-600'
+                        : 'bg-amber-500 text-white shadow-xs'
                     } animate-pulse`}
                   >
                     {pendingCount}

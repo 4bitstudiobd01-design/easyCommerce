@@ -12,95 +12,15 @@ import {
   FinanceTransactionStatusEnum,
 } from '../enums/finance.enums';
 
+import { resolveTimezoneSafeDateRange } from '../utils/finance-date.utils';
+
 export function resolveDateRange(dto: { period?: string; startDate?: string; endDate?: string }): {
   startDate: string;
   endDate: string;
   previousStartDate: string;
   previousEndDate: string;
 } {
-  if (dto.startDate && dto.endDate) {
-    const start = new Date(dto.startDate);
-    const end = new Date(dto.endDate);
-    const durationMs = end.getTime() - start.getTime();
-    const prevEnd = new Date(start.getTime() - 86400000);
-    const prevStart = new Date(prevEnd.getTime() - durationMs);
-
-    return {
-      startDate: dto.startDate,
-      endDate: dto.endDate,
-      previousStartDate: prevStart.toISOString().split('T')[0],
-      previousEndDate: prevEnd.toISOString().split('T')[0],
-    };
-  }
-
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
-
-  if (dto.period === 'last_month') {
-    const prevMonth = month === 0 ? 11 : month - 1;
-    const prevYear = month === 0 ? year - 1 : year;
-    const start = new Date(prevYear, prevMonth, 1);
-    const end = new Date(prevYear, prevMonth + 1, 0);
-
-    const prevPrevMonth = prevMonth === 0 ? 11 : prevMonth - 1;
-    const prevPrevYear = prevMonth === 0 ? prevYear - 1 : prevYear;
-    const pStart = new Date(prevPrevYear, prevPrevMonth, 1);
-    const pEnd = new Date(prevPrevYear, prevPrevMonth + 1, 0);
-
-    return {
-      startDate: start.toISOString().split('T')[0],
-      endDate: end.toISOString().split('T')[0],
-      previousStartDate: pStart.toISOString().split('T')[0],
-      previousEndDate: pEnd.toISOString().split('T')[0],
-    };
-  }
-
-  if (dto.period === 'this_quarter') {
-    const quarter = Math.floor(month / 3);
-    const start = new Date(year, quarter * 3, 1);
-    const end = new Date(year, (quarter + 1) * 3, 0);
-
-    const pStart = new Date(year, (quarter - 1) * 3, 1);
-    const pEnd = new Date(year, quarter * 3, 0);
-
-    return {
-      startDate: start.toISOString().split('T')[0],
-      endDate: end.toISOString().split('T')[0],
-      previousStartDate: pStart.toISOString().split('T')[0],
-      previousEndDate: pEnd.toISOString().split('T')[0],
-    };
-  }
-
-  if (dto.period === 'this_year') {
-    const start = new Date(year, 0, 1);
-    const end = new Date(year, 11, 31);
-    const pStart = new Date(year - 1, 0, 1);
-    const pEnd = new Date(year - 1, 11, 31);
-
-    return {
-      startDate: start.toISOString().split('T')[0],
-      endDate: end.toISOString().split('T')[0],
-      previousStartDate: pStart.toISOString().split('T')[0],
-      previousEndDate: pEnd.toISOString().split('T')[0],
-    };
-  }
-
-  // Default: this_month
-  const start = new Date(year, month, 1);
-  const end = new Date(year, month + 1, 0);
-
-  const pMonth = month === 0 ? 11 : month - 1;
-  const pYear = month === 0 ? year - 1 : year;
-  const pStart = new Date(pYear, pMonth, 1);
-  const pEnd = new Date(pYear, pMonth + 1, 0);
-
-  return {
-    startDate: start.toISOString().split('T')[0],
-    endDate: end.toISOString().split('T')[0],
-    previousStartDate: pStart.toISOString().split('T')[0],
-    previousEndDate: pEnd.toISOString().split('T')[0],
-  };
+  return resolveTimezoneSafeDateRange(dto);
 }
 
 function calcGrowth(current: number, previous: number): number {

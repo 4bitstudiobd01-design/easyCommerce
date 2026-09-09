@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { FinanceTransactionEntity } from '../entities/finance-transaction.entity';
+import { getMonthDateRange } from '../utils/finance-date.utils';
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -40,10 +41,9 @@ export class ExportFinanceDataService {
     }
 
     if (query?.year && query?.month && query.month > 0) {
-      const start = new Date(query.year, query.month - 1, 1).toISOString().split('T')[0];
-      const end = new Date(query.year, query.month, 0).toISOString().split('T')[0];
-      qb.andWhere('txn.transactionDate >= :start', { start });
-      qb.andWhere('txn.transactionDate <= :end', { end });
+      const { startDate, endDate } = getMonthDateRange(query.year, query.month);
+      qb.andWhere('txn.transactionDate >= :start', { start: startDate });
+      qb.andWhere('txn.transactionDate <= :end', { end: endDate });
     } else if (query?.year) {
       qb.andWhere('txn.transactionDate >= :start', { start: `${query.year}-01-01` });
       qb.andWhere('txn.transactionDate <= :end', { end: `${query.year}-12-31` });

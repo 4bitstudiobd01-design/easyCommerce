@@ -6,6 +6,8 @@ import { FinanceCategoryEntity } from '../entities/finance-category.entity';
 import { FinanceTransactionEntity } from '../entities/finance-transaction.entity';
 import { FinanceInvoiceEntity } from '../entities/finance-invoice.entity';
 import { FinanceBillEntity } from '../entities/finance-bill.entity';
+import { FinanceRequisitionEntity } from '../entities/finance-requisition.entity';
+import { FinanceTransferEntity } from '../entities/finance-transfer.entity';
 import {
   FinanceAccountTypeEnum,
   FinanceCategoryTypeEnum,
@@ -14,7 +16,12 @@ import {
   FinanceSourceTypeEnum,
   FinanceTransactionStatusEnum,
   FinanceTransactionTypeEnum,
+  FinanceRequisitionStatusEnum,
+  FinanceRequisitionPriorityEnum,
+  FinanceTransferStatusEnum,
 } from '../enums/finance.enums';
+import { SyncModuleFinanceService } from './sync-module-finance.service';
+import { SeedDefaultChartOfAccountsService } from './seed-default-chart-of-accounts.service';
 
 export const REALISTIC_CATEGORIES = [
   { name: 'Product Sales Revenue', code: 'PRODUCT_SALES', type: FinanceCategoryTypeEnum.INCOME, color: '#10b981' },
@@ -86,17 +93,18 @@ export class SeedRealisticFinanceDataService {
     private readonly invoiceRepository: Repository<FinanceInvoiceEntity>,
     @InjectRepository(FinanceBillEntity)
     private readonly billRepository: Repository<FinanceBillEntity>,
+    @InjectRepository(FinanceRequisitionEntity)
+    private readonly requisitionRepository: Repository<FinanceRequisitionEntity>,
+    @InjectRepository(FinanceTransferEntity)
+    private readonly transferRepository: Repository<FinanceTransferEntity>,
+    private readonly syncModuleFinanceService: SyncModuleFinanceService,
+    private readonly seederService: SeedDefaultChartOfAccountsService,
   ) {}
 
   async execute(tenantId: string, storeId: string, force = false): Promise<void> {
-    const existingExpenseCount = await this.transactionRepository.count({
-      where: { storeId, type: FinanceTransactionTypeEnum.EXPENSE },
-    });
-    if (existingExpenseCount > 0 && !force) {
-      return; // Already has expenses
-    }
+    await this.seederService.execute(tenantId, storeId);
 
-    this.logger.log(`Seeding realistic 6-month Bangladesh finance data for store: ${storeId}`);
+    this.logger.log(`Ensuring realistic 6-month Bangladesh finance dataset for store: ${storeId}`);
 
     // 1. Ensure Accounts
     const accountMap = new Map<string, FinanceAccountEntity>();
@@ -579,10 +587,36 @@ export class SeedRealisticFinanceDataService {
       });
     }
 
-    // 4. Seed Pending Corporate Invoices (Receivables)
-    const pendingInvoices = [
+    // 4. Seed Corporate Invoices (August & September)
+    const realisticInvoices = [
       {
-        invoiceNumber: 'INV-2026-001',
+        invoiceNumber: 'INV-2026-AUG-01',
+        customerName: 'Dhaka Superstore Ltd',
+        customerEmail: 'corporate@dhakasuperstore.com',
+        customerPhone: '+8801700112233',
+        issueDate: '2026-08-12',
+        dueDate: '2026-08-28',
+        totalAmount: '85000.00',
+        paidAmount: '85000.00',
+        balanceDue: '0.00',
+        status: FinanceInvoiceStatusEnum.PAID,
+        notes: 'Corporate bulk monsoon gift hampers batch #1 (Fully Cleared)',
+      },
+      {
+        invoiceNumber: 'INV-2026-AUG-02',
+        customerName: 'Apex Lifestyle Retail',
+        customerEmail: 'procurement@apexlifestyle.bd',
+        customerPhone: '+8801811223344',
+        issueDate: '2026-08-20',
+        dueDate: '2026-09-10',
+        totalAmount: '65000.00',
+        paidAmount: '40000.00',
+        balanceDue: '25000.00',
+        status: FinanceInvoiceStatusEnum.PARTIALLY_PAID,
+        notes: 'Pre-autumn lifestyle showroom apparel delivery (Partial settlement)',
+      },
+      {
+        invoiceNumber: 'INV-2026-SEP-01',
         customerName: 'Dhaka Superstore Ltd',
         customerEmail: 'corporate@dhakasuperstore.com',
         customerPhone: '+8801700112233',
@@ -592,10 +626,10 @@ export class SeedRealisticFinanceDataService {
         paidAmount: '45000.00',
         balanceDue: '80000.00',
         status: FinanceInvoiceStatusEnum.PARTIALLY_PAID,
-        notes: 'Corporate bulk seasonal gift hampers batch #1',
+        notes: 'Corporate bulk seasonal gift hampers batch #2',
       },
       {
-        invoiceNumber: 'INV-2026-002',
+        invoiceNumber: 'INV-2026-SEP-02',
         customerName: 'Apex Lifestyle Retail',
         customerEmail: 'procurement@apexlifestyle.bd',
         customerPhone: '+8801811223344',
@@ -607,9 +641,22 @@ export class SeedRealisticFinanceDataService {
         status: FinanceInvoiceStatusEnum.UNPAID,
         notes: 'Consignment inventory delivery for retail outlet #3',
       },
+      {
+        invoiceNumber: 'INV-2026-SEP-03',
+        customerName: 'Chattogram Emporium Corp',
+        customerEmail: 'finance@ctgemporium.bd',
+        customerPhone: '+8801933445566',
+        issueDate: '2026-09-05',
+        dueDate: '2026-09-20',
+        totalAmount: '50000.00',
+        paidAmount: '50000.00',
+        balanceDue: '0.00',
+        status: FinanceInvoiceStatusEnum.PAID,
+        notes: 'B2B Wholesale bulk clearance order - September',
+      },
     ];
 
-    for (const invDef of pendingInvoices) {
+    for (const invDef of realisticInvoices) {
       const exists = await this.invoiceRepository.findOne({ where: { storeId, invoiceNumber: invDef.invoiceNumber } });
       if (!exists) {
         await this.invoiceRepository.save(
@@ -623,10 +670,38 @@ export class SeedRealisticFinanceDataService {
       }
     }
 
-    // 5. Seed Supplier Bills (Payables)
-    const pendingBills = [
+    // 5. Seed Supplier Bills (August & September)
+    const realisticBills = [
       {
-        billNumber: 'BILL-2026-001',
+        billNumber: 'BILL-2026-AUG-01',
+        supplierName: 'Apex Packaging Industries Ltd',
+        supplierEmail: 'billing@apexpackaging.bd',
+        supplierContact: '+8801911223344',
+        category: 'Packaging',
+        issueDate: '2026-08-08',
+        dueDate: '2026-08-25',
+        totalAmount: '35000.00',
+        paidAmount: '35000.00',
+        balanceDue: '0.00',
+        status: FinanceBillStatusEnum.PAID,
+        notes: 'August custom mailer boxes batch #1 (Paid via City Bank PLC)',
+      },
+      {
+        billNumber: 'BILL-2026-AUG-02',
+        supplierName: 'Bengal Textile Mills Supplier',
+        supplierEmail: 'accounts@bengaltextile.bd',
+        supplierContact: '+8801722334455',
+        category: 'COGS',
+        issueDate: '2026-08-14',
+        dueDate: '2026-08-28',
+        totalAmount: '75000.00',
+        paidAmount: '75000.00',
+        balanceDue: '0.00',
+        status: FinanceBillStatusEnum.PAID,
+        notes: 'August fabric roll stock procurement batch #1 (Paid)',
+      },
+      {
+        billNumber: 'BILL-2026-SEP-01',
         supplierName: 'Apex Packaging Industries Ltd',
         supplierEmail: 'billing@apexpackaging.bd',
         supplierContact: '+8801911223344',
@@ -640,7 +715,7 @@ export class SeedRealisticFinanceDataService {
         notes: 'Bulk custom printed corrugated mailer boxes (5000 pcs)',
       },
       {
-        billNumber: 'BILL-2026-002',
+        billNumber: 'BILL-2026-SEP-02',
         supplierName: 'Bengal Textile Mills Supplier',
         supplierEmail: 'accounts@bengaltextile.bd',
         supplierContact: '+8801722334455',
@@ -655,7 +730,7 @@ export class SeedRealisticFinanceDataService {
       },
     ];
 
-    for (const billDef of pendingBills) {
+    for (const billDef of realisticBills) {
       const exists = await this.billRepository.findOne({ where: { storeId, billNumber: billDef.billNumber } });
       if (!exists) {
         await this.billRepository.save(
@@ -668,7 +743,438 @@ export class SeedRealisticFinanceDataService {
       }
     }
 
-    this.logger.log(`Successfully completed seeding realistic Bangladesh finance dataset.`);
+    // 6. Seed Purchase Requisitions (August & September)
+    const realisticRequisitions = [
+      {
+        requisitionNumber: 'REQ-2026-AUG-01',
+        title: 'Thermal Label Barcode Shipping Printer for Order Packing Station',
+        category: 'EQUIPMENT',
+        supplierName: 'Xprinter Bangladesh Official',
+        requestedAmount: '18500.00',
+        requestDate: '2026-08-15',
+        requiredDate: '2026-08-20',
+        status: FinanceRequisitionStatusEnum.APPROVED,
+        priority: FinanceRequisitionPriorityEnum.HIGH,
+        notes: 'High-volume packing station thermal printer replacement (Approved by Management)',
+        items: [
+          {
+            productName: 'Xprinter XP-420B High-Speed Thermal Shipping Label Printer',
+            quantity: 1,
+            unitCost: 18500,
+            lineTotal: 18500,
+          },
+        ],
+      },
+      {
+        requisitionNumber: 'REQ-2026-AUG-02',
+        title: 'Ergonomic Task Chairs for Customer Support and Fulfillment Team',
+        category: 'OFFICE_ADMIN',
+        supplierName: 'Otobi Office Furnishings',
+        requestedAmount: '12000.00',
+        requestDate: '2026-08-22',
+        requiredDate: '2026-08-30',
+        status: FinanceRequisitionStatusEnum.REJECTED,
+        priority: FinanceRequisitionPriorityEnum.LOW,
+        notes: 'Deferred to Q4 office renovation budget',
+        items: [
+          {
+            productName: 'Executive High-Back Mesh Task Chair',
+            quantity: 2,
+            unitCost: 6000,
+            lineTotal: 12000,
+          },
+        ],
+      },
+      {
+        requisitionNumber: 'REQ-2026-SEP-01',
+        title: 'Heavy-Duty Industrial Steel Warehouse Inventory Shelves (4 Racks)',
+        category: 'EQUIPMENT',
+        supplierName: 'Bengal Steel Works Ltd',
+        requestedAmount: '35000.00',
+        requestDate: '2026-09-04',
+        requiredDate: '2026-09-18',
+        status: FinanceRequisitionStatusEnum.PENDING,
+        priority: FinanceRequisitionPriorityEnum.HIGH,
+        notes: 'Required for incoming seasonal stock storage expansion',
+        items: [
+          {
+            productName: 'Heavy-Duty 4-Tier Slotted Angle Steel Rack Shelf',
+            quantity: 4,
+            unitCost: 8750,
+            lineTotal: 35000,
+          },
+        ],
+      },
+      {
+        requisitionNumber: 'REQ-2026-SEP-02',
+        title: 'Wireless Handheld 2D QR & Barcode Scanners (2 Units)',
+        category: 'EQUIPMENT',
+        supplierName: 'Networld Technology BD',
+        requestedAmount: '14500.00',
+        requestDate: '2026-09-06',
+        requiredDate: '2026-09-15',
+        status: FinanceRequisitionStatusEnum.APPROVED,
+        priority: FinanceRequisitionPriorityEnum.NORMAL,
+        notes: 'Faster inventory receiving and cycle counting on warehouse floor',
+        items: [
+          {
+            productName: 'NetumScan 2.4GHz Wireless 2D Barcode Scanner with Stand',
+            quantity: 2,
+            unitCost: 7250,
+            lineTotal: 14500,
+          },
+        ],
+      },
+    ];
+
+    for (const reqDef of realisticRequisitions) {
+      const exists = await this.requisitionRepository.findOne({
+        where: { storeId, requisitionNumber: reqDef.requisitionNumber },
+      });
+      if (!exists) {
+        await this.requisitionRepository.save(
+          this.requisitionRepository.create({
+            tenantId,
+            storeId,
+            ...reqDef,
+          }),
+        );
+      }
+    }
+
+    // 7. Seed Inter-Account Transfers (Courier Remittances, Digital Wallet Sweeps & Cash Imprest)
+    const realisticTransfers = [
+      // May 2026
+      {
+        transferNumber: 'TRF-2026-MAY-01',
+        fromAccount: courierAccount,
+        toAccount: bankAccount,
+        amount: '300000.00',
+        fee: '0.00',
+        transferDate: '2026-05-18',
+        reference: 'STEADFAST-SETTLE-20260518',
+        notes: 'Steadfast Courier COD remittance settlement into City Bank',
+      },
+      {
+        transferNumber: 'TRF-2026-MAY-02',
+        fromAccount: bkashAccount,
+        toAccount: bankAccount,
+        amount: '300000.00',
+        fee: '0.00',
+        transferDate: '2026-05-20',
+        reference: 'BKASH-SWEEP-20260520',
+        notes: 'bKash merchant wallet balance sweep to City Bank',
+      },
+      {
+        transferNumber: 'TRF-2026-MAY-03',
+        fromAccount: bankAccount,
+        toAccount: cashAccount,
+        amount: '350000.00',
+        fee: '0.00',
+        transferDate: '2026-05-27',
+        reference: 'CHQ-CASH-20260527',
+        notes: 'Cheque cash withdrawal for monthly staff payroll disbursement',
+      },
+
+      // June 2026
+      {
+        transferNumber: 'TRF-2026-JUN-01',
+        fromAccount: courierAccount,
+        toAccount: bankAccount,
+        amount: '400000.00',
+        fee: '0.00',
+        transferDate: '2026-06-16',
+        reference: 'STEADFAST-SETTLE-20260616',
+        notes: 'Steadfast Courier COD remittance settlement into City Bank',
+      },
+      {
+        transferNumber: 'TRF-2026-JUN-02',
+        fromAccount: bkashAccount,
+        toAccount: bankAccount,
+        amount: '350000.00',
+        fee: '0.00',
+        transferDate: '2026-06-20',
+        reference: 'BKASH-SWEEP-20260620',
+        notes: 'bKash merchant wallet balance sweep to City Bank',
+      },
+      {
+        transferNumber: 'TRF-2026-JUN-03',
+        fromAccount: bankAccount,
+        toAccount: cashAccount,
+        amount: '350000.00',
+        fee: '0.00',
+        transferDate: '2026-06-27',
+        reference: 'CHQ-CASH-20260627',
+        notes: 'Cheque cash withdrawal for monthly staff payroll disbursement',
+      },
+
+      // July 2026
+      {
+        transferNumber: 'TRF-2026-JUL-01',
+        fromAccount: courierAccount,
+        toAccount: bankAccount,
+        amount: '450000.00',
+        fee: '0.00',
+        transferDate: '2026-07-16',
+        reference: 'STEADFAST-SETTLE-20260716',
+        notes: 'Steadfast Courier COD remittance settlement into City Bank',
+      },
+      {
+        transferNumber: 'TRF-2026-JUL-02',
+        fromAccount: bkashAccount,
+        toAccount: bankAccount,
+        amount: '450000.00',
+        fee: '0.00',
+        transferDate: '2026-07-20',
+        reference: 'BKASH-SWEEP-20260720',
+        notes: 'bKash merchant wallet balance sweep to City Bank',
+      },
+      {
+        transferNumber: 'TRF-2026-JUL-03',
+        fromAccount: bankAccount,
+        toAccount: cashAccount,
+        amount: '350000.00',
+        fee: '0.00',
+        transferDate: '2026-07-27',
+        reference: 'CHQ-CASH-20260727',
+        notes: 'Cheque cash withdrawal for monthly staff payroll disbursement',
+      },
+
+      // August 2026 (Previous Month)
+      {
+        transferNumber: 'TRF-2026-AUG-01',
+        fromAccount: courierAccount,
+        toAccount: bankAccount,
+        amount: '500000.00',
+        fee: '0.00',
+        transferDate: '2026-08-16',
+        reference: 'STEADFAST-SETTLE-20260816',
+        notes: 'Steadfast Courier COD remittance settlement into City Bank operating account',
+      },
+      {
+        transferNumber: 'TRF-2026-AUG-02',
+        fromAccount: courierAccount,
+        toAccount: bankAccount,
+        amount: '450000.00',
+        fee: '0.00',
+        transferDate: '2026-08-28',
+        reference: 'STEADFAST-SETTLE-20260828',
+        notes: 'Steadfast Courier COD remittance settlement into City Bank operating account',
+      },
+      {
+        transferNumber: 'TRF-2026-AUG-03',
+        fromAccount: bkashAccount,
+        toAccount: bankAccount,
+        amount: '500000.00',
+        fee: '0.00',
+        transferDate: '2026-08-18',
+        reference: 'BKASH-SWEEP-20260818',
+        notes: 'bKash merchant digital collection sweep to City Bank operating account',
+      },
+      {
+        transferNumber: 'TRF-2026-AUG-04',
+        fromAccount: bkashAccount,
+        toAccount: bankAccount,
+        amount: '400000.00',
+        fee: '0.00',
+        transferDate: '2026-08-29',
+        reference: 'BKASH-SWEEP-20260829',
+        notes: 'bKash merchant wallet balance transfer sweep to City Bank',
+      },
+      {
+        transferNumber: 'TRF-2026-AUG-05',
+        fromAccount: bankAccount,
+        toAccount: cashAccount,
+        amount: '150000.00',
+        fee: '0.00',
+        transferDate: '2026-08-02',
+        reference: 'CHQ-IMPREST-20260802',
+        notes: 'Petty cash counter replenishment from City Bank',
+      },
+      {
+        transferNumber: 'TRF-2026-AUG-06',
+        fromAccount: bankAccount,
+        toAccount: cashAccount,
+        amount: '500000.00',
+        fee: '0.00',
+        transferDate: '2026-08-27',
+        reference: 'CHQ-SALARY-20260827',
+        notes: 'Cheque cash withdrawal for staff monthly payroll compensation',
+      },
+
+      // September 2026 (This Month)
+      {
+        transferNumber: 'TRF-2026-SEP-01',
+        fromAccount: courierAccount,
+        toAccount: bankAccount,
+        amount: '500000.00',
+        fee: '0.00',
+        transferDate: '2026-09-06',
+        reference: 'STEADFAST-SETTLE-20260906',
+        notes: 'Steadfast Courier weekly COD remittance settlement into City Bank',
+      },
+      {
+        transferNumber: 'TRF-2026-SEP-02',
+        fromAccount: courierAccount,
+        toAccount: bankAccount,
+        amount: '400000.00',
+        fee: '0.00',
+        transferDate: '2026-09-09',
+        reference: 'STEADFAST-SETTLE-20260909',
+        notes: 'Steadfast Courier COD remittance settlement into City Bank operating account',
+      },
+      {
+        transferNumber: 'TRF-2026-SEP-03',
+        fromAccount: bkashAccount,
+        toAccount: bankAccount,
+        amount: '450000.00',
+        fee: '0.00',
+        transferDate: '2026-09-07',
+        reference: 'BKASH-SWEEP-20260907',
+        notes: 'bKash merchant digital collection sweep to City Bank operating account',
+      },
+      {
+        transferNumber: 'TRF-2026-SEP-04',
+        fromAccount: bkashAccount,
+        toAccount: bankAccount,
+        amount: '350000.00',
+        fee: '0.00',
+        transferDate: '2026-09-09',
+        reference: 'BKASH-SWEEP-20260909',
+        notes: 'bKash merchant wallet balance sweep to City Bank',
+      },
+      {
+        transferNumber: 'TRF-2026-SEP-05',
+        fromAccount: bankAccount,
+        toAccount: cashAccount,
+        amount: '150000.00',
+        fee: '0.00',
+        transferDate: '2026-09-02',
+        reference: 'CHQ-IMPREST-20260902',
+        notes: 'Cash counter imprest replenishment from City Bank account',
+      },
+      {
+        transferNumber: 'TRF-2026-SEP-06',
+        fromAccount: bankAccount,
+        toAccount: cashAccount,
+        amount: '500000.00',
+        fee: '0.00',
+        transferDate: '2026-09-08',
+        reference: 'CHQ-SALARY-20260908',
+        notes: 'Cheque cash withdrawal for monthly staff salary disbursement',
+      },
+    ];
+
+    for (const trfDef of realisticTransfers) {
+      if (!trfDef.fromAccount || !trfDef.toAccount) continue;
+      let existingTrf = await this.transferRepository.findOne({
+        where: { storeId, transferNumber: trfDef.transferNumber },
+      });
+
+      if (!existingTrf) {
+        existingTrf = await this.transferRepository.save(
+          this.transferRepository.create({
+            tenantId,
+            storeId,
+            transferNumber: trfDef.transferNumber,
+            fromAccountId: trfDef.fromAccount.id,
+            toAccountId: trfDef.toAccount.id,
+            amount: trfDef.amount,
+            fee: trfDef.fee,
+            currency: 'BDT',
+            transferDate: trfDef.transferDate,
+            reference: trfDef.reference,
+            notes: trfDef.notes,
+            status: FinanceTransferStatusEnum.COMPLETED,
+          }),
+        );
+
+        // Record matching non-income/expense TRANSFER transaction in the ledger
+        const txnExists = await this.transactionRepository.findOne({
+          where: { storeId, transactionNumber: `TXN-${trfDef.transferNumber}` },
+        });
+        if (!txnExists) {
+          await this.transactionRepository.save(
+            this.transactionRepository.create({
+              tenantId,
+              storeId,
+              transactionNumber: `TXN-${trfDef.transferNumber}`,
+              type: FinanceTransactionTypeEnum.TRANSFER,
+              amount: trfDef.amount,
+              currency: 'BDT',
+              transactionDate: trfDef.transferDate,
+              accountId: trfDef.fromAccount.id,
+              toAccountId: trfDef.toAccount.id,
+              description: trfDef.notes,
+              reference: trfDef.reference,
+              sourceType: FinanceSourceTypeEnum.TRANSFER,
+              sourceId: existingTrf.id,
+              status: FinanceTransactionStatusEnum.COMPLETED,
+            }),
+          );
+        }
+      }
+    }
+
+    // 8. Mathematically Rebalance Account Balances (Starting Balance + Inflows - Outflows + Transfers)
+    const storeAccounts = await this.accountRepository.find({ where: { storeId } });
+    for (const acc of storeAccounts) {
+      const incRes = await this.transactionRepository
+        .createQueryBuilder('t')
+        .where('t.storeId = :storeId AND t.accountId = :accId AND t.type IN (:...incTypes) AND t.status = :status', {
+          storeId,
+          accId: acc.id,
+          incTypes: [FinanceTransactionTypeEnum.INCOME, FinanceTransactionTypeEnum.PAYMENT],
+          status: FinanceTransactionStatusEnum.COMPLETED,
+        })
+        .select('COALESCE(SUM(CAST(t.amount AS NUMERIC)), 0)', 'total')
+        .getRawOne();
+
+      const expRes = await this.transactionRepository
+        .createQueryBuilder('t')
+        .where('t.storeId = :storeId AND t.accountId = :accId AND t.type IN (:...expTypes) AND t.status = :status', {
+          storeId,
+          accId: acc.id,
+          expTypes: [FinanceTransactionTypeEnum.EXPENSE, FinanceTransactionTypeEnum.REFUND],
+          status: FinanceTransactionStatusEnum.COMPLETED,
+        })
+        .select('COALESCE(SUM(CAST(t.amount AS NUMERIC)), 0)', 'total')
+        .getRawOne();
+
+      const trfInRes = await this.transactionRepository
+        .createQueryBuilder('t')
+        .where('t.storeId = :storeId AND t.toAccountId = :accId AND t.type = :trfType AND t.status = :status', {
+          storeId,
+          accId: acc.id,
+          trfType: FinanceTransactionTypeEnum.TRANSFER,
+          status: FinanceTransactionStatusEnum.COMPLETED,
+        })
+        .select('COALESCE(SUM(CAST(t.amount AS NUMERIC)), 0)', 'total')
+        .getRawOne();
+
+      const trfOutRes = await this.transactionRepository
+        .createQueryBuilder('t')
+        .where('t.storeId = :storeId AND t.accountId = :accId AND t.type = :trfType AND t.status = :status', {
+          storeId,
+          accId: acc.id,
+          trfType: FinanceTransactionTypeEnum.TRANSFER,
+          status: FinanceTransactionStatusEnum.COMPLETED,
+        })
+        .select('COALESCE(SUM(CAST(t.amount AS NUMERIC)), 0)', 'total')
+        .getRawOne();
+
+      const startBal = Number(acc.startingBalance || 0);
+      const totalInc = Number(incRes?.total || 0);
+      const totalExp = Number(expRes?.total || 0);
+      const totalTrfIn = Number(trfInRes?.total || 0);
+      const totalTrfOut = Number(trfOutRes?.total || 0);
+
+      const calculated = startBal + totalInc - totalExp + totalTrfIn - totalTrfOut;
+      acc.currentBalance = calculated.toFixed(2);
+      await this.accountRepository.save(acc);
+    }
+
+    this.logger.log(`Successfully completed ensuring realistic Bangladesh finance dataset for store: ${storeId}`);
   }
 
   private async saveTxn(data: {
@@ -689,7 +1195,41 @@ export class SeedRealisticFinanceDataService {
     const existing = await this.transactionRepository.findOne({
       where: { storeId: data.storeId, transactionNumber: data.transactionNumber },
     });
+
     if (existing) {
+      // Ensure double-entry journal entry is synced
+      try {
+        const dateStr = typeof existing.transactionDate === 'string'
+          ? existing.transactionDate.slice(0, 10)
+          : (existing.transactionDate as any)?.toISOString?.()?.slice(0, 10) || data.transactionDate;
+
+        if (existing.type === FinanceTransactionTypeEnum.EXPENSE) {
+          await this.syncModuleFinanceService.syncExpenseTransaction({
+            tenantId: data.tenantId,
+            storeId: data.storeId,
+            transactionNumber: existing.transactionNumber,
+            amount: Number(existing.amount),
+            transactionDate: dateStr,
+            categoryCode: existing.categoryCode,
+            description: existing.description,
+            paymentMethod: existing.paymentMethod,
+            accountId: existing.accountId,
+          });
+        } else if (existing.type === FinanceTransactionTypeEnum.INCOME) {
+          await this.syncModuleFinanceService.syncIncomeTransaction({
+            tenantId: data.tenantId,
+            storeId: data.storeId,
+            transactionNumber: existing.transactionNumber,
+            amount: Number(existing.amount),
+            transactionDate: dateStr,
+            categoryCode: existing.categoryCode,
+            description: existing.description,
+            accountId: existing.accountId,
+          });
+        }
+      } catch (err) {
+        // Non-blocking sync
+      }
       return existing;
     }
 
@@ -714,6 +1254,57 @@ export class SeedRealisticFinanceDataService {
       status: FinanceTransactionStatusEnum.COMPLETED,
     });
 
-    return this.transactionRepository.save(entity);
+    const savedTxn = await this.transactionRepository.save(entity);
+
+    // Update account balance
+    if (data.accountId) {
+      try {
+        const account = await this.accountRepository.findOne({ where: { id: data.accountId, storeId: data.storeId } });
+        if (account) {
+          const current = Number(account.currentBalance || 0);
+          const numAmt = Number(data.amount || 0);
+          if (data.type === FinanceTransactionTypeEnum.INCOME) {
+            account.currentBalance = (current + numAmt).toFixed(2);
+          } else if (data.type === FinanceTransactionTypeEnum.EXPENSE) {
+            account.currentBalance = (current - numAmt).toFixed(2);
+          }
+          await this.accountRepository.save(account);
+        }
+      } catch (err) {
+        this.logger.error(`Failed to update account balance for ${data.accountId}:`, err);
+      }
+    }
+
+    // Auto-sync into Double-Entry Journal Entry
+    try {
+      if (savedTxn.type === FinanceTransactionTypeEnum.EXPENSE) {
+        await this.syncModuleFinanceService.syncExpenseTransaction({
+          tenantId: data.tenantId,
+          storeId: data.storeId,
+          transactionNumber: savedTxn.transactionNumber,
+          amount: Number(data.amount),
+          transactionDate: data.transactionDate,
+          categoryCode: savedTxn.categoryCode,
+          description: savedTxn.description,
+          paymentMethod: savedTxn.paymentMethod,
+          accountId: savedTxn.accountId,
+        });
+      } else if (savedTxn.type === FinanceTransactionTypeEnum.INCOME) {
+        await this.syncModuleFinanceService.syncIncomeTransaction({
+          tenantId: data.tenantId,
+          storeId: data.storeId,
+          transactionNumber: savedTxn.transactionNumber,
+          amount: Number(data.amount),
+          transactionDate: data.transactionDate,
+          categoryCode: savedTxn.categoryCode,
+          description: savedTxn.description,
+          accountId: savedTxn.accountId,
+        });
+      }
+    } catch (err) {
+      this.logger.error(`Failed to auto-sync double-entry for transaction ${savedTxn.transactionNumber}:`, err);
+    }
+
+    return savedTxn;
   }
 }

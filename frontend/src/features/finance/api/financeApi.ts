@@ -492,6 +492,20 @@ export interface PaginatedResponse<T> {
   totalPages: number;
 }
 
+export interface RecentMonthSummary {
+  month: string;
+  monthLabel: string;
+  totalVolume: number;
+  totalIncome: number;
+  totalExpense: number;
+  netCashFlow: number;
+  transactionCount: number;
+}
+
+export interface TransactionsResponse extends PaginatedResponse<FinanceTransaction> {
+  recentMonthSummary?: RecentMonthSummary;
+}
+
 export interface IncomeResponse extends PaginatedResponse<FinanceTransaction> {
   summary: {
     totalIncome: number;
@@ -1158,7 +1172,7 @@ export const financeApi = createApi({
 
     // Transactions
     getTransactions: builder.query<
-      PaginatedResponse<FinanceTransaction>,
+      TransactionsResponse,
       {
         type?: string;
         status?: string;

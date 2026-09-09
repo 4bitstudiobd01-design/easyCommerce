@@ -9,6 +9,7 @@ import {
   FinanceNormalBalanceEnum,
   FinanceJournalStatusEnum,
 } from '../enums/finance.enums';
+import { getLocalTodayYmd } from '../utils/finance-date.utils';
 
 @Injectable()
 export class GetGeneralLedgerService {
@@ -29,7 +30,7 @@ export class GetGeneralLedgerService {
     }
 
     const startDate = query.startDate || '1970-01-01';
-    const endDate = query.endDate || new Date().toISOString().split('T')[0];
+    const endDate = query.endDate || getLocalTodayYmd();
 
     // 1. Calculate Opening Balance prior to startDate
     let openingBalance = 0;

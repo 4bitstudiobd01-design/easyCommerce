@@ -278,37 +278,38 @@ export class SeedDefaultChartOfAccountsService {
   ) {}
 
   async execute(tenantId: string, storeId: string): Promise<FinanceChartOfAccountEntity[]> {
-    const existingCount = await this.coaRepository.count({
-      where: { storeId },
-    });
+    const existingList = await this.coaRepository.find({ where: { storeId } });
+    const existingCodes = new Set(existingList.map((a) => a.code));
 
-    if (existingCount > 0) {
-      return this.coaRepository.find({
-        where: { storeId },
-        order: { code: 'ASC' },
-      });
-    }
-
-    const createdList: FinanceChartOfAccountEntity[] = [];
+    const toCreate: FinanceChartOfAccountEntity[] = [];
 
     for (const def of DEFAULT_CHART_OF_ACCOUNTS) {
-      const acc = this.coaRepository.create({
-        tenantId,
-        storeId,
-        code: def.code,
-        name: def.name,
-        accountClass: def.accountClass,
-        subType: def.subType,
-        normalBalance: def.normalBalance,
-        description: def.description,
-        isSystem: true,
-        isActive: true,
-        currentBalance: '0',
-        currency: 'BDT',
-      });
-      createdList.push(acc);
+      if (!existingCodes.has(def.code)) {
+        const acc = this.coaRepository.create({
+          tenantId,
+          storeId,
+          code: def.code,
+          name: def.name,
+          accountClass: def.accountClass,
+          subType: def.subType,
+          normalBalance: def.normalBalance,
+          description: def.description,
+          isSystem: true,
+          isActive: true,
+          currentBalance: '0',
+          currency: 'BDT',
+        });
+        toCreate.push(acc);
+      }
     }
 
-    return this.coaRepository.save(createdList);
+    if (toCreate.length > 0) {
+      await this.coaRepository.save(toCreate);
+    }
+
+    return this.coaRepository.find({
+      where: { storeId },
+      order: { code: 'ASC' },
+    });
   }
 }

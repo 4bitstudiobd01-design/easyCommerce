@@ -15,6 +15,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Download,
+  Wallet,
 } from 'lucide-react';
 import {
   useGetTransactionsQuery,
@@ -29,6 +30,14 @@ import {
 import { CreateTransactionModal } from './CreateTransactionModal';
 import { IncomeDetailModal } from './IncomeDetailModal';
 import { ExpenseDetailModal } from './ExpenseDetailModal';
+
+function formatMoney(amount: number | string | undefined): string {
+  const num = Number(amount || 0);
+  return '৳' + num.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
 
 export function FinanceTransactionsTable() {
   const [type, setType] = useState('');
@@ -66,6 +75,7 @@ export function FinanceTransactionsTable() {
   const transactions = data?.items || [];
   const totalPages = data?.totalPages || 1;
   const totalCount = data?.total || 0;
+  const recentMonthSummary = data?.recentMonthSummary;
   const startEntry = totalCount === 0 ? 0 : (page - 1) * limit + 1;
   const endEntry = Math.min(page * limit, totalCount);
 
@@ -100,7 +110,15 @@ export function FinanceTransactionsTable() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Transactions</h1>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Transactions</h1>
+            {recentMonthSummary?.monthLabel && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
+                {recentMonthSummary.monthLabel}: {formatMoney(recentMonthSummary.totalVolume)}
+              </span>
+            )}
+          </div>
           <p className="text-xs text-slate-500 font-medium mt-0.5">
             Full journal of income, expenses, refunds, transfers, and adjustments
           </p>
@@ -153,6 +171,97 @@ export function FinanceTransactionsTable() {
             <Plus className="w-4 h-4" />
             Add Transaction
           </button>
+        </div>
+      </div>
+
+      {/* Recent Month Summary Stream Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Transaction Volume */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs">
+            <ArrowLeftRight className="w-6 h-6" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                {recentMonthSummary?.monthLabel || 'Recent Month'}
+              </span>
+              <span className="px-1.5 py-0.2 bg-blue-50 text-blue-700 text-[9px] font-bold rounded">
+                Total Volume
+              </span>
+            </div>
+            <p className="text-xl font-black text-slate-900 mt-0.5 font-mono truncate">
+              {formatMoney(recentMonthSummary?.totalVolume || 0)}
+            </p>
+            <p className="text-[11px] text-slate-500 font-medium truncate mt-0.5">
+              {recentMonthSummary?.transactionCount || 0} transactions recorded
+            </p>
+          </div>
+        </div>
+
+        {/* Total Inflow */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 shadow-2xs">
+            <ArrowDownLeft className="w-6 h-6" />
+          </div>
+          <div className="min-w-0">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+              Total Inflow
+            </span>
+            <p className="text-xl font-black text-emerald-600 mt-0.5 font-mono truncate">
+              +{formatMoney(recentMonthSummary?.totalIncome || 0)}
+            </p>
+            <p className="text-[11px] text-slate-500 font-medium truncate mt-0.5">
+              Revenue & collections
+            </p>
+          </div>
+        </div>
+
+        {/* Total Outflow */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0 shadow-2xs">
+            <ArrowUpRight className="w-6 h-6" />
+          </div>
+          <div className="min-w-0">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+              Total Outflow
+            </span>
+            <p className="text-xl font-black text-rose-600 mt-0.5 font-mono truncate">
+              -{formatMoney(recentMonthSummary?.totalExpense || 0)}
+            </p>
+            <p className="text-[11px] text-slate-500 font-medium truncate mt-0.5">
+              Purchases & bills disbursed
+            </p>
+          </div>
+        </div>
+
+        {/* Net Cash Flow */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-4">
+          <div
+            className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-2xs ${
+              (recentMonthSummary?.netCashFlow || 0) >= 0
+                ? 'bg-indigo-100 text-indigo-600'
+                : 'bg-amber-100 text-amber-600'
+            }`}
+          >
+            <Wallet className="w-6 h-6" />
+          </div>
+          <div className="min-w-0">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+              Net Cash Flow
+            </span>
+            <p
+              className={`text-xl font-black mt-0.5 font-mono truncate ${
+                (recentMonthSummary?.netCashFlow || 0) >= 0 ? 'text-indigo-600' : 'text-amber-600'
+              }`}
+            >
+              {(recentMonthSummary?.netCashFlow || 0) >= 0 ? '+' : ''}
+              {formatMoney(recentMonthSummary?.netCashFlow || 0)}
+            </p>
+            <p className="text-[11px] text-slate-500 font-medium truncate mt-0.5">
+              Net balance movement
+            </p>
+          </div>
         </div>
       </div>
 
