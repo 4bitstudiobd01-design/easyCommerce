@@ -18,11 +18,13 @@ import {
   Settings,
   ClipboardCheck,
 } from 'lucide-react';
+import { useGetRequisitionStatsQuery } from '../api/financeApi';
 
 const FINANCE_TABS = [
   {
     name: 'Overview',
     href: '/dashboard/finance/overview',
+    exact: true,
     matchHref: ['/dashboard/finance/overview', '/dashboard/finance'],
     icon: LayoutDashboard,
   },
@@ -102,6 +104,10 @@ const FINANCE_TABS = [
 
 export function FinanceTabsHeader() {
   const pathname = usePathname();
+  const { data: stats } = useGetRequisitionStatsQuery(undefined, {
+    pollingInterval: 30000,
+  });
+  const pendingCount = stats?.pendingCount ?? 0;
 
   return (
     <div className="mb-6">
@@ -113,7 +119,9 @@ export function FinanceTabsHeader() {
         >
           {FINANCE_TABS.map((tab) => {
             const Icon = tab.icon;
-            const isActive = tab.matchHref.includes(pathname);
+            const isActive = tab.exact
+              ? tab.matchHref.some((exactPath) => pathname === exactPath)
+              : tab.matchHref.some((prefix) => pathname === prefix || pathname.startsWith(prefix + '/'));
 
             return (
               <Link
@@ -127,6 +135,17 @@ export function FinanceTabsHeader() {
               >
                 <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
                 <span>{tab.name}</span>
+                {tab.name === 'Requisitions' && pendingCount > 0 && (
+                  <span
+                    className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-extrabold leading-none ${
+                      isActive
+                        ? 'bg-white text-rose-600'
+                        : 'bg-rose-500 text-white shadow-xs'
+                    } animate-pulse`}
+                  >
+                    {pendingCount}
+                  </span>
+                )}
               </Link>
             );
           })}

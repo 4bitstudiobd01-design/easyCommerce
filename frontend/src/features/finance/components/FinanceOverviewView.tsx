@@ -34,6 +34,7 @@ import {
   Wrench,
   ShieldCheck,
   PieChart as PieChartIcon,
+  ClipboardCheck,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -50,6 +51,7 @@ import {
 import {
   useGetFinanceOverviewQuery,
   useExportFinanceTransactionsMutation,
+  useGetRequisitionStatsQuery,
   FinanceTransaction,
   FinanceAccount,
 } from '../api/financeApi';
@@ -101,6 +103,11 @@ export function FinanceOverviewView() {
     year: selectedYear,
     month: selectedMonth === 0 ? undefined : selectedMonth,
   });
+
+  const { data: reqStats } = useGetRequisitionStatsQuery(undefined, {
+    pollingInterval: 30000,
+  });
+  const pendingRequisitionsCount = reqStats?.pendingCount ?? 0;
 
   const [exportTransactions, { isLoading: isExporting }] = useExportFinanceTransactionsMutation();
 
@@ -251,6 +258,37 @@ export function FinanceOverviewView() {
           </button>
         </div>
       </div>
+
+      {/* Pending Requisitions Alert Banner */}
+      {pendingRequisitionsCount > 0 && (
+        <div className="bg-gradient-to-r from-amber-500/10 via-rose-500/10 to-amber-500/10 border border-amber-300/80 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-700 flex items-center justify-center shrink-0 border border-amber-400/40">
+              <ClipboardCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black uppercase tracking-wider text-amber-900">
+                  Budget Requisitions Pending Approval
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-black bg-rose-500 text-white shadow-xs animate-pulse">
+                  {pendingRequisitionsCount} Pending
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 mt-0.5 font-medium">
+                {pendingRequisitionsCount} requisition{pendingRequisitionsCount > 1 ? 's' : ''} require Finance disbursement review and bank deduction.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/dashboard/finance/requisitions"
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all shadow-sm shrink-0"
+          >
+            <span>Review & Approve</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      )}
 
       {/* Primary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

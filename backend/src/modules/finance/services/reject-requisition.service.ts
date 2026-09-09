@@ -5,7 +5,11 @@ import {
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { FinanceRequisitionEntity } from '../entities/finance-requisition.entity';
-import { PurchaseOrderEntity, PurchaseOrderStatusEnum } from '../../purchase/entities/purchase-order.entity';
+import {
+  PurchaseOrderEntity,
+  PurchaseOrderPaymentStatusEnum,
+  PurchaseOrderStatusEnum,
+} from '../../purchase/entities/purchase-order.entity';
 import { RejectFinanceRequisitionDto } from '../dto/finance-requisition.dto';
 import { FinanceRequisitionStatusEnum } from '../enums/finance.enums';
 
@@ -50,6 +54,7 @@ export class RejectRequisitionService {
 
         if (po) {
           po.status = PurchaseOrderStatusEnum.CANCELLED;
+          po.paymentStatus = PurchaseOrderPaymentStatusEnum.PENDING;
           po.notes = (
             (po.notes || '') +
             `\n[Finance Rejection Reason]: ${dto.reason.trim()}`

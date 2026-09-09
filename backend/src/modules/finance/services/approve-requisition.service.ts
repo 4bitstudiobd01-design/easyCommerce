@@ -7,7 +7,11 @@ import { DataSource } from 'typeorm';
 import { FinanceRequisitionEntity } from '../entities/finance-requisition.entity';
 import { FinanceAccountEntity } from '../entities/finance-account.entity';
 import { FinanceTransactionEntity } from '../entities/finance-transaction.entity';
-import { PurchaseOrderEntity, PurchaseOrderStatusEnum } from '../../purchase/entities/purchase-order.entity';
+import {
+  PurchaseOrderEntity,
+  PurchaseOrderPaymentStatusEnum,
+  PurchaseOrderStatusEnum,
+} from '../../purchase/entities/purchase-order.entity';
 import { ApproveFinanceRequisitionDto } from '../dto/finance-requisition.dto';
 import {
   FinanceRequisitionStatusEnum,
@@ -68,6 +72,15 @@ export class ApproveRequisitionService {
       const transactionNumber = `TXN-${String(txnCount + 1).padStart(6, '0')}`;
       const today = new Date().toISOString().split('T')[0];
 
+      // Auto-resolve paymentMethod from account type if not provided
+      let resolvedPaymentMethod = dto.paymentMethod;
+      if (!resolvedPaymentMethod) {
+        if (account.type === 'CASH') resolvedPaymentMethod = 'CASH';
+        else if (account.type === 'DIGITAL_WALLET') resolvedPaymentMethod = 'MOBILE_BANKING';
+        else if (account.type === 'CARD') resolvedPaymentMethod = 'CARD';
+        else resolvedPaymentMethod = 'BANK_TRANSFER';
+      }
+
       // 2. Create Expense Transaction in Finance Ledger
       const txn = txnRepo.create({
         tenantId,
@@ -83,7 +96,7 @@ export class ApproveRequisitionService {
         reference: dto.paymentReference || requisition.requisitionNumber,
         sourceType: FinanceSourceTypeEnum.REQUISITION,
         sourceId: requisition.id,
-        paymentMethod: dto.paymentMethod || 'BANK_TRANSFER',
+        paymentMethod: resolvedPaymentMethod,
         status: FinanceTransactionStatusEnum.COMPLETED,
         createdByUserId: userId,
       });
@@ -121,7 +134,8 @@ export class ApproveRequisitionService {
         });
 
         if (po) {
-          po.status = PurchaseOrderStatusEnum.APPROVED;
+          po.status = PurchaseOrderStatusEnum.SENT;
+          po.paymentStatus = PurchaseOrderPaymentStatusEnum.PAID;
           const approvalNote = `\n[Finance Approved: ৳${amountToDisburse.toLocaleString(
             'en-US',
             { minimumFractionDigits: 2 },

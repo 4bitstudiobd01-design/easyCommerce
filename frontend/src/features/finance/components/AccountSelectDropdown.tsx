@@ -59,6 +59,7 @@ export function AccountSelectDropdown({
 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const selectedAccount = useMemo(() => {
     return accounts.find((a) => a.id === value);
@@ -67,9 +68,10 @@ export function AccountSelectDropdown({
   const calculatePosition = () => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
-    const dropdownHeight = 340;
+    const dropdownHeight = 300;
     const spaceBelow = window.innerHeight - rect.bottom;
-    const placeAbove = spaceBelow < dropdownHeight && rect.top > dropdownHeight;
+    const spaceAbove = rect.top;
+    const placeAbove = spaceBelow < dropdownHeight && spaceAbove > spaceBelow;
 
     const top = placeAbove ? rect.top - 6 : rect.bottom + 6;
     let left = rect.left;
@@ -104,8 +106,16 @@ export function AccountSelectDropdown({
   useEffect(() => {
     if (!isOpen) return;
 
-    const handleScrollOrResize = () => {
-      setIsOpen(false);
+    const handleScroll = (e: Event) => {
+      // If the scroll target is inside the dropdown list, DO NOT close and DO NOT move!
+      if (dropdownRef.current && dropdownRef.current.contains(e.target as Node)) {
+        return;
+      }
+      calculatePosition();
+    };
+
+    const handleResize = () => {
+      calculatePosition();
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -114,8 +124,8 @@ export function AccountSelectDropdown({
       }
     };
 
-    window.addEventListener('scroll', handleScrollOrResize, true);
-    window.addEventListener('resize', handleScrollOrResize);
+    window.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('resize', handleResize);
     document.addEventListener('keydown', handleKeyDown);
 
     // Auto focus search input on open
@@ -125,8 +135,8 @@ export function AccountSelectDropdown({
 
     return () => {
       clearTimeout(timer);
-      window.removeEventListener('scroll', handleScrollOrResize, true);
-      window.removeEventListener('resize', handleScrollOrResize);
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleResize);
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen]);
@@ -219,10 +229,10 @@ export function AccountSelectDropdown({
           <div className="w-8 h-8 rounded-lg bg-white border border-slate-200/80 shadow-2xs flex items-center justify-center shrink-0">
             {selectedAccount ? (
               getAccountIcon(selectedAccount.type)
-            ) : value === '' ? (
+            ) : value === '' && allowUnassigned ? (
               <Ban className="w-4 h-4 text-slate-400" />
             ) : (
-              <Coins className="w-4 h-4 text-slate-400" />
+              <Building2 className="w-4 h-4 text-blue-500" />
             )}
           </div>
 
@@ -244,7 +254,7 @@ export function AccountSelectDropdown({
                     : selectedAccount.bankOrProviderName || 'Active Ledger Account'}
                 </p>
               </div>
-            ) : value === '' ? (
+            ) : value === '' && allowUnassigned ? (
               <div>
                 <p className="text-xs font-bold text-slate-700 truncate">
                   {unassignedLabel}
@@ -254,9 +264,14 @@ export function AccountSelectDropdown({
                 </p>
               </div>
             ) : (
-              <span className="text-xs font-medium text-slate-400">
-                {placeholder}
-              </span>
+              <div>
+                <span className="text-xs font-semibold text-slate-700">
+                  {placeholder || 'Select payment account...'}
+                </span>
+                <p className="text-[10px] text-blue-600 font-medium truncate mt-0.5">
+                  Click to choose bank or cash account
+                </p>
+              </div>
             )}
           </div>
         </div>
@@ -289,6 +304,7 @@ export function AccountSelectDropdown({
 
             {/* Dropdown Container */}
             <div
+              ref={dropdownRef}
               role="listbox"
               style={{
                 top: `${coords.top}px`,
@@ -333,7 +349,11 @@ export function AccountSelectDropdown({
               </div>
 
               {/* Options List */}
-              <div className="max-h-64 overflow-y-auto p-1.5 space-y-1 divide-y-0">
+              <div
+                className="max-h-56 overflow-y-auto overscroll-contain p-1.5 space-y-1 divide-y-0 touch-pan-y"
+                style={{ scrollbarWidth: 'thin' }}
+                onWheel={(e) => e.stopPropagation()}
+              >
                 {/* 1. Direct / Unassigned Option */}
                 {allowUnassigned && selectedTypeFilter === 'ALL' && !searchQuery && (
                   <button

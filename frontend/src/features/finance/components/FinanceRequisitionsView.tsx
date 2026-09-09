@@ -25,7 +25,6 @@ import {
   type FinanceRequisition,
   type FinanceRequisitionStatus,
 } from '../api/financeApi';
-import { FinanceTabsHeader } from './FinanceTabsHeader';
 import { CustomDropdown } from '@/features/purchase/components/CustomDropdown';
 import { ApproveRequisitionModal } from './ApproveRequisitionModal';
 import { RejectRequisitionModal } from './RejectRequisitionModal';
@@ -103,9 +102,6 @@ export function FinanceRequisitionsView() {
 
   return (
     <div className="space-y-6 pb-12 text-slate-800">
-      {/* Tab Navigation */}
-      <FinanceTabsHeader />
-
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

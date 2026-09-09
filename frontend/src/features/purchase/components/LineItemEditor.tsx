@@ -42,10 +42,13 @@ const money = (n: number) =>
   `৳\u00A0${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export function LineItemEditor({ value, onChange }: LineItemEditorProps) {
-  const { data: productsResp } = useGetProductsQuery({
-    limit: 100,
-    status: 'ACTIVE',
-  });
+  const { data: productsResp } = useGetProductsQuery(
+    {
+      limit: 100,
+      status: 'ACTIVE',
+    },
+    { refetchOnMountOrArgChange: true },
+  );
   const products: Product[] = productsResp?.data ?? [];
 
   const productOptions = useMemo<DropdownOption[]>(() => {

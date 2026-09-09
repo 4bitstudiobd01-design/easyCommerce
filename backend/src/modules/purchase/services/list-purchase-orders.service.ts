@@ -42,6 +42,11 @@ export class ListPurchaseOrdersService {
     if (query.status) {
       qb.andWhere('po.status = :status', { status: query.status });
     }
+    if (query.paymentStatus) {
+      qb.andWhere('po.paymentStatus = :paymentStatus', {
+        paymentStatus: query.paymentStatus,
+      });
+    }
     if (query.supplierId) {
       qb.andWhere('po.supplierId = :supplierId', { supplierId: query.supplierId });
     }

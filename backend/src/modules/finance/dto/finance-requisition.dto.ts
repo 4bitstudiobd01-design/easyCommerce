@@ -8,6 +8,7 @@ import {
   MaxLength,
   IsArray,
   Min,
+  ValidateIf,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import {
@@ -26,6 +27,7 @@ export class CreateFinanceRequisitionDto {
   @MaxLength(50)
   category?: string;
 
+  @ValidateIf((o) => Boolean(o.purchaseOrderId))
   @IsOptional()
   @IsUUID()
   purchaseOrderId?: string;
@@ -35,6 +37,7 @@ export class CreateFinanceRequisitionDto {
   @MaxLength(50)
   poNumber?: string;
 
+  @ValidateIf((o) => Boolean(o.supplierId))
   @IsOptional()
   @IsUUID()
   supplierId?: string;

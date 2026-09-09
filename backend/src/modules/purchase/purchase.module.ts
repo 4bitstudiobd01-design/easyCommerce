@@ -132,6 +132,28 @@ export class PurchaseModule implements OnModuleInit {
       await this.dataSource.query(
         `ALTER TYPE "public"."pur_purchase_orders_status_enum" ADD VALUE IF NOT EXISTS 'APPROVED'`,
       );
+      await this.dataSource.query(`
+        DO $$ BEGIN
+          CREATE TYPE "public"."pur_purchase_orders_paymentstatus_enum" AS ENUM('PENDING', 'PAID');
+        EXCEPTION
+          WHEN duplicate_object THEN null;
+        END $$;
+      `);
+      await this.dataSource.query(`
+        ALTER TABLE "pur_purchase_orders"
+        ADD COLUMN IF NOT EXISTS "paymentStatus" "public"."pur_purchase_orders_paymentstatus_enum" NOT NULL DEFAULT 'PENDING';
+      `);
+      await this.dataSource.query(`
+        UPDATE "pur_purchase_orders"
+        SET "paymentStatus" = 'PAID'
+        WHERE "status" IN ('APPROVED', 'SENT', 'PARTIALLY_RECEIVED', 'FULLY_RECEIVED')
+          AND "paymentStatus" = 'PENDING';
+      `);
+      await this.dataSource.query(`
+        UPDATE "pur_purchase_orders"
+        SET "status" = 'SENT'
+        WHERE "status" = 'APPROVED';
+      `);
     } catch (e) {
       // Ignored if type or value already exists
     }

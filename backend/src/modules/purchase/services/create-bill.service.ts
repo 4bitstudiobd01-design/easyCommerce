@@ -80,7 +80,9 @@ export class CreateBillService {
       where: { id: In(productIds), tenantId },
     });
     if (products.length !== productIds.length) {
-      throw new BadRequestException('One or more products do not exist.');
+      throw new BadRequestException(
+        'One or more selected products do not belong to this store catalog or do not exist.',
+      );
     }
     const productById = new Map(products.map((p) => [p.id, p]));
 
@@ -91,7 +93,9 @@ export class CreateBillService {
       ? await this.variantRepository.find({ where: { id: In(variantIds), tenantId } })
       : [];
     if (variants.length !== variantIds.length) {
-      throw new BadRequestException('One or more product variants do not exist.');
+      throw new BadRequestException(
+        'One or more selected product variants do not belong to this store or do not exist.',
+      );
     }
     const variantById = new Map(variants.map((v) => [v.id, v]));
 

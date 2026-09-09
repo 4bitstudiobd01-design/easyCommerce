@@ -191,11 +191,14 @@ export function PurchasesListView() {
       );
       setIsRecordOpen(false);
       resetBillForm();
-    } catch (err) {
-      toast.error(
-        (err as { data?: { message?: string } })?.data?.message ??
-          'Could not record the purchase.',
-      );
+    } catch (err: any) {
+      const msg =
+        (Array.isArray(err?.data?.message)
+          ? err.data.message.join(', ')
+          : err?.data?.message) ||
+        err?.message ||
+        'Could not record the purchase.';
+      toast.error(msg);
     }
   };
 
@@ -205,11 +208,14 @@ export function PurchasesListView() {
     try {
       const res = await deleteBill(b.id).unwrap();
       toast.success(res.message ?? 'Purchase deleted.');
-    } catch (err) {
-      toast.error(
-        (err as { data?: { message?: string } })?.data?.message ??
-          'Could not delete the purchase.',
-      );
+    } catch (err: any) {
+      const msg =
+        (Array.isArray(err?.data?.message)
+          ? err.data.message.join(', ')
+          : err?.data?.message) ||
+        err?.message ||
+        'Could not delete the purchase.';
+      toast.error(msg);
     }
   };
 

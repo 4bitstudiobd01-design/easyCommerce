@@ -6,6 +6,7 @@ import { ProductVariantEntity } from '../../catalog/entities/product-variant.ent
 import { SupplierEntity } from '../entities/supplier.entity';
 import {
   PurchaseOrderEntity,
+  PurchaseOrderPaymentStatusEnum,
   PurchaseOrderStatusEnum,
 } from '../entities/purchase-order.entity';
 import { PurchaseOrderLineEntity } from '../entities/purchase-order-line.entity';
@@ -54,7 +55,9 @@ export class CreatePurchaseOrderService {
       where: { id: In(productIds), tenantId },
     });
     if (products.length !== productIds.length) {
-      throw new BadRequestException('One or more products do not exist.');
+      throw new BadRequestException(
+        'One or more selected products do not belong to this store catalog or do not exist.',
+      );
     }
     const productById = new Map(products.map((p) => [p.id, p]));
 
@@ -65,7 +68,9 @@ export class CreatePurchaseOrderService {
       ? await this.variantRepository.find({ where: { id: In(variantIds), tenantId } })
       : [];
     if (variants.length !== variantIds.length) {
-      throw new BadRequestException('One or more product variants do not exist.');
+      throw new BadRequestException(
+        'One or more selected product variants do not belong to this store or do not exist.',
+      );
     }
     const variantById = new Map(variants.map((v) => [v.id, v]));
 
@@ -114,11 +119,10 @@ export class CreatePurchaseOrderService {
           orderDate: dto.orderDate,
           expectedDate: dto.expectedDate,
           status:
-            dto.status === 'SENT'
-              ? PurchaseOrderStatusEnum.SENT
-              : dto.status === 'DRAFT'
+            dto.status === 'DRAFT'
               ? PurchaseOrderStatusEnum.DRAFT
               : PurchaseOrderStatusEnum.PENDING_APPROVAL,
+          paymentStatus: PurchaseOrderPaymentStatusEnum.PENDING,
           subtotal: fromCents(subtotalCents),
           totalAmount: fromCents(subtotalCents),
           receivedValue: '0.00',

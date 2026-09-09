@@ -19,6 +19,11 @@ export enum PurchaseOrderStatusEnum {
   CANCELLED = 'CANCELLED',
 }
 
+export enum PurchaseOrderPaymentStatusEnum {
+  PENDING = 'PENDING',
+  PAID = 'PAID',
+}
+
 /**
  * A purchase order raised on a supplier. Header totals are recomputed from the lines on
  * every write. `receivedValue` tracks the cost value received so far; the UI's
@@ -63,6 +68,14 @@ export class PurchaseOrderEntity {
   })
   @Index('IDX_pur_purchase_orders_storeId_status')
   status: PurchaseOrderStatusEnum;
+
+  @Column({
+    type: 'enum',
+    enum: PurchaseOrderPaymentStatusEnum,
+    default: PurchaseOrderPaymentStatusEnum.PENDING,
+  })
+  @Index('IDX_pur_purchase_orders_storeId_paymentStatus')
+  paymentStatus: PurchaseOrderPaymentStatusEnum;
 
   @Column({ type: 'numeric', precision: 18, scale: 2, default: 0 })
   subtotal: string;
