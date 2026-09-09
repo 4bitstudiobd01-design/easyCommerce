@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useSelector, useDispatch } from 'react-redux';
-import { ArrowLeft, Loader2, MapPin, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Image as ImageIcon, Loader2, MapPin, ShieldCheck } from 'lucide-react';
 import { RootState } from '@/store';
 import { clearCart } from '@/features/storefront/slices/cartSlice';
 import { clearCheckoutDraft } from '@/features/storefront/slices/checkoutSlice';
@@ -185,7 +185,7 @@ export function CheckoutReviewView({ storeSlugFromRoute }: { storeSlugFromRoute?
       />
       <CartDrawer primaryColor={primaryColor} />
 
-      <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+      <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8 space-y-5">
         <div className="flex items-center justify-between gap-3">
           <div>
             <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Review your order</h1>
@@ -208,6 +208,43 @@ export function CheckoutReviewView({ storeSlugFromRoute }: { storeSlugFromRoute?
           </div>
         )}
 
+        {/* Items */}
+        <section className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
+            <h2 className="text-xs font-extrabold text-slate-900 uppercase tracking-wide">Your items</h2>
+            <span className="text-[11px] font-bold text-slate-400">
+              {cartItems.reduce((a, i) => a + i.quantity, 0)} item
+              {cartItems.reduce((a, i) => a + i.quantity, 0) > 1 ? 's' : ''}
+            </span>
+          </div>
+          <ul className="divide-y divide-slate-100">
+            {cartItems.map((i) => (
+              <li key={i.id} className="flex items-center gap-3.5 px-5 py-3.5">
+                <div className="w-14 h-14 rounded-xl bg-slate-50 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center">
+                  {i.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={i.imageUrl} alt={displayName(i)} className="w-full h-full object-cover" />
+                  ) : (
+                    <ImageIcon className="w-5 h-5 text-slate-300" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-slate-900 leading-snug line-clamp-2">{displayName(i)}</p>
+                  {i.variantTitle && (
+                    <p className="text-[11px] text-slate-500 font-medium mt-0.5 truncate">{i.variantTitle}</p>
+                  )}
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    ৳ {(i.price || 0).toLocaleString()} × {i.quantity}
+                  </p>
+                </div>
+                <span className="text-xs font-extrabold text-slate-900 shrink-0">
+                  ৳ {((i.price || 0) * i.quantity).toLocaleString()}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+
         {/* Shipping details */}
         <section className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
           <h2 className="text-xs font-extrabold text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
@@ -228,27 +265,6 @@ export function CheckoutReviewView({ storeSlugFromRoute }: { storeSlugFromRoute?
           <div className="flex items-center justify-between text-xs">
             <span className="text-slate-500">Payment method</span>
             <span className="font-bold text-slate-900">{draft.paymentMethod}</span>
-          </div>
-        </section>
-
-        {/* Items */}
-        <section className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
-          <h2 className="text-xs font-extrabold text-slate-900 uppercase tracking-wide">
-            Items ({cartItems.reduce((a, i) => a + i.quantity, 0)})
-          </h2>
-          <div className="space-y-2.5">
-            {cartItems.map((i) => (
-              <div key={i.id} className="flex justify-between gap-3 text-xs">
-                <span className="text-slate-600">
-                  {displayName(i)}
-                  {i.variantTitle ? ` (${i.variantTitle})` : ''}{' '}
-                  <span className="text-slate-400">× {i.quantity}</span>
-                </span>
-                <span className="font-semibold text-slate-900 shrink-0">
-                  ৳ {((i.price || 0) * i.quantity).toLocaleString()}
-                </span>
-              </div>
-            ))}
           </div>
         </section>
 

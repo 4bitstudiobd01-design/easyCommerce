@@ -23,7 +23,9 @@ export interface CourierCredentialBag {
   secretKey?: string;
   clientId?: string;
   clientSecret?: string;
-  /** Pathao's merchant store id, distinct from the BitCommerce store. */
+  /** CarryBee's third auth header, issued alongside Client-ID / Client-Secret. */
+  clientContext?: string;
+  /** Pathao's / CarryBee's merchant store id, distinct from the BitCommerce store. */
   merchantStoreId?: string;
   username?: string;
   password?: string;

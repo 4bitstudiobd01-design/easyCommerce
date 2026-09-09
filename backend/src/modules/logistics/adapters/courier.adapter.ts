@@ -13,9 +13,13 @@ export interface CourierBookingPayload {
   secretKey?: string;
   clientId?: string;
   clientSecret?: string;
+  /** CarryBee's third auth header, issued alongside Client-ID / Client-Secret. */
+  clientContext?: string;
   username?: string;
   password?: string;
   merchantStoreId?: string;
+  /** Point the adapter at the provider's sandbox host instead of production. */
+  sandbox?: boolean;
 }
 
 export interface CourierBookingResult {
@@ -124,7 +128,11 @@ export interface CourierCredentials {
   secretKey?: string;
   clientId?: string;
   clientSecret?: string;
+  /** CarryBee's third auth header, issued alongside Client-ID / Client-Secret. */
+  clientContext?: string;
   username?: string;
   password?: string;
   merchantStoreId?: string;
+  /** Point the adapter at the provider's sandbox host instead of production. */
+  sandbox?: boolean;
 }

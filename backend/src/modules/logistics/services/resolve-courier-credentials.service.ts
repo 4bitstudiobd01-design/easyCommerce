@@ -41,7 +41,11 @@ export class ResolveCourierCredentialsService {
     // merchant switched it off, so bookings must not keep using it.
     if (integration?.isEnabled) {
       const credentials = this.credentialsCrypto.decrypt(integration.encryptedCredentials);
-      if (Object.keys(credentials).length > 0) return credentials;
+      if (Object.keys(credentials).length > 0) {
+        // The sandbox toggle lives on the integration row, not in the encrypted
+        // bag — carry it through so adapters hit the sandbox host.
+        return { ...credentials, sandbox: integration.sandbox };
+      }
     }
 
     return this.legacyStoreCredentials(provider, store);

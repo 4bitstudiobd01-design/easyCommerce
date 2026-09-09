@@ -36,7 +36,6 @@ import { SteadfastCourierAdapter } from './adapters/steadfast.adapter';
 import { PathaoCourierAdapter } from './adapters/pathao.adapter';
 import { PaperflyCourierAdapter } from './adapters/paperfly.adapter';
 import { RedxCourierAdapter } from './adapters/redx.adapter';
-import { ParceldexCourierAdapter } from './adapters/parceldex.adapter';
 import { CarrybeeCourierAdapter } from './adapters/carrybee.adapter';
 
 import { LogisticsController } from './logistics.controller';
@@ -91,7 +90,6 @@ import { PermissionsGuard } from '../../common/guards/permissions.guard';
     PathaoCourierAdapter,
     PaperflyCourierAdapter,
     RedxCourierAdapter,
-    ParceldexCourierAdapter,
     CarrybeeCourierAdapter,
     JwtAuthGuard,
     PermissionsGuard,

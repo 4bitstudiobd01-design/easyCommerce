@@ -25,7 +25,6 @@ export type CourierProvider =
   | 'PATHAO'
   | 'PAPERFLY'
   | 'REDX'
-  | 'PARCELDEX'
   | 'CARRYBEE';
 
 export type ShipmentDateRangePreset =

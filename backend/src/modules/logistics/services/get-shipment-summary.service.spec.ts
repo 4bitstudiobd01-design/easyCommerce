@@ -49,7 +49,6 @@ describe('GetShipmentSummaryService', () => {
       makeAdapter(CourierProviderEnum.PATHAO, 'Pathao'),
       makeAdapter(CourierProviderEnum.PAPERFLY, 'Paperfly'),
       makeAdapter(CourierProviderEnum.REDX, 'RedX'),
-      makeAdapter(CourierProviderEnum.PARCELDEX, 'Parceldex'),
       makeAdapter(CourierProviderEnum.CARRYBEE, 'Carrybee'),
     );
   };

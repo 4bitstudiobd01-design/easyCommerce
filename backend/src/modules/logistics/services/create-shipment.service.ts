@@ -26,6 +26,7 @@ import { ShipmentDetailsResponseDto } from '../dto/shipment-details-response.dto
 import { GetShipmentDetailsService } from './get-shipment-details.service';
 import { ResolveCourierCredentialsService } from './resolve-courier-credentials.service';
 import { RecordCourierApiCallService } from './record-courier-api-call.service';
+import { toBdLocalMobile } from '../../../common/utils/normalize-phone.util';
 
 /** Orders that are cancelled or already concluded can never be shipped. */
 const NON_SHIPPABLE_ORDER_STATUSES: readonly OrderStatusEnum[] = [
@@ -113,9 +114,18 @@ export class CreateShipmentService {
         'A delivery address is required. Add one to the order or supply it with the shipment.',
       );
     }
-    const customerPhone = (dto.customerPhone || order.customerPhone || '').trim();
-    if (!customerPhone) {
+    const rawPhone = (dto.customerPhone || order.customerPhone || '').trim();
+    if (!rawPhone) {
       throw new BadRequestException('A customer phone number is required for courier delivery.');
+    }
+    // BD courier APIs reject anything but the 11-digit local form. Catch a bad
+    // number here with a clear message rather than letting the courier return a
+    // 422 the merchant then has to decode.
+    const customerPhone = toBdLocalMobile(rawPhone);
+    if (!customerPhone) {
+      throw new BadRequestException(
+        `"${rawPhone}" is not a valid Bangladeshi mobile number. Fix the customer phone on the order (expected 01XXXXXXXXX) before booking.`,
+      );
     }
 
     const store = await this.storeRepository.findOne({ where: { tenantId } });
@@ -168,11 +178,20 @@ export class CreateShipmentService {
       await this.recordCourierApiCallService.execute(tenantId, dto.courierProvider, true);
     } catch (err) {
       await this.recordCourierApiCallService.execute(tenantId, dto.courierProvider, false);
-      // The parcel is kept as PENDING with no tracking code so the merchant can
-      // retry, rather than losing the shipment or showing a fabricated booking.
       this.logger.error(
         `Courier booking failed for order ${order.orderNumber} via ${dto.courierProvider}: ${err?.message}`,
       );
+
+      // Bad data (invalid phone/address/weight the courier rejected with a 4xx)
+      // will fail identically on every retry — surface it to the merchant now
+      // instead of persisting a PENDING shipment they'd keep re-trying.
+      if (err instanceof BadRequestException) {
+        throw err;
+      }
+
+      // Transient failure (courier unreachable / 5xx): keep the parcel as PENDING
+      // with no tracking code so the merchant can retry, rather than losing the
+      // shipment or showing a fabricated booking.
       bookingNote = `Courier booking failed: ${err?.message ?? 'provider unavailable'}. Shipment saved as pending — retry booking from the shipment.`;
     }
 

@@ -1,4 +1,5 @@
 import { Injectable, BadGatewayException, Logger } from '@nestjs/common';
+import { throwCourierError } from './courier-error.util';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import {
@@ -60,9 +61,20 @@ export class RedxCourierAdapter implements ICourierAdapter {
   };
 
   private readonly logger = new Logger(RedxCourierAdapter.name);
-  private readonly baseUrl = 'https://openapi.redx.com.bd/v1.0.0-beta';
+  private static readonly PRODUCTION_URL = 'https://openapi.redx.com.bd/v1.0.0-beta';
+  private static readonly SANDBOX_URL = 'https://sandbox.redx.com.bd/v1.0.0-beta';
 
   constructor(private readonly configService: ConfigService) {}
+
+  /**
+   * Sandbox host when the integration's sandbox toggle is on, otherwise
+   * production. `REDX_BASE_URL` overrides both.
+   */
+  private resolveBaseUrl(sandbox?: boolean): string {
+    const override = this.configService.get<string>('REDX_BASE_URL');
+    if (override) return override.replace(/\/+$/, '');
+    return sandbox ? RedxCourierAdapter.SANDBOX_URL : RedxCourierAdapter.PRODUCTION_URL;
+  }
 
   async testConnection(credentials: CourierCredentials): Promise<CourierConnectionTestResult> {
     const token = credentials.apiKey || this.configService.get<string>('REDX_ACCESS_TOKEN');
@@ -74,7 +86,7 @@ export class RedxCourierAdapter implements ICourierAdapter {
     try {
       // Listing delivery areas is a read-only authenticated call, so a test
       // never books anything.
-      await axios.get(`${this.baseUrl}/areas`, {
+      await axios.get(`${this.resolveBaseUrl(credentials.sandbox)}/areas`, {
         headers: { 'API-ACCESS-TOKEN': `Bearer ${token}` },
         timeout: 10000,
       });
@@ -102,7 +114,7 @@ export class RedxCourierAdapter implements ICourierAdapter {
 
     try {
       const response = await axios.post(
-        `${this.baseUrl}/parcel`,
+        `${this.resolveBaseUrl(payload.sandbox)}/parcel`,
         {
           customer_name: payload.recipientName,
           customer_phone: payload.recipientPhone,
@@ -136,9 +148,10 @@ export class RedxCourierAdapter implements ICourierAdapter {
       );
       throw new BadGatewayException('RedX courier booking failed. Please try again or contact support.');
     } catch (err) {
-      if (err instanceof BadGatewayException) throw err;
       this.logger.error(`RedX booking request failed for invoice ${payload.invoice}: ${err?.message}`);
-      throw new BadGatewayException('Unable to reach RedX courier service. Please try again shortly.');
+      // 4xx (bad recipient data / unknown area) → BadRequest with RedX's own
+      // reasons; network / 5xx → BadGateway with a retry hint.
+      throwCourierError('RedX', err);
     }
   }
 
@@ -154,10 +167,13 @@ export class RedxCourierAdapter implements ICourierAdapter {
     }
 
     try {
-      const response = await axios.get(`${this.baseUrl}/parcel/track/${trackingCode}`, {
-        headers: { 'API-ACCESS-TOKEN': `Bearer ${token}` },
-        timeout: 10000,
-      });
+      const response = await axios.get(
+        `${this.resolveBaseUrl(credentials.sandbox)}/parcel/track/${trackingCode}`,
+        {
+          headers: { 'API-ACCESS-TOKEN': `Bearer ${token}` },
+          timeout: 10000,
+        },
+      );
 
       const rawEvents: Array<{
         message_en?: string;
