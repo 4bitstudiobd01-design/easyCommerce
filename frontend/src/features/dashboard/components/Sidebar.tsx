@@ -704,20 +704,51 @@ export const Sidebar = ({
             </div>
           )} */}
 
-          {/* 6. FINANCE (Single Top-Level Navigation Link) */}
-          {/* <Link
-            href="/dashboard/finance/overview"
+          {/* 6. FINANCIALS (Finance & Accounts) */}
+          {!isDesktopCollapsed && (
+            <div className="px-3 pb-1 pt-4 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              Financials
+            </div>
+          )}
+          <Link 
+            href="/dashboard/finance/overview" 
             className={navItemClass('/dashboard/finance')}
-            onMouseEnter={(e) => handleTooltipEnter(e, "Finance")}
-            onFocus={(e) => handleTooltipEnter(e, "Finance")}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Finance", pendingRequisitionsCount > 0 ? String(pendingRequisitionsCount) : undefined)}
+            onFocus={(e) => handleTooltipEnter(e, "Finance", pendingRequisitionsCount > 0 ? String(pendingRequisitionsCount) : undefined)}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="relative flex items-center gap-2.5">
+              <Landmark className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Finance</span>}
+              {isDesktopCollapsed && pendingRequisitionsCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full ring-2 ring-[#0F172A] animate-pulse" />
+              )}
+            </div>
+            {!isDesktopCollapsed && pendingRequisitionsCount > 0 && (
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-extrabold leading-none ${
+                pathname.startsWith('/dashboard/finance')
+                  ? 'bg-white text-rose-600'
+                  : 'bg-rose-500 text-white animate-pulse'
+              }`}>
+                {pendingRequisitionsCount}
+              </span>
+            )}
+          </Link>
+
+          <Link
+            href="/dashboard/accounts/overview"
+            className={navItemClass('/dashboard/accounts')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Accounts")}
+            onFocus={(e) => handleTooltipEnter(e, "Accounts")}
             onMouseLeave={handleTooltipLeave}
             onBlur={handleTooltipLeave}
           >
             <div className="flex items-center gap-2.5">
-              <Landmark className={iconClass} strokeWidth={iconStroke} />
-              {!isDesktopCollapsed && <span>Finance</span>}
+              <BookOpen className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Accounts</span>}
             </div>
-          </Link> */}
+          </Link>
 
           {/* 7. MARKETING & ANALYTICS ACCORDION */}
           <AccordionHeader 

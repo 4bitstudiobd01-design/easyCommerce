@@ -50,13 +50,10 @@ import {
   toLineInputs,
   type LineItemDraft,
 } from './LineItemEditor';
-<<<<<<< HEAD
 import { SupplierSelectDropdown } from './SupplierSelectDropdown';
 import { CustomDropdown } from './CustomDropdown';
 import { AccountSelectDropdown } from '@/features/finance/components/AccountSelectDropdown';
-=======
 import { PurchaseTabsHeader, type PurchaseTabKey } from './PurchaseTabsHeader';
->>>>>>> 28beebd18d9f9b378e71bc134817fba440e55106
 
 const STATUS_LABELS: Record<BillPaymentStatus, string> = {
   UNPAID: 'Unpaid',
@@ -257,7 +254,7 @@ export function PurchasesListView({ activeTab = 'purchases', onNavigateTab }: Pu
     try {
       const res = await deleteBill(billPendingDelete.id).unwrap();
       toast.success(res.message ?? 'Purchase deleted.');
-<<<<<<< HEAD
+      setBillPendingDelete(null);
     } catch (err: any) {
       const msg =
         (Array.isArray(err?.data?.message)
@@ -266,14 +263,6 @@ export function PurchasesListView({ activeTab = 'purchases', onNavigateTab }: Pu
         err?.message ||
         'Could not delete the purchase.';
       toast.error(msg);
-=======
-      setBillPendingDelete(null);
-    } catch (err) {
-      toast.error(
-        (err as { data?: { message?: string } })?.data?.message ??
-          'Could not delete the purchase.',
-      );
->>>>>>> 28beebd18d9f9b378e71bc134817fba440e55106
     }
   };
 
@@ -699,26 +688,13 @@ export function PurchasesListView({ activeTab = 'purchases', onNavigateTab }: Pu
                   <SupplierSelectDropdown
                     suppliers={suppliers}
                     value={billSupplierId}
-<<<<<<< HEAD
-                    onChange={(id) => setBillSupplierId(id)}
-                    placeholder="Choose a supplier"
-                  />
-=======
-                    onChange={(e) => {
-                      setBillSupplierId(e.target.value);
+                    onChange={(id) => {
+                      setBillSupplierId(id);
                       setBillPurchaseOrderId('');
                       setBillLines([makeEmptyLine()]);
                     }}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-blue-600 focus:outline-none"
-                  >
-                    <option value="">Choose a supplier</option>
-                    {suppliers.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
->>>>>>> 28beebd18d9f9b378e71bc134817fba440e55106
+                    placeholder="Choose a supplier"
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">

@@ -29,11 +29,8 @@ import {
   type SupplierListItem,
   type SupplierStatus,
 } from '../api/purchaseApi';
-<<<<<<< HEAD
-import { CustomDropdown } from './CustomDropdown';
-=======
 import { PurchaseTabsHeader, type PurchaseTabKey } from './PurchaseTabsHeader';
->>>>>>> 28beebd18d9f9b378e71bc134817fba440e55106
+
 
 const SORT_MAP: Record<string, 'name_asc' | 'name_desc' | 'purchases_desc' | 'due_desc'> = {
   'Name (A-Z)': 'name_asc',
