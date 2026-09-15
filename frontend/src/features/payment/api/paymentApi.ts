@@ -197,15 +197,6 @@ export interface ListPaymentTransactionsParams {
   sortOrder?: 'ASC' | 'DESC';
 }
 
-export interface SeedPaymentDemoDataResponse {
-  success: boolean;
-  message: string;
-  gatewaysCreated: number;
-  ordersCreated: number;
-  paymentsCreated: number;
-  refundsCreated: number;
-  eventsCreated: number;
-}
 
 export interface OrderBalance {
   grandTotal: number;
@@ -343,17 +334,6 @@ export const paymentApi = createApi({
       },
     }),
 
-    seedPaymentDemoData: builder.mutation<SeedPaymentDemoDataResponse, void>({
-      query: () => ({
-        url: '/payments/transactions/seed-demo-data',
-        method: 'POST',
-      }),
-      // A payment change must refresh the table, the KPIs, the overview chart,
-      // the top-methods panel and the gateway list — never a page reload.
-      invalidatesTags: ['Payment', 'PaymentTransaction', 'PaymentSummary', 'PaymentGateway'],
-      transformResponse: (response: unknown) => unwrap<SeedPaymentDemoDataResponse>(response),
-    }),
-
     getOrderBalance: builder.query<OrderBalance, string>({
       query: (orderId) => `/payments/orders/${orderId}/balance`,
       providesTags: (_result, _error, orderId) => [{ type: 'OrderBalance', id: orderId }],
@@ -412,7 +392,6 @@ export const {
   useGetPaymentSummaryQuery,
   useGetPaymentDetailsQuery,
   useGetPaymentGatewaysQuery,
-  useSeedPaymentDemoDataMutation,
   useGetOrderBalanceQuery,
   useGetOrderPaymentHistoryQuery,
   useRecordManualPaymentMutation,

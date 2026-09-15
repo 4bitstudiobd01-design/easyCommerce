@@ -21,7 +21,8 @@ import {
 type SectionFilter = HomepageSection | 'ALL';
 
 const SECTION_TABS: { value: SectionFilter; label: string }[] = [
-  { value: 'HERO_FEATURED', label: 'Hero / Featured' },
+  { value: 'HERO', label: 'Hero' },
+  { value: 'FEATURED', label: 'Featured' },
   { value: 'NEW_ARRIVALS', label: 'New Arrivals' },
   { value: 'BEST_SELLERS', label: 'Best Sellers' },
   { value: 'ALL', label: 'All Products' },
@@ -41,7 +42,7 @@ interface ProductReorderPanelProps {
  * tree-specific parent/child nesting — this is a flat list.
  */
 export function ProductReorderPanel({ onClose }: ProductReorderPanelProps) {
-  const [sectionFilter, setSectionFilter] = useState<SectionFilter>('HERO_FEATURED');
+  const [sectionFilter, setSectionFilter] = useState<SectionFilter>('FEATURED');
 
   const { data, isLoading, isError, refetch } = useGetProductsQuery({
     page: 1,

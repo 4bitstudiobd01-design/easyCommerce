@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -11,7 +11,6 @@ import {
   Save,
   Globe,
   Sliders,
-  Sparkles,
   CheckCircle2,
   AlertCircle,
   Loader2,
@@ -23,22 +22,8 @@ import {
   Link2,
   Eye,
   EyeOff,
-  UploadCloud,
-  Tag,
-  Shirt,
-  ShoppingBag,
-  Briefcase,
-  Watch,
-  Ticket,
-  Footprints,
-  Gift,
-  Camera,
-  Home,
-  Laptop,
-  SlidersHorizontal,
   Table,
   Code,
-  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -47,27 +32,14 @@ import {
   useGetCategoriesQuery,
   CategoryStatus,
 } from '../api/catalogApi';
+import { CATEGORY_ICON_OPTIONS } from '../utils/categoryIcons';
+import { FileUpload } from '@/components/ui/FileUpload';
 
-type SectionTab = 'general' | 'seo' | 'display' | 'options';
+type SectionTab = 'general' | 'seo' | 'display';
 
 interface EditCategoryViewProps {
   categoryId: string;
 }
-
-const CATEGORY_ICONS = [
-  { id: 'folder', name: 'Folder', icon: Folder },
-  { id: 'tag', name: 'Tag', icon: Tag },
-  { id: 'shirt', name: 'Shirt', icon: Shirt },
-  { id: 'shopping-bag', name: 'Jacket', icon: ShoppingBag },
-  { id: 'briefcase', name: 'Briefcase', icon: Briefcase },
-  { id: 'watch', name: 'Watch', icon: Watch },
-  { id: 'ticket', name: 'Ticket', icon: Ticket },
-  { id: 'sparkles', name: 'Sparkles', icon: Sparkles },
-  { id: 'footprints', name: 'Shoes', icon: Footprints },
-  { id: 'gift', name: 'Gift', icon: Gift },
-  { id: 'home', name: 'Home', icon: Home },
-  { id: 'camera', name: 'Camera', icon: Camera },
-];
 
 export function EditCategoryView({ categoryId }: EditCategoryViewProps) {
   const router = useRouter();
@@ -81,8 +53,46 @@ export function EditCategoryView({ categoryId }: EditCategoryViewProps) {
   const { data: existingCategories = [] } = useGetCategoriesQuery();
   const [updateCategory, { isLoading: isSubmitting }] = useUpdateCategoryMutation();
 
-  // Navigation Tab State
+  // Active section is derived from scroll position (for sidebar highlight),
+  // sidebar clicks scroll the page to the matching section instead of switching tabs.
   const [activeSection, setActiveSection] = useState<SectionTab>('general');
+  const sectionRefs = {
+    general: useRef<HTMLDivElement>(null),
+    seo: useRef<HTMLDivElement>(null),
+    display: useRef<HTMLDivElement>(null),
+  };
+
+  const scrollToSection = (section: SectionTab) => {
+    setActiveSection(section);
+    sectionRefs[section].current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  // Keep the sidebar highlight in sync when the user scrolls the page manually,
+  // not just when they click a sidebar item.
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+        if (visible) {
+          const section = (Object.keys(sectionRefs) as SectionTab[]).find(
+            (key) => sectionRefs[key].current === visible.target,
+          );
+          if (section) setActiveSection(section);
+        }
+      },
+      { rootMargin: '-100px 0px -70% 0px', threshold: 0 },
+    );
+
+    (Object.keys(sectionRefs) as SectionTab[]).forEach((key) => {
+      const el = sectionRefs[key].current;
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // General Form State
   const [name, setName] = useState('');
@@ -93,9 +103,8 @@ export function EditCategoryView({ categoryId }: EditCategoryViewProps) {
   const [status, setStatus] = useState<CategoryStatus>('ACTIVE');
   const [selectedIcon, setSelectedIcon] = useState('folder');
 
-  // Media State
+  // Media State — hosted image URL only, never a base64 string.
   const [image, setImage] = useState<string | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   // SEO State
   const [seoTitle, setSeoTitle] = useState('');
@@ -131,7 +140,6 @@ export function EditCategoryView({ categoryId }: EditCategoryViewProps) {
       setStatus((category.status as CategoryStatus) || 'ACTIVE');
       setSelectedIcon((category.icon as string) || 'folder');
       setImage(category.image || null);
-      setImagePreview(category.image || null);
       setSeoTitle(category.seoTitle || '');
       setMetaDescription(category.metaDescription || '');
       setIsVisible(category.isVisible ?? true);
@@ -162,30 +170,6 @@ export function EditCategoryView({ categoryId }: EditCategoryViewProps) {
     }
   };
 
-  const handleImageFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please upload a valid image file (PNG, JPG, WebP)');
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image file size must be less than 5MB');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
-      setImage(dataUrl);
-      setImagePreview(dataUrl);
-      setIsDirty(true);
-    };
-    reader.readAsDataURL(file);
-  };
-
   const validate = () => {
     const newErrors: { name?: string; slug?: string } = {};
     if (!name.trim()) {
@@ -205,7 +189,7 @@ export function EditCategoryView({ categoryId }: EditCategoryViewProps) {
     e.preventDefault();
     if (!validate()) {
       toast.error('Please resolve validation errors before saving.');
-      setActiveSection('general');
+      scrollToSection('general');
       return;
     }
 
@@ -279,7 +263,7 @@ export function EditCategoryView({ categoryId }: EditCategoryViewProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-7xl mx-auto pb-16">
+    <form onSubmit={handleSubmit} className="space-y-6 w-full pb-16">
       {/* 1. HEADER ROW */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -339,11 +323,11 @@ export function EditCategoryView({ categoryId }: EditCategoryViewProps) {
 
       {/* 2. MAIN LAYOUT: SIDEBAR TABS (LEFT) + WHITE FORM CONTAINER (RIGHT) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* LEFT VERTICAL NAVIGATION TABS */}
-        <div className="lg:col-span-3 space-y-2">
+        {/* LEFT VERTICAL NAVIGATION TABS — sticky so it stays visible while the form scrolls */}
+        <div className="lg:col-span-2 space-y-2 lg:sticky lg:top-24 self-start">
           <button
             type="button"
-            onClick={() => setActiveSection('general')}
+            onClick={() => scrollToSection('general')}
             className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-xs transition-all text-left ${
               activeSection === 'general'
                 ? 'bg-blue-50 text-blue-600 font-bold shadow-xs'
@@ -362,7 +346,7 @@ export function EditCategoryView({ categoryId }: EditCategoryViewProps) {
 
           <button
             type="button"
-            onClick={() => setActiveSection('seo')}
+            onClick={() => scrollToSection('seo')}
             className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-xs transition-all text-left ${
               activeSection === 'seo'
                 ? 'bg-blue-50 text-blue-600 font-bold shadow-xs'
@@ -381,7 +365,7 @@ export function EditCategoryView({ categoryId }: EditCategoryViewProps) {
 
           <button
             type="button"
-            onClick={() => setActiveSection('display')}
+            onClick={() => scrollToSection('display')}
             className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-xs transition-all text-left ${
               activeSection === 'display'
                 ? 'bg-blue-50 text-blue-600 font-bold shadow-xs'
@@ -397,32 +381,12 @@ export function EditCategoryView({ categoryId }: EditCategoryViewProps) {
             </div>
             <span>Display</span>
           </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSection('options')}
-            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-xs transition-all text-left ${
-              activeSection === 'options'
-                ? 'bg-blue-50 text-blue-600 font-bold shadow-xs'
-                : 'text-slate-600 hover:bg-slate-100/70 hover:text-slate-900'
-            }`}
-          >
-            <div
-              className={`w-7 h-7 rounded-lg flex items-center justify-center ${
-                activeSection === 'options' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'
-              }`}
-            >
-              <SlidersHorizontal className="w-4 h-4" />
-            </div>
-            <span>More Options</span>
-          </button>
         </div>
 
-        {/* RIGHT MAIN WHITE CARD FORM CONTAINER */}
-        <div className="lg:col-span-9 bg-white rounded-2xl border border-slate-100 shadow-sm p-6 sm:p-8">
-          {/* GENERAL TAB CONTENT */}
-          {activeSection === 'general' && (
-            <div className="space-y-6">
+        {/* RIGHT MAIN WHITE CARD FORM CONTAINER — all sections stacked, scrollable in one page */}
+        <div className="lg:col-span-10 bg-white rounded-2xl border border-slate-100 shadow-sm divide-y divide-slate-100">
+          {/* GENERAL SECTION */}
+          <div ref={sectionRefs.general} className="space-y-6 p-6 sm:p-8 scroll-mt-24">
               <h2 className="text-sm font-bold text-slate-900">General Information</h2>
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -550,45 +514,24 @@ export function EditCategoryView({ categoryId }: EditCategoryViewProps) {
 
                 {/* Right Image & Icon Picker Column */}
                 <div className="lg:col-span-5 space-y-6">
-                  {/* Category Image Upload Dropzone */}
-                  <div className="space-y-2">
-                    <label className="block text-xs font-semibold text-slate-700">Category Image</label>
-
-                    {imagePreview ? (
-                      <div className="relative aspect-video w-full rounded-xl overflow-hidden border border-slate-200 bg-slate-50 group">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={imagePreview} alt="Category" className="w-full h-full object-cover" />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setImage(null);
-                            setImagePreview(null);
-                            setIsDirty(true);
-                          }}
-                          className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 hover:bg-black/80 text-white transition-all shadow-md"
-                          title="Remove image"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ) : (
-                      <label className="flex flex-col items-center justify-center p-6 border border-dashed border-slate-200 hover:border-blue-400 bg-slate-50/50 hover:bg-blue-50/20 rounded-xl transition-all cursor-pointer text-center">
-                        <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shadow-xs">
-                          <UploadCloud className="w-6 h-6" />
-                        </div>
-                        <span className="text-xs font-bold text-slate-800 mt-2.5">Upload category image</span>
-                        <span className="text-[11px] text-slate-400 mt-0.5">PNG, JPG or WebP</span>
-                        <span className="text-[11px] text-slate-400">Recommended 800x800px</span>
-                        <input type="file" accept="image/*" onChange={handleImageFileSelect} className="hidden" />
-                      </label>
-                    )}
-                  </div>
+                  {/* Category Image Upload */}
+                  <FileUpload
+                    label="Category Image"
+                    description="PNG, JPG or WebP — recommended 800x800px"
+                    value={image}
+                    onChange={(url) => {
+                      setImage(url);
+                      setIsDirty(true);
+                    }}
+                    fileableType="CATEGORY"
+                    previewShape="square"
+                  />
 
                   {/* 4x3 Icon Picker Grid */}
                   <div className="space-y-2">
                     <label className="block text-xs font-semibold text-slate-700">Category Icon</label>
                     <div className="grid grid-cols-4 gap-2.5 p-3 bg-slate-50/60 rounded-xl border border-slate-100">
-                      {CATEGORY_ICONS.map((item) => {
+                      {CATEGORY_ICON_OPTIONS.map((item) => {
                         const IconComponent = item.icon;
                         const isSelected = selectedIcon === item.id;
                         return (
@@ -614,12 +557,10 @@ export function EditCategoryView({ categoryId }: EditCategoryViewProps) {
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+          </div>
 
-          {/* SEO TAB CONTENT */}
-          {activeSection === 'seo' && (
-            <div className="space-y-6">
+          {/* SEO SECTION */}
+          <div ref={sectionRefs.seo} className="space-y-6 p-6 sm:p-8 scroll-mt-24">
               <h2 className="text-sm font-bold text-slate-900">Search Engine Optimization (SEO)</h2>
 
               <div className="space-y-4 max-w-2xl">
@@ -680,12 +621,10 @@ export function EditCategoryView({ categoryId }: EditCategoryViewProps) {
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+          </div>
 
-          {/* DISPLAY TAB CONTENT */}
-          {activeSection === 'display' && (
-            <div className="space-y-6">
+          {/* DISPLAY SECTION */}
+          <div ref={sectionRefs.display} className="space-y-6 p-6 sm:p-8 scroll-mt-24">
               <h2 className="text-sm font-bold text-slate-900">Display & Storefront Visibility</h2>
 
               <div className="space-y-4 max-w-2xl text-xs">
@@ -752,22 +691,7 @@ export function EditCategoryView({ categoryId }: EditCategoryViewProps) {
                   <p className="text-[11px] text-slate-400">Lower numbers appear first among sibling categories.</p>
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* MORE OPTIONS TAB CONTENT */}
-          {activeSection === 'options' && (
-            <div className="space-y-6">
-              <h2 className="text-sm font-bold text-slate-900">Advanced Options</h2>
-              <div className="p-6 rounded-xl border border-dashed border-slate-200 text-center space-y-2">
-                <SlidersHorizontal className="w-8 h-8 text-slate-400 mx-auto" />
-                <p className="text-xs font-semibold text-slate-700">Additional Settings</p>
-                <p className="text-[11px] text-slate-400 max-w-sm mx-auto">
-                  Custom category tags, attributes, and automation rules can be configured here once activated.
-                </p>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       </div>
     </form>

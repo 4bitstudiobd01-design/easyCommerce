@@ -4,9 +4,10 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ArrowLeft, Save, Plus, Trash2, Package, MapPin, User, FileText, Loader2, Tag, CreditCard, Ticket
+  ArrowLeft, Save, Plus, Trash2, Package, MapPin, User, FileText, Loader2, Tag, CreditCard, Ticket, Store
 } from 'lucide-react';
 import { useCreateManualOrderMutation, CreateManualOrderRequest, CreateManualOrderItemRequest } from '../api/orderApi';
+import { useGetBranchesQuery } from '@/features/tenant/api/tenantApi';
 import { AddOrderItemModal, AddedOrderItem } from './AddOrderItemModal';
 import { toast } from 'sonner';
 
@@ -27,6 +28,7 @@ const PAYMENT_METHODS: { value: CreateManualOrderRequest['paymentMethod']; label
 export function CreateOrderPage() {
   const router = useRouter();
   const [createManualOrder, { isLoading: isSaving }] = useCreateManualOrderMutation();
+  const { data: branches } = useGetBranchesQuery();
 
   const [formData, setFormData] = useState<Omit<CreateManualOrderRequest, 'items'>>({
     customerName: '',
@@ -40,6 +42,7 @@ export function CreateOrderPage() {
     division: '',
     customerNote: '',
     internalNote: '',
+    branchId: '',
     paymentMethod: 'COD',
     couponCode: '',
     deliveryFee: 60,
@@ -137,6 +140,7 @@ export function CreateOrderPage() {
       const order = await createManualOrder({
         ...formData,
         couponCode: formData.couponCode?.trim() || undefined,
+        branchId: formData.branchId || undefined,
         items: payloadItems,
       }).unwrap();
       toast.success(`Order #${order.orderNumber} created.`);
@@ -304,6 +308,17 @@ export function CreateOrderPage() {
                   <Ticket className="w-3 h-3" /> Coupon Code (Optional)
                 </label>
                 <input type="text" name="couponCode" value={formData.couponCode} onChange={handleChange} placeholder="e.g. SAVE10" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 outline-none uppercase" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1 flex items-center gap-1">
+                  <Store className="w-3 h-3" /> Branch (Optional)
+                </label>
+                <select name="branchId" value={formData.branchId} onChange={handleChange} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 outline-none bg-white">
+                  <option value="">No branch (online order)</option>
+                  {branches?.map((branch) => (
+                    <option key={branch.id} value={branch.id}>{branch.name}</option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>

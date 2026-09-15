@@ -22,7 +22,6 @@ import { GetPaymentDetailsService } from './services/get-payment-details.service
 import { ListPaymentGatewaysService } from './services/list-payment-gateways.service';
 import { ExportPaymentTransactionsService } from './services/export-payment-transactions.service';
 import { RecordPaymentEventService } from './services/record-payment-event.service';
-import { SeedPaymentDemoDataService } from './services/seed-payment-demo-data.service';
 import { GetOrderBalanceService } from './services/get-order-balance.service';
 import { GetOrderPaymentHistoryService } from './services/get-order-payment-history.service';
 import { RecordManualPaymentService } from './services/record-manual-payment.service';
@@ -76,7 +75,6 @@ import { OrderStatusHistoryEntity } from '../order/entities/order-status-history
     ListPaymentGatewaysService,
     ExportPaymentTransactionsService,
     RecordPaymentEventService,
-    SeedPaymentDemoDataService,
     JwtAuthGuard,
     PermissionsGuard,
     CreateRefundService,

@@ -51,6 +51,14 @@ export class UpdateProductService {
       product.productType = dto.productType;
     }
 
+    if (dto.hasVariants !== undefined) {
+      product.hasVariants = Boolean(dto.hasVariants);
+    }
+
+    if (dto.basePrice !== undefined) {
+      product.basePrice = dto.basePrice;
+    }
+
     if (dto.status !== undefined) {
       product.status = dto.status;
       product.isPublished = dto.status === ProductStatus.ACTIVE;
@@ -59,6 +67,26 @@ export class UpdateProductService {
       // original go-live date.
       if (dto.status === ProductStatus.ACTIVE && !product.publishedAt) {
         product.publishedAt = new Date();
+      }
+    }
+
+    // A product that goes live must carry a real selling price. Only enforced when
+    // this request actually sets the product ACTIVE — an unrelated edit to an
+    // already-live product is left alone. For a variant product the price lives on
+    // the variants, so require at least one enabled variant priced above 0;
+    // otherwise require the product's own basePrice.
+    if (dto.status === ProductStatus.ACTIVE) {
+      if (product.hasVariants) {
+        const hasPricedVariant = (product.variants || []).some(
+          (v) => v.isEnabled && Number(v.price) > 0,
+        );
+        if (!hasPricedVariant) {
+          throw new BadRequestException(
+            'Add at least one enabled variant with a price greater than 0 before publishing this product.',
+          );
+        }
+      } else if (!(Number(product.basePrice) > 0)) {
+        throw new BadRequestException('Set a selling price greater than 0 before publishing this product.');
       }
     }
 
@@ -110,12 +138,20 @@ export class UpdateProductService {
       product.lowStockThreshold = dto.lowStockThreshold;
     }
 
-    if (dto.basePrice !== undefined) {
-      product.basePrice = dto.basePrice;
-    }
-
     if (dto.compareAtPrice !== undefined) {
       product.compareAtPrice = dto.compareAtPrice;
+    }
+
+    // compareAtPrice is the struck-through "was" price — it must stay above the
+    // selling price or the storefront shows a discount that raises the price.
+    // Checked against the merged values so changing either field alone is caught.
+    if (
+      product.compareAtPrice !== undefined &&
+      product.compareAtPrice !== null &&
+      Number(product.compareAtPrice) > 0 &&
+      Number(product.compareAtPrice) <= Number(product.basePrice)
+    ) {
+      throw new BadRequestException('Compare-at price must be higher than the selling price.');
     }
 
     if (dto.costPrice !== undefined) {

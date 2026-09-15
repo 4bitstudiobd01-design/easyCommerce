@@ -40,7 +40,7 @@ export default function MyOrdersPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans">
-      <CartDrawer />
+      <CartDrawer primaryColor={primaryColor} />
       <ShopEaseNavbar
         storeName={store?.name || 'Storefront'}
         slug={slug}

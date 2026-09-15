@@ -59,7 +59,7 @@ export class AnalyticsController {
   ) {
     const tenantId = await this.getMerchantTenantId(userId, storeId);
     const { dateFrom, dateTo } = this.parseDateRange(query);
-    return this.getMerchantAnalyticsService.execute(tenantId, dateFrom, dateTo);
+    return this.getMerchantAnalyticsService.execute(tenantId, dateFrom, dateTo, query.compare);
   }
 
   @Get('net-profit')
@@ -82,10 +82,12 @@ export class AnalyticsController {
   @ApiResponse({ status: 200, description: 'New vs returning customer trend' })
   async getNewVsReturningTrend(
     @CurrentUser('sub') userId: string,
+    @Query('days') days?: string,
     @Headers('x-store-id') storeId?: string,
   ) {
     const tenantId = await this.getMerchantTenantId(userId, storeId);
-    return this.getCustomerAnalyticsService.getNewVsReturningTrend(tenantId);
+    const parsedDays = days ? Math.min(Math.max(Number(days) || 7, 1), 366) : 7;
+    return this.getCustomerAnalyticsService.getNewVsReturningTrend(tenantId, parsedDays);
   }
 
   @Get('customers/new-vs-returning-summary')
@@ -105,7 +107,10 @@ export class AnalyticsController {
   @Get('traffic-sources')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Storefront visit sessions and conversion rate, broken down by channel' })
+  @ApiOperation({
+    summary:
+      'Storefront visit sessions and conversion rate, broken down by channel (default), UTM source, or UTM campaign',
+  })
   @ApiResponse({ status: 200, description: 'Traffic source breakdown' })
   async getTrafficSources(
     @CurrentUser('sub') userId: string,
@@ -116,7 +121,7 @@ export class AnalyticsController {
     const { dateFrom, dateTo } = this.parseDateRange(query);
     const to = dateTo ?? new Date();
     const from = dateFrom ?? new Date(to.getTime() - 6 * 24 * 60 * 60 * 1000);
-    return this.getTrafficSourcesService.execute(tenantId, from, to);
+    return this.getTrafficSourcesService.execute(tenantId, from, to, query.groupBy ?? 'channel');
   }
 
   @Get('kpi-summary')
@@ -141,9 +146,11 @@ export class AnalyticsController {
   @ApiResponse({ status: 200, description: 'Insight list, 0-4 items depending on data availability' })
   async getInsights(
     @CurrentUser('sub') userId: string,
+    @Query() query: AnalyticsQueryDto,
     @Headers('x-store-id') storeId?: string,
   ) {
     const tenantId = await this.getMerchantTenantId(userId, storeId);
-    return this.getAnalyticsInsightsService.execute(tenantId);
+    const { dateFrom, dateTo } = this.parseDateRange(query);
+    return this.getAnalyticsInsightsService.execute(tenantId, dateFrom, dateTo);
   }
 }

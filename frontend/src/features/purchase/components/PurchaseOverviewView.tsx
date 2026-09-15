@@ -2,7 +2,6 @@
 
 import React, { useMemo } from 'react';
 import Link from 'next/link';
-import { toast } from 'sonner';
 import {
   ShoppingCart,
   FileText,
@@ -11,7 +10,6 @@ import {
   BarChart2,
   ClipboardList,
   Users,
-  Zap,
   Plus,
   UserPlus,
   Settings,
@@ -32,9 +30,9 @@ import {
 } from 'recharts';
 import {
   useGetPurchaseOverviewQuery,
-  useSeedPurchaseDemoMutation,
   type PurchaseOrderStatus,
 } from '../api/purchaseApi';
+import { PurchaseTabsHeader, type PurchaseTabKey } from './PurchaseTabsHeader';
 
 const money = (v: string | number) =>
   `৳ ${Number(v).toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
@@ -85,11 +83,13 @@ const PAYMENT_LABEL: Record<string, string> = {
   UNPAID: 'Unpaid',
 };
 
-export function PurchaseOverviewView() {
-  const { data, isLoading } = useGetPurchaseOverviewQuery();
-  const [seedDemo, { isLoading: isSeeding }] = useSeedPurchaseDemoMutation();
+interface PurchaseOverviewViewProps {
+  activeTab?: PurchaseTabKey;
+  onNavigateTab?: (tab: PurchaseTabKey) => void;
+}
 
-  const isDev = process.env.NODE_ENV !== 'production';
+export function PurchaseOverviewView({ activeTab = 'overview', onNavigateTab }: PurchaseOverviewViewProps = {}) {
+  const { data, isLoading } = useGetPurchaseOverviewQuery();
 
   const trend = useMemo(
     () =>
@@ -153,29 +153,11 @@ export function PurchaseOverviewView() {
       data.recentPurchases.length > 0 ||
       donutTotal > 0);
 
-  const runSeed = async () => {
-    try {
-      const res = await seedDemo().unwrap();
-      toast.success(res.message ?? 'Demo data seeded.');
-    } catch (err) {
-      toast.error(
-        (err as { data?: { message?: string } })?.data?.message ??
-          'Could not seed demo data.',
-      );
-    }
-  };
 
   return (
     <div className="space-y-6 pb-12 text-slate-800">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-1.5 text-xs font-semibold mb-1">
-            <Link href="/dashboard/purchase" className="text-blue-600 hover:underline">
-              Purchase
-            </Link>
-            <span className="text-slate-400">›</span>
-            <span className="text-slate-500">Overview</span>
-          </div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">
             Purchase Overview
           </h1>
@@ -183,7 +165,61 @@ export function PurchaseOverviewView() {
             Track your purchasing activities, supplier dues and stock inflow at a glance.
           </p>
         </div>
+
+        <div className="flex items-center gap-2.5 shrink-0">
+          <Link
+            href="/dashboard/purchase?tab=suppliers"
+            onClick={(e) => {
+              if (!e.metaKey && !e.ctrlKey && onNavigateTab) {
+                e.preventDefault();
+                onNavigateTab('suppliers');
+              }
+            }}
+            className="px-3.5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 shadow-sm flex items-center gap-1.5 transition-all"
+          >
+            <UserPlus className="w-4 h-4 text-slate-500" />
+            <span>Add Supplier</span>
+          </Link>
+
+          <Link
+            href="/dashboard/accounting/settings"
+            className="px-3.5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 shadow-sm flex items-center gap-1.5 transition-all"
+          >
+            <Settings className="w-4 h-4 text-slate-500" />
+            <span>Account Mapping</span>
+          </Link>
+
+          <Link
+            href="/dashboard/purchase?tab=purchase-orders"
+            onClick={(e) => {
+              if (!e.metaKey && !e.ctrlKey && onNavigateTab) {
+                e.preventDefault();
+                onNavigateTab('purchase-orders');
+              }
+            }}
+            className="px-3.5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 shadow-sm flex items-center gap-1.5 transition-all"
+          >
+            <FileText className="w-4 h-4 text-slate-500" />
+            <span>Create Purchase Order</span>
+          </Link>
+
+          <Link
+            href="/dashboard/purchase?tab=purchases"
+            onClick={(e) => {
+              if (!e.metaKey && !e.ctrlKey && onNavigateTab) {
+                e.preventDefault();
+                onNavigateTab('purchases');
+              }
+            }}
+            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-sm shadow-blue-600/30 flex items-center gap-2 transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            <span>New Purchase</span>
+          </Link>
+        </div>
       </div>
+
+      <PurchaseTabsHeader activeTab={activeTab} onTabChange={(tab) => onNavigateTab?.(tab)} />
 
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -202,22 +238,18 @@ export function PurchaseOverviewView() {
           </p>
           <div className="mt-4 flex items-center justify-center gap-3">
             <Link
-              href="/dashboard/purchase/purchases"
+              href="/dashboard/purchase?tab=purchases"
+              onClick={(e) => {
+                if (!e.metaKey && !e.ctrlKey && onNavigateTab) {
+                  e.preventDefault();
+                  onNavigateTab('purchases');
+                }
+              }}
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition shadow-xs"
             >
               <Plus className="w-4 h-4" />
               Record a purchase
             </Link>
-            {isDev && (
-              <button
-                type="button"
-                onClick={runSeed}
-                disabled={isSeeding}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-xl transition shadow-2xs disabled:opacity-60"
-              >
-                {isSeeding ? 'Seeding…' : 'Load demo data'}
-              </button>
-            )}
           </div>
         </div>
       ) : (
@@ -378,7 +410,7 @@ export function PurchaseOverviewView() {
                     <div key={item.name} className="flex items-center justify-between">
                       <div className="flex items-center gap-2 min-w-0">
                         <span
-                          className="w-2 h-2 rounded-full shrink-0"
+                          className="w-2 h-2 rounded-full"
                           style={{ backgroundColor: item.color }}
                         />
                         <span className="text-slate-600 truncate font-medium text-[11px]">
@@ -398,7 +430,13 @@ export function PurchaseOverviewView() {
 
               <div className="pt-2 text-center">
                 <Link
-                  href="/dashboard/purchase/purchase-orders"
+                  href="/dashboard/purchase?tab=purchase-orders"
+                  onClick={(e) => {
+                    if (!e.metaKey && !e.ctrlKey && onNavigateTab) {
+                      e.preventDefault();
+                      onNavigateTab('purchase-orders');
+                    }
+                  }}
                   className="text-xs font-bold text-blue-600 hover:text-blue-700"
                 >
                   View Detailed POs →
@@ -415,7 +453,13 @@ export function PurchaseOverviewView() {
                   <h2 className="text-sm font-bold text-slate-900">Recent Purchases</h2>
                 </div>
                 <Link
-                  href="/dashboard/purchase/purchases"
+                  href="/dashboard/purchase?tab=purchases"
+                  onClick={(e) => {
+                    if (!e.metaKey && !e.ctrlKey && onNavigateTab) {
+                      e.preventDefault();
+                      onNavigateTab('purchases');
+                    }
+                  }}
                   className="text-xs font-bold text-blue-600 hover:text-blue-700"
                 >
                   View All
@@ -480,7 +524,13 @@ export function PurchaseOverviewView() {
                         </td>
                         <td className="px-4 py-3.5 text-center">
                           <Link
-                            href="/dashboard/purchase/purchases"
+                            href="/dashboard/purchase?tab=purchases"
+                            onClick={(e) => {
+                              if (!e.metaKey && !e.ctrlKey && onNavigateTab) {
+                                e.preventDefault();
+                                onNavigateTab('purchases');
+                              }
+                            }}
                             className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition inline-flex"
                             title="Open in Purchases"
                           >
@@ -502,7 +552,13 @@ export function PurchaseOverviewView() {
                     <h2 className="text-sm font-bold text-slate-900">Top Suppliers</h2>
                   </div>
                   <Link
-                    href="/dashboard/purchase/suppliers"
+                    href="/dashboard/purchase?tab=suppliers"
+                    onClick={(e) => {
+                      if (!e.metaKey && !e.ctrlKey && onNavigateTab) {
+                        e.preventDefault();
+                        onNavigateTab('suppliers');
+                      }
+                    }}
                     className="text-xs font-bold text-blue-600 hover:text-blue-700"
                   >
                     View All
@@ -542,44 +598,6 @@ export function PurchaseOverviewView() {
                       ))}
                     </tbody>
                   </table>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-2xs">
-                <div className="flex items-center gap-2 mb-4">
-                  <Zap className="w-4 h-4 text-slate-600" />
-                  <h2 className="text-sm font-bold text-slate-900">Quick Actions</h2>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Link
-                    href="/dashboard/purchase/purchases"
-                    className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-xs shadow-blue-500/20"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>New Purchase</span>
-                  </Link>
-                  <Link
-                    href="/dashboard/purchase/purchase-orders"
-                    className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-white hover:bg-slate-50 text-blue-600 border border-blue-200 rounded-xl text-xs font-bold transition shadow-2xs"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Create Purchase Order</span>
-                  </Link>
-                  <Link
-                    href="/dashboard/purchase/suppliers"
-                    className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-white hover:bg-slate-50 text-blue-600 border border-blue-200 rounded-xl text-xs font-bold transition shadow-2xs"
-                  >
-                    <UserPlus className="w-4 h-4" />
-                    <span>Add Supplier</span>
-                  </Link>
-                  <Link
-                    href="/dashboard/accounting/settings"
-                    className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-white hover:bg-slate-50 text-blue-600 border border-blue-200 rounded-xl text-xs font-bold transition shadow-2xs"
-                  >
-                    <Settings className="w-4 h-4" />
-                    <span>Account Mapping</span>
-                  </Link>
                 </div>
               </div>
             </div>

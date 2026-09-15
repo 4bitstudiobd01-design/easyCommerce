@@ -32,11 +32,17 @@ export class InventoryListItemDto {
   @ApiProperty({ example: 'IP15PM-256-NAT', nullable: true })
   sku?: string;
 
-  @ApiProperty({ example: 'w1eebc99-9c0b-4ef8-bb6d-6bb9bd380w11' })
-  warehouseId: string;
+  @ApiProperty({ example: 'w1eebc99-9c0b-4ef8-bb6d-6bb9bd380w11', nullable: true })
+  warehouseId?: string;
 
-  @ApiProperty({ example: 'Central Dhaka Warehouse' })
-  warehouseName: string;
+  @ApiProperty({ example: 'Central Dhaka Warehouse', nullable: true })
+  warehouseName?: string;
+
+  @ApiProperty({ example: 'br1eebc99-9c0b-4ef8-bb6d-6bb9bd380b11', nullable: true })
+  branchId?: string;
+
+  @ApiProperty({ example: 'Dhanmondi Outlet', nullable: true })
+  branchName?: string;
 
   @ApiProperty({ example: 45 })
   quantityOnHand: number;

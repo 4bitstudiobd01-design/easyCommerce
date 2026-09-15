@@ -9,7 +9,7 @@ export type AttributeType = 'TEXT' | 'NUMBER' | 'BOOLEAN' | 'SELECT' | 'MULTI_SE
 export type TaxCategory = 'STANDARD_VAT' | 'REDUCED' | 'ZERO_RATED' | 'EXEMPT';
 export type ProductDiscountType = 'NONE' | 'PERCENTAGE' | 'FIXED';
 export type StockStatus = 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK' | 'NOT_TRACKED';
-export type HomepageSection = 'HERO_FEATURED' | 'NEW_ARRIVALS' | 'BEST_SELLERS';
+export type HomepageSection = 'HERO' | 'FEATURED' | 'NEW_ARRIVALS' | 'BEST_SELLERS';
 
 export type WeightUnit = 'KG' | 'G' | 'LB' | 'OZ';
 export type DimensionUnit = 'CM' | 'M' | 'IN';
@@ -459,12 +459,24 @@ export interface CreateProductRequest {
   productType?: ProductType;
   status?: ProductStatus;
   slug?: string;
+  hasVariants?: boolean;
   sku?: string;
   barcode?: string;
   trackInventory?: boolean;
   allowBackorder?: boolean;
   lowStockThreshold?: number;
   initialStock?: number;
+  variants?: {
+    title: string;
+    combinationKey?: string;
+    sku?: string;
+    price?: number;
+    compareAtPrice?: number;
+    costPrice?: number;
+    isEnabled?: boolean;
+    initialStock?: number;
+    options: VariantOptionMeta[];
+  }[];
   categoryId?: string;
   brandId?: string;
   collectionIds?: string[];
@@ -1229,6 +1241,20 @@ export const catalogApi = createApi({
       transformResponse: (response: { data: { success: boolean; message: string } }) => response.data || response,
     }),
 
+    bulkDeleteVariants: builder.mutation<
+      { success: boolean; deletedCount: number; message: string },
+      { productId: string; variantIds: string[] }
+    >({
+      query: ({ productId, variantIds }) => ({
+        url: `/products/${productId}/variants/bulk-delete`,
+        method: 'POST',
+        body: { variantIds },
+      }),
+      invalidatesTags: (_result, _err, { productId }) => [{ type: 'Product', id: productId }, 'Variant', 'Inventory'],
+      transformResponse: (response: { data: { success: boolean; deletedCount: number; message: string } }) =>
+        response.data || response,
+    }),
+
     // --- PRODUCT MEDIA ENDPOINTS ---
     getProductMedia: builder.query<ProductImage[], string>({
       query: (productId) => `/products/${productId}/media`,
@@ -1298,10 +1324,10 @@ export const catalogApi = createApi({
       transformResponse: (response: { data: Review[] }) => response.data || [],
     }),
     createReview: builder.mutation<Review, CreateReviewRequest>({
-      query: (body) => ({
-        url: '/reviews',
+      query: ({ productId, customerName, reviewerName, ...rest }) => ({
+        url: `/products/${productId}/reviews`,
         method: 'POST',
-        body,
+        body: { ...rest, reviewerName: reviewerName || customerName },
       }),
       invalidatesTags: (_result, _err, { productId }) => [{ type: 'Review', id: productId }],
       transformResponse: (response: { data: Review }) => response.data,
@@ -1377,6 +1403,7 @@ export const {
   useGenerateVariantsMutation,
   useUpdateVariantMutation,
   useDeleteProductVariantMutation,
+  useBulkDeleteVariantsMutation,
   useBulkUpdateVariantsMutation,
   useGetProductMediaQuery,
   useUploadProductMediaMutation,

@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import {
   Users,
   DollarSign,
@@ -28,7 +29,11 @@ import {
   type SupplierListItem,
   type SupplierStatus,
 } from '../api/purchaseApi';
+<<<<<<< HEAD
 import { CustomDropdown } from './CustomDropdown';
+=======
+import { PurchaseTabsHeader, type PurchaseTabKey } from './PurchaseTabsHeader';
+>>>>>>> 28beebd18d9f9b378e71bc134817fba440e55106
 
 const SORT_MAP: Record<string, 'name_asc' | 'name_desc' | 'purchases_desc' | 'due_desc'> = {
   'Name (A-Z)': 'name_asc',
@@ -69,7 +74,12 @@ const EMPTY_FORM: SupplierFormState = {
   location: '',
 };
 
-export function SuppliersView() {
+interface SuppliersViewProps {
+  activeTab?: PurchaseTabKey;
+  onNavigateTab?: (tab: PurchaseTabKey) => void;
+}
+
+export function SuppliersView({ activeTab = 'suppliers', onNavigateTab }: SuppliersViewProps = {}) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [sortBy, setSortBy] = useState('Name (A-Z)');
@@ -93,7 +103,7 @@ export function SuppliersView() {
 
   const [createSupplier, { isLoading: isCreating }] = useCreateSupplierMutation();
   const [updateSupplier, { isLoading: isUpdating }] = useUpdateSupplierMutation();
-  const [deleteSupplier] = useDeleteSupplierMutation();
+  const [deleteSupplier, { isLoading: isDeletingSupplier }] = useDeleteSupplierMutation();
 
   const suppliers = data?.items ?? [];
   const total = data?.total ?? 0;
@@ -156,12 +166,19 @@ export function SuppliersView() {
     }
   };
 
-  const remove = async (s: SupplierListItem) => {
+  const [supplierPendingDelete, setSupplierPendingDelete] = useState<SupplierListItem | null>(null);
+
+  const remove = (s: SupplierListItem) => {
     setActiveMenuId(null);
-    if (!window.confirm(`Delete supplier "${s.name}"?`)) return;
+    setSupplierPendingDelete(s);
+  };
+
+  const confirmRemove = async () => {
+    if (!supplierPendingDelete) return;
     try {
-      const res = await deleteSupplier(s.id).unwrap();
+      const res = await deleteSupplier(supplierPendingDelete.id).unwrap();
       toast.success(res.message ?? 'Supplier deleted.');
+      setSupplierPendingDelete(null);
     } catch (err) {
       const message =
         (err as { data?: { message?: string } })?.data?.message ??
@@ -208,13 +225,6 @@ export function SuppliersView() {
     <div className="space-y-6 pb-12 text-slate-800">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-1.5 text-xs font-semibold mb-1">
-            <Link href="/dashboard/purchase" className="text-blue-600 hover:underline">
-              Purchase
-            </Link>
-            <span className="text-slate-400">›</span>
-            <span className="text-slate-500">Suppliers</span>
-          </div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">Suppliers</h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
             Manage all your suppliers and their related information.
@@ -229,6 +239,8 @@ export function SuppliersView() {
           <span>Add Supplier</span>
         </button>
       </div>
+
+      <PurchaseTabsHeader activeTab={activeTab} onTabChange={(tab) => onNavigateTab?.(tab)} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((kpi) => (
@@ -412,14 +424,14 @@ export function SuppliersView() {
                           {activeMenuId === s.id && (
                             <div className="absolute right-0 top-8 z-30 w-44 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 text-left text-xs font-semibold">
                               <Link
-                                href="/dashboard/purchase/purchase-orders"
+                                href="/dashboard/purchase?tab=purchase-orders"
                                 className="flex items-center gap-2 px-3.5 py-2 text-slate-700 hover:bg-slate-50"
                               >
                                 <FileText className="w-3.5 h-3.5 text-slate-400" />
                                 <span>Create PO</span>
                               </Link>
                               <Link
-                                href="/dashboard/purchase/purchases"
+                                href="/dashboard/purchase?tab=purchases"
                                 className="flex items-center gap-2 px-3.5 py-2 text-slate-700 hover:bg-slate-50"
                               >
                                 <DollarSign className="w-3.5 h-3.5 text-slate-400" />
@@ -605,6 +617,20 @@ export function SuppliersView() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={supplierPendingDelete !== null}
+        onClose={() => setSupplierPendingDelete(null)}
+        onConfirm={confirmRemove}
+        title="Delete Supplier"
+        message={
+          <>
+            Delete supplier <strong>&quot;{supplierPendingDelete?.name}&quot;</strong>?
+          </>
+        }
+        confirmLabel="Delete"
+        isLoading={isDeletingSupplier}
+      />
     </div>
   );
 }

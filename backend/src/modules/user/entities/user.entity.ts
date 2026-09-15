@@ -66,6 +66,14 @@ export class UserEntity {
   @Column({ type: 'timestamptz', nullable: true })
   passwordResetLastRequestedAt?: Date;
 
+  /** Consecutive failed login attempts. Reset to 0 on a successful login. */
+  @Column({ type: 'int', default: 0 })
+  failedLoginAttempts: number;
+
+  /** Login is blocked until this timestamp when the failed-attempt lockout is active. Null when not locked. */
+  @Column({ type: 'timestamptz', nullable: true })
+  loginLockedUntil?: Date;
+
   @OneToMany(() => SessionEntity, (session) => session.user)
   sessions: SessionEntity[];
 

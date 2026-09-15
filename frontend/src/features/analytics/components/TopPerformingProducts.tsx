@@ -3,10 +3,12 @@
 import React from 'react';
 import { Package } from 'lucide-react';
 import { useGetAnalyticsOverviewQuery } from '../api/analyticsApi';
+import { useAnalyticsOverviewParams } from '../context/AnalyticsFiltersContext';
 import { Skeleton } from '@/components/ui/Skeleton';
 
 export function TopPerformingProducts() {
-  const { data, isLoading } = useGetAnalyticsOverviewQuery();
+  const dateParams = useAnalyticsOverviewParams();
+  const { data, isLoading } = useGetAnalyticsOverviewQuery(dateParams);
 
   if (isLoading) {
     return (

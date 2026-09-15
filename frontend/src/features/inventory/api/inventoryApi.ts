@@ -54,6 +54,7 @@ export interface InventoryStockItem {
   warehouseId: string;
   warehouse?: Warehouse;
   productId: string;
+  variantId?: string;
   quantityOnHand: number;
   quantityReserved: number;
   availableQuantity?: number;
@@ -63,23 +64,60 @@ export interface InventoryStockItem {
 
 export interface StockTransfer {
   id: string;
-  fromWarehouseId: string;
+  fromWarehouseId?: string;
   fromWarehouse?: Warehouse;
-  toWarehouseId: string;
+  fromBranchId?: string;
+  toWarehouseId?: string;
   toWarehouse?: Warehouse;
+  toBranchId?: string;
   productId: string;
+  variantId?: string;
+  variant?: { id: string; name?: string; sku?: string };
   quantity: number;
   notes?: string;
+  createdByUserId?: string;
+  createdByName?: string;
+  createdByEmail?: string;
   tenantId: string;
   createdAt: string;
 }
 
+export interface StockTransferListResponse {
+  data: StockTransfer[];
+  meta: { page: number; limit: number; total: number; totalPages: number };
+}
+
+export interface ListStockTransfersParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  warehouseId?: string;
+  branchId?: string;
+}
+
 export interface CreateStockTransferRequest {
-  fromWarehouseId: string;
-  toWarehouseId: string;
+  fromWarehouseId?: string;
+  fromBranchId?: string;
+  toWarehouseId?: string;
+  toBranchId?: string;
   productId: string;
+  variantId?: string;
   quantity: number;
   notes?: string;
+}
+
+export interface BranchStockItem {
+  id: string;
+  branchId: string;
+  productId: string;
+  product?: { id: string; name?: string; title?: string };
+  variantId?: string;
+  variant?: { id: string; name?: string; sku?: string };
+  quantityOnHand: number;
+  quantityReserved: number;
+  availableQuantity?: number;
+  reorderPoint: number;
+  tenantId: string;
 }
 
 export interface AdjustStockRequest {
@@ -138,8 +176,10 @@ export interface InventoryListItem {
   variantId?: string;
   variantTitle?: string;
   sku?: string;
-  warehouseId: string;
-  warehouseName: string;
+  warehouseId?: string;
+  warehouseName?: string;
+  branchId?: string;
+  branchName?: string;
   quantityOnHand: number;
   quantityReserved: number;
   availableQuantity: number;
@@ -178,6 +218,7 @@ export interface ListInventoryParams {
   categoryId?: string;
   productType?: string;
   warehouseId?: string;
+  branchId?: string;
   sortBy?: string;
   sortOrder?: 'ASC' | 'DESC';
 }
@@ -401,15 +442,6 @@ export interface InventorySettingsOverviewResponse {
   securityGuarantees: InventorySecurityGuarantees;
 }
 
-export interface SeedInventoryDemoDataResponse {
-  success: boolean;
-  message: string;
-  productsCreated: number;
-  variantsCreated: number;
-  inventoryStocksCreated: number;
-  movementsCreated: number;
-}
-
 export const inventoryApi = createApi({
   reducerPath: 'inventoryApi',
   baseQuery: createBaseQueryWithReauth(process.env.NEXT_PUBLIC_API_URL?.replace('/orders', '') || 'http://localhost:5001/api/v1'),
@@ -595,23 +627,6 @@ export const inventoryApi = createApi({
           : (response as any)?.data || response,
     }),
 
-    seedInventoryDemoData: builder.mutation<SeedInventoryDemoDataResponse, void>({
-      query: () => ({
-        url: '/inventory/settings/seed-demo-data',
-        method: 'POST',
-      }),
-      invalidatesTags: [
-        'Stock',
-        'InventoryList',
-        'InventoryKpis',
-        'InventoryHistory',
-        'ProductVariantInventory',
-        'InventorySettings',
-      ],
-      transformResponse: (response: { data: SeedInventoryDemoDataResponse } | SeedInventoryDemoDataResponse) =>
-        ('data' in (response as any)) ? (response as any).data : response,
-    }),
-
     createStockTransfer: builder.mutation<StockTransfer, CreateStockTransferRequest>({
       query: (body) => ({
         url: '/inventory/transfers',
@@ -622,10 +637,21 @@ export const inventoryApi = createApi({
       transformResponse: (response: { data: StockTransfer } | StockTransfer) =>
         ('data' in (response as any)) ? (response as any).data : response,
     }),
-    getStockTransfers: builder.query<StockTransfer[], void>({
-      query: () => '/inventory/transfers',
+    getStockTransfers: builder.query<StockTransferListResponse, ListStockTransfersParams | void>({
+      query: (params) => ({ url: '/inventory/transfers', params: params || {} }),
       providesTags: ['StockTransfer'],
-      transformResponse: (response: { data: StockTransfer[] } | StockTransfer[]) =>
+      transformResponse: (response: { data: StockTransferListResponse }) => response.data,
+    }),
+    getBranchStock: builder.query<BranchStockItem[], string>({
+      query: (branchId) => `/inventory/transfers/branches/${branchId}/stock`,
+      providesTags: ['Stock'],
+      transformResponse: (response: { data: BranchStockItem[] } | BranchStockItem[]) =>
+        Array.isArray(response) ? response : (response as any).data || [],
+    }),
+    getAllBranchesStock: builder.query<BranchStockItem[], void>({
+      query: () => '/inventory/transfers/branches/stock',
+      providesTags: ['Stock'],
+      transformResponse: (response: { data: BranchStockItem[] } | BranchStockItem[]) =>
         Array.isArray(response) ? response : (response as any).data || [],
     }),
   }),
@@ -637,7 +663,6 @@ export const {
   useGetInventoryHistoryQuery,
   useGetProductVariantInventoryQuery,
   useGetInventorySettingsOverviewQuery,
-  useSeedInventoryDemoDataMutation,
   useGetInventoryKpisQuery,
   useGetWarehousesQuery,
   useCreateWarehouseMutation,
@@ -649,6 +674,8 @@ export const {
   useBulkAdjustStockMutation,
   useCreateStockTransferMutation,
   useGetStockTransfersQuery,
+  useGetBranchStockQuery,
+  useGetAllBranchesStockQuery,
 } = inventoryApi;
 
 

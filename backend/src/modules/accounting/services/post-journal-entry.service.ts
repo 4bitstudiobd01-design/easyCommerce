@@ -32,6 +32,10 @@ export interface PostJournalEntryInput {
   source?: JournalSourceEnum;
   sourceRef?: string;
   createdByUserId?: string;
+  /** Branch this entry is attributed to (e.g. a branch-placed order). Optional —
+   *  omitted/undefined means store-wide/online, persisted as null on the entry and
+   *  every line it creates. */
+  branchId?: string;
 }
 
 const CENTS = 100;
@@ -127,6 +131,7 @@ export class PostJournalEntryService {
       const account = accountById.get(line.accountId)!;
       return {
         storeId,
+        branchId: input.branchId,
         accountId: account.id,
         accountCode: account.code,
         accountName: account.name,
@@ -157,6 +162,7 @@ export class PostJournalEntryService {
         entryRepo.create({
           tenantId,
           storeId,
+          branchId: input.branchId,
           entryNumber,
           date: input.date,
           description: input.description,

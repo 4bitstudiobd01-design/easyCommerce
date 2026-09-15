@@ -100,6 +100,7 @@ export class UpdateOrderStatusService {
     // 4. Trigger SMS
     try {
       await this.triggerOrderStatusSmsService.execute({
+        orderId: savedOrder!.id,
         orderNumber: savedOrder!.orderNumber,
         customerPhone: savedOrder!.customerPhone,
         customerName: savedOrder!.customerName,

@@ -33,6 +33,8 @@ export type StaffPermissionType =
   | 'coupons:read'
   | 'coupons:write'
   | 'analytics:read'
+  | 'marketing:read'
+  | 'marketing:manage'
   | 'settings:read'
   | 'settings:write'
   | 'staff:manage'
@@ -70,6 +72,15 @@ export class StaffMemberEntity {
 
   @Column({ type: 'uuid' })
   storeId: string;
+
+  /**
+   * Raw branch reference (no relation object — cross-module entity relations are
+   * forbidden by this repo's module-boundary rules). Null means "store-wide": the
+   * staff member works across every branch of their store. This is the default and
+   * must remain the behavior for every staff row created before branch scoping existed.
+   */
+  @Column({ type: 'uuid', nullable: true })
+  branchId?: string;
 
   @Column({ type: 'uuid', nullable: true })
   userId?: string;

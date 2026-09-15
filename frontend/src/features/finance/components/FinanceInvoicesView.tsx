@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import {
   Plus,
   RefreshCw,
@@ -97,13 +98,15 @@ export function FinanceInvoicesView() {
     limit,
   });
 
-  const [deleteInvoice] = useDeleteInvoiceMutation();
+  const [deleteInvoice, { isLoading: isDeletingInvoice }] = useDeleteInvoiceMutation();
+  const [invoiceIdPendingDelete, setInvoiceIdPendingDelete] = useState<string | null>(null);
 
   const invoices = data?.items || [];
   const summary = data?.summary;
   const total = data?.total || 0;
   const totalPages = data?.totalPages || 1;
 
+<<<<<<< HEAD
   const startEntry = total === 0 ? 0 : (page - 1) * limit + 1;
   const endEntry = Math.min(page * limit, total);
 
@@ -128,9 +131,18 @@ export function FinanceInvoicesView() {
 
   const handleDelete = async (id: string) => {
     if (!window.confirm('Are you sure you want to delete this invoice?')) return;
+=======
+  const handleDelete = (id: string) => {
+    setInvoiceIdPendingDelete(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!invoiceIdPendingDelete) return;
+>>>>>>> 28beebd18d9f9b378e71bc134817fba440e55106
     try {
-      await deleteInvoice(id).unwrap();
+      await deleteInvoice(invoiceIdPendingDelete).unwrap();
       toast.success('Invoice deleted.');
+      setInvoiceIdPendingDelete(null);
     } catch (err: any) {
       toast.error(err?.data?.message || 'Failed to delete invoice.');
     }
@@ -674,10 +686,21 @@ export function FinanceInvoicesView() {
         invoice={paymentInvoice}
       />
 
+<<<<<<< HEAD
       <UpdateInvoiceStatusModal
         isOpen={Boolean(statusUpdateInvoice)}
         onClose={() => setStatusUpdateInvoice(null)}
         invoice={statusUpdateInvoice}
+=======
+      <ConfirmDialog
+        isOpen={invoiceIdPendingDelete !== null}
+        onClose={() => setInvoiceIdPendingDelete(null)}
+        onConfirm={confirmDelete}
+        title="Delete Invoice"
+        message="Are you sure you want to delete this invoice?"
+        confirmLabel="Delete"
+        isLoading={isDeletingInvoice}
+>>>>>>> 28beebd18d9f9b378e71bc134817fba440e55106
       />
     </div>
   );

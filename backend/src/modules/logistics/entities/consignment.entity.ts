@@ -17,7 +17,6 @@ export enum CourierProviderEnum {
   PATHAO = 'PATHAO',
   PAPERFLY = 'PAPERFLY',
   REDX = 'REDX',
-  PARCELDEX = 'PARCELDEX',
   CARRYBEE = 'CARRYBEE',
 }
 

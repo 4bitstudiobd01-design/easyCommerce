@@ -3,10 +3,12 @@
 import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useGetNewVsReturningSummaryQuery } from '../api/analyticsApi';
+import { useAnalyticsDateParams } from '../context/AnalyticsFiltersContext';
 import { Skeleton } from '@/components/ui/Skeleton';
 
 export function CustomerOverviewChart() {
-  const { data, isLoading } = useGetNewVsReturningSummaryQuery();
+  const dateParams = useAnalyticsDateParams();
+  const { data, isLoading } = useGetNewVsReturningSummaryQuery(dateParams);
 
   if (isLoading) {
     return (

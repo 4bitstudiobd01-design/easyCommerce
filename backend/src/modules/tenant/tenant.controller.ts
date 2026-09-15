@@ -20,11 +20,16 @@ import { DeleteStoreService } from './services/delete-store.service';
 import { ManageDeliveryZonesService } from './services/manage-delivery-zones.service';
 import { ManageApiKeysService } from './services/manage-api-keys.service';
 import { ManageWebhooksService } from './services/manage-webhooks.service';
+import { CreateBranchService } from './services/create-branch.service';
+import { ListBranchesService } from './services/list-branches.service';
+import { UpdateBranchService } from './services/update-branch.service';
+import { DeleteBranchService } from './services/delete-branch.service';
 import { CreateStoreDto } from './dto/create-store.dto';
 import { UpdateStoreDto } from './dto/update-store.dto';
 import { DeleteStoreDto } from './dto/delete-store.dto';
 import { CreateDeliveryZoneDto, UpdateDeliveryZoneDto } from './dto/delivery-zone.dto';
 import { CreateWebhookDto, UpdateWebhookDto } from './dto/webhook.dto';
+import { CreateBranchDto, UpdateBranchDto } from './dto/branch.dto';
 import { StoreResponseDto } from './dto/store-response.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -43,6 +48,10 @@ export class TenantController {
     private readonly manageDeliveryZonesService: ManageDeliveryZonesService,
     private readonly manageApiKeysService: ManageApiKeysService,
     private readonly manageWebhooksService: ManageWebhooksService,
+    private readonly createBranchService: CreateBranchService,
+    private readonly listBranchesService: ListBranchesService,
+    private readonly updateBranchService: UpdateBranchService,
+    private readonly deleteBranchService: DeleteBranchService,
   ) {}
 
   /** Resolves the caller's store, so every sub-resource stays tenant-scoped. */
@@ -170,6 +179,64 @@ export class TenantController {
   ) {
     const store = await this.requireStore(userId, storeId);
     return this.manageDeliveryZonesService.remove(store.tenantId, zoneId);
+  }
+
+  // --- Branches ---
+
+  @Get('me/branches')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List branches (physical outlets) for the current store' })
+  @ApiResponse({ status: 200, description: 'Branches' })
+  async listBranches(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const store = await this.requireStore(userId, storeId);
+    return this.listBranchesService.execute(store.tenantId, store.id);
+  }
+
+  @Post('me/branches')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create a branch' })
+  @ApiResponse({ status: 201, description: 'Branch created' })
+  async createBranch(
+    @CurrentUser('sub') userId: string,
+    @Body() dto: CreateBranchDto,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const store = await this.requireStore(userId, storeId);
+    return this.createBranchService.execute(store.tenantId, store.id, dto);
+  }
+
+  @Patch('me/branches/:branchId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update a branch' })
+  @ApiResponse({ status: 200, description: 'Branch updated' })
+  async updateBranch(
+    @CurrentUser('sub') userId: string,
+    @Param('branchId') branchId: string,
+    @Body() dto: UpdateBranchDto,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const store = await this.requireStore(userId, storeId);
+    return this.updateBranchService.execute(store.tenantId, store.id, branchId, dto);
+  }
+
+  @Delete('me/branches/:branchId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete a branch' })
+  @ApiResponse({ status: 200, description: 'Branch deleted' })
+  async deleteBranch(
+    @CurrentUser('sub') userId: string,
+    @Param('branchId') branchId: string,
+    @Headers('x-store-id') storeId?: string,
+  ) {
+    const store = await this.requireStore(userId, storeId);
+    return this.deleteBranchService.execute(store.tenantId, store.id, branchId);
   }
 
   // --- API Keys ---

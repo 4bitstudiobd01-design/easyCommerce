@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ConsignmentEntity } from './entities/consignment.entity';
 import { ConsignmentEventEntity } from './entities/consignment-event.entity';
 import { CourierIntegrationEntity } from './entities/courier-integration.entity';
+import { PathaoTokenEntity } from './entities/pathao-token.entity';
 import { OrderEntity } from '../order/entities/order.entity';
 import { OrderStatusHistoryEntity } from '../order/entities/order-status-history.entity';
 import { StoreEntity } from '../tenant/entities/store.entity';
@@ -20,7 +21,6 @@ import { CreateShipmentService } from './services/create-shipment.service';
 import { CancelShipmentService } from './services/cancel-shipment.service';
 import { ExportShipmentsService } from './services/export-shipments.service';
 import { SyncConsignmentService } from './services/sync-consignment.service';
-import { SeedShipmentDemoDataService } from './services/seed-shipment-demo-data.service';
 import { CredentialsCryptoService } from './services/credentials-crypto.service';
 import { CourierIntegrationMapperService } from './services/courier-integration-mapper.service';
 import { ListCourierIntegrationsService } from './services/list-courier-integrations.service';
@@ -31,14 +31,20 @@ import { SetDefaultCourierService } from './services/set-default-courier.service
 import { TestCourierConnectionService } from './services/test-courier-connection.service';
 import { RecordCourierApiCallService } from './services/record-courier-api-call.service';
 import { ResolveCourierCredentialsService } from './services/resolve-courier-credentials.service';
-import { SeedCourierDemoDataService } from './services/seed-courier-demo-data.service';
+import { PathaoAuthService } from './services/pathao-auth.service';
+import { PathaoStoreService } from './services/pathao-store.service';
+import { PathaoLocationService } from './services/pathao-location.service';
+import { PathaoPriceService } from './services/pathao-price.service';
+import { RedxAreaService } from './services/redx-area.service';
+import { RedxChargeService } from './services/redx-charge.service';
+import { RedxStoreService } from './services/redx-store.service';
+import { PaperflyExchangeService } from './services/paperfly-exchange.service';
 
 import { CourierProviderRegistry } from './adapters/courier-provider.registry';
 import { SteadfastCourierAdapter } from './adapters/steadfast.adapter';
 import { PathaoCourierAdapter } from './adapters/pathao.adapter';
 import { PaperflyCourierAdapter } from './adapters/paperfly.adapter';
 import { RedxCourierAdapter } from './adapters/redx.adapter';
-import { ParceldexCourierAdapter } from './adapters/parceldex.adapter';
 import { CarrybeeCourierAdapter } from './adapters/carrybee.adapter';
 
 import { LogisticsController } from './logistics.controller';
@@ -51,6 +57,7 @@ import { PermissionsGuard } from '../../common/guards/permissions.guard';
       ConsignmentEntity,
       ConsignmentEventEntity,
       CourierIntegrationEntity,
+      PathaoTokenEntity,
       OrderEntity,
       StoreEntity,
       OrderStatusHistoryEntity,
@@ -78,7 +85,6 @@ import { PermissionsGuard } from '../../common/guards/permissions.guard';
     CancelShipmentService,
     ExportShipmentsService,
     SyncConsignmentService,
-    SeedShipmentDemoDataService,
     CredentialsCryptoService,
     CourierIntegrationMapperService,
     ListCourierIntegrationsService,
@@ -89,13 +95,19 @@ import { PermissionsGuard } from '../../common/guards/permissions.guard';
     TestCourierConnectionService,
     RecordCourierApiCallService,
     ResolveCourierCredentialsService,
-    SeedCourierDemoDataService,
+    PathaoAuthService,
+    PathaoStoreService,
+    PathaoLocationService,
+    PathaoPriceService,
+    RedxAreaService,
+    RedxChargeService,
+    RedxStoreService,
+    PaperflyExchangeService,
     CourierProviderRegistry,
     SteadfastCourierAdapter,
     PathaoCourierAdapter,
     PaperflyCourierAdapter,
     RedxCourierAdapter,
-    ParceldexCourierAdapter,
     CarrybeeCourierAdapter,
     JwtAuthGuard,
     PermissionsGuard,

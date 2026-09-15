@@ -112,8 +112,23 @@ describe('Product Pricing & Tax Services', () => {
         execute: jest.fn().mockResolvedValue({ id: 'store-1', tenantId: 'tenant-1', slug: 'my-store' }),
       };
       const inventoryStockRepo = { find: jest.fn().mockResolvedValue([]) };
+      const reviewRepo = {
+        createQueryBuilder: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnThis(),
+          addSelect: jest.fn().mockReturnThis(),
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          groupBy: jest.fn().mockReturnThis(),
+          getRawMany: jest.fn().mockResolvedValue([]),
+        }),
+      };
 
-      const service = new FindPublicStoreProductsService(productRepo as any, inventoryStockRepo as any, findStoreBySlugService as any);
+      const service = new FindPublicStoreProductsService(
+        productRepo as any,
+        inventoryStockRepo as any,
+        reviewRepo as any,
+        findStoreBySlugService as any,
+      );
 
       const response = await service.execute('my-store');
 

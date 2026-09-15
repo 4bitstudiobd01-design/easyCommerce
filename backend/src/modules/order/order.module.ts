@@ -12,6 +12,10 @@ import { AbandonedCartEntity } from './entities/abandoned-cart.entity';
 import { OrderNoteEntity } from './entities/order-note.entity';
 import { UserEntity } from '../user/entities/user.entity';
 import { ProductEntity } from '../catalog/entities/product.entity';
+import { ProductVariantEntity } from '../catalog/entities/product-variant.entity';
+import { InventoryStockEntity } from '../inventory/entities/inventory-stock.entity';
+import { InventoryMovementEntity } from '../inventory/entities/inventory-movement.entity';
+import { WarehouseEntity } from '../inventory/entities/warehouse.entity';
 import { ConsignmentEntity } from '../logistics/entities/consignment.entity';
 import { LeadEntity } from '../customer/entities/lead.entity';
 import { TenantModule } from '../tenant/tenant.module';
@@ -64,6 +68,10 @@ import { GenerateOrderNumberService } from './services/generate-order-number.ser
       AbandonedCartEntity,
       OrderNoteEntity,
       ProductEntity,
+      ProductVariantEntity,
+      InventoryStockEntity,
+      InventoryMovementEntity,
+      WarehouseEntity,
       ConsignmentEntity,
       PaymentEntity,
       UserEntity,

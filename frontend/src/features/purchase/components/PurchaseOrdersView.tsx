@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import Link from 'next/link';
 import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import {
   FileText,
   Clock,
@@ -42,8 +42,12 @@ import {
   toLineInputs,
   type LineItemDraft,
 } from './LineItemEditor';
+<<<<<<< HEAD
 import { SupplierSelectDropdown } from './SupplierSelectDropdown';
 import { CustomDropdown } from './CustomDropdown';
+=======
+import { PurchaseTabsHeader, type PurchaseTabKey } from './PurchaseTabsHeader';
+>>>>>>> 28beebd18d9f9b378e71bc134817fba440e55106
 
 const ORDER_STATUS_LABELS: Record<PurchaseOrderStatus, string> = {
   DRAFT: 'Draft',
@@ -94,7 +98,12 @@ const money = (v: string | number) =>
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-export function PurchaseOrdersView() {
+interface PurchaseOrdersViewProps {
+  activeTab?: PurchaseTabKey;
+  onNavigateTab?: (tab: PurchaseTabKey) => void;
+}
+
+export function PurchaseOrdersView({ activeTab = 'purchase-orders', onNavigateTab }: PurchaseOrdersViewProps = {}) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All Orders');
   const [paymentFilter, setPaymentFilter] = useState('All Payment');
@@ -134,7 +143,7 @@ export function PurchaseOrdersView() {
 
   const [createPurchaseOrder, { isLoading: isCreating }] =
     useCreatePurchaseOrderMutation();
-  const [cancelPurchaseOrder] = useCancelPurchaseOrderMutation();
+  const [cancelPurchaseOrder, { isLoading: isCancellingPo }] = useCancelPurchaseOrderMutation();
 
   const orders = data?.items ?? [];
   const total = data?.total ?? 0;
@@ -169,7 +178,7 @@ export function PurchaseOrdersView() {
   const submitPo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!poCanSave) {
-      toast.error('Choose a supplier and add at least one valid line item.');
+      toast.error('Choose a supplier, and give every line a product, quantity and unit cost.');
       return;
     }
 
@@ -182,6 +191,7 @@ export function PurchaseOrdersView() {
         notes: poNotes.trim() || undefined,
         lines: toLineInputs(poLines),
       }).unwrap();
+<<<<<<< HEAD
       toast.success(
         poStatus === 'PENDING_APPROVAL'
           ? 'Purchase order created and submitted for Finance approval!'
@@ -197,15 +207,32 @@ export function PurchaseOrdersView() {
         err?.message ||
         'Could not create the purchase order.';
       toast.error(msg);
+=======
+      toast.success('Purchase order created.');
+      setIsNewPoOpen(false);
+      resetPoForm();
+    } catch (err) {
+      // class-validator returns message as string[] — surface the first real reason.
+      const data = (err as { data?: { message?: string | string[] } })?.data;
+      const reason = Array.isArray(data?.message) ? data?.message[0] : data?.message;
+      toast.error(reason || 'Could not create the purchase order.');
+>>>>>>> 28beebd18d9f9b378e71bc134817fba440e55106
     }
   };
 
-  const cancelPo = async (id: string) => {
+  const [poIdPendingCancel, setPoIdPendingCancel] = useState<string | null>(null);
+
+  const cancelPo = (id: string) => {
     setActiveMenuId(null);
-    if (!window.confirm('Cancel this purchase order?')) return;
+    setPoIdPendingCancel(id);
+  };
+
+  const confirmCancelPo = async () => {
+    if (!poIdPendingCancel) return;
     try {
-      await cancelPurchaseOrder(id).unwrap();
+      await cancelPurchaseOrder(poIdPendingCancel).unwrap();
       toast.success('Purchase order cancelled.');
+<<<<<<< HEAD
     } catch (err: any) {
       const msg =
         (Array.isArray(err?.data?.message)
@@ -214,6 +241,14 @@ export function PurchaseOrdersView() {
         err?.message ||
         'Could not cancel the purchase order.';
       toast.error(msg);
+=======
+      setPoIdPendingCancel(null);
+    } catch (err) {
+      toast.error(
+        (err as { data?: { message?: string } })?.data?.message ??
+          'Could not cancel the purchase order.',
+      );
+>>>>>>> 28beebd18d9f9b378e71bc134817fba440e55106
     }
   };
 
@@ -267,13 +302,6 @@ export function PurchaseOrdersView() {
     <div className="space-y-6 pb-12 text-slate-800">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-1.5 text-xs font-semibold mb-1">
-            <Link href="/dashboard/purchase" className="text-blue-600 hover:underline">
-              Purchase
-            </Link>
-            <span className="text-slate-400">›</span>
-            <span className="text-slate-500">Purchase Orders</span>
-          </div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">
             Purchase Orders
           </h1>
@@ -290,6 +318,8 @@ export function PurchaseOrdersView() {
           <span>New Purchase Order</span>
         </button>
       </div>
+
+      <PurchaseTabsHeader activeTab={activeTab} onTabChange={(tab) => onNavigateTab?.(tab)} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
         {kpiCards.map((k) => (
@@ -841,6 +871,17 @@ export function PurchaseOrdersView() {
           onClose={() => setReceivePoId(null)}
         />
       )}
+
+      <ConfirmDialog
+        isOpen={poIdPendingCancel !== null}
+        onClose={() => setPoIdPendingCancel(null)}
+        onConfirm={confirmCancelPo}
+        title="Cancel Purchase Order"
+        message="Cancel this purchase order?"
+        confirmLabel="Cancel PO"
+        cancelLabel="Keep PO"
+        isLoading={isCancellingPo}
+      />
     </div>
   );
 }

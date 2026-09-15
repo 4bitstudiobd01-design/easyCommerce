@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { Square, ExternalLink, Pencil, Eye, Settings } from 'lucide-react';
+import { Square, ExternalLink, Pencil, Eye } from 'lucide-react';
 import { useGetMyStoreQuery, useGetAvailableThemesQuery } from '@/features/tenant/api/tenantApi';
 import { Skeleton } from '@/components/ui/Skeleton';
 
@@ -159,14 +159,6 @@ export function CurrentStorefrontCard() {
             <Eye className="w-4 h-4 text-blue-600" />
             Preview Storefront
           </a>
-
-          <button
-            onClick={() => router.push('/dashboard/settings/general')}
-            className="h-11 w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl flex items-center justify-center gap-2 text-[13px] font-bold transition-colors"
-          >
-            <Settings className="w-4 h-4 text-slate-600" />
-            Storefront Settings
-          </button>
         </div>
       </div>
     </div>

@@ -3,8 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { ProductEntity } from '../entities/product.entity';
 import { CategoryEntity } from '../entities/category.entity';
-import { ProductVariantEntity } from '../entities/product-variant.entity';
 import { ProductImageEntity } from '../entities/product-image.entity';
+import { ProductVariantEntity } from '../entities/product-variant.entity';
 import { CollectionEntity } from '../entities/collection.entity';
 import { InventoryStockEntity } from '../../inventory/entities/inventory-stock.entity';
 import { InventoryMovementEntity } from '../../inventory/entities/inventory-movement.entity';
@@ -24,10 +24,10 @@ export class CreateProductService {
     private readonly productRepository: Repository<ProductEntity>,
     @InjectRepository(CategoryEntity)
     private readonly categoryRepository: Repository<CategoryEntity>,
-    @InjectRepository(ProductVariantEntity)
-    private readonly variantRepository: Repository<ProductVariantEntity>,
     @InjectRepository(ProductImageEntity)
     private readonly imageRepository: Repository<ProductImageEntity>,
+    @InjectRepository(ProductVariantEntity)
+    private readonly variantRepository: Repository<ProductVariantEntity>,
     @InjectRepository(CollectionEntity)
     private readonly collectionRepository: Repository<CollectionEntity>,
     @InjectRepository(InventoryStockEntity)
@@ -72,6 +72,14 @@ export class CreateProductService {
 
     const productType = dto.productType || ProductType.PHYSICAL;
     const status = dto.status || ProductStatus.DRAFT;
+    const hasVariants = Boolean(dto.hasVariants);
+
+    // A product that goes live must carry a real selling price. Variant products
+    // set price per variant instead, so they are exempt at create time — the price
+    // then lives on the generated variants. A draft can still be saved without one.
+    if (status === ProductStatus.ACTIVE && !hasVariants && !(dto.basePrice && dto.basePrice > 0)) {
+      throw new BadRequestException('Set a selling price greater than 0 before publishing this product.');
+    }
 
     // Check SKU uniqueness in tenant scope
     const trimmedSku = dto.sku ? dto.sku.trim() : undefined;
@@ -93,6 +101,18 @@ export class CreateProductService {
       if (existingBarcode) {
         throw new BadRequestException('Barcode already exists.');
       }
+    }
+
+    // compareAtPrice is the struck-through "was" price, so it only makes sense when
+    // it sits above the actual selling price — otherwise the storefront shows a
+    // discount that raises the price.
+    if (
+      dto.compareAtPrice !== undefined &&
+      dto.compareAtPrice > 0 &&
+      dto.basePrice !== undefined &&
+      dto.compareAtPrice <= dto.basePrice
+    ) {
+      throw new BadRequestException('Compare-at price must be higher than the selling price.');
     }
 
     // Validate discount schedule if provided
@@ -136,6 +156,7 @@ export class CreateProductService {
       publishedAt: status === ProductStatus.ACTIVE ? new Date() : undefined,
       isVisible: dto.isVisible !== undefined ? dto.isVisible : true,
       homepageSections: dto.homepageSections ?? [],
+      hasVariants,
       sku: trimmedSku,
       barcode: trimmedBarcode,
       trackInventory: dto.trackInventory !== undefined ? dto.trackInventory : true,
@@ -176,27 +197,34 @@ export class CreateProductService {
 
     const savedProduct = await this.productRepository.save(product);
 
-    // Initial stock setup if trackInventory is enabled
-    const initialStockQty = dto.initialStock !== undefined && dto.initialStock > 0 ? dto.initialStock : 0;
     const warehouseId = await this.resolveDefaultWarehouseId(tenantId);
+
+    // Where a product's stock lives depends on whether it has variants. A simple
+    // product carries its stock on the product-level row itself, so the form's
+    // "Initial Stock Quantity" seeds that row. A variant product sells from its
+    // variants instead — each gets its own stock row seeded from the per-variant
+    // quantity set in the Variants tab — so the product-level row is opened at 0
+    // purely as a placeholder and the single form field is ignored.
+    const productLevelStockQty =
+      !hasVariants && dto.initialStock !== undefined && dto.initialStock > 0 ? dto.initialStock : 0;
     const inventoryStock = this.inventoryStockRepository.create({
       productId: savedProduct.id,
       warehouseId,
-      quantityOnHand: initialStockQty,
+      quantityOnHand: productLevelStockQty,
       quantityReserved: 0,
       reorderPoint: savedProduct.lowStockThreshold,
       tenantId,
     });
     const savedStock = await this.inventoryStockRepository.save(inventoryStock);
 
-    if (initialStockQty > 0) {
+    if (productLevelStockQty > 0) {
       const movement = this.inventoryMovementRepository.create({
         productId: savedProduct.id,
         inventoryStockId: savedStock.id,
         type: MovementType.INITIAL_STOCK,
-        quantity: initialStockQty,
+        quantity: productLevelStockQty,
         previousQuantity: 0,
-        newQuantity: initialStockQty,
+        newQuantity: productLevelStockQty,
         reason: 'Initial Stock',
         referenceType: 'CREATE_PRODUCT',
         tenantId,
@@ -204,16 +232,67 @@ export class CreateProductService {
       await this.inventoryMovementRepository.save(movement);
     }
 
-    // Create default SKU variant if base price/sku provided (legacy compatibility)
-    if (dto.basePrice !== undefined || trimmedSku) {
-      const defaultVariant = this.variantRepository.create({
-        sku: trimmedSku || `SKU-${Date.now().toString().slice(-6)}`,
-        price: dto.basePrice ?? 0,
-        compareAtPrice: dto.compareAtPrice,
-        productId: savedProduct.id,
-        tenantId,
-      });
-      await this.variantRepository.save(defaultVariant);
+    // A product without variants keeps its price/SKU/stock on the product row itself
+    // (basePrice, sku, inventory_stocks). No hidden "default variant" is created.
+    //
+    // When the merchant configured variants in the form, the frontend computes the
+    // option combinations locally and sends them here, so a new product no longer
+    // has to be saved first just to attach variants. Each variant also gets its own
+    // inventory stock row (referenced by id, no FK cascade).
+    if (hasVariants && dto.variants && dto.variants.length > 0) {
+      for (const v of dto.variants) {
+        const trimmedVariantSku = v.sku ? v.sku.trim() : undefined;
+        const savedVariant = await this.variantRepository.save(
+          this.variantRepository.create({
+            title: v.title,
+            sku: trimmedVariantSku || undefined,
+            combinationKey: v.combinationKey || undefined,
+            options: (v.options || []).map((o) => ({
+              attributeId: o.attributeId,
+              attributeName: o.attributeName,
+              optionId: o.optionId,
+              optionLabel: o.optionLabel,
+              value: o.value,
+            })),
+            price: v.price ?? savedProduct.basePrice,
+            compareAtPrice: v.compareAtPrice ?? savedProduct.compareAtPrice,
+            costPrice: v.costPrice ?? savedProduct.costPrice,
+            isEnabled: v.isEnabled !== undefined ? v.isEnabled : true,
+            productId: savedProduct.id,
+            tenantId,
+          }),
+        );
+
+        const variantStockQty = v.initialStock !== undefined && v.initialStock > 0 ? v.initialStock : 0;
+        const savedVariantStock = await this.inventoryStockRepository.save(
+          this.inventoryStockRepository.create({
+            productId: savedProduct.id,
+            variantId: savedVariant.id,
+            warehouseId,
+            quantityOnHand: variantStockQty,
+            quantityReserved: 0,
+            reorderPoint: savedProduct.lowStockThreshold || 10,
+            tenantId,
+          }),
+        );
+
+        if (variantStockQty > 0) {
+          await this.inventoryMovementRepository.save(
+            this.inventoryMovementRepository.create({
+              productId: savedProduct.id,
+              variantId: savedVariant.id,
+              inventoryStockId: savedVariantStock.id,
+              type: MovementType.INITIAL_STOCK,
+              quantity: variantStockQty,
+              previousQuantity: 0,
+              newQuantity: variantStockQty,
+              reason: 'Initial Stock',
+              referenceType: 'CREATE_PRODUCT',
+              tenantId,
+            }),
+          );
+        }
+      }
     }
 
     // Create product gallery images if provided

@@ -12,8 +12,17 @@ import { NewVsReturningChart } from './NewVsReturningChart';
 import { CustomerOverviewChart } from './CustomerOverviewChart';
 import { TopTrafficSources } from './TopTrafficSources';
 import { InsightsList } from './InsightsList';
+import { AnalyticsFiltersProvider } from '../context/AnalyticsFiltersContext';
 
 export function AnalyticsOverview() {
+  return (
+    <AnalyticsFiltersProvider>
+      <AnalyticsOverviewInner />
+    </AnalyticsFiltersProvider>
+  );
+}
+
+function AnalyticsOverviewInner() {
   return (
     <div className="flex flex-col min-h-screen bg-white">
       <AnalyticsHeader />

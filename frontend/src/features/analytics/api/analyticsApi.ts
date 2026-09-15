@@ -53,6 +53,8 @@ export interface NetProfitMetrics {
   netProfit: number;
   profitMarginPercentage: number;
   totalCompletedOrdersCount: number;
+  itemsMissingCostPriceCount: number;
+  productsMissingCostPriceCount: number;
 }
 
 export interface NewVsReturningTrendPoint {
@@ -103,7 +105,16 @@ export interface AnalyticsInsight {
 export interface DateRangeParams {
   dateFrom?: string;
   dateTo?: string;
+  compare?: 'previous' | 'previousYear';
 }
+
+/** Strips undefined/empty keys so RTK Query cache keys stay stable across renders. */
+const cleanParams = (params?: object | null | void): Record<string, unknown> => {
+  if (!params || typeof params !== 'object') return {};
+  return Object.fromEntries(
+    Object.entries(params as Record<string, unknown>).filter(([, v]) => v !== undefined && v !== ''),
+  );
+};
 
 const unwrap = <T>(response: { data: T } | T): T =>
   response && typeof response === 'object' && 'data' in (response as any) ? (response as any).data : (response as T);
@@ -114,7 +125,7 @@ export const analyticsApi = createApi({
   tagTypes: ['Analytics'],
   endpoints: (builder) => ({
     getAnalyticsOverview: builder.query<AnalyticsOverview, DateRangeParams | void>({
-      query: (params) => ({ url: '/analytics/overview', params: params || {} }),
+      query: (params) => ({ url: '/analytics/overview', params: cleanParams(params) }),
       providesTags: ['Analytics'],
       transformResponse: unwrap<AnalyticsOverview>,
     }),
@@ -124,27 +135,33 @@ export const analyticsApi = createApi({
       transformResponse: unwrap<NetProfitMetrics>,
     }),
     getNewVsReturningTrend: builder.query<NewVsReturningTrendPoint[], { days?: number } | void>({
-      query: (params) => ({ url: '/analytics/customers/new-vs-returning-trend', params: params || {} }),
+      query: (params) => ({
+        url: '/analytics/customers/new-vs-returning-trend',
+        params: cleanParams(params),
+      }),
       providesTags: ['Analytics'],
       transformResponse: unwrap<NewVsReturningTrendPoint[]>,
     }),
     getNewVsReturningSummary: builder.query<NewVsReturningSummary, DateRangeParams | void>({
-      query: (params) => ({ url: '/analytics/customers/new-vs-returning-summary', params: params || {} }),
+      query: (params) => ({
+        url: '/analytics/customers/new-vs-returning-summary',
+        params: cleanParams(params),
+      }),
       providesTags: ['Analytics'],
       transformResponse: unwrap<NewVsReturningSummary>,
     }),
     getTrafficSources: builder.query<TrafficSourceRow[], DateRangeParams | void>({
-      query: (params) => ({ url: '/analytics/traffic-sources', params: params || {} }),
+      query: (params) => ({ url: '/analytics/traffic-sources', params: cleanParams(params) }),
       providesTags: ['Analytics'],
       transformResponse: unwrap<TrafficSourceRow[]>,
     }),
     getAnalyticsKpiSummary: builder.query<AnalyticsKpiSummary, DateRangeParams | void>({
-      query: (params) => ({ url: '/analytics/kpi-summary', params: params || {} }),
+      query: (params) => ({ url: '/analytics/kpi-summary', params: cleanParams(params) }),
       providesTags: ['Analytics'],
       transformResponse: unwrap<AnalyticsKpiSummary>,
     }),
-    getAnalyticsInsights: builder.query<AnalyticsInsight[], void>({
-      query: () => '/analytics/insights',
+    getAnalyticsInsights: builder.query<AnalyticsInsight[], DateRangeParams | void>({
+      query: (params) => ({ url: '/analytics/insights', params: cleanParams(params) }),
       providesTags: ['Analytics'],
       transformResponse: unwrap<AnalyticsInsight[]>,
     }),

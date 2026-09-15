@@ -15,6 +15,8 @@ export type StaffPermissionType =
   | 'coupons:read'
   | 'coupons:write'
   | 'analytics:read'
+  | 'marketing:read'
+  | 'marketing:manage'
   | 'settings:read'
   | 'settings:write'
   | 'staff:manage'
@@ -45,6 +47,7 @@ export interface StaffMember {
   id: string;
   tenantId: string;
   storeId: string;
+  branchId?: string;
   userId?: string;
   name: string;
   email: string;
@@ -63,6 +66,8 @@ export interface InviteStaffRequest {
   phone?: string;
   role: string;
   permissions: StaffPermissionType[];
+  /** Restrict this staff member to a single branch. Omit for store-wide access. */
+  branchId?: string;
 }
 
 export interface UpdateStaffPermissionsRequest {
@@ -70,6 +75,8 @@ export interface UpdateStaffPermissionsRequest {
   role?: string;
   permissions?: StaffPermissionType[];
   status?: 'ACTIVE' | 'PENDING_INVITE' | 'SUSPENDED';
+  /** Restrict this staff member to a single branch. Pass null for store-wide access. */
+  branchId?: string | null;
 }
 
 export interface AcceptStaffInviteRequest {

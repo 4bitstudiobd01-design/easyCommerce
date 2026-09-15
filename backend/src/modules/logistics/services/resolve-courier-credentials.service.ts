@@ -41,10 +41,15 @@ export class ResolveCourierCredentialsService {
     // merchant switched it off, so bookings must not keep using it.
     if (integration?.isEnabled) {
       const credentials = this.credentialsCrypto.decrypt(integration.encryptedCredentials);
-      if (Object.keys(credentials).length > 0) return credentials;
+      if (Object.keys(credentials).length > 0) {
+        // The sandbox toggle lives on the integration row, not in the encrypted
+        // bag — carry it through so adapters hit the sandbox host. tenantId lets
+        // an adapter key any per-tenant state it caches (e.g. Pathao's token).
+        return { ...credentials, sandbox: integration.sandbox, tenantId };
+      }
     }
 
-    return this.legacyStoreCredentials(provider, store);
+    return { ...this.legacyStoreCredentials(provider, store), tenantId };
   }
 
   /** Pre-`courier_integrations` credentials that still live on the store row. */

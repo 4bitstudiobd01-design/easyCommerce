@@ -24,10 +24,14 @@ export class GetAnalyticsInsightsService {
     private readonly getCustomerAnalyticsService: GetCustomerAnalyticsService,
   ) {}
 
-  async execute(tenantId: string): Promise<AnalyticsInsight[]> {
+  async execute(tenantId: string, dateFrom?: Date, dateTo?: Date): Promise<AnalyticsInsight[]> {
+    const customerQuery =
+      dateFrom || dateTo
+        ? { dateFrom: dateFrom?.toISOString(), dateTo: dateTo?.toISOString() }
+        : {};
     const [overview, newVsReturning] = await Promise.all([
-      this.getMerchantAnalyticsService.execute(tenantId),
-      this.getCustomerAnalyticsService.getNewVsReturningSummary(tenantId, {}),
+      this.getMerchantAnalyticsService.execute(tenantId, dateFrom, dateTo),
+      this.getCustomerAnalyticsService.getNewVsReturningSummary(tenantId, customerQuery),
     ]);
 
     const insights: AnalyticsInsight[] = [];

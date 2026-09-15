@@ -9,6 +9,19 @@ export interface HeroBanner {
   ctaLink?: string;
 }
 
+/** Configurable checkout form fields (Full Name and Phone are always on). */
+export type CheckoutFieldKey =
+  | 'email'
+  | 'address'
+  | 'country'
+  | 'division'
+  | 'district'
+  | 'cityArea'
+  | 'zipCode'
+  | 'orderNote';
+
+export type CheckoutFieldConfig = Record<CheckoutFieldKey, { show: boolean; required: boolean }>;
+
 export interface Store {
   id: string;
   name: string;
@@ -21,16 +34,16 @@ export interface Store {
   favicon?: string;
   metaTitle?: string;
   metaDescription?: string;
+  facebookUrl?: string;
+  instagramUrl?: string;
+  twitterUrl?: string;
+  youtubeUrl?: string;
+  footerDescription?: string;
   activeThemeId?: string;
   unlockedThemeIds?: string[];
   primaryColor?: string;
   fontFamily?: string;
   heroBanners?: HeroBanner[];
-  facebookPixelId?: string;
-  facebookCapiToken?: string;
-  facebookTestEventCode?: string;
-  tiktokPixelId?: string;
-  googleTagManagerId?: string;
   currency: string;
   steadfastApiKey?: string;
   steadfastSecretKey?: string;
@@ -79,6 +92,9 @@ export interface Store {
   showCouponFieldAtCheckout?: boolean;
   showOrderNoteFieldAtCheckout?: boolean;
   minimumOrderAmount?: number;
+  deliveryChargeInsideDhaka?: number;
+  deliveryChargeOutsideDhaka?: number;
+  checkoutFieldConfig?: Partial<CheckoutFieldConfig>;
 
   // Customer settings
   allowCustomerRegistration?: boolean;
@@ -92,6 +108,11 @@ export interface Store {
   showFeaturedProducts?: boolean;
   showCategoriesSection?: boolean;
   featuredProductsCount?: number;
+  showNewArrivals?: boolean;
+  showBestSellers?: boolean;
+  showFullCatalog?: boolean;
+  showPromoBanner?: boolean;
+  showWhyChooseUs?: boolean;
 }
 
 export interface NavigationLink {
@@ -112,6 +133,24 @@ export interface DeliveryZone {
   estimatedDeliveryTime?: string;
   isActive: boolean;
   createdAt: string;
+}
+
+export interface Branch {
+  id: string;
+  tenantId: string;
+  storeId: string;
+  name: string;
+  code: string;
+  isDefault: boolean;
+  address?: string;
+  city?: string;
+  phone?: string;
+  email?: string;
+  isActive: boolean;
+  /** Dedicated warehouse for this branch. Null/undefined = shares the central/tenant-wide warehouse. */
+  warehouseId?: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type WebhookEvent =
@@ -188,14 +227,14 @@ export interface UpdateStoreRequest {
   favicon?: string;
   metaTitle?: string;
   metaDescription?: string;
+  facebookUrl?: string;
+  instagramUrl?: string;
+  twitterUrl?: string;
+  youtubeUrl?: string;
+  footerDescription?: string;
   primaryColor?: string;
   fontFamily?: string;
   heroBanners?: HeroBanner[];
-  facebookPixelId?: string;
-  facebookCapiToken?: string;
-  facebookTestEventCode?: string;
-  tiktokPixelId?: string;
-  googleTagManagerId?: string;
   steadfastApiKey?: string;
   steadfastSecretKey?: string;
   pathaoClientId?: string;
@@ -237,6 +276,9 @@ export interface UpdateStoreRequest {
   showCouponFieldAtCheckout?: boolean;
   showOrderNoteFieldAtCheckout?: boolean;
   minimumOrderAmount?: number;
+  deliveryChargeInsideDhaka?: number;
+  deliveryChargeOutsideDhaka?: number;
+  checkoutFieldConfig?: Partial<CheckoutFieldConfig>;
 
   // Customer settings
   allowCustomerRegistration?: boolean;
@@ -250,6 +292,11 @@ export interface UpdateStoreRequest {
   showFeaturedProducts?: boolean;
   showCategoriesSection?: boolean;
   featuredProductsCount?: number;
+  showNewArrivals?: boolean;
+  showBestSellers?: boolean;
+  showFullCatalog?: boolean;
+  showPromoBanner?: boolean;
+  showWhyChooseUs?: boolean;
 }
 
 const API_ROOT = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1')
@@ -259,7 +306,7 @@ const API_ROOT = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/
 export const tenantApi = createApi({
   reducerPath: 'tenantApi',
   baseQuery: createBaseQueryWithReauth(`${API_ROOT}/stores`),
-  tagTypes: ['Store', 'Themes', 'DeliveryZone', 'ApiKey', 'Webhook'],
+  tagTypes: ['Store', 'Themes', 'DeliveryZone', 'ApiKey', 'Webhook', 'Branch'],
   endpoints: (builder) => ({
     getMyStores: builder.query<Store[], void>({
       query: () => '/my-stores',
@@ -340,6 +387,35 @@ export const tenantApi = createApi({
     deleteDeliveryZone: builder.mutation<{ success: boolean }, string>({
       query: (id) => ({ url: `/me/delivery-zones/${id}`, method: 'DELETE' }),
       invalidatesTags: ['DeliveryZone'],
+      transformResponse: (response: { data: any } | any) => (response as any).data || response,
+    }),
+
+    // --- Branches ---
+    getBranches: builder.query<Branch[], void>({
+      query: () => '/me/branches',
+      providesTags: ['Branch'],
+      transformResponse: (response: { data: Branch[] } | Branch[]) =>
+        Array.isArray(response) ? response : (response as any).data || [],
+    }),
+    createBranch: builder.mutation<
+      Branch,
+      { name: string; code: string; isDefault?: boolean; address?: string; city?: string; phone?: string; email?: string; isActive?: boolean; warehouseId?: string | null }
+    >({
+      query: (body) => ({ url: '/me/branches', method: 'POST', body }),
+      invalidatesTags: ['Branch'],
+      transformResponse: (response: { data: Branch } | Branch) => (response as any).data || response,
+    }),
+    updateBranch: builder.mutation<
+      Branch,
+      { id: string; data: Partial<Omit<Branch, 'id' | 'tenantId' | 'storeId' | 'createdAt' | 'updatedAt'>> }
+    >({
+      query: ({ id, data }) => ({ url: `/me/branches/${id}`, method: 'PATCH', body: data }),
+      invalidatesTags: ['Branch'],
+      transformResponse: (response: { data: Branch } | Branch) => (response as any).data || response,
+    }),
+    deleteBranch: builder.mutation<{ message: string }, string>({
+      query: (id) => ({ url: `/me/branches/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['Branch'],
       transformResponse: (response: { data: any } | any) => (response as any).data || response,
     }),
 
@@ -507,6 +583,10 @@ export const {
   useCreateDeliveryZoneMutation,
   useUpdateDeliveryZoneMutation,
   useDeleteDeliveryZoneMutation,
+  useGetBranchesQuery,
+  useCreateBranchMutation,
+  useUpdateBranchMutation,
+  useDeleteBranchMutation,
   useGetApiKeysQuery,
   useCreateApiKeyMutation,
   useRevokeApiKeyMutation,

@@ -9,6 +9,7 @@ import { Product } from '@/features/catalog/api/catalogApi';
 interface ShopProductGridProps {
   products: ShopEaseProduct[];
   storeSlug?: string;
+  primaryColor?: string;
   sortBy: string;
   onSortChange: (sort: string) => void;
   viewMode: 'grid' | 'list';
@@ -18,11 +19,14 @@ interface ShopProductGridProps {
   onPageChange: (page: number) => void;
   totalProductsCount: number;
   onOpenDetail?: (product: Product) => void;
+  hasActiveFilters?: boolean;
+  onResetFilters?: () => void;
 }
 
 export const ShopProductGrid = ({
   products,
   storeSlug = 'main',
+  primaryColor = '#2563eb',
   sortBy,
   onSortChange,
   viewMode,
@@ -32,6 +36,8 @@ export const ShopProductGrid = ({
   onPageChange,
   totalProductsCount,
   onOpenDetail,
+  hasActiveFilters,
+  onResetFilters,
 }: ShopProductGridProps) => {
   const startItem = totalProductsCount === 0 ? 0 : (currentPage - 1) * 8 + 1;
   const endItem = Math.min(currentPage * 8, totalProductsCount);
@@ -57,7 +63,8 @@ export const ShopProductGrid = ({
               id="shop-sort-by"
               value={sortBy}
               onChange={(e) => onSortChange(e.target.value)}
-              className="h-9 pl-3 pr-8 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%2364748b\' stroke-width=\'2\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'M19 9l-7 7-7-7\'/%3E%3C/svg%3E')] bg-[length:14px] bg-[right_0.6rem_center] bg-no-repeat cursor-pointer"
+              className="h-9 pl-3 pr-8 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none transition-all appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%2364748b\' stroke-width=\'2\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'M19 9l-7 7-7-7\'/%3E%3C/svg%3E')] bg-[length:14px] bg-[right_0.6rem_center] bg-no-repeat cursor-pointer focus:[border-color:var(--focus-accent)] focus:[box-shadow:0_0_0_2px_var(--focus-ring)]"
+              style={{ ['--focus-accent' as any]: primaryColor, ['--focus-ring' as any]: `${primaryColor}33` }}
             >
               <option value="popularity">Popularity</option>
               <option value="price-asc">Price: Low to High</option>
@@ -74,11 +81,12 @@ export const ShopProductGrid = ({
               type="button"
               onClick={() => onViewModeChange('grid')}
               aria-label="Grid View"
-              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
+              className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+              style={
                 viewMode === 'grid'
-                  ? 'bg-blue-600 text-white shadow-2xs'
-                  : 'bg-white border border-slate-200 text-slate-400 hover:text-slate-700'
-              }`}
+                  ? { backgroundColor: primaryColor, color: '#fff' }
+                  : { backgroundColor: '#fff', border: '1px solid #e2e8f0', color: '#94a3b8' }
+              }
             >
               <LayoutGrid className="w-4 h-4" />
             </button>
@@ -86,11 +94,12 @@ export const ShopProductGrid = ({
               type="button"
               onClick={() => onViewModeChange('list')}
               aria-label="List View"
-              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
+              className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+              style={
                 viewMode === 'list'
-                  ? 'bg-blue-600 text-white shadow-2xs'
-                  : 'bg-white border border-slate-200 text-slate-400 hover:text-slate-700'
-              }`}
+                  ? { backgroundColor: primaryColor, color: '#fff' }
+                  : { backgroundColor: '#fff', border: '1px solid #e2e8f0', color: '#94a3b8' }
+              }
             >
               <List className="w-4 h-4" />
             </button>
@@ -101,13 +110,26 @@ export const ShopProductGrid = ({
       {/* 2. PRODUCT CARDS GRID (2 COLUMNS ON MOBILE, 3-4 ON DESKTOP) */}
       {products.length === 0 ? (
         <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center max-w-md mx-auto my-8 space-y-3">
-          <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto border border-blue-100">
+          <div
+            className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto"
+            style={{ backgroundColor: `${primaryColor}14`, color: primaryColor, border: `1px solid ${primaryColor}22` }}
+          >
             <Package className="w-6 h-6" />
           </div>
           <h3 className="font-extrabold text-base text-slate-900">No Matching Products</h3>
           <p className="text-xs text-slate-500">
             Try loosening your filters, changing price range, or searching for another keyword.
           </p>
+          {hasActiveFilters && onResetFilters && (
+            <button
+              type="button"
+              onClick={onResetFilters}
+              className="inline-flex items-center gap-1.5 mt-1 h-9 px-4 text-white text-xs font-bold rounded-xl transition-all active:scale-95"
+              style={{ backgroundColor: primaryColor }}
+            >
+              Clear all filters
+            </button>
+          )}
         </div>
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4">
@@ -116,6 +138,7 @@ export const ShopProductGrid = ({
               key={product.id}
               product={product}
               storeSlug={storeSlug}
+              primaryColor={primaryColor}
               onOpenDetail={(prod) => onOpenDetail?.(prod as Product)}
             />
           ))}
@@ -137,10 +160,13 @@ export const ShopProductGrid = ({
                 />
               </div>
               <div className="flex-1 space-y-1 text-center sm:text-left">
-                <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">
+                <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: primaryColor }}>
                   {product.category?.name || 'General'}
                 </span>
-                <h3 className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                <h3
+                  className="text-sm font-bold text-slate-900 transition-colors group-hover:[color:var(--title-hover)]"
+                  style={{ ['--title-hover' as any]: primaryColor }}
+                >
                   {product.name || product.title}
                 </h3>
                 <p className="text-xs text-slate-500 line-clamp-1">{product.description}</p>
@@ -151,7 +177,8 @@ export const ShopProductGrid = ({
                 </span>
                 <button
                   type="button"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors"
+                  className="px-4 py-2 hover:brightness-110 text-white rounded-xl text-xs font-bold transition-colors"
+                  style={{ backgroundColor: primaryColor }}
                 >
                   View Details
                 </button>
@@ -180,11 +207,12 @@ export const ShopProductGrid = ({
             type="button"
             onClick={() => onPageChange(1)}
             aria-current={currentPage === 1 ? 'page' : undefined}
-            className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${
+            className="w-8 h-8 rounded-lg text-xs font-bold transition-colors"
+            style={
               currentPage === 1
-                ? 'bg-blue-600 text-white shadow-2xs'
-                : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-            }`}
+                ? { backgroundColor: primaryColor, color: '#fff' }
+                : { border: '1px solid #e2e8f0', backgroundColor: '#fff', color: '#475569' }
+            }
           >
             1
           </button>
@@ -193,11 +221,12 @@ export const ShopProductGrid = ({
             type="button"
             onClick={() => onPageChange(2)}
             aria-current={currentPage === 2 ? 'page' : undefined}
-            className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${
+            className="w-8 h-8 rounded-lg text-xs font-bold transition-colors"
+            style={
               currentPage === 2
-                ? 'bg-blue-600 text-white shadow-2xs'
-                : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-            }`}
+                ? { backgroundColor: primaryColor, color: '#fff' }
+                : { border: '1px solid #e2e8f0', backgroundColor: '#fff', color: '#475569' }
+            }
           >
             2
           </button>
@@ -206,11 +235,12 @@ export const ShopProductGrid = ({
             type="button"
             onClick={() => onPageChange(3)}
             aria-current={currentPage === 3 ? 'page' : undefined}
-            className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${
+            className="w-8 h-8 rounded-lg text-xs font-bold transition-colors"
+            style={
               currentPage === 3
-                ? 'bg-blue-600 text-white shadow-2xs'
-                : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-            }`}
+                ? { backgroundColor: primaryColor, color: '#fff' }
+                : { border: '1px solid #e2e8f0', backgroundColor: '#fff', color: '#475569' }
+            }
           >
             3
           </button>
@@ -221,11 +251,12 @@ export const ShopProductGrid = ({
             type="button"
             onClick={() => onPageChange(11)}
             aria-current={currentPage === 11 ? 'page' : undefined}
-            className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${
+            className="w-8 h-8 rounded-lg text-xs font-bold transition-colors"
+            style={
               currentPage === 11
-                ? 'bg-blue-600 text-white shadow-2xs'
-                : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-            }`}
+                ? { backgroundColor: primaryColor, color: '#fff' }
+                : { border: '1px solid #e2e8f0', backgroundColor: '#fff', color: '#475569' }
+            }
           >
             11
           </button>

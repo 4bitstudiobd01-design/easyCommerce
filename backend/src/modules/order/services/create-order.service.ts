@@ -15,6 +15,8 @@ import { RecordCustomerActivityService } from '../../customer/services/record-cu
 import { normalizeChannel } from '../../../common/utils/normalize-channel.util';
 import { LeadEntity, LeadStageEnum } from '../../customer/entities/lead.entity';
 import { GenerateOrderNumberService } from './generate-order-number.service';
+import { AbandonedCartService } from './abandoned-cart.service';
+import { MarketingCapiProducer } from '../../../common/marketing/marketing-capi.producer';
 
 @Injectable()
 export class CreateOrderService {
@@ -36,6 +38,8 @@ export class CreateOrderService {
     private readonly findOrCreateCustomerService: FindOrCreateCustomerService,
     private readonly generateOrderNumberService: GenerateOrderNumberService,
     private readonly recordCustomerActivityService: RecordCustomerActivityService,
+    private readonly abandonedCartService: AbandonedCartService,
+    private readonly marketingCapiProducer: MarketingCapiProducer,
   ) {}
 
   async execute(dto: CreateOrderDto): Promise<OrderEntity> {
@@ -46,9 +50,16 @@ export class CreateOrderService {
     const store = await this.findStoreBySlugService.execute(dto.storeSlug);
     const tenantId = store.tenantId;
 
-    // Delivery fee logic
-    const isDhaka = dto.city.toLowerCase().includes('dhaka');
-    const deliveryFee = isDhaka ? 60 : 120;
+    // Flat delivery charge by zone, taken from store settings. The checkout sends
+    // an explicit zone; older/other callers that omit it fall back to inferring
+    // "inside Dhaka" from the city name. Store defaults are 60 / 120.
+    const insideDhakaCharge = Number(store.deliveryChargeInsideDhaka ?? 60);
+    const outsideDhakaCharge = Number(store.deliveryChargeOutsideDhaka ?? 120);
+    const isInsideDhaka =
+      dto.deliveryZone
+        ? dto.deliveryZone === 'INSIDE_DHAKA'
+        : (dto.city ?? '').toLowerCase().includes('dhaka');
+    const deliveryFee = isInsideDhaka ? insideDhakaCharge : outsideDhakaCharge;
 
     let subtotal = 0;
     const orderItems: OrderItemEntity[] = [];
@@ -88,7 +99,7 @@ export class CreateOrderService {
 
         const orderItem = this.orderItemRepository.create({
           productId: product.id,
-          productTitle: product.title,
+          productTitle: product.name || product.title || 'Product',
           variantId: variant?.id,
           variantTitle: variant?.title,
           sku,
@@ -138,7 +149,7 @@ export class CreateOrderService {
     let orderNumber: string;
     try {
       orderNumber = await this.dataSource.transaction((manager) =>
-        this.generateOrderNumberService.execute(manager, tenantId),
+        this.generateOrderNumberService.execute(manager, tenantId, store.orderNumberPrefix),
       );
     } catch (err) {
       await this.rollbackStock(tenantId, deductedItems);
@@ -158,8 +169,8 @@ export class CreateOrderService {
       address: {
         recipientName: dto.customerName,
         phone: dto.customerPhone,
-        addressLine1: dto.shippingAddress,
-        city: dto.city,
+        addressLine1: dto.shippingAddress ?? '',
+        city: dto.city ?? '',
       },
     });
 
@@ -169,8 +180,8 @@ export class CreateOrderService {
       customerName: dto.customerName,
       customerPhone: dto.customerPhone,
       customerEmail: dto.customerEmail,
-      shippingAddress: dto.shippingAddress,
-      city: dto.city,
+      shippingAddress: dto.shippingAddress ?? '',
+      city: dto.city ?? '',
       deliveryFee,
       subtotal,
       discountAmount,
@@ -178,7 +189,7 @@ export class CreateOrderService {
       grandTotal,
       paymentMethod: dto.paymentMethod,
       paymentStatus: dto.paymentMethod === PaymentMethodEnum.COD ? PaymentStatusEnum.COD_PENDING : PaymentStatusEnum.UNPAID,
-      orderStatus: OrderStatusEnum.PENDING,
+      orderStatus: store.autoConfirmOrders ? OrderStatusEnum.CONFIRMED : OrderStatusEnum.PENDING,
       storeSlug: dto.storeSlug,
       channel: normalizeChannel({
         requestedChannel: dto.channel,
@@ -223,15 +234,19 @@ export class CreateOrderService {
       }
     }
 
+    // Close out any abandoned cart this customer left before checking out.
+    await this.abandonedCartService.markRecoveredByPhone(tenantId, savedOrder.customerPhone);
+
     // Trigger Order Placement SMS
     try {
       await this.triggerOrderStatusSmsService.execute({
+        orderId: savedOrder.id,
         orderNumber: savedOrder.orderNumber,
         customerPhone: savedOrder.customerPhone,
         customerName: savedOrder.customerName,
         storeName: store.name,
         grandTotal: Number(savedOrder.grandTotal),
-        orderStatus: 'PENDING',
+        orderStatus: savedOrder.orderStatus,
         tenantId: savedOrder.tenantId,
       });
     } catch (err) {
@@ -269,6 +284,37 @@ export class CreateOrderService {
       }
     } catch (leadErr) {
       // Non-blocking lead conversion
+    }
+
+    // Hand the marketing module a Purchase conversion for server-side (CAPI)
+    // dispatch. Enqueue-only + best-effort — a lost conversion event must never
+    // fail checkout.
+    try {
+      await this.marketingCapiProducer.enqueueOrderConversion({
+        type: 'ORDER_CONVERSION',
+        tenantId,
+        storeId: store.id,
+        orderId: savedOrder.id,
+        orderRef: `#${savedOrder.orderNumber}`,
+        eventName: 'Purchase',
+        value: Number(savedOrder.grandTotal),
+        currency: 'BDT',
+        contentIds: (savedOrder.items ?? [])
+          .map((it) => it.variantId || it.productId || undefined)
+          .filter((x): x is string => Boolean(x)),
+        numItems: savedOrder.items?.length ?? 1,
+        sessionId: savedOrder.sessionId ?? undefined,
+        user: {
+          email: savedOrder.customerEmail,
+          phone: savedOrder.customerPhone,
+          firstName: savedOrder.customerName?.split(' ')[0],
+          lastName: savedOrder.customerName?.split(' ').slice(1).join(' ') || undefined,
+          city: savedOrder.city,
+          country: 'BD',
+        },
+      });
+    } catch (capiErr) {
+      // Non-blocking marketing dispatch
     }
 
     return savedOrder;

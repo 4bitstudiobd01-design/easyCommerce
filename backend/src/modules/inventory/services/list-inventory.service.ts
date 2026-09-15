@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 import { InventoryStockEntity } from '../entities/inventory-stock.entity';
+import { BranchStockEntity } from '../entities/branch-stock.entity';
 import { InventoryDomainService } from './inventory-domain.service';
 import { ListInventoryQueryDto, InventorySortField } from '../dto/list-inventory-query.dto';
 import {
@@ -9,12 +10,15 @@ import {
   InventoryListResponseDto,
 } from '../dto/inventory-list-response.dto';
 import { StockStatus } from '../../catalog/enums/stock-status.enum';
+import { ProductStatus } from '../../catalog/enums/product-status.enum';
 
 @Injectable()
 export class ListInventoryService {
   constructor(
     @InjectRepository(InventoryStockEntity)
     private readonly stockRepository: Repository<InventoryStockEntity>,
+    @InjectRepository(BranchStockEntity)
+    private readonly branchStockRepository: Repository<BranchStockEntity>,
     private readonly inventoryDomainService: InventoryDomainService,
   ) {}
 
@@ -22,20 +26,37 @@ export class ListInventoryService {
     tenantId: string,
     queryDto: ListInventoryQueryDto,
   ): Promise<InventoryListResponseDto> {
+    const isBranchScoped = Boolean(queryDto.branchId && queryDto.branchId.trim() && queryDto.branchId !== 'all');
+
+    return isBranchScoped
+      ? this.executeForBranch(tenantId, queryDto)
+      : this.executeForWarehouse(tenantId, queryDto);
+  }
+
+  private paginationParams(queryDto: ListInventoryQueryDto) {
     const page = Math.max(1, Number(queryDto.page) || 1);
     const limit = Math.min(100, Math.max(1, Number(queryDto.limit) || 10));
     const skip = (page - 1) * limit;
+    return { page, limit, skip };
+  }
 
-    const qb = this.stockRepository
-      .createQueryBuilder('stock')
-      .leftJoinAndSelect('stock.product', 'product')
-      .leftJoinAndSelect('product.category', 'category')
-      .leftJoinAndSelect('product.images', 'images')
-      .leftJoinAndSelect('stock.variant', 'variant')
-      .leftJoinAndSelect('stock.warehouse', 'warehouse')
-      .where('stock.tenantId = :tenantId', { tenantId });
+  private applyCommonFilters<T extends InventoryStockEntity | BranchStockEntity>(
+    qb: SelectQueryBuilder<T>,
+    queryDto: ListInventoryQueryDto,
+  ) {
+    // A variant product also carries a product-level placeholder stock row
+    // (variantId IS NULL) that is never sold from — its stock lives on the
+    // variant rows. Listing it would show a phantom "0 / Out of Stock" line for
+    // every variant product, so it is filtered out here. Simple products keep
+    // their single product-level row.
+    qb.andWhere('NOT (product.hasVariants = true AND stock.variantId IS NULL)');
 
-    // Server-side Search across Product Name, Product SKU, Variant SKU, and Variant Title
+    // An archived product is out of the catalogue (deleted from the merchant's
+    // point of view — a hard delete cascades its stock away, an archive keeps
+    // the rows only so a restore can recover them). It must not appear in the
+    // inventory list or inflate its counts.
+    qb.andWhere('product.status != :archivedStatus', { archivedStatus: ProductStatus.ARCHIVED });
+
     if (queryDto.search && queryDto.search.trim() !== '') {
       const searchTerm = `%${queryDto.search.trim()}%`;
       qb.andWhere(
@@ -44,22 +65,14 @@ export class ListInventoryService {
       );
     }
 
-    // Category Filter
     if (queryDto.categoryId && queryDto.categoryId.trim() !== '' && queryDto.categoryId !== 'all') {
       qb.andWhere('product.categoryId = :categoryId', { categoryId: queryDto.categoryId });
     }
 
-    // Product Type Filter
     if (queryDto.productType) {
       qb.andWhere('product.productType = :productType', { productType: queryDto.productType });
     }
 
-    // Warehouse Filter
-    if (queryDto.warehouseId && queryDto.warehouseId.trim() !== '' && queryDto.warehouseId !== 'all') {
-      qb.andWhere('stock.warehouseId = :warehouseId', { warehouseId: queryDto.warehouseId });
-    }
-
-    // Canonical Status / Stock Level Filter
     if (queryDto.status && queryDto.status !== ('ALL' as any)) {
       const availableExpr = `(stock."quantityOnHand" - stock."quantityReserved")`;
       const thresholdExpr = `COALESCE(stock."reorderPoint", product."lowStockThreshold", 10)`;
@@ -77,14 +90,17 @@ export class ListInventoryService {
           .andWhere(`${availableExpr} > ${thresholdExpr}`);
       }
     }
+  }
 
-
-    // Server-side Sorting
-    // Raw SQL expressions can't be passed to orderBy() directly here: TypeORM's
-    // getManyAndCount() re-parses the ORDER BY clause to find "alias.column" pairs
-    // for merging the count subquery results, and throws ("alias was not found")
-    // on anything that isn't a plain alias reference. Expressions must instead be
-    // exposed as a SELECT alias via addSelect(), then ordered by that alias name.
+  // Raw SQL expressions can't be passed to orderBy() directly here: TypeORM's
+  // getManyAndCount() re-parses the ORDER BY clause to find "alias.column" pairs
+  // for merging the count subquery results, and throws ("alias was not found")
+  // on anything that isn't a plain alias reference. Expressions must instead be
+  // exposed as a SELECT alias via addSelect(), then ordered by that alias name.
+  private applySort<T extends InventoryStockEntity | BranchStockEntity>(
+    qb: SelectQueryBuilder<T>,
+    queryDto: ListInventoryQueryDto,
+  ) {
     const sortOrder = queryDto.sortOrder === 'ASC' ? 'ASC' : 'DESC';
     switch (queryDto.sortBy) {
       case InventorySortField.ON_HAND:
@@ -107,45 +123,40 @@ export class ListInventoryService {
         break;
     }
     qb.addOrderBy('stock.id', 'ASC');
+  }
 
-    // Server-side pagination
-    qb.skip(skip).take(limit);
+  private mapCommonFields(stock: InventoryStockEntity | BranchStockEntity): {
+    dto: Omit<InventoryListItemDto, 'warehouseId' | 'warehouseName' | 'branchId' | 'branchName'>;
+  } {
+    const product = stock.product;
+    const variant = stock.variant;
 
-    const [rawStocks, total] = await qb.getManyAndCount();
-    const totalPages = Math.ceil(total / limit) || 0;
+    const trackInventory = product ? product.trackInventory : true;
+    const allowBackorder = product ? product.allowBackorder : false;
+    const lowStockThreshold = stock.reorderPoint ?? product?.lowStockThreshold ?? 10;
 
-    const data: InventoryListItemDto[] = rawStocks.map((stock) => {
-      const product = stock.product;
-      const variant = stock.variant;
-      const warehouse = stock.warehouse;
+    const metrics = this.inventoryDomainService.computeStockMetrics({
+      onHand: stock.quantityOnHand,
+      reserved: stock.quantityReserved,
+      lowStockThreshold,
+      trackInventory,
+      allowBackorder,
+    });
 
-      const trackInventory = product ? product.trackInventory : true;
-      const allowBackorder = product ? product.allowBackorder : false;
-      const lowStockThreshold = stock.reorderPoint ?? product?.lowStockThreshold ?? 10;
+    let productThumbnail: string | undefined = undefined;
+    if (product && Array.isArray(product.images) && product.images.length > 0) {
+      const sortedImages = [...product.images].sort(
+        (a, b) =>
+          Number(b.isPrimary) - Number(a.isPrimary) || (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
+      );
+      productThumbnail = sortedImages[0]?.url;
+    }
 
-      const metrics = this.inventoryDomainService.computeStockMetrics({
-        onHand: stock.quantityOnHand,
-        reserved: stock.quantityReserved,
-        lowStockThreshold,
-        trackInventory,
-        allowBackorder,
-      });
+    const effectiveSku = variant?.sku || product?.sku || `SKU-${stock.productId.slice(0, 6)}`;
+    const variantTitle = variant?.title ? variant.title : undefined;
 
-      // Resolve primary image thumbnail with fallback
-      let productThumbnail: string | undefined = undefined;
-      if (product && Array.isArray(product.images) && product.images.length > 0) {
-        const sortedImages = [...product.images].sort(
-          (a, b) =>
-            Number(b.isPrimary) - Number(a.isPrimary) || (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
-        );
-        productThumbnail = sortedImages[0]?.url;
-      }
-
-      // Resolve SKU & Variant Title
-      const effectiveSku = variant?.sku || product?.sku || `SKU-${stock.productId.slice(0, 6)}`;
-      const variantTitle = variant?.title ? variant.title : undefined;
-
-      return {
+    return {
+      dto: {
         id: stock.id,
         productId: stock.productId,
         productName: product?.name || 'Unknown Product',
@@ -156,8 +167,6 @@ export class ListInventoryService {
         variantId: stock.variantId || undefined,
         variantTitle,
         sku: effectiveSku,
-        warehouseId: stock.warehouseId,
-        warehouseName: warehouse?.name || 'Default Warehouse',
         quantityOnHand: metrics.onHand,
         quantityReserved: metrics.reserved,
         availableQuantity: metrics.available,
@@ -166,17 +175,79 @@ export class ListInventoryService {
         allowBackorder,
         status: metrics.status,
         updatedAt: stock.updatedAt,
+      },
+    };
+  }
+
+  private async executeForWarehouse(
+    tenantId: string,
+    queryDto: ListInventoryQueryDto,
+  ): Promise<InventoryListResponseDto> {
+    const { page, limit, skip } = this.paginationParams(queryDto);
+
+    const qb = this.stockRepository
+      .createQueryBuilder('stock')
+      .leftJoinAndSelect('stock.product', 'product')
+      .leftJoinAndSelect('product.category', 'category')
+      .leftJoinAndSelect('product.images', 'images')
+      .leftJoinAndSelect('stock.variant', 'variant')
+      .leftJoinAndSelect('stock.warehouse', 'warehouse')
+      .where('stock.tenantId = :tenantId', { tenantId });
+
+    this.applyCommonFilters(qb, queryDto);
+
+    if (queryDto.warehouseId && queryDto.warehouseId.trim() !== '' && queryDto.warehouseId !== 'all') {
+      qb.andWhere('stock.warehouseId = :warehouseId', { warehouseId: queryDto.warehouseId });
+    }
+
+    this.applySort(qb, queryDto);
+    qb.skip(skip).take(limit);
+
+    const [rawStocks, total] = await qb.getManyAndCount();
+    const totalPages = Math.ceil(total / limit) || 0;
+
+    const data: InventoryListItemDto[] = rawStocks.map((stock) => {
+      const { dto } = this.mapCommonFields(stock);
+      return {
+        ...dto,
+        warehouseId: stock.warehouseId,
+        warehouseName: stock.warehouse?.name || 'Default Warehouse',
       };
     });
 
-    return {
-      data,
-      meta: {
-        page,
-        limit,
-        total,
-        totalPages,
-      },
-    };
+    return { data, meta: { page, limit, total, totalPages } };
+  }
+
+  private async executeForBranch(
+    tenantId: string,
+    queryDto: ListInventoryQueryDto,
+  ): Promise<InventoryListResponseDto> {
+    const { page, limit, skip } = this.paginationParams(queryDto);
+
+    const qb = this.branchStockRepository
+      .createQueryBuilder('stock')
+      .leftJoinAndSelect('stock.product', 'product')
+      .leftJoinAndSelect('product.category', 'category')
+      .leftJoinAndSelect('product.images', 'images')
+      .leftJoinAndSelect('stock.variant', 'variant')
+      .where('stock.tenantId = :tenantId', { tenantId })
+      .andWhere('stock.branchId = :branchId', { branchId: queryDto.branchId });
+
+    this.applyCommonFilters(qb, queryDto);
+    this.applySort(qb, queryDto);
+    qb.skip(skip).take(limit);
+
+    const [rawStocks, total] = await qb.getManyAndCount();
+    const totalPages = Math.ceil(total / limit) || 0;
+
+    const data: InventoryListItemDto[] = rawStocks.map((stock) => {
+      const { dto } = this.mapCommonFields(stock);
+      return {
+        ...dto,
+        branchId: stock.branchId,
+      };
+    });
+
+    return { data, meta: { page, limit, total, totalPages } };
   }
 }

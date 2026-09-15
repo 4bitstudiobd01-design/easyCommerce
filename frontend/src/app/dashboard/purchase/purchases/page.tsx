@@ -1,8 +1,5 @@
-'use client';
-
-import React from 'react';
-import { PurchasesListView } from '@/features/purchase/components/PurchasesListView';
+import { redirect } from 'next/navigation';
 
 export default function PurchasesPage() {
-  return <PurchasesListView />;
+  redirect('/dashboard/purchase?tab=purchases');
 }

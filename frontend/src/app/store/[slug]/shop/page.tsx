@@ -1,11 +1,9 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import React, { useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { useGetPublicStoreProductsQuery } from '@/features/storefront/api/storefrontApi';
-import { ProductDetailModal } from '@/features/storefront/components/ProductDetailModal';
 import { CartDrawer } from '@/features/storefront/components/CartDrawer';
-import { StorefrontPixelTracker } from '@/features/storefront/components/StorefrontPixelTracker';
 import { JsonLdScript } from '@/features/seo/components/JsonLdScript';
 import { useGetStoreSeoQuery } from '@/features/seo/api/seoApi';
 import { addToCart } from '@/features/storefront/slices/cartSlice';
@@ -18,6 +16,7 @@ import { recordStorefrontVisit } from '@/features/storefront/utils/attribution';
 
 export default function ShopPage() {
   const params = useParams();
+  const router = useRouter();
   const slug = (params.slug as string) || '';
   const dispatch = useDispatch();
 
@@ -28,8 +27,6 @@ export default function ShopPage() {
   const { data: storeSeo } = useGetStoreSeoQuery(slug, {
     skip: !slug,
   });
-
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   useEffect(() => {
     if (!slug) return;
@@ -112,22 +109,17 @@ export default function ShopPage() {
     dispatch(addToCart({ product, quantity: 1, storeSlug: slug }));
   };
 
+  const handleOpenProduct = (product: Product) => {
+    const productSlug = (product as any).slug || product.id;
+    router.push(`/store/${slug}/product/${productSlug}`);
+  };
+
   return (
     <>
       {storeSeo?.jsonLdSchema && (
         <JsonLdScript schema={storeSeo.jsonLdSchema} id="storefront-shop-jsonld" />
       )}
-      <StorefrontPixelTracker
-        facebookPixelId={(store as any).facebookPixelId}
-        tiktokPixelId={(store as any).tiktokPixelId}
-        googleTagManagerId={(store as any).googleTagManagerId}
-      />
-      <CartDrawer />
-      <ProductDetailModal
-        product={selectedProduct}
-        storeSlug={slug}
-        onClose={() => setSelectedProduct(null)}
-      />
+      <CartDrawer primaryColor={primaryColor} />
       <React.Suspense fallback={<div className="min-h-screen bg-slate-50" />}>
         <ShopEaseShopView
           storeName={store.name}
@@ -139,7 +131,12 @@ export default function ShopPage() {
           primaryColor={primaryColor}
           products={products}
           categories={categories}
-          onSelectProduct={(p) => setSelectedProduct(p)}
+          facebookUrl={(store as any).facebookUrl}
+          instagramUrl={(store as any).instagramUrl}
+          twitterUrl={(store as any).twitterUrl}
+          youtubeUrl={(store as any).youtubeUrl}
+          footerDescription={(store as any).footerDescription}
+          onSelectProduct={handleOpenProduct}
           onAddToCart={handleAddToCart}
         />
       </React.Suspense>

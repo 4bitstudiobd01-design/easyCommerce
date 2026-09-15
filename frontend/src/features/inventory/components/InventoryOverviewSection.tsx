@@ -28,10 +28,10 @@ export function InventoryOverviewSection({
     params: { limit: 5 },
   });
 
-  const totalItems = kpis?.totalItems ?? 1248;
-  const inStock = kpis?.inStockCount ?? (kpis ? kpis.totalItems - kpis.lowStockCount - kpis.outOfStockCount : 1120);
-  const lowStock = kpis?.lowStockCount ?? 24;
-  const outOfStock = kpis?.outOfStockCount ?? 8;
+  const totalItems = kpis?.totalItems ?? 0;
+  const inStock = kpis?.inStockCount ?? (kpis ? kpis.totalItems - kpis.lowStockCount - kpis.outOfStockCount : 0);
+  const lowStock = kpis?.lowStockCount ?? 0;
+  const outOfStock = kpis?.outOfStockCount ?? 0;
 
   // Compute Donut SVG parameters
   const effectiveTotal = Math.max(totalItems, inStock + lowStock + outOfStock, 1);
@@ -50,65 +50,6 @@ export function InventoryOverviewSection({
   const inStockOffset = 0;
   const lowStockOffset = -inStockDash;
   const outOfStockOffset = -(inStockDash + lowStockDash);
-
-  // Fallback demo activities matching showcase mockup if real history is still empty
-  const demoActivities = [
-    {
-      id: 'demo-1',
-      productName: 'iPhone 15 Pro Max',
-      variantTitle: '256GB / Natural Titanium',
-      productThumbnail: null,
-      typeLabel: 'Stock Received',
-      typeColor: 'text-emerald-600',
-      quantityDelta: '+20',
-      quantityColor: 'text-emerald-600',
-      timeAgo: '2 hours ago',
-    },
-    {
-      id: 'demo-2',
-      productName: 'T-Shirt',
-      variantTitle: 'Black / L',
-      productThumbnail: null,
-      typeLabel: 'Stock Adjusted',
-      typeColor: 'text-amber-700',
-      quantityDelta: '-5',
-      quantityColor: 'text-rose-600',
-      timeAgo: '4 hours ago',
-    },
-    {
-      id: 'demo-3',
-      productName: 'Wireless Earbuds',
-      variantTitle: 'Active Noise Cancelling',
-      productThumbnail: null,
-      typeLabel: 'Stock Received',
-      typeColor: 'text-emerald-600',
-      quantityDelta: '+50',
-      quantityColor: 'text-emerald-600',
-      timeAgo: '6 hours ago',
-    },
-    {
-      id: 'demo-4',
-      productName: 'Nike Running Shoes',
-      variantTitle: 'Air Zoom / 42',
-      productThumbnail: null,
-      typeLabel: 'Stock Adjusted',
-      typeColor: 'text-amber-700',
-      quantityDelta: '-10',
-      quantityColor: 'text-rose-600',
-      timeAgo: '8 hours ago',
-    },
-    {
-      id: 'demo-5',
-      productName: 'Backpack',
-      variantTitle: 'Waterproof Commuter',
-      productThumbnail: null,
-      typeLabel: 'Stock Received',
-      typeColor: 'text-emerald-600',
-      quantityDelta: '+15',
-      quantityColor: 'text-emerald-600',
-      timeAgo: '1 day ago',
-    },
-  ];
 
   const formatTimeAgo = (dateStr: string) => {
     try {
@@ -147,28 +88,24 @@ export function InventoryOverviewSection({
   };
 
   const rawHistoryItems = historyResponse?.data || [];
-  const displayActivities =
-    rawHistoryItems.length > 0
-      ? rawHistoryItems.slice(0, 5).map((item) => {
-          const typeMeta = formatMovementType(item.type);
-          const deltaNum = item.quantityDelta ?? 0;
-          const deltaStr = deltaNum > 0 ? `+${deltaNum}` : `${deltaNum}`;
+  const displayActivities = rawHistoryItems.slice(0, 5).map((item) => {
+    const typeMeta = formatMovementType(item.type);
+    const deltaNum = item.quantityDelta ?? 0;
+    const deltaStr = deltaNum > 0 ? `+${deltaNum}` : `${deltaNum}`;
 
-          const deltaColor = deltaNum > 0 ? 'text-emerald-600' : deltaNum < 0 ? 'text-rose-600' : 'text-slate-600';
-          return {
-            id: item.id,
-            productName: item.product?.name || 'Product',
-            variantTitle: item.variant?.title,
-            productThumbnail: item.product?.thumbnail,
-            typeLabel: typeMeta.label,
-            typeColor: typeMeta.color,
-            quantityDelta: deltaStr,
-            quantityColor: deltaColor,
-            timeAgo: formatTimeAgo(item.createdAt),
-          };
-
-        })
-      : demoActivities;
+    const deltaColor = deltaNum > 0 ? 'text-emerald-600' : deltaNum < 0 ? 'text-rose-600' : 'text-slate-600';
+    return {
+      id: item.id,
+      productName: item.product?.name || 'Product',
+      variantTitle: item.variant?.title,
+      productThumbnail: item.product?.thumbnail,
+      typeLabel: typeMeta.label,
+      typeColor: typeMeta.color,
+      quantityDelta: deltaStr,
+      quantityColor: deltaColor,
+      timeAgo: formatTimeAgo(item.createdAt),
+    };
+  });
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -193,6 +130,24 @@ export function InventoryOverviewSection({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
+                {isLoadingHistory && displayActivities.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="py-10 text-center text-xs text-slate-400">
+                      Loading recent activity…
+                    </td>
+                  </tr>
+                )}
+                {!isLoadingHistory && displayActivities.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="py-10 text-center">
+                      <Package className="w-6 h-6 text-slate-300 mx-auto mb-2" />
+                      <p className="text-xs font-bold text-slate-500">No recent inventory activity yet</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        Stock receipts and adjustments will show up here.
+                      </p>
+                    </td>
+                  </tr>
+                )}
                 {displayActivities.map((act) => (
                   <tr key={act.id} className="hover:bg-slate-50/50 transition-colors">
                     {/* Product Cell */}

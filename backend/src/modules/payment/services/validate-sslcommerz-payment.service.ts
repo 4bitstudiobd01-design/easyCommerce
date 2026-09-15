@@ -23,7 +23,7 @@ export class ValidateSslCommerzPaymentService {
     private readonly recordPaymentEventService: RecordPaymentEventService,
   ) {}
 
-  async execute(dto: SslCommerzCallbackDto): Promise<{ success: boolean; orderNumber?: string }> {
+  async execute(dto: SslCommerzCallbackDto): Promise<{ success: boolean; orderNumber?: string; storeSlug?: string }> {
     if (!dto.tran_id) {
       return { success: false };
     }
@@ -170,7 +170,7 @@ export class ValidateSslCommerzPaymentService {
             message: `Order ${order.orderNumber} marked as paid`,
           });
 
-          return { success: true, orderNumber: order.orderNumber };
+          return { success: true, orderNumber: order.orderNumber, storeSlug: order.storeSlug };
         }
       }
     }

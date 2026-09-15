@@ -1,10 +1,46 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { StockTransferEntity } from '../entities/stock-transfer.entity';
 import { InventoryStockEntity } from '../entities/inventory-stock.entity';
+import { BranchStockEntity } from '../entities/branch-stock.entity';
 import { WarehouseEntity } from '../entities/warehouse.entity';
 import { ProductEntity } from '../../catalog/entities/product.entity';
+import { ProductVariantEntity } from '../../catalog/entities/product-variant.entity';
+// Read-only existence/tenant check on the Tenant module's entity — same
+// approved cross-module repository-injection pattern used for Warehouse in
+// Phase 2 of the Branch feature: no business logic crosses into the tenant
+// module, only a tenant-scoped lookup via TypeORM's own repository.
+import { BranchEntity } from '../../tenant/entities/branch.entity';
+// Read-only lookup only (resolve who initiated a transfer to a display
+// name) — same cross-module repository-injection pattern as BranchEntity
+// above; TenantModule already re-exports TypeOrmModule with UserEntity
+// registered, so no extra module wiring is needed here.
+import { UserEntity } from '../../user/entities/user.entity';
+
+export type TransferLocation =
+  | { type: 'WAREHOUSE'; id: string }
+  | { type: 'BRANCH'; id: string };
+
+export interface TransferStockInput {
+  fromWarehouseId?: string;
+  toWarehouseId?: string;
+  fromBranchId?: string;
+  toBranchId?: string;
+  productId: string;
+  variantId?: string;
+  quantity: number;
+  notes?: string;
+  createdByUserId?: string;
+}
+
+export interface ListStockTransfersQuery {
+  page?: number;
+  limit?: number;
+  search?: string;
+  warehouseId?: string;
+  branchId?: string;
+}
 
 @Injectable()
 export class StockTransferService {
@@ -13,82 +49,148 @@ export class StockTransferService {
     private readonly stockTransferRepository: Repository<StockTransferEntity>,
     @InjectRepository(InventoryStockEntity)
     private readonly inventoryStockRepository: Repository<InventoryStockEntity>,
+    @InjectRepository(BranchStockEntity)
+    private readonly branchStockRepository: Repository<BranchStockEntity>,
     @InjectRepository(WarehouseEntity)
     private readonly warehouseRepository: Repository<WarehouseEntity>,
     @InjectRepository(ProductEntity)
     private readonly productRepository: Repository<ProductEntity>,
+    @InjectRepository(ProductVariantEntity)
+    private readonly productVariantRepository: Repository<ProductVariantEntity>,
+    @InjectRepository(BranchEntity)
+    private readonly branchRepository: Repository<BranchEntity>,
+    @InjectRepository(UserEntity)
+    private readonly userRepository: Repository<UserEntity>,
   ) {}
 
-  async transferStock(
-    tenantId: string,
-    dto: {
-      fromWarehouseId: string;
-      toWarehouseId: string;
-      productId: string;
-      quantity: number;
-      notes?: string;
-    },
-  ): Promise<StockTransferEntity> {
-    if (dto.fromWarehouseId === dto.toWarehouseId) {
-      throw new BadRequestException('Source warehouse and destination warehouse must be different.');
-    }
-
-    if (dto.quantity <= 0) {
-      throw new BadRequestException('Transfer quantity must be greater than zero.');
-    }
-
-    const fromWarehouse = await this.warehouseRepository.findOne({ where: { id: dto.fromWarehouseId, tenantId } });
-    const toWarehouse = await this.warehouseRepository.findOne({ where: { id: dto.toWarehouseId, tenantId } });
-    const product = await this.productRepository.findOne({ where: { id: dto.productId, tenantId } });
-
-    if (!fromWarehouse || !toWarehouse) {
-      throw new NotFoundException('One or both specified warehouses were not found.');
-    }
-
-    if (!product) {
-      throw new NotFoundException(`Product with ID "${dto.productId}" not found.`);
-    }
-
-    // Source warehouse stock
-    let sourceStock = await this.inventoryStockRepository.findOne({
-      where: { warehouseId: dto.fromWarehouseId, productId: dto.productId, tenantId },
-    });
-
-    if (!sourceStock || sourceStock.quantityOnHand < dto.quantity) {
+  private resolveLocation(warehouseId?: string, branchId?: string, side: 'source' | 'destination' = 'source'): TransferLocation {
+    if (warehouseId && branchId) {
       throw new BadRequestException(
-        `Insufficient stock in source warehouse "${fromWarehouse.name}". Available: ${sourceStock ? sourceStock.quantityOnHand : 0}`,
+        `Specify either a warehouse or a branch for the ${side}, not both.`,
       );
     }
+    if (warehouseId) return { type: 'WAREHOUSE', id: warehouseId };
+    if (branchId) return { type: 'BRANCH', id: branchId };
+    throw new BadRequestException(`A ${side} warehouse or branch is required.`);
+  }
 
-    // Destination warehouse stock
-    let destStock = await this.inventoryStockRepository.findOne({
-      where: { warehouseId: dto.toWarehouseId, productId: dto.productId, tenantId },
+  private async assertLocationExists(tenantId: string, location: TransferLocation): Promise<void> {
+    if (location.type === 'WAREHOUSE') {
+      const warehouse = await this.warehouseRepository.findOne({ where: { id: location.id, tenantId } });
+      if (!warehouse) {
+        throw new NotFoundException(`Warehouse "${location.id}" not found.`);
+      }
+      return;
+    }
+    const branch = await this.branchRepository.findOne({ where: { id: location.id, tenantId } });
+    if (!branch) {
+      throw new NotFoundException(`Branch "${location.id}" not found.`);
+    }
+  }
+
+  private async getStockRow(
+    tenantId: string,
+    productId: string,
+    variantId: string | undefined,
+    location: TransferLocation,
+  ): Promise<InventoryStockEntity | BranchStockEntity | null> {
+    if (location.type === 'WAREHOUSE') {
+      return this.inventoryStockRepository.findOne({
+        where: { warehouseId: location.id, productId, variantId: variantId ?? undefined, tenantId },
+      });
+    }
+    return this.branchStockRepository.findOne({
+      where: { branchId: location.id, productId, variantId: variantId ?? undefined, tenantId },
     });
+  }
 
-    if (!destStock) {
-      destStock = this.inventoryStockRepository.create({
-        warehouseId: dto.toWarehouseId,
-        productId: dto.productId,
+  private getOrCreateDestinationRow(
+    tenantId: string,
+    productId: string,
+    variantId: string | undefined,
+    location: TransferLocation,
+    existing: InventoryStockEntity | BranchStockEntity | null,
+  ): InventoryStockEntity | BranchStockEntity {
+    if (existing) return existing;
+
+    if (location.type === 'WAREHOUSE') {
+      return this.inventoryStockRepository.create({
+        warehouseId: location.id,
+        productId,
+        variantId,
         quantityOnHand: 0,
         quantityReserved: 0,
         reorderPoint: 5,
         tenantId,
       });
     }
+    return this.branchStockRepository.create({
+      branchId: location.id,
+      productId,
+      variantId,
+      quantityOnHand: 0,
+      quantityReserved: 0,
+      reorderPoint: 5,
+      tenantId,
+    });
+  }
 
-    // Perform stock movement
+  async transferStock(tenantId: string, dto: TransferStockInput): Promise<StockTransferEntity> {
+    const source = this.resolveLocation(dto.fromWarehouseId, dto.fromBranchId, 'source');
+    const destination = this.resolveLocation(dto.toWarehouseId, dto.toBranchId, 'destination');
+
+    if (source.type === destination.type && source.id === destination.id) {
+      throw new BadRequestException('Source and destination must be different.');
+    }
+
+    if (dto.quantity <= 0) {
+      throw new BadRequestException('Transfer quantity must be greater than zero.');
+    }
+
+    await this.assertLocationExists(tenantId, source);
+    await this.assertLocationExists(tenantId, destination);
+
+    const product = await this.productRepository.findOne({ where: { id: dto.productId, tenantId } });
+    if (!product) {
+      throw new NotFoundException(`Product with ID "${dto.productId}" not found.`);
+    }
+
+    if (dto.variantId) {
+      const variant = await this.productVariantRepository.findOne({
+        where: { id: dto.variantId, productId: dto.productId },
+      });
+      if (!variant) {
+        throw new NotFoundException(`Variant "${dto.variantId}" not found for this product.`);
+      }
+    }
+
+    const sourceStock = await this.getStockRow(tenantId, dto.productId, dto.variantId, source);
+    if (!sourceStock || sourceStock.quantityOnHand < dto.quantity) {
+      throw new BadRequestException(
+        `Insufficient stock at the source. Available: ${sourceStock ? sourceStock.quantityOnHand : 0}`,
+      );
+    }
+
+    const existingDestStock = await this.getStockRow(tenantId, dto.productId, dto.variantId, destination);
+    const destStock = this.getOrCreateDestinationRow(tenantId, dto.productId, dto.variantId, destination, existingDestStock);
+
     sourceStock.quantityOnHand -= dto.quantity;
     destStock.quantityOnHand += dto.quantity;
 
     return this.inventoryStockRepository.manager.transaction(async (manager) => {
-      await manager.save([sourceStock, destStock]);
+      await manager.save(sourceStock);
+      await manager.save(destStock);
 
       const transferLog = manager.create(StockTransferEntity, {
-        fromWarehouseId: dto.fromWarehouseId,
-        toWarehouseId: dto.toWarehouseId,
+        fromWarehouseId: source.type === 'WAREHOUSE' ? source.id : undefined,
+        fromBranchId: source.type === 'BRANCH' ? source.id : undefined,
+        toWarehouseId: destination.type === 'WAREHOUSE' ? destination.id : undefined,
+        toBranchId: destination.type === 'BRANCH' ? destination.id : undefined,
         productId: dto.productId,
+        variantId: dto.variantId,
         quantity: dto.quantity,
         notes: dto.notes,
+        createdByUserId: dto.createdByUserId,
         tenantId,
       });
 
@@ -96,11 +198,83 @@ export class StockTransferService {
     });
   }
 
-  async listStockTransfers(tenantId: string): Promise<StockTransferEntity[]> {
-    return this.stockTransferRepository.find({
+  async listStockTransfers(
+    tenantId: string,
+    query: ListStockTransfersQuery = {},
+  ): Promise<{
+    data: Array<StockTransferEntity & { createdByName?: string; createdByEmail?: string }>;
+    meta: { page: number; limit: number; total: number; totalPages: number };
+  }> {
+    const page = Math.max(1, Number(query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(query.limit) || 15));
+    const skip = (page - 1) * limit;
+
+    const qb = this.stockTransferRepository
+      .createQueryBuilder('transfer')
+      .leftJoinAndSelect('transfer.fromWarehouse', 'fromWarehouse')
+      .leftJoinAndSelect('transfer.toWarehouse', 'toWarehouse')
+      .leftJoinAndSelect('transfer.product', 'product')
+      .leftJoinAndSelect('transfer.variant', 'variant')
+      .where('transfer.tenantId = :tenantId', { tenantId });
+
+    if (query.search && query.search.trim() !== '') {
+      const searchTerm = `%${query.search.trim()}%`;
+      qb.andWhere('(product.name ILIKE :search OR product.sku ILIKE :search OR variant.sku ILIKE :search)', {
+        search: searchTerm,
+      });
+    }
+
+    if (query.warehouseId) {
+      qb.andWhere('(transfer.fromWarehouseId = :warehouseId OR transfer.toWarehouseId = :warehouseId)', {
+        warehouseId: query.warehouseId,
+      });
+    }
+
+    if (query.branchId) {
+      qb.andWhere('(transfer.fromBranchId = :branchId OR transfer.toBranchId = :branchId)', {
+        branchId: query.branchId,
+      });
+    }
+
+    qb.orderBy('transfer.createdAt', 'DESC').skip(skip).take(limit);
+
+    const [transfers, total] = await qb.getManyAndCount();
+    const totalPages = Math.ceil(total / limit) || 0;
+
+    const userIds = Array.from(
+      new Set(transfers.map((t) => t.createdByUserId).filter((id): id is string => Boolean(id))),
+    );
+    const userMap = new Map<string, UserEntity>();
+    if (userIds.length > 0) {
+      const users = await this.userRepository.find({ where: { id: In(userIds) } });
+      users.forEach((u) => userMap.set(u.id, u));
+    }
+
+    const data = transfers.map((t) => {
+      const user = t.createdByUserId ? userMap.get(t.createdByUserId) : undefined;
+      return {
+        ...t,
+        createdByName: user?.fullName,
+        createdByEmail: user?.email,
+      };
+    });
+
+    return { data, meta: { page, limit, total, totalPages } };
+  }
+
+  async listBranchStock(tenantId: string, branchId: string): Promise<BranchStockEntity[]> {
+    return this.branchStockRepository.find({
+      where: { tenantId, branchId },
+      relations: ['product', 'variant'],
+      order: { updatedAt: 'DESC' },
+    });
+  }
+
+  /** Stock rows across every branch for the tenant — used by the branch cards to show a per-branch unit count, same as warehouse cards. */
+  async listAllBranchesStock(tenantId: string): Promise<BranchStockEntity[]> {
+    return this.branchStockRepository.find({
       where: { tenantId },
-      relations: ['fromWarehouse', 'toWarehouse', 'product'],
-      order: { createdAt: 'DESC' },
+      order: { updatedAt: 'DESC' },
     });
   }
 }

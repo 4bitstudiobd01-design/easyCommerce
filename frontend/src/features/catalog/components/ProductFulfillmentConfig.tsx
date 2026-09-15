@@ -160,7 +160,7 @@ export function ProductFulfillmentConfig({
               {/* Weight Row */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                     Package Weight
                   </label>
                   <div className="flex items-center gap-2">
@@ -170,7 +170,7 @@ export function ProductFulfillmentConfig({
                       placeholder="e.g. 0.75"
                       value={weight}
                       onChange={(e) => onWeightChange(e.target.value !== '' ? Number(e.target.value) : '')}
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white"
+                      className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold focus:bg-white"
                     />
                     <select
                       value={weightUnit}
@@ -186,7 +186,7 @@ export function ProductFulfillmentConfig({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center justify-between">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center justify-between">
                     <span>Shipping Profile</span>
                     <button
                       type="button"
@@ -203,7 +203,7 @@ export function ProductFulfillmentConfig({
                     <select
                       value={shippingProfileId}
                       onChange={(e) => onShippingProfileIdChange(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white"
+                      className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 focus:bg-white"
                     >
                       <option value="">-- Default Store Shipping Profile --</option>
                       {shippingProfiles.map((p) => (
@@ -218,7 +218,7 @@ export function ProductFulfillmentConfig({
 
               {/* Dimensions Row */}
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                   Dimensions (Length &times; Width &times; Height)
                 </label>
                 <div className="grid grid-cols-4 gap-2">
@@ -228,7 +228,7 @@ export function ProductFulfillmentConfig({
                     placeholder="Length"
                     value={length}
                     onChange={(e) => onLengthChange(e.target.value !== '' ? Number(e.target.value) : '')}
-                    className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white"
+                    className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   />
                   <input
                     type="number"
@@ -236,7 +236,7 @@ export function ProductFulfillmentConfig({
                     placeholder="Width"
                     value={width}
                     onChange={(e) => onWidthChange(e.target.value !== '' ? Number(e.target.value) : '')}
-                    className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white"
+                    className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   />
                   <input
                     type="number"
@@ -244,7 +244,7 @@ export function ProductFulfillmentConfig({
                     placeholder="Height"
                     value={height}
                     onChange={(e) => onHeightChange(e.target.value !== '' ? Number(e.target.value) : '')}
-                    className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white"
+                    className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   />
                   <select
                     value={dimensionUnit}
@@ -284,13 +284,13 @@ export function ProductFulfillmentConfig({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                 Digital Delivery Method
               </label>
               <select
                 value={digitalDeliveryType}
                 onChange={(e) => onDigitalDeliveryTypeChange(e.target.value as DigitalDeliveryType)}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white"
+                className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 focus:bg-white"
               >
                 <option value="DOWNLOAD">Instant File Download</option>
                 <option value="ACCESS_LINK">Secure Access Link / Portal</option>
@@ -300,7 +300,7 @@ export function ProductFulfillmentConfig({
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                 Download / Asset URL
               </label>
               <input
@@ -308,12 +308,12 @@ export function ProductFulfillmentConfig({
                 placeholder="https://cdn.bitcommerce.io/assets/product-file.zip"
                 value={digitalAssetUrl}
                 onChange={(e) => onDigitalAssetUrlChange(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono focus:bg-white"
+                className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:bg-white"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                 Download Limit per Purchase
               </label>
               <input
@@ -321,12 +321,12 @@ export function ProductFulfillmentConfig({
                 placeholder="e.g. 5 (Leave blank for Unlimited)"
                 value={downloadLimit}
                 onChange={(e) => onDownloadLimitChange(e.target.value !== '' ? Number(e.target.value) : '')}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white"
+                className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold focus:bg-white"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                 Download Expiry (Days)
               </label>
               <input
@@ -334,7 +334,7 @@ export function ProductFulfillmentConfig({
                 placeholder="e.g. 30 (Leave blank for Never)"
                 value={downloadExpiryDays}
                 onChange={(e) => onDownloadExpiryDaysChange(e.target.value !== '' ? Number(e.target.value) : '')}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white"
+                className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold focus:bg-white"
               />
             </div>
           </div>
@@ -350,13 +350,13 @@ export function ProductFulfillmentConfig({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                 Service Delivery Type
               </label>
               <select
                 value={serviceDeliveryType}
                 onChange={(e) => onServiceDeliveryTypeChange(e.target.value as ServiceDeliveryType)}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white"
+                className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 focus:bg-white"
               >
                 <option value="ONLINE">Online (Zoom / Meet / Remote)</option>
                 <option value="ONSITE">On-Site (At Client Location)</option>
@@ -365,7 +365,7 @@ export function ProductFulfillmentConfig({
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                 Service Duration
               </label>
               <div className="flex items-center gap-2">
@@ -374,7 +374,7 @@ export function ProductFulfillmentConfig({
                   placeholder="e.g. 60"
                   value={serviceDuration}
                   onChange={(e) => onServiceDurationChange(e.target.value !== '' ? Number(e.target.value) : '')}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white"
+                  className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold focus:bg-white"
                 />
                 <select
                   value={serviceDurationUnit}
@@ -399,7 +399,7 @@ export function ProductFulfillmentConfig({
 
             <form onSubmit={handleCreateProfile} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                   Profile Name
                 </label>
                 <input
@@ -407,12 +407,12 @@ export function ProductFulfillmentConfig({
                   placeholder="e.g. Heavy Goods Delivery"
                   value={newProfileName}
                   onChange={(e) => setNewProfileName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold"
+                  className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                   Description
                 </label>
                 <textarea
@@ -420,7 +420,7 @@ export function ProductFulfillmentConfig({
                   placeholder="Optional details..."
                   value={newProfileDesc}
                   onChange={(e) => setNewProfileDesc(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                  className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs"
                 />
               </div>
 

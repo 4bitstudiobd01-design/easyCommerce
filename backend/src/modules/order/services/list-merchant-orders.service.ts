@@ -22,6 +22,10 @@ export class ListMerchantOrdersService {
       status,
       paymentStatus,
       courier,
+      branchId,
+      channel,
+      utmSource,
+      utmCampaign,
       dateFrom,
       dateTo,
       sortBy = 'createdAt',
@@ -63,6 +67,23 @@ export class ListMerchantOrdersService {
 
     if (paymentStatus) {
       query.andWhere('order.paymentStatus = :paymentStatus', { paymentStatus });
+    }
+
+    if (branchId) {
+      query.andWhere('order.branchId = :branchId', { branchId });
+    }
+
+    // Marketing attribution filters — drilled into from the Sales-by-Source report.
+    if (channel) {
+      query.andWhere('order.channel = :channel', { channel });
+    }
+
+    if (utmSource) {
+      query.andWhere('order.utmSource = :utmSource', { utmSource });
+    }
+
+    if (utmCampaign) {
+      query.andWhere('order.utmCampaign = :utmCampaign', { utmCampaign });
     }
 
     if (courier && courier !== 'ALL') {

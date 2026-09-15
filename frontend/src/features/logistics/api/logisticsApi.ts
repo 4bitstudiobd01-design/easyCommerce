@@ -25,7 +25,6 @@ export type CourierProvider =
   | 'PATHAO'
   | 'PAPERFLY'
   | 'REDX'
-  | 'PARCELDEX'
   | 'CARRYBEE';
 
 export type ShipmentDateRangePreset =
@@ -192,14 +191,8 @@ export interface CreateShipmentRequest {
   idempotencyKey?: string;
   /** Which order items (and quantities) to ship. Omitted ships the whole order. */
   items?: ShipmentItemRequest[];
-}
-
-export interface SeedShipmentDemoDataResponse {
-  success: boolean;
-  message: string;
-  ordersCreated: number;
-  shipmentsCreated: number;
-  eventsCreated: number;
+  /** RedX only — required. RedX has no free-text address resolver, so the merchant picks an area. */
+  redxDeliveryAreaId?: number;
 }
 
 export type CourierConnectionStatus = 'Connected' | 'Disconnected' | 'Error';
@@ -289,12 +282,111 @@ export interface CourierConnectionTestResponse {
   integration: CourierDashboardItem;
 }
 
-export interface SeedCourierDemoDataResponse {
-  success: boolean;
+// --- Pathao-specific: stores, location lookups, delivery price ---------------
+
+export interface PathaoStore {
+  storeId: number;
+  storeName: string;
+  storeAddress: string;
+  isActive: boolean;
+  cityId: number;
+  zoneId: number;
+  hubId?: number;
+  isDefaultStore: boolean;
+  isDefaultReturnStore: boolean;
+}
+
+export interface CreatePathaoStoreRequest {
+  name: string;
+  contactName: string;
+  contactNumber: string;
+  secondaryContact?: string;
+  otpNumber?: string;
+  address: string;
+  cityId: number;
+  zoneId: number;
+  areaId: number;
+}
+
+export interface CreatePathaoStoreResponse {
   message: string;
-  integrationsCreated: number;
-  /** Providers left untouched because they were already configured. */
-  integrationsSkipped: number;
+  storeName: string;
+}
+
+export interface PathaoCity {
+  cityId: number;
+  cityName: string;
+}
+
+export interface PathaoZone {
+  zoneId: number;
+  zoneName: string;
+}
+
+export interface PathaoArea {
+  areaId: number;
+  areaName: string;
+  homeDeliveryAvailable: boolean;
+  pickupAvailable: boolean;
+}
+
+export interface CalculatePathaoPriceRequest {
+  storeId: number;
+  itemType: 1 | 2;
+  deliveryType: 48 | 12;
+  itemWeight: number;
+  recipientCity: number;
+  recipientZone: number;
+}
+
+export interface PathaoPrice {
+  price: number;
+  discount: number;
+  promoDiscount: number;
+  planId: number;
+  codEnabled: boolean;
+  codPercentage: number;
+  additionalCharge: number;
+  finalPrice: number;
+}
+
+// --- RedX-specific: delivery areas, charge, pickup stores --------------------
+
+export interface RedxArea {
+  id: number;
+  name: string;
+  postCode: number;
+  divisionName: string;
+  zoneId: number;
+}
+
+export interface CalculateRedxChargeRequest {
+  deliveryAreaId: number;
+  pickupAreaId: number;
+  cashCollectionAmount: number;
+  weight: number;
+}
+
+export interface RedxCharge {
+  deliveryCharge: number;
+  codCharge: number;
+}
+
+export interface RedxStore {
+  id: number;
+  name: string;
+  address: string;
+  areaName: string;
+  areaId: number;
+  phone: string;
+  createdAt?: string;
+}
+
+export interface CreateRedxStoreRequest {
+  name: string;
+  phone: string;
+  address: string;
+  areaId: number;
 }
 
 /** Unwraps the platform's `{ success, data }` envelope when present. */
@@ -324,7 +416,7 @@ const API_ROOT =
 export const logisticsApi = createApi({
   reducerPath: 'logisticsApi',
   baseQuery: createBaseQueryWithReauth(API_ROOT),
-  tagTypes: ['Shipment', 'ShipmentSummary', 'CourierProvider', 'CourierIntegration'],
+  tagTypes: ['Shipment', 'ShipmentSummary', 'CourierProvider', 'CourierIntegration', 'PathaoStore', 'RedxStore'],
   endpoints: (builder) => ({
     getShipments: builder.query<ShipmentListResponse, ShipmentFilters | void>({
       query: (params) => ({
@@ -402,15 +494,6 @@ export const logisticsApi = createApi({
         { type: 'Shipment', id },
       ],
       transformResponse: (response: unknown) => unwrap<ShipmentDetails>(response),
-    }),
-
-    seedShipmentDemoData: builder.mutation<SeedShipmentDemoDataResponse, void>({
-      query: () => ({
-        url: '/logistics/shipments/seed-demo-data',
-        method: 'POST',
-      }),
-      invalidatesTags: ['Shipment', 'ShipmentSummary'],
-      transformResponse: (response: unknown) => unwrap<SeedShipmentDemoDataResponse>(response),
     }),
 
     // --- Order-screen entry points (kept so the Orders UI keeps working) ---
@@ -540,30 +623,69 @@ export const logisticsApi = createApi({
       },
     }),
 
-    seedCourierDemoData: builder.mutation<SeedCourierDemoDataResponse, void>({
-      query: () => ({
-        url: '/logistics/courier-integrations/seed-demo-data',
-        method: 'POST',
-      }),
-      invalidatesTags: ['CourierIntegration', 'CourierProvider'],
-      // The platform's response interceptor lifts any payload carrying a
-      // top-level `message` into the envelope and keeps only its `data`, which
-      // is empty here — so the summary is read off the envelope itself rather
-      // than from an unwrapped body that would be null.
-      transformResponse: (response: unknown): SeedCourierDemoDataResponse => {
-        const envelope = (response ?? {}) as {
-          message?: string;
-          data?: Partial<SeedCourierDemoDataResponse> | null;
-        };
-        const body = envelope.data ?? {};
-        return {
-          success: body.success ?? true,
-          message: body.message ?? envelope.message ?? 'Courier demo data seeded.',
-          integrationsCreated: body.integrationsCreated ?? 0,
-          integrationsSkipped: body.integrationsSkipped ?? 0,
-        };
-      },
+    // --- Pathao stores ---------------------------------------------------
+
+    listPathaoStores: builder.query<PathaoStore[], void>({
+      query: () => '/logistics/pathao/stores',
+      providesTags: ['PathaoStore'],
+      transformResponse: (response: unknown) => unwrap<PathaoStore[]>(response) ?? [],
     }),
+
+    createPathaoStore: builder.mutation<CreatePathaoStoreResponse, CreatePathaoStoreRequest>({
+      query: (body) => ({ url: '/logistics/pathao/stores', method: 'POST', body }),
+      invalidatesTags: ['PathaoStore'],
+      transformResponse: (response: unknown) => unwrap<CreatePathaoStoreResponse>(response),
+    }),
+
+    // --- Pathao location lookups (city → zone → area) ---------------------
+
+    getPathaoCities: builder.query<PathaoCity[], void>({
+      query: () => '/logistics/pathao/cities',
+      transformResponse: (response: unknown) => unwrap<PathaoCity[]>(response) ?? [],
+    }),
+
+    getPathaoZones: builder.query<PathaoZone[], number>({
+      query: (cityId) => `/logistics/pathao/cities/${cityId}/zones`,
+      transformResponse: (response: unknown) => unwrap<PathaoZone[]>(response) ?? [],
+    }),
+
+    getPathaoAreas: builder.query<PathaoArea[], number>({
+      query: (zoneId) => `/logistics/pathao/zones/${zoneId}/areas`,
+      transformResponse: (response: unknown) => unwrap<PathaoArea[]>(response) ?? [],
+    }),
+
+    // --- Pathao delivery price ---------------------------------------------
+
+    calculatePathaoPrice: builder.mutation<PathaoPrice, CalculatePathaoPriceRequest>({
+      query: (body) => ({ url: '/logistics/pathao/price-plan', method: 'POST', body }),
+      transformResponse: (response: unknown) => unwrap<PathaoPrice>(response),
+    }),
+
+    // --- RedX delivery areas, charge, pickup stores -------------------------
+
+    getRedxAreas: builder.query<RedxArea[], { postCode?: number; district?: string } | void>({
+      query: (params) => ({ url: '/logistics/redx/areas', params: params ?? undefined }),
+      transformResponse: (response: unknown) => unwrap<RedxArea[]>(response) ?? [],
+    }),
+
+    calculateRedxCharge: builder.mutation<RedxCharge, CalculateRedxChargeRequest>({
+      // Backend route is a GET with query params (matches RedX's own charge_calculator shape).
+      query: (params) => ({ url: '/logistics/redx/charge', method: 'GET', params }),
+      transformResponse: (response: unknown) => unwrap<RedxCharge>(response),
+    }),
+
+    listRedxStores: builder.query<RedxStore[], void>({
+      query: () => '/logistics/redx/stores',
+      providesTags: ['RedxStore'],
+      transformResponse: (response: unknown) => unwrap<RedxStore[]>(response) ?? [],
+    }),
+
+    createRedxStore: builder.mutation<RedxStore, CreateRedxStoreRequest>({
+      query: (body) => ({ url: '/logistics/redx/stores', method: 'POST', body }),
+      invalidatesTags: ['RedxStore'],
+      transformResponse: (response: unknown) => unwrap<RedxStore>(response),
+    }),
+
   }),
 });
 
@@ -575,7 +697,6 @@ export const {
   useCreateShipmentMutation,
   useCancelShipmentMutation,
   useSyncShipmentMutation,
-  useSeedShipmentDemoDataMutation,
   useBookCourierMutation,
   useSyncConsignmentMutation,
   useGetCouriersDashboardQuery,
@@ -584,5 +705,14 @@ export const {
   useToggleCourierIntegrationMutation,
   useSetDefaultCourierMutation,
   useTestCourierConnectionMutation,
-  useSeedCourierDemoDataMutation,
+  useListPathaoStoresQuery,
+  useCreatePathaoStoreMutation,
+  useGetPathaoCitiesQuery,
+  useGetPathaoZonesQuery,
+  useGetPathaoAreasQuery,
+  useCalculatePathaoPriceMutation,
+  useGetRedxAreasQuery,
+  useCalculateRedxChargeMutation,
+  useListRedxStoresQuery,
+  useCreateRedxStoreMutation,
 } = logisticsApi;

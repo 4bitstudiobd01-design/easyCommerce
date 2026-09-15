@@ -9,6 +9,7 @@ import { inventoryApi } from '@/features/inventory/api/inventoryApi';
 import inventoryReducer from '@/features/inventory/slices/inventorySlice';
 import { storefrontApi } from '@/features/storefront/api/storefrontApi';
 import cartReducer from '@/features/storefront/slices/cartSlice';
+import checkoutReducer from '@/features/storefront/slices/checkoutSlice';
 import { customerAuthApi } from '@/features/storefront/api/customerAuthApi';
 import { customerAccountApi } from '@/features/storefront/api/customerAccountApi';
 import customerAuthReducer from '@/features/storefront/slices/customerAuthSlice';
@@ -22,8 +23,6 @@ import { smsApi } from '@/features/sms/api/smsApi';
 import { couponApi } from '@/features/coupon/api/couponApi';
 import { staffApi } from '@/features/staff/api/staffApi';
 import staffReducer from '@/features/staff/slices/staffSlice';
-import { emailMarketingApi } from '@/features/email-marketing/api/emailMarketingApi';
-import emailMarketingReducer from '@/features/email-marketing/slices/emailMarketingSlice';
 import { seoApi } from '@/features/seo/api/seoApi';
 import { billingApi } from '@/features/billing/api/billingApi';
 import { customerApi } from '@/features/customer/api/customerApi';
@@ -35,6 +34,8 @@ import { hrmApi } from '@/features/hrm/api/hrmApi';
 import { financeApi } from '@/features/finance/api/financeApi';
 import { accountingApi } from '@/features/accounting/api/accountingApi';
 import { purchaseApi } from '@/features/purchase/api/purchaseApi';
+import { financeApi } from '@/features/finance/api/financeApi';
+import { uploadApi } from '@/features/upload/api/uploadApi';
 
 export const store = configureStore({
   reducer: {
@@ -43,10 +44,10 @@ export const store = configureStore({
     catalog: catalogReducer,
     inventory: inventoryReducer,
     cart: cartReducer,
+    checkout: checkoutReducer,
     customerAuth: customerAuthReducer,
     order: orderReducer,
     staff: staffReducer,
-    emailMarketing: emailMarketingReducer,
     [authApi.reducerPath]: authApi.reducer,
     [tenantApi.reducerPath]: tenantApi.reducer,
     [catalogApi.reducerPath]: catalogApi.reducer,
@@ -62,7 +63,6 @@ export const store = configureStore({
     [smsApi.reducerPath]: smsApi.reducer,
     [couponApi.reducerPath]: couponApi.reducer,
     [staffApi.reducerPath]: staffApi.reducer,
-    [emailMarketingApi.reducerPath]: emailMarketingApi.reducer,
     [seoApi.reducerPath]: seoApi.reducer,
     [billingApi.reducerPath]: billingApi.reducer,
     [customerApi.reducerPath]: customerApi.reducer,
@@ -74,6 +74,8 @@ export const store = configureStore({
     [financeApi.reducerPath]: financeApi.reducer,
     [accountingApi.reducerPath]: accountingApi.reducer,
     [purchaseApi.reducerPath]: purchaseApi.reducer,
+    [financeApi.reducerPath]: financeApi.reducer,
+    [uploadApi.reducerPath]: uploadApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -95,7 +97,6 @@ export const store = configureStore({
       smsApi.middleware,
       couponApi.middleware,
       staffApi.middleware,
-      emailMarketingApi.middleware,
       seoApi.middleware,
       billingApi.middleware,
       customerApi.middleware,
@@ -107,6 +108,8 @@ export const store = configureStore({
       financeApi.middleware,
       accountingApi.middleware,
       purchaseApi.middleware,
+      financeApi.middleware,
+      uploadApi.middleware,
     ),
 });
 

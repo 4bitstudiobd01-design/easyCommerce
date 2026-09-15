@@ -1,8 +1,5 @@
-'use client';
-
-import React from 'react';
-import { SuppliersView } from '@/features/purchase/components/SuppliersView';
+import { redirect } from 'next/navigation';
 
 export default function SuppliersPage() {
-  return <SuppliersView />;
+  redirect('/dashboard/purchase?tab=suppliers');
 }

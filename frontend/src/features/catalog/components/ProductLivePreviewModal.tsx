@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   X,
   Smartphone,
@@ -11,15 +11,15 @@ import {
   RotateCcw,
   Star,
   Check,
-  Search,
-  User,
-  ChevronDown,
   Minus,
   Plus,
   MessageSquare,
   AlertTriangle,
+  Layers,
+  Zap,
 } from 'lucide-react';
 import { ProductFormState } from '@/features/catalog/hooks/useProductForm';
+import { getVariantAttributeOptions, resolveVariant } from '@/features/storefront/utils/resolveProductVariant';
 
 interface ProductLivePreviewModalProps {
   form: ProductFormState;
@@ -27,24 +27,22 @@ interface ProductLivePreviewModalProps {
   onClose: () => void;
 }
 
-// Mirrors the real storefront product page 1:1 (frontend/src/app/store/[slug]/product/[productSlug]/page.tsx
-// + ShopEaseNavbar), so merchants see exactly what customers will see — same layout, same
-// tenant primaryColor, same trust badges, same empty-reviews state. Header/account/cart are
-// static mocks (no live cart or customer session should leak into a preview).
+// Mirrors the real storefront product page (frontend/src/app/store/[slug]/product/[productSlug]/page.tsx
+// + ShopEaseNavbar), so merchants see exactly what customers will see — same layout, same tenant
+// primaryColor, same trust badges, same variant/stock logic, same empty-reviews state.
+// Header/account/cart are static mocks (no live cart or customer session leaks into a preview).
 export function ProductLivePreviewModal({ form, isOpen, onClose }: ProductLivePreviewModalProps) {
   const [deviceMode, setDeviceMode] = useState<'desktop' | 'mobile'>('desktop');
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [selectedQuantity, setSelectedQuantity] = useState(1);
-  const [selectedVariantOptions, setSelectedVariantOptions] = useState<Record<string, string>>({});
-
-  if (!isOpen) return null;
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
 
   const {
     name,
     description,
     localImages,
     numericBasePrice,
-    compareAtPrice,
+    numericCompareAt,
     store,
     categories,
     categoryId,
@@ -54,47 +52,126 @@ export function ProductLivePreviewModal({ form, isOpen, onClose }: ProductLivePr
     hasVariants,
     weight,
     weightUnit,
+    taxRate,
+    isTaxInclusive,
+    trackInventory,
+    allowBackorder,
+    lowStockThreshold,
+    initialStock,
     categoryAttributes,
     attributeValues,
     isVisible,
+    isEditMode,
+    sourceProduct,
+    pendingVariants,
   } = form;
+
+  // Edit mode reads the saved variants; create mode uses the combinations held in
+  // form state (built locally, not yet saved). Both expose the same option shape
+  // the resolver needs.
+  const variants = useMemo(
+    () =>
+      isEditMode
+        ? sourceProduct?.variants ?? []
+        : pendingVariants.map((v, i) => ({
+            id: v.combinationKey || `pending-${i}`,
+            title: v.title,
+            sku: v.sku,
+            price: v.price,
+            compareAtPrice: v.compareAtPrice,
+            isEnabled: v.isEnabled,
+            options: v.options,
+          })),
+    [isEditMode, sourceProduct?.variants, pendingVariants],
+  );
+  const attributeOptions = useMemo(() => getVariantAttributeOptions(variants), [variants]);
+  const selectedVariant = useMemo(
+    () => resolveVariant(variants, selectedOptions),
+    [variants, selectedOptions],
+  );
+  const hasRealVariants = attributeOptions.length > 0;
+  const variantSelectionComplete = !hasRealVariants || Boolean(selectedVariant);
+
+  if (!isOpen) return null;
 
   const primaryColor = store?.primaryColor || '#2563eb';
   const categoryName = categories.find((c) => c.id === categoryId)?.name;
   const brandName = brands.find((b) => b.id === brandId)?.name;
   const displayTitle = name.trim() || 'Untitled Product';
-  const displayPrice = numericBasePrice > 0 ? numericBasePrice : 1450;
-  const numericComparePrice = Number(compareAtPrice) || 0;
-  const hasDiscount = numericComparePrice > displayPrice;
+
+  // Selected variant price wins, then the product base price, then a demo figure.
+  const basePriceNum = numericBasePrice > 0 ? numericBasePrice : 1450;
+  const displayPrice = selectedVariant?.price != null ? Number(selectedVariant.price) : basePriceNum;
+  const variantCompareAt = selectedVariant?.compareAtPrice != null ? Number(selectedVariant.compareAtPrice) : 0;
+  const comparePrice = variantCompareAt > 0 ? variantCompareAt : numericCompareAt;
+  const hasDiscount = comparePrice > displayPrice;
   const discountPercent = hasDiscount
-    ? Math.round(((numericComparePrice - displayPrice) / numericComparePrice) * 100)
+    ? Math.round(((comparePrice - displayPrice) / comparePrice) * 100)
     : 0;
+  const displaySku = selectedVariant?.sku || sku;
 
   const images = localImages.length > 0
     ? localImages
     : [{ url: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=800&q=80', altText: 'Sample Product' }];
-
   const activeImage = images[selectedImageIndex]?.url || images[0]?.url;
+
+  // Stock state — mirrors ListProductsService / storefront stock badge logic.
+  const stockState = (() => {
+    if (!trackInventory) {
+      return { label: 'In Stock', tone: 'ok' as const, canBuy: true };
+    }
+    const available =
+      isEditMode && sourceProduct?.stockInfo
+        ? sourceProduct.stockInfo.available
+        : typeof initialStock === 'number'
+          ? initialStock
+          : 0;
+    if (available <= 0) {
+      return allowBackorder
+        ? { label: 'Available on Backorder', tone: 'warn' as const, canBuy: true }
+        : { label: 'Out of Stock', tone: 'bad' as const, canBuy: false };
+    }
+    if (available <= (lowStockThreshold || 0)) {
+      return { label: `Only ${available} left`, tone: 'warn' as const, canBuy: true };
+    }
+    return { label: 'In Stock', tone: 'ok' as const, canBuy: true };
+  })();
+
+  const canAddToCart = stockState.canBuy && variantSelectionComplete;
+
+  const stockToneClasses =
+    stockState.tone === 'ok'
+      ? 'bg-emerald-50 text-emerald-700'
+      : stockState.tone === 'warn'
+        ? 'bg-amber-50 text-amber-700'
+        : 'bg-rose-50 text-rose-700';
+
+  const taxNote =
+    taxRate > 0
+      ? isTaxInclusive
+        ? `Price includes ${taxRate}% VAT`
+        : `+ ${taxRate}% VAT at checkout`
+      : null;
 
   const activeCustomSpecs = categoryAttributes
     .filter((a) => !a.isVariantOption && attributeValues[a.id])
-    .map((a) => ({
-      name: a.name,
-      value: String(attributeValues[a.id]),
-    }));
+    .map((a) => ({ name: a.name, value: String(attributeValues[a.id]) }));
   if (weight) {
     activeCustomSpecs.push({ name: 'Package Weight', value: `${weight} ${weightUnit}` });
   }
 
   const storeName = store?.name || 'Your Store';
 
+  const handleSelectOption = (attributeName: string, option: string) => {
+    setSelectedOptions((prev) => ({ ...prev, [attributeName]: option }));
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-      {/* Backdrop */}
       <div className="fixed inset-0" onClick={onClose} />
 
-      {/* Main Modal Container */}
-      <div className="relative bg-white border border-slate-200 rounded-3xl shadow-2xl w-full max-w-5xl h-[92vh] flex flex-col overflow-hidden z-10 animate-in zoom-in-95 duration-200">
+      {/* Main Modal Container — full-bleed so the storefront has room to breathe */}
+      <div className="relative bg-white border border-slate-200 rounded-3xl shadow-2xl w-full max-w-[95rem] h-[95vh] flex flex-col overflow-hidden z-10 animate-in zoom-in-95 duration-200">
         {/* Top Control Bar */}
         <div className="flex items-center justify-between px-6 py-3.5 bg-slate-50/80 border-b border-slate-200 shrink-0">
           <div className="flex items-center gap-3">
@@ -156,7 +233,7 @@ export function ProductLivePreviewModal({ form, isOpen, onClose }: ProductLivePr
         <div className="flex-1 bg-slate-100/60 p-3 sm:p-6 overflow-y-auto flex items-start justify-center">
           <div
             className={`transition-all duration-300 bg-slate-50 text-slate-900 rounded-2xl shadow-xl border border-slate-200 overflow-hidden font-sans ${
-              deviceMode === 'mobile' ? 'w-full max-w-[420px] my-auto' : 'w-full max-w-4xl'
+              deviceMode === 'mobile' ? 'w-full max-w-[420px] my-auto' : 'w-full max-w-6xl'
             }`}
           >
             {!isVisible && (
@@ -168,70 +245,8 @@ export function ProductLivePreviewModal({ form, isOpen, onClose }: ProductLivePr
               </div>
             )}
 
-            {/* Storefront Header (static mock of ShopEaseNavbar — no live cart/session) */}
-            <div className="bg-white border-b border-slate-200/90 shadow-2xs">
-              <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  {store?.logo ? (
-                    <img
-                      src={store.logo}
-                      alt={storeName}
-                      className="w-8 h-8 object-contain rounded-lg border border-slate-200 shrink-0"
-                    />
-                  ) : (
-                    <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-black text-sm shrink-0"
-                      style={{ backgroundColor: primaryColor }}
-                    >
-                      {storeName.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  <div className="flex flex-col min-w-0">
-                    <span className="truncate text-sm font-black text-slate-900 tracking-tight leading-tight">
-                      {storeName}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                      <span className="text-[9px] font-bold text-slate-400 tracking-wide truncate">
-                        Official Storefront
-                      </span>
-                    </span>
-                  </div>
-                </div>
-
-                {deviceMode === 'desktop' && (
-                  <div className="hidden md:flex flex-1 max-w-sm">
-                    <div className="flex items-center w-full bg-white border border-slate-200 rounded-xl h-9 px-1.5">
-                      <Search className="w-3.5 h-3.5 text-slate-400 mx-2" />
-                      <span className="flex-1 text-xs font-medium text-slate-400">Search in {storeName}...</span>
-                      <span
-                        className="h-6 px-3 text-white text-[11px] font-bold rounded-lg flex items-center justify-center shrink-0"
-                        style={{ backgroundColor: primaryColor }}
-                      >
-                        Search
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] font-bold">
-                    <User className="w-3 h-3" />
-                    <span>Sign In</span>
-                    <ChevronDown className="w-3 h-3 text-slate-400" />
-                  </span>
-                  <span
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-[11px] font-bold"
-                    style={{ backgroundColor: primaryColor }}
-                  >
-                    <ShoppingBag className="w-3.5 h-3.5" />
-                    <span>৳0</span>
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Product View Body */}
+            {/* Product View Body — storefront chrome (navbar/search/cart) is omitted;
+                the preview focuses on the product page itself. */}
             <div className="p-4 sm:p-6">
               {/* Breadcrumb */}
               <div className="text-[11px] font-bold text-slate-500 flex items-center gap-1.5 flex-wrap mb-4">
@@ -247,7 +262,7 @@ export function ProductLivePreviewModal({ form, isOpen, onClose }: ProductLivePr
               </div>
 
               <div className="bg-white rounded-[28px] border border-slate-200/80 shadow-sm p-4 sm:p-6">
-                <div className={`grid gap-6 ${deviceMode === 'mobile' ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'}`}>
+                <div className={`grid gap-6 lg:gap-10 ${deviceMode === 'mobile' ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'}`}>
                   {/* Left Column: Image Gallery */}
                   <div className="space-y-3">
                     <div className="relative aspect-square w-full bg-slate-50 rounded-2xl overflow-hidden border border-slate-200">
@@ -287,13 +302,15 @@ export function ProductLivePreviewModal({ form, isOpen, onClose }: ProductLivePr
                   <div className="space-y-4">
                     <div className="flex items-center justify-between text-xs">
                       {brandName && (
-                        <span className="font-bold text-blue-600 uppercase tracking-wider text-[10.5px]">
+                        <span className="font-bold uppercase tracking-wider text-[10.5px]" style={{ color: primaryColor }}>
                           {brandName}
                         </span>
                       )}
-                      <span className="text-slate-400 text-[11px] ml-auto">
-                        SKU: <strong className="text-slate-700">{sku || 'SKU-DEFAULT'}</strong>
-                      </span>
+                      {displaySku && (
+                        <span className="text-slate-400 text-[11px] ml-auto">
+                          SKU: <strong className="text-slate-700">{displaySku}</strong>
+                        </span>
+                      )}
                     </div>
 
                     <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 leading-snug tracking-tight">
@@ -301,82 +318,77 @@ export function ProductLivePreviewModal({ form, isOpen, onClose }: ProductLivePr
                     </h1>
 
                     <div>
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-50 text-emerald-700 rounded-full font-bold text-[11px]">
-                        <Check className="w-3 h-3" />
-                        <span>In Stock</span>
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-bold text-[11px] ${stockToneClasses}`}>
+                        {stockState.tone === 'bad' ? (
+                          <AlertTriangle className="w-3 h-3" />
+                        ) : (
+                          <Check className="w-3 h-3" />
+                        )}
+                        <span>{stockState.label}</span>
                       </span>
                     </div>
 
                     <div
-                      className="p-3.5 rounded-2xl border text-slate-900 flex items-baseline gap-3"
+                      className="p-3.5 rounded-2xl border text-slate-900"
                       style={{ backgroundColor: `${primaryColor}0d`, borderColor: `${primaryColor}33` }}
                     >
-                      <span className="text-2xl font-black">৳{displayPrice.toLocaleString()}</span>
-                      {hasDiscount && (
-                        <span className="text-sm font-semibold text-slate-400 line-through">
-                          ৳{numericComparePrice.toLocaleString()}
-                        </span>
+                      <div className="flex items-baseline gap-3">
+                        <span className="text-2xl font-black">৳{displayPrice.toLocaleString()}</span>
+                        {hasDiscount && (
+                          <span className="text-sm font-semibold text-slate-400 line-through">
+                            ৳{comparePrice.toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                      {taxNote && (
+                        <p className="text-[10.5px] font-semibold text-slate-500 mt-1">{taxNote}</p>
                       )}
                     </div>
 
-                    {/* Sample Variants (if enabled) */}
-                    {hasVariants && (
+                    {/* Variant pickers — real attribute/option data from generated variants */}
+                    {hasRealVariants ? (
                       <>
-                        <div>
-                          <span className="text-xs font-bold text-slate-800 block mb-1.5">Color:</span>
-                          <div className="flex flex-wrap gap-2">
-                            {['Black', 'Navy Blue', 'Maroon'].map((c) => {
-                              const isSelected = (selectedVariantOptions.color || 'Black') === c;
-                              return (
-                                <button
-                                  key={c}
-                                  type="button"
-                                  onClick={() => setSelectedVariantOptions((prev) => ({ ...prev, color: c }))}
-                                  className="px-3 py-1.5 text-xs font-bold rounded-xl border transition-all"
-                                  style={
-                                    isSelected
-                                      ? { backgroundColor: primaryColor, borderColor: primaryColor, color: '#fff' }
-                                      : { backgroundColor: '#fff', borderColor: '#e2e8f0', color: '#334155' }
-                                  }
-                                >
-                                  {c}
-                                </button>
-                              );
-                            })}
+                        {attributeOptions.map((attr) => (
+                          <div key={attr.attributeName}>
+                            <span className="text-xs font-bold text-slate-800 block mb-1.5">{attr.attributeName}:</span>
+                            <div className="flex flex-wrap gap-2">
+                              {attr.options.map((opt) => {
+                                const isSelected = selectedOptions[attr.attributeName] === opt;
+                                return (
+                                  <button
+                                    key={opt}
+                                    type="button"
+                                    onClick={() => handleSelectOption(attr.attributeName, opt)}
+                                    className="px-3 py-1.5 text-xs font-bold rounded-xl border transition-all"
+                                    style={
+                                      isSelected
+                                        ? { backgroundColor: primaryColor, borderColor: primaryColor, color: '#fff' }
+                                        : { backgroundColor: '#fff', borderColor: '#e2e8f0', color: '#334155' }
+                                    }
+                                  >
+                                    {opt}
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
-                        </div>
-
-                        <div>
-                          <span className="text-xs font-bold text-slate-800 block mb-1.5">Size:</span>
-                          <div className="flex flex-wrap gap-2">
-                            {['S', 'M', 'L', 'XL', 'XXL'].map((s) => {
-                              const isSelected = (selectedVariantOptions.size || 'M') === s;
-                              return (
-                                <button
-                                  key={s}
-                                  type="button"
-                                  onClick={() => setSelectedVariantOptions((prev) => ({ ...prev, size: s }))}
-                                  className="px-3 py-1.5 text-xs font-bold rounded-xl border transition-all"
-                                  style={
-                                    isSelected
-                                      ? { backgroundColor: primaryColor, borderColor: primaryColor, color: '#fff' }
-                                      : { backgroundColor: '#fff', borderColor: '#e2e8f0', color: '#334155' }
-                                  }
-                                >
-                                  {s}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
+                        ))}
                       </>
-                    )}
+                    ) : hasVariants ? (
+                      <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-2.5 text-[11px] text-slate-600">
+                        <Layers className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                        <span>
+                          Variant options (Color, Size, …) will show here for customers once you generate the variant
+                          matrix in the Variants section.
+                        </span>
+                      </div>
+                    ) : null}
 
                     {description.trim() && (
                       <p className="text-xs text-slate-600 leading-relaxed">{description}</p>
                     )}
 
-                    {/* Quantity & Add to Cart */}
+                    {/* Quantity & Actions */}
                     <div className="pt-2 space-y-2.5">
                       <div className="flex items-center gap-3">
                         <div className="flex items-center border border-slate-200 rounded-xl bg-slate-50 p-1">
@@ -401,13 +413,31 @@ export function ProductLivePreviewModal({ form, isOpen, onClose }: ProductLivePr
 
                         <button
                           type="button"
-                          className="flex-1 h-11 px-4 text-white font-bold text-xs rounded-2xl shadow-lg flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                          disabled={!canAddToCart}
+                          className="flex-1 h-11 px-4 text-white font-bold text-xs rounded-2xl shadow-lg flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                           style={{ backgroundColor: primaryColor, boxShadow: `0 10px 24px -8px ${primaryColor}80` }}
                         >
                           <ShoppingBag className="w-4 h-4" />
                           <span>Add {selectedQuantity} to Cart • ৳{(displayPrice * selectedQuantity).toLocaleString()}</span>
                         </button>
                       </div>
+
+                      <button
+                        type="button"
+                        disabled={!canAddToCart}
+                        className="w-full h-11 px-4 font-bold text-xs rounded-2xl border-2 flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                        style={{ borderColor: primaryColor, color: primaryColor }}
+                      >
+                        <Zap className="w-4 h-4" />
+                        <span>Buy Now</span>
+                      </button>
+
+                      {hasRealVariants && !selectedVariant && (
+                        <p className="text-[11px] text-amber-600 font-semibold">Select all options above to add to cart.</p>
+                      )}
+                      {stockState.tone === 'bad' && (
+                        <p className="text-[11px] text-rose-600 font-semibold">This product is currently out of stock.</p>
+                      )}
                     </div>
 
                     {/* Trust Highlights */}

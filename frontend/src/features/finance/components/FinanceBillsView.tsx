@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import {
   Receipt,
   Plus,
@@ -113,13 +114,15 @@ export function FinanceBillsView() {
     limit,
   });
 
-  const [deleteBill] = useDeleteBillMutation();
+  const [deleteBill, { isLoading: isDeletingBill }] = useDeleteBillMutation();
+  const [billIdPendingDelete, setBillIdPendingDelete] = useState<string | null>(null);
 
   const bills = data?.items || [];
   const summary = data?.summary;
   const total = data?.total || 0;
   const totalPages = data?.totalPages || 1;
 
+<<<<<<< HEAD
   const startEntry = total === 0 ? 0 : (page - 1) * limit + 1;
   const endEntry = Math.min(page * limit, total);
 
@@ -144,9 +147,18 @@ export function FinanceBillsView() {
 
   const handleDelete = async (id: string) => {
     if (!window.confirm('Are you sure you want to delete this bill?')) return;
+=======
+  const handleDelete = (id: string) => {
+    setBillIdPendingDelete(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!billIdPendingDelete) return;
+>>>>>>> 28beebd18d9f9b378e71bc134817fba440e55106
     try {
-      await deleteBill(id).unwrap();
+      await deleteBill(billIdPendingDelete).unwrap();
       toast.success('Bill deleted.');
+      setBillIdPendingDelete(null);
     } catch (err: any) {
       toast.error(err?.data?.message || 'Failed to delete bill.');
     }
@@ -728,10 +740,21 @@ export function FinanceBillsView() {
         bill={paymentBill}
       />
 
+<<<<<<< HEAD
       <UpdateBillStatusModal
         isOpen={Boolean(statusUpdateBill)}
         onClose={() => setStatusUpdateBill(null)}
         bill={statusUpdateBill}
+=======
+      <ConfirmDialog
+        isOpen={billIdPendingDelete !== null}
+        onClose={() => setBillIdPendingDelete(null)}
+        onConfirm={confirmDelete}
+        title="Delete Bill"
+        message="Are you sure you want to delete this bill?"
+        confirmLabel="Delete"
+        isLoading={isDeletingBill}
+>>>>>>> 28beebd18d9f9b378e71bc134817fba440e55106
       />
     </div>
   );

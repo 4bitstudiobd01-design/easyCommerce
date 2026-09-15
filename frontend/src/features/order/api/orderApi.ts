@@ -107,6 +107,8 @@ export interface Order {
   paymentStatus: 'UNPAID' | 'PARTIALLY_PAID' | 'PAID' | 'PARTIALLY_REFUNDED' | 'REFUNDED' | 'COD_PENDING' | 'COD_COLLECTED' | 'FAILED';
   orderStatus: OrderStatusType;
   storeSlug: string;
+  /** Branch (physical outlet) this order is attributed to; absent/null for a non-branch (e.g. online storefront) order. */
+  branchId?: string | null;
   tenantId: string;
   items: OrderItem[];
   customerNote?: string;
@@ -129,6 +131,7 @@ export interface InvoiceData {
   amountPaid: number;
   balanceDue: number;
   generatedAt: string;
+  invoiceFooterNote?: string;
 }
 
 export interface TimelineEvent {
@@ -177,6 +180,8 @@ export interface CreateOrderRequest {
   customerEmail?: string;
   shippingAddress: string;
   city: string;
+  /** Delivery zone chosen at checkout — picks the flat charge from store settings. */
+  deliveryZone?: 'INSIDE_DHAKA' | 'OUTSIDE_DHAKA';
   paymentMethod: 'COD' | 'BKASH' | 'NAGAD' | 'SSLCOMMERZ';
   couponCode?: string;
   items: CreateOrderItemRequest[];
@@ -238,6 +243,8 @@ export interface CreateManualOrderRequest {
   division?: string;
   customerNote?: string;
   internalNote?: string;
+  /** Branch (physical outlet) this order should be attributed to; omit for a non-branch order. */
+  branchId?: string;
   paymentMethod: 'COD' | 'BKASH' | 'NAGAD' | 'SSLCOMMERZ';
   couponCode?: string;
   deliveryFee: number;
@@ -314,7 +321,7 @@ export const orderApi = createApi({
       },
       transformResponse: (response: { data: PublicOrderTracking[] }) => response.data,
     }),
-    getMerchantOrders: builder.query<{ data: Order[]; meta: any }, { page?: number; limit?: number; status?: string; paymentStatus?: string; search?: string; sortBy?: string; sortOrder?: string; } | void>({
+    getMerchantOrders: builder.query<{ data: Order[]; meta: any }, { page?: number; limit?: number; status?: string; paymentStatus?: string; courier?: string; branchId?: string; channel?: string; utmSource?: string; utmCampaign?: string; dateFrom?: string; dateTo?: string; search?: string; sortBy?: string; sortOrder?: string; } | void>({
       query: (params) => ({
         url: '',
         params: params || {},
