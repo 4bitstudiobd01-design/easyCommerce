@@ -48,6 +48,7 @@ import {
   BookOpen,
   ClipboardCheck,
   Banknote,
+  FileText,
 } from 'lucide-react';
 
 interface SidebarProps {
