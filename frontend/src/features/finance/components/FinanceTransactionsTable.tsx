@@ -28,9 +28,9 @@ import {
   FinanceTransaction,
 } from '../api/financeApi';
 import { CreateTransactionModal } from './CreateTransactionModal';
-<<<<<<< HEAD
 import { IncomeDetailModal } from './IncomeDetailModal';
 import { ExpenseDetailModal } from './ExpenseDetailModal';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 function formatMoney(amount: number | string | undefined): string {
   const num = Number(amount || 0);
@@ -39,9 +39,6 @@ function formatMoney(amount: number | string | undefined): string {
     maximumFractionDigits: 2,
   });
 }
-=======
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
->>>>>>> 28beebd18d9f9b378e71bc134817fba440e55106
 
 export function FinanceTransactionsTable() {
   const [type, setType] = useState('');
@@ -69,13 +66,9 @@ export function FinanceTransactionsTable() {
 
   const { data: accountsData } = useGetAccountsQuery();
   const { data: categories } = useGetCategoriesQuery();
-<<<<<<< HEAD
-  const [deleteTransaction] = useDeleteTransactionMutation();
-  const [exportTransactions, { isLoading: isExporting }] = useExportFinanceTransactionsMutation();
-=======
   const [deleteTransaction, { isLoading: isDeletingTransaction }] = useDeleteTransactionMutation();
   const [transactionIdPendingDelete, setTransactionIdPendingDelete] = useState<string | null>(null);
->>>>>>> 28beebd18d9f9b378e71bc134817fba440e55106
+  const [exportTransactions, { isLoading: isExporting }] = useExportFinanceTransactionsMutation();
 
   const accounts: FinanceAccount[] = Array.isArray(accountsData)
     ? accountsData

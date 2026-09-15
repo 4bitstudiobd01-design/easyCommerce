@@ -42,12 +42,9 @@ import {
   toLineInputs,
   type LineItemDraft,
 } from './LineItemEditor';
-<<<<<<< HEAD
 import { SupplierSelectDropdown } from './SupplierSelectDropdown';
 import { CustomDropdown } from './CustomDropdown';
-=======
 import { PurchaseTabsHeader, type PurchaseTabKey } from './PurchaseTabsHeader';
->>>>>>> 28beebd18d9f9b378e71bc134817fba440e55106
 
 const ORDER_STATUS_LABELS: Record<PurchaseOrderStatus, string> = {
   DRAFT: 'Draft',
@@ -191,7 +188,6 @@ export function PurchaseOrdersView({ activeTab = 'purchase-orders', onNavigateTa
         notes: poNotes.trim() || undefined,
         lines: toLineInputs(poLines),
       }).unwrap();
-<<<<<<< HEAD
       toast.success(
         poStatus === 'PENDING_APPROVAL'
           ? 'Purchase order created and submitted for Finance approval!'
@@ -207,16 +203,6 @@ export function PurchaseOrdersView({ activeTab = 'purchase-orders', onNavigateTa
         err?.message ||
         'Could not create the purchase order.';
       toast.error(msg);
-=======
-      toast.success('Purchase order created.');
-      setIsNewPoOpen(false);
-      resetPoForm();
-    } catch (err) {
-      // class-validator returns message as string[] — surface the first real reason.
-      const data = (err as { data?: { message?: string | string[] } })?.data;
-      const reason = Array.isArray(data?.message) ? data?.message[0] : data?.message;
-      toast.error(reason || 'Could not create the purchase order.');
->>>>>>> 28beebd18d9f9b378e71bc134817fba440e55106
     }
   };
 
@@ -232,7 +218,7 @@ export function PurchaseOrdersView({ activeTab = 'purchase-orders', onNavigateTa
     try {
       await cancelPurchaseOrder(poIdPendingCancel).unwrap();
       toast.success('Purchase order cancelled.');
-<<<<<<< HEAD
+      setPoIdPendingCancel(null);
     } catch (err: any) {
       const msg =
         (Array.isArray(err?.data?.message)
@@ -241,14 +227,6 @@ export function PurchaseOrdersView({ activeTab = 'purchase-orders', onNavigateTa
         err?.message ||
         'Could not cancel the purchase order.';
       toast.error(msg);
-=======
-      setPoIdPendingCancel(null);
-    } catch (err) {
-      toast.error(
-        (err as { data?: { message?: string } })?.data?.message ??
-          'Could not cancel the purchase order.',
-      );
->>>>>>> 28beebd18d9f9b378e71bc134817fba440e55106
     }
   };
 

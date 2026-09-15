@@ -122,7 +122,6 @@ export function FinanceBillsView() {
   const total = data?.total || 0;
   const totalPages = data?.totalPages || 1;
 
-<<<<<<< HEAD
   const startEntry = total === 0 ? 0 : (page - 1) * limit + 1;
   const endEntry = Math.min(page * limit, total);
 
@@ -145,16 +144,12 @@ export function FinanceBillsView() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this bill?')) return;
-=======
   const handleDelete = (id: string) => {
     setBillIdPendingDelete(id);
   };
 
   const confirmDelete = async () => {
     if (!billIdPendingDelete) return;
->>>>>>> 28beebd18d9f9b378e71bc134817fba440e55106
     try {
       await deleteBill(billIdPendingDelete).unwrap();
       toast.success('Bill deleted.');
@@ -740,12 +735,12 @@ export function FinanceBillsView() {
         bill={paymentBill}
       />
 
-<<<<<<< HEAD
       <UpdateBillStatusModal
         isOpen={Boolean(statusUpdateBill)}
         onClose={() => setStatusUpdateBill(null)}
         bill={statusUpdateBill}
-=======
+      />
+
       <ConfirmDialog
         isOpen={billIdPendingDelete !== null}
         onClose={() => setBillIdPendingDelete(null)}
@@ -754,7 +749,6 @@ export function FinanceBillsView() {
         message="Are you sure you want to delete this bill?"
         confirmLabel="Delete"
         isLoading={isDeletingBill}
->>>>>>> 28beebd18d9f9b378e71bc134817fba440e55106
       />
     </div>
   );

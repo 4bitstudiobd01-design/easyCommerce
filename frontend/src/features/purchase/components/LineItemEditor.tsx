@@ -104,7 +104,6 @@ export function LineItemEditor({ value, onChange }: LineItemEditorProps) {
 
   return (
     <div className="space-y-3">
-<<<<<<< HEAD
       <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-2xs">
         <table className="min-w-full text-xs">
           <thead className="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500 font-bold border-b border-slate-200/80">
@@ -115,34 +114,6 @@ export function LineItemEditor({ value, onChange }: LineItemEditorProps) {
               <th className="px-3 py-2.5 text-right font-bold min-w-[105px] w-[115px]">Unit Cost</th>
               <th className="px-3 py-2.5 text-right font-bold min-w-[110px] w-[120px]">Line Total</th>
               <th className="px-2 py-2.5 w-10 text-center" />
-=======
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search products to add…"
-          className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
-        />
-        {isFetching && (
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">
-            Loading…
-          </span>
-        )}
-      </div>
-
-      <div className="overflow-x-auto rounded-lg border border-slate-200">
-        <table className="w-full min-w-[600px] text-sm">
-          <thead className="bg-slate-50 text-xs uppercase text-slate-500">
-            <tr>
-              <th className="px-3 py-2 text-left font-medium w-[40%]">Product</th>
-              <th className="px-3 py-2 text-left font-medium w-[22%]">Variant</th>
-              <th className="px-3 py-2 text-right font-medium w-20">Qty</th>
-              <th className="px-3 py-2 text-right font-medium w-28">Unit cost</th>
-              <th className="px-3 py-2 text-right font-medium w-28">Line total</th>
-              <th className="px-3 py-2 w-10" />
->>>>>>> 28beebd18d9f9b378e71bc134817fba440e55106
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 bg-white">
@@ -170,38 +141,17 @@ export function LineItemEditor({ value, onChange }: LineItemEditorProps) {
                       searchPlaceholder="Search product by title, SKU..."
                       placeholder="Select a product"
                       value={line.productId}
-<<<<<<< HEAD
                       fallbackLabel={line.productName}
                       options={productOptions}
                       triggerMaxChars={16}
                       onChange={(val) => applyProduct(line.key, val)}
                     />
-=======
-                      onChange={(e) => applyProduct(line.key, e.target.value)}
-                      className="w-full max-w-full truncate rounded-md border border-slate-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
-                    >
-                      <option value="">
-                        {line.productId ? line.productName : 'Select a product'}
-                      </option>
-                      {line.productId &&
-                        !products.some((p) => p.id === line.productId) && (
-                          <option value={line.productId}>{line.productName}</option>
-                        )}
-                      {products.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name ?? p.title}
-                          {p.sku ? ` (${p.sku})` : ''}
-                        </option>
-                      ))}
-                    </select>
->>>>>>> 28beebd18d9f9b378e71bc134817fba440e55106
                   </td>
                   <td className="px-2.5 py-2 min-w-[110px] w-[130px]">
                     {variants.length > 0 ? (
                       <CustomDropdown
                         size="sm"
                         value={line.variantId ?? ''}
-<<<<<<< HEAD
                         placeholder="Base"
                         options={[
                           { value: '', label: 'Base', subtitle: product?.sku },
@@ -216,20 +166,6 @@ export function LineItemEditor({ value, onChange }: LineItemEditorProps) {
                         triggerMaxChars={12}
                         onChange={(val) => applyVariant(line.key, product!, val)}
                       />
-=======
-                        onChange={(e) =>
-                          applyVariant(line.key, product!, e.target.value)
-                        }
-                        className="w-full max-w-full truncate rounded-md border border-slate-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
-                      >
-                        <option value="">Base (no variant)</option>
-                        {variants.map((v) => (
-                          <option key={v.id} value={v.id}>
-                            {v.title || v.sku || 'Variant'}
-                          </option>
-                        ))}
-                      </select>
->>>>>>> 28beebd18d9f9b378e71bc134817fba440e55106
                     ) : (
                       <span className="text-slate-400 font-medium text-xs px-2 select-none">—</span>
                     )}
