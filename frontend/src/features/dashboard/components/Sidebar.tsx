@@ -29,15 +29,7 @@ import {
   KeyRound,
   PanelLeftClose,
   PanelLeftOpen,
-  UserCog,
-  Building2,
-  CalendarCheck,
-  CalendarRange,
-  PartyPopper,
-  Clock3,
   Receipt,
-  Wallet,
-  UserCircle2,
   ChevronDown,
   Landmark,
   TrendingUp,
@@ -97,7 +89,6 @@ export const Sidebar = ({
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     ecommerce: true,
     crm: isRouteInGroup('/dashboard/crm'),
-    hrm: isRouteInGroup('/dashboard/hr'),
     accounting: isRouteInGroup('/dashboard/accounting'),
     marketing: isRouteInGroup(['/dashboard/marketing', '/dashboard/analytics']),
   });
@@ -120,9 +111,6 @@ export const Sidebar = ({
     }
     if (isRouteInGroup('/dashboard/crm')) {
       setOpenGroups(prev => ({ ...prev, crm: true }));
-    }
-    if (isRouteInGroup('/dashboard/hr')) {
-      setOpenGroups(prev => ({ ...prev, hrm: true }));
     }
     if (isRouteInGroup('/dashboard/accounting')) {
       setOpenGroups(prev => ({ ...prev, accounting: true }));
@@ -628,159 +616,20 @@ export const Sidebar = ({
             </div>
           )} */}
 
-          {/* 4. HUMAN RESOURCES ACCORDION */}
-          {/* <AccordionHeader 
-            title="Human Resources" 
-            groupKey="hrm" 
-            isOpen={openGroups.hrm} 
-          />
-          {(isDesktopCollapsed || openGroups.hrm) && (
-            <div className="space-y-0.5">
-              <Link
-                href="/dashboard/hr/my-leave"
-                className={navItemClass('/dashboard/hr/my-leave')}
-                onMouseEnter={(e) => handleTooltipEnter(e, "My Leave")}
-                onFocus={(e) => handleTooltipEnter(e, "My Leave")}
-                onMouseLeave={handleTooltipLeave}
-                onBlur={handleTooltipLeave}
-              >
-                <div className="flex items-center gap-2.5">
-                  <UserCircle2 className={iconClass} strokeWidth={iconStroke} />
-                  {!isDesktopCollapsed && <span>My Leave (ESS)</span>}
-                </div>
-              </Link>
-              <Link
-                href="/dashboard/hr/employees"
-                className={navItemClass('/dashboard/hr/employees')}
-                onMouseEnter={(e) => handleTooltipEnter(e, "Employees")}
-                onFocus={(e) => handleTooltipEnter(e, "Employees")}
-                onMouseLeave={handleTooltipLeave}
-                onBlur={handleTooltipLeave}
-              >
-                <div className="flex items-center gap-2.5">
-                  <UserCog className={iconClass} strokeWidth={iconStroke} />
-                  {!isDesktopCollapsed && <span>Employees</span>}
-                </div>
-              </Link>
-              <Link
-                href="/dashboard/hr/departments"
-                className={navItemClass('/dashboard/hr/departments')}
-                onMouseEnter={(e) => handleTooltipEnter(e, "Departments")}
-                onFocus={(e) => handleTooltipEnter(e, "Departments")}
-                onMouseLeave={handleTooltipLeave}
-                onBlur={handleTooltipLeave}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Building2 className={iconClass} strokeWidth={iconStroke} />
-                  {!isDesktopCollapsed && <span>Departments</span>}
-                </div>
-              </Link>
-              <Link
-                href="/dashboard/hr/attendance"
-                className={navItemClass('/dashboard/hr/attendance')}
-                onMouseEnter={(e) => handleTooltipEnter(e, "Attendance")}
-                onFocus={(e) => handleTooltipEnter(e, "Attendance")}
-                onMouseLeave={handleTooltipLeave}
-                onBlur={handleTooltipLeave}
-              >
-                <div className="flex items-center gap-2.5">
-                  <CalendarCheck className={iconClass} strokeWidth={iconStroke} />
-                  {!isDesktopCollapsed && <span>Attendance</span>}
-                </div>
-              </Link>
-              <Link
-                href="/dashboard/hr/leave"
-                className={navItemClass('/dashboard/hr/leave')}
-                onMouseEnter={(e) => handleTooltipEnter(e, "Leave Requests")}
-                onFocus={(e) => handleTooltipEnter(e, "Leave Requests")}
-                onMouseLeave={handleTooltipLeave}
-                onBlur={handleTooltipLeave}
-              >
-                <div className="flex items-center gap-2.5">
-                  <CalendarRange className={iconClass} strokeWidth={iconStroke} />
-                  {!isDesktopCollapsed && <span>Leave Requests</span>}
-                </div>
-              </Link>
-              <Link
-                href="/dashboard/hr/holidays"
-                className={navItemClass('/dashboard/hr/holidays')}
-                onMouseEnter={(e) => handleTooltipEnter(e, "Holidays")}
-                onFocus={(e) => handleTooltipEnter(e, "Holidays")}
-                onMouseLeave={handleTooltipLeave}
-                onBlur={handleTooltipLeave}
-              >
-                <div className="flex items-center gap-2.5">
-                  <PartyPopper className={iconClass} strokeWidth={iconStroke} />
-                  {!isDesktopCollapsed && <span>Holidays</span>}
-                </div>
-              </Link>
-              <Link
-                href="/dashboard/hr/shifts"
-                className={navItemClass('/dashboard/hr/shifts')}
-                onMouseEnter={(e) => handleTooltipEnter(e, "Shifts & Roster")}
-                onFocus={(e) => handleTooltipEnter(e, "Shifts & Roster")}
-                onMouseLeave={handleTooltipLeave}
-                onBlur={handleTooltipLeave}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Clock3 className={iconClass} strokeWidth={iconStroke} />
-                  {!isDesktopCollapsed && <span>Shifts & Roster</span>}
-                </div>
-              </Link>
-              <Link
-                href="/dashboard/hr/expenses"
-                className={navItemClass('/dashboard/hr/expenses')}
-                onMouseEnter={(e) => handleTooltipEnter(e, "Employee Expenses")}
-                onFocus={(e) => handleTooltipEnter(e, "Employee Expenses")}
-                onMouseLeave={handleTooltipLeave}
-                onBlur={handleTooltipLeave}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Receipt className={iconClass} strokeWidth={iconStroke} />
-                  {!isDesktopCollapsed && <span>Employee Expenses</span>}
-                </div>
-              </Link>
-              <Link
-                href="/dashboard/hr/payroll"
-                className={navItemClass('/dashboard/hr/payroll')}
-                onMouseEnter={(e) => handleTooltipEnter(e, "Payroll")}
-                onFocus={(e) => handleTooltipEnter(e, "Payroll")}
-                onMouseLeave={handleTooltipLeave}
-                onBlur={handleTooltipLeave}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Wallet className={iconClass} strokeWidth={iconStroke} />
-                  {!isDesktopCollapsed && <span>Payroll</span>}
-                </div>
-              </Link>
-              <Link
-                href="/dashboard/hr/notices"
-                className={navItemClass('/dashboard/hr/notices')}
-                onMouseEnter={(e) => handleTooltipEnter(e, "Notice Board")}
-                onFocus={(e) => handleTooltipEnter(e, "Notice Board")}
-                onMouseLeave={handleTooltipLeave}
-                onBlur={handleTooltipLeave}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Megaphone className={iconClass} strokeWidth={iconStroke} />
-                  {!isDesktopCollapsed && <span>Notice Board</span>}
-                </div>
-              </Link>
-              <Link
-                href="/dashboard/hr/reports"
-                className={navItemClass('/dashboard/hr/reports')}
-                onMouseEnter={(e) => handleTooltipEnter(e, "HR Reports")}
-                onFocus={(e) => handleTooltipEnter(e, "HR Reports")}
-                onMouseLeave={handleTooltipLeave}
-                onBlur={handleTooltipLeave}
-              >
-                <div className="flex items-center gap-2.5">
-                  <BarChart3 className={iconClass} strokeWidth={iconStroke} />
-                  {!isDesktopCollapsed && <span>HR Reports</span>}
-                </div>
-              </Link>
+          {/* 4. HUMAN RESOURCES (Single Top-Level Navigation Link) */}
+          <Link
+            href="/dashboard/hr/my-leave"
+            className={navItemClass('/dashboard/hr')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Human Resources")}
+            onFocus={(e) => handleTooltipEnter(e, "Human Resources")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <UserCheck className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Human Resources</span>}
             </div>
-          )} */}
+          </Link>
 
           {/* 5. ACCOUNTING ACCORDION */}
           {/* <AccordionHeader 
