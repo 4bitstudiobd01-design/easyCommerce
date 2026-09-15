@@ -13,7 +13,9 @@ import {
   useTestChannelConnectionMutation,
   useToggleChannelActiveMutation,
   useDeleteChannelCredentialsMutation,
+  useGetAiConfigQuery,
 } from '../../api/omnichannelApi';
+import { AiAutoReplySettingsModal } from './AiAutoReplySettingsModal';
 import {
   KeyRound,
   CheckCircle2,
@@ -32,7 +34,17 @@ import {
   Loader2,
   X,
   Settings,
+  Sparkles,
+  Bot,
 } from 'lucide-react';
+
+/**
+ * The backend API origin — webhooks must be registered at this base URL, not the frontend origin.
+ * In production, this is typically your API domain (e.g. https://api.yourstore.com).
+ */
+const BACKEND_API_ORIGIN = (
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'
+).replace(/\/api\/v1\/?$/, '');
 
 export const PLATFORM_CONFIGS: Record<SocialPlatform, PlatformConfig> = {
   whatsapp: {
@@ -137,10 +149,10 @@ export const PLATFORM_CONFIGS: Record<SocialPlatform, PlatformConfig> = {
   instagram: {
     platform: 'instagram',
     name: 'Instagram Direct',
-    description: 'Direct Messages & Story Mentions via Meta Graph API.',
+    description: 'Direct Messages & Story Mentions via Meta Instagram Graph API.',
     color: '#E1306C',
-    docsUrl: 'https://developers.facebook.com/docs/messenger-platform/instagram',
-    webhookPath: '/api/v1/webhooks/facebook',
+    docsUrl: 'https://developers.facebook.com/docs/instagram-platform/instagram-api-with-instagram-login',
+    webhookPath: '/api/v1/webhooks/instagram',
     fields: [
       {
         key: 'instagramAccountId',
@@ -151,11 +163,12 @@ export const PLATFORM_CONFIGS: Record<SocialPlatform, PlatformConfig> = {
       },
       {
         key: 'accessToken',
-        label: 'Meta Graph Access Token',
+        label: 'Meta / Instagram Access Token',
         type: 'password',
-        placeholder: 'EAABsb...',
+        placeholder: 'IGAA... or EAAB...',
         required: true,
-        helperText: 'Requires instagram_basic and instagram_manage_messages permissions',
+        helperText:
+          'Supports Instagram Login (IGAA...) and Meta Graph tokens. Permissions: instagram_business_basic, instagram_business_manage_messages.',
       },
     ],
   },
@@ -222,78 +235,6 @@ export const PLATFORM_CONFIGS: Record<SocialPlatform, PlatformConfig> = {
       },
     ],
   },
-  shopify: {
-    platform: 'shopify',
-    name: 'Shopify Store Connect',
-    description: 'Sync customer order context directly into live chat conversations.',
-    color: '#95BF47',
-    docsUrl: 'https://shopify.dev/docs/apps/auth/admin-app-access-tokens',
-    webhookPath: '/api/v1/webhooks/shopify',
-    fields: [
-      {
-        key: 'shopDomain',
-        label: 'Shop Domain',
-        type: 'text',
-        placeholder: 'yourstore.myshopify.com',
-        required: true,
-      },
-      {
-        key: 'adminAccessToken',
-        label: 'Admin API Access Token',
-        type: 'password',
-        placeholder: 'shpat_...',
-        required: true,
-      },
-    ],
-  },
-  linkedin: {
-    platform: 'linkedin',
-    name: 'LinkedIn Company Page',
-    description: 'Sync company page lead messages and conversation inquiries.',
-    color: '#0A66C2',
-    docsUrl: 'https://learn.microsoft.com/en-us/linkedin/',
-    webhookPath: '/api/v1/webhooks/linkedin',
-    fields: [
-      {
-        key: 'clientId',
-        label: 'Client ID',
-        type: 'text',
-        placeholder: 'LinkedIn Client ID',
-        required: true,
-      },
-      {
-        key: 'clientSecret',
-        label: 'Client Secret',
-        type: 'password',
-        placeholder: 'Client Secret',
-        required: true,
-      },
-      {
-        key: 'accessToken',
-        label: 'OAuth 2.0 Access Token',
-        type: 'password',
-        placeholder: 'AQV...',
-        required: true,
-      },
-    ],
-  },
-  hubspot: {
-    platform: 'hubspot',
-    name: 'HubSpot CRM Sync',
-    description: 'Bi-directional sync of contacts and tickets with HubSpot.',
-    color: '#FF7A59',
-    docsUrl: 'https://developers.hubspot.com/docs/api/overview',
-    webhookPath: '/api/v1/webhooks/hubspot',
-    fields: [
-      {
-        key: 'accessToken',
-        label: 'Private App Access Token',
-        type: 'password',
-        placeholder: 'pat-na1-...',
-        required: true,
-      },
-    ],
-  },
   custom: {
     platform: 'custom',
     name: 'Custom Inbound Webhook',
@@ -321,11 +262,14 @@ export const ChannelCredentialsManager: React.FC = () => {
   const [deleteCredentials] = useDeleteChannelCredentialsMutation();
 
   const [activeModalPlatform, setActiveModalPlatform] = useState<SocialPlatform | null>(null);
+  const [isAiSettingsOpen, setIsAiSettingsOpen] = useState(false);
+  const { data: aiConfig, refetch: refetchAiConfig } = useGetAiConfigQuery();
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [showTokens, setShowTokens] = useState<Record<string, boolean>>({});
   const [testingPlatform, setTestingPlatform] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<Record<string, { success: boolean; message: string; data?: any }>>({});
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const getCredentialForPlatform = (platform: SocialPlatform): ChannelCredential | undefined => {
     return credentials.find((c) => c.platform === platform);
@@ -385,17 +329,40 @@ export const ChannelCredentialsManager: React.FC = () => {
         );
       }
 
-      case 'facebook':
-      case 'instagram': {
+      case 'facebook': {
         return [
           {
             label: 'Page Name',
             value: cred.accountHandle || m.name || 'Connected Page',
             isHighlight: true,
           },
-          { label: 'Page ID', value: c.pageId },
+          { label: 'Page ID', value: c.pageId || m.id },
           { label: 'App ID', value: c.appId },
           { label: 'Sync Engine', value: 'Messenger Webhook' },
+        ].filter((x): x is { label: string; value: string; isHighlight?: boolean } =>
+          Boolean(x.value),
+        );
+      }
+
+      case 'instagram': {
+        return [
+          {
+            label: 'Instagram Account',
+            value:
+              cred.accountHandle ||
+              (m.username ? `@${m.username}` : null) ||
+              'Connected Instagram',
+            isHighlight: true,
+          },
+          {
+            label: 'Account ID',
+            value: c.instagramAccountId || m.id || m.user_id,
+          },
+          {
+            label: 'Account Type',
+            value: m.account_type || 'Professional / Business',
+          },
+          { label: 'Sync Engine', value: 'Instagram Graph API & Webhook' },
         ].filter((x): x is { label: string; value: string; isHighlight?: boolean } =>
           Boolean(x.value),
         );
@@ -415,15 +382,6 @@ export const ChannelCredentialsManager: React.FC = () => {
         );
       }
 
-      case 'shopify': {
-        return [
-          { label: 'Shop Domain', value: c.shopDomain, isHighlight: true },
-          { label: 'Sync Engine', value: 'Admin REST API' },
-        ].filter((x): x is { label: string; value: string; isHighlight?: boolean } =>
-          Boolean(x.value),
-        );
-      }
-
       case 'x': {
         return [
           {
@@ -433,28 +391,6 @@ export const ChannelCredentialsManager: React.FC = () => {
           },
           { label: 'API Key', value: c.apiKey },
           { label: 'Sync Engine', value: 'X / Twitter API' },
-        ].filter((x): x is { label: string; value: string; isHighlight?: boolean } =>
-          Boolean(x.value),
-        );
-      }
-
-      case 'linkedin': {
-        return [
-          { label: 'Client ID', value: c.clientId, isHighlight: true },
-          { label: 'Sync Engine', value: 'LinkedIn Lead API' },
-        ].filter((x): x is { label: string; value: string; isHighlight?: boolean } =>
-          Boolean(x.value),
-        );
-      }
-
-      case 'hubspot': {
-        return [
-          {
-            label: 'Auth Type',
-            value: 'Private App Access Token',
-            isHighlight: true,
-          },
-          { label: 'Sync Engine', value: 'HubSpot REST' },
         ].filter((x): x is { label: string; value: string; isHighlight?: boolean } =>
           Boolean(x.value),
         );
@@ -478,14 +414,29 @@ export const ChannelCredentialsManager: React.FC = () => {
   const openConfigModal = (platform: SocialPlatform) => {
     const cred = getCredentialForPlatform(platform);
     setActiveModalPlatform(platform);
-    setFormData(cred?.credentials || {});
+
+    // If sensitive fields contain masked dots (••••••••), clear them so user can cleanly paste fresh token
+    const initialForm: Record<string, any> = {};
+    if (cred?.credentials) {
+      for (const [k, v] of Object.entries(cred.credentials)) {
+        if (typeof v === 'string' && v.includes('••••••••')) {
+          initialForm[k] = '';
+        } else {
+          initialForm[k] = v;
+        }
+      }
+    }
+
+    setFormData(initialForm);
     setTestResult((prev) => ({ ...prev, [platform]: undefined as any }));
+    setSaveError(null);
   };
 
   const closeConfigModal = () => {
     setActiveModalPlatform(null);
     setFormData({});
     setShowTokens({});
+    setSaveError(null);
   };
 
   const handleInputChange = (fieldKey: string, value: string) => {
@@ -505,6 +456,7 @@ export const ChannelCredentialsManager: React.FC = () => {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeModalPlatform) return;
+    setSaveError(null);
 
     try {
       await saveCredentials({
@@ -516,7 +468,8 @@ export const ChannelCredentialsManager: React.FC = () => {
       // Automatically test connection upon save
       handleTestConnection(activeModalPlatform, formData);
     } catch (err: any) {
-      alert(err?.data?.message || 'Failed to save credentials.');
+      const msg = err?.data?.message || err?.message || 'Failed to save credentials.';
+      setSaveError(msg);
     }
   };
 
@@ -550,7 +503,8 @@ export const ChannelCredentialsManager: React.FC = () => {
     try {
       await toggleActive({ platform, isActive: !currentActive }).unwrap();
     } catch (err: any) {
-      alert('Failed to toggle status.');
+      const msg = err?.data?.message || err?.message || 'Failed to toggle status.';
+      setSaveError(msg);
     }
   };
 
@@ -561,7 +515,8 @@ export const ChannelCredentialsManager: React.FC = () => {
     try {
       await deleteCredentials(platform).unwrap();
     } catch (err: any) {
-      alert('Failed to delete credentials.');
+      const msg = err?.data?.message || err?.message || 'Failed to delete credentials.';
+      setSaveError(msg);
     }
   };
 
@@ -588,6 +543,41 @@ export const ChannelCredentialsManager: React.FC = () => {
             <span>Sync Status</span>
           </button>
         </div>
+      </div>
+
+      {/* AI Auto-Reply Automation Feature Card */}
+      <div className="bg-gradient-to-r from-teal-900 via-slate-900 to-emerald-950 p-5 rounded-3xl text-white shadow-lg border border-teal-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-teal-500 to-emerald-400 flex items-center justify-center text-slate-950 shadow-md shadow-teal-500/25 shrink-0">
+            <Sparkles className="w-6 h-6" />
+          </div>
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2">
+              <h3 className="font-extrabold text-sm text-white">AI Auto-Reply Automation</h3>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide ${
+                  aiConfig?.isEnabled
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                    : 'bg-slate-700/60 text-slate-300 border border-slate-600'
+                }`}
+              >
+                {aiConfig?.isEnabled ? `Active (${aiConfig.model || 'Gemini'})` : 'Disabled'}
+              </span>
+            </div>
+            <p className="text-xs text-slate-300">
+              Auto-respond to customer messages when human agents are away. Auto-pauses on agent takeover.
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setIsAiSettingsOpen(true)}
+          className="px-4 py-2.5 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs rounded-xl shadow-md shadow-teal-500/20 flex items-center gap-1.5 transition-all self-start sm:self-auto shrink-0"
+        >
+          <Settings className="w-3.5 h-3.5" />
+          <span>Configure AI Auto-Reply</span>
+        </button>
       </div>
 
       {/* Grid of Platforms */}
@@ -748,7 +738,7 @@ export const ChannelCredentialsManager: React.FC = () => {
                       <button
                         onClick={() =>
                           handleCopy(
-                            `${typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5001'}${config.webhookPath}`,
+                            `${BACKEND_API_ORIGIN}${config.webhookPath}`,
                             platform
                           )
                         }
@@ -768,7 +758,7 @@ export const ChannelCredentialsManager: React.FC = () => {
                       </button>
                     </div>
                     <p className="text-[10px] font-mono text-slate-600 truncate">
-                      {config.webhookPath}
+                      {`${BACKEND_API_ORIGIN}${config.webhookPath}`}
                     </p>
                   </div>
                 )}
@@ -852,6 +842,9 @@ export const ChannelCredentialsManager: React.FC = () => {
                   const isPass = field.type === 'password';
                   const isVisible = showTokens[field.key];
                   const value = formData[field.key] || '';
+                  const hasSavedToken = Boolean(
+                    getCredentialForPlatform(activeModalPlatform)?.credentials?.[field.key],
+                  );
 
                   return (
                     <div key={field.key} className="space-y-1.5">
@@ -872,8 +865,12 @@ export const ChannelCredentialsManager: React.FC = () => {
                           type={isPass && !isVisible ? 'password' : 'text'}
                           value={value}
                           onChange={(e) => handleInputChange(field.key, e.target.value)}
-                          placeholder={field.placeholder}
-                          required={field.required}
+                          placeholder={
+                            isPass && hasSavedToken && !value
+                              ? '•••••••• (Already configured — Paste new token to update)'
+                              : field.placeholder
+                          }
+                          required={field.required && !hasSavedToken}
                           className="w-full p-2.5 pr-10 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-mono placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/30"
                         />
 
@@ -887,6 +884,11 @@ export const ChannelCredentialsManager: React.FC = () => {
                           </button>
                         )}
                       </div>
+                      {isPass && value && (
+                        <p className="text-[10px] text-emerald-600 font-medium">
+                          ✓ New token entered ({value.length} characters)
+                        </p>
+                      )}
                     </div>
                   );
                 })}
@@ -898,15 +900,13 @@ export const ChannelCredentialsManager: React.FC = () => {
                   </label>
                   <div className="p-3 bg-slate-100 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
                     <span className="font-mono text-slate-700 truncate text-[11px]">
-                      {typeof window !== 'undefined'
-                        ? `${window.location.origin}${PLATFORM_CONFIGS[activeModalPlatform].webhookPath}`
-                        : `http://localhost:5001${PLATFORM_CONFIGS[activeModalPlatform].webhookPath}`}
+                      {`${BACKEND_API_ORIGIN}${PLATFORM_CONFIGS[activeModalPlatform].webhookPath}`}
                     </span>
                     <button
                       type="button"
                       onClick={() =>
                         handleCopy(
-                          `${typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5001'}${PLATFORM_CONFIGS[activeModalPlatform].webhookPath}`,
+                          `${BACKEND_API_ORIGIN}${PLATFORM_CONFIGS[activeModalPlatform].webhookPath}`,
                           'modal-webhook'
                         )
                       }
@@ -948,13 +948,34 @@ export const ChannelCredentialsManager: React.FC = () => {
                       <div className="font-bold">
                         {testResult[activeModalPlatform]?.success ? 'Connection Validated' : 'Connection Failed'}
                       </div>
-                      <div className="text-[11px] text-slate-700">
-                        {testResult[activeModalPlatform]?.message}
+                      <div className="text-[11px] text-slate-700 break-words">
+                        {testResult[activeModalPlatform]?.message ||
+                          (testResult[activeModalPlatform]?.success
+                            ? 'Channel credentials verified successfully.'
+                            : 'Connection test failed. Please verify your token and account ID.')}
                       </div>
                     </div>
                   </div>
                 )}
               </div>
+
+              {/* Save Error Banner */}
+              {saveError && (
+                <div className="mx-6 mb-3 p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2.5 text-xs text-red-900">
+                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-bold">Error</div>
+                    <div className="text-[11px]">{saveError}</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSaveError(null)}
+                    className="ml-auto text-red-400 hover:text-red-700"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
 
               {/* Modal Footer */}
               <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
@@ -991,6 +1012,14 @@ export const ChannelCredentialsManager: React.FC = () => {
           </div>
         </div>
       )}
+      {/* AI Auto-Reply Settings Modal */}
+      <AiAutoReplySettingsModal
+        isOpen={isAiSettingsOpen}
+        onClose={() => {
+          setIsAiSettingsOpen(false);
+          refetchAiConfig();
+        }}
+      />
     </div>
   );
 };

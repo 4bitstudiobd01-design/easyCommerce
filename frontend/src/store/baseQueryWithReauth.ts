@@ -40,7 +40,8 @@ class SimpleMutex {
 }
 
 const AUTH_BASE_URL = (
-  process.env.NEXT_PUBLIC_AUTH_API_URL || 'http://localhost:5001/api/v1/auth'
+  process.env.NEXT_PUBLIC_AUTH_API_URL ||
+  `${(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1').replace(/\/+$/, '')}/auth`
 ).replace(/\/+$/, '');
 
 /**
