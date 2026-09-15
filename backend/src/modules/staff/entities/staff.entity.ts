@@ -35,7 +35,16 @@ export type StaffPermissionType =
   | 'analytics:read'
   | 'settings:read'
   | 'settings:write'
-  | 'staff:manage';
+  | 'staff:manage'
+  | 'hr:employees:manage'
+  | 'hr:employees:read'
+  | 'hr:attendance:manage'
+  | 'hr:leave:manage'
+  | 'hr:leave:self'
+  | 'hr:shifts:manage'
+  | 'hr:expenses:manage'
+  | 'hr:payroll:manage'
+  | 'hr:notices:manage';
 
 @Entity('staff_members')
 export class StaffMemberEntity {

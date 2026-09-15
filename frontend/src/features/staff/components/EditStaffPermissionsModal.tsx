@@ -68,6 +68,20 @@ const PERMISSION_GROUPS: {
       { key: 'staff:manage', label: 'Manage Staff', desc: 'স্টাফ ম্যানেজমেন্ট' },
     ],
   },
+  {
+    category: '👥 Human Resources',
+    items: [
+      { key: 'hr:employees:read', label: 'View Employees', desc: 'এমপ্লয়ি ডিরেক্টরি ভিউ' },
+      { key: 'hr:employees:manage', label: 'Manage Employees', desc: 'এমপ্লয়ি ও ডিপার্টমেন্ট ম্যানেজমেন্ট' },
+      { key: 'hr:attendance:manage', label: 'Manage Attendance', desc: 'অ্যাটেন্ডেন্স ট্র্যাকিং' },
+      { key: 'hr:leave:manage', label: 'Approve Leave', desc: 'ছুটির আবেদন এপ্রুভাল' },
+      { key: 'hr:leave:self', label: 'Self-Service Leave', desc: 'নিজের ছুটি দেখা ও আবেদন' },
+      { key: 'hr:shifts:manage', label: 'Manage Shifts', desc: 'শিফট রোস্টার ম্যানেজমেন্ট' },
+      { key: 'hr:expenses:manage', label: 'Manage Expenses', desc: 'খরচ রেকর্ড ম্যানেজমেন্ট' },
+      { key: 'hr:payroll:manage', label: 'Manage Payroll', desc: 'পে-রোল ও ট্যাক্স প্রসেসিং' },
+      { key: 'hr:notices:manage', label: 'Manage Notice Board', desc: 'নোটিশ পোস্টিং' },
+    ],
+  },
 ];
 
 export const EditStaffPermissionsModal: React.FC<EditStaffPermissionsModalProps> = ({

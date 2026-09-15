@@ -29,6 +29,7 @@ import { MarketingModule } from './modules/marketing/marketing.module';
 import { TrackingModule } from './modules/tracking/tracking.module';
 import { BlogModule } from './modules/blog/blog.module';
 import { FileModule } from './modules/file/file.module';
+import { HrmModule } from './modules/hrm/hrm.module';
 import { NotificationModule } from './common/notification/notification.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { APP_FILTER } from '@nestjs/core';
@@ -46,6 +47,11 @@ import { APP_FILTER } from '@nestjs/core';
         connection: {
           host: config.get<string>('REDIS_HOST', 'localhost'),
           port: config.get<number>('REDIS_PORT', 6379),
+          // Local dev without Redis running: fail fast instead of retrying forever,
+          // so boot doesn't hang. Queue-backed features (email/SMS) just won't fire.
+          retryStrategy: () => null,
+          enableReadyCheck: false,
+          maxRetriesPerRequest: 1,
         },
         defaultJobOptions: {
           attempts: 3,
@@ -90,6 +96,7 @@ import { APP_FILTER } from '@nestjs/core';
     TrackingModule,
     BlogModule,
     FileModule,
+    HrmModule,
   ],
   controllers: [],
   providers: [
