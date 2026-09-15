@@ -374,37 +374,19 @@ export function CustomerDetailDrawer({
                   <h3 className="font-extrabold text-lg text-slate-900 truncate">
                     {customer.firstName} {customer.lastName}
                   </h3>
-                  <div className="flex items-center gap-1.5 flex-wrap shrink-0">
-                    {customer.hasAccount ? (
-                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200 inline-flex items-center gap-1">
-                        <UserCheck className="w-3 h-3 text-blue-600" />
-                        Member
-                      </span>
-                    ) : (
-                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200 inline-flex items-center gap-1">
-                        <User className="w-3 h-3 text-amber-600" />
-                        Guest
-                      </span>
-                    )}
-
-                    {customer.status === 'ACTIVE' ? (
-                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        Active
-                      </span>
-                    ) : customer.status === 'BLOCKED' ? (
-                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                        Blocked
-                      </span>
-                    ) : customer.status === 'GUEST' ? (
-                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                        Guest
-                      </span>
-                    ) : (
-                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
-                        Inactive
-                      </span>
-                    )}
-                  </div>
+                  {customer.status === 'ACTIVE' ? (
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                      Active
+                    </span>
+                  ) : customer.status === 'BLOCKED' ? (
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200 shrink-0">
+                      Blocked
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
+                      Inactive
+                    </span>
+                  )}
                 </div>
 
                 <div className="mt-2 space-y-1 text-xs text-slate-600">
@@ -623,16 +605,6 @@ export function CustomerDetailDrawer({
                     <div>
                       <p className="text-slate-400 font-medium">Marketing Origin</p>
                       <p className="font-bold text-blue-700 mt-0.5">{getOriginLabel(customer) ?? 'Direct / Organic'}</p>
-                    </div>
-                    <div>
-                      <p className="text-slate-400 font-medium">Account Type</p>
-                      <p className="font-bold mt-0.5">
-                        {customer.hasAccount ? (
-                          <span className="text-blue-700 font-bold">Registered Member</span>
-                        ) : (
-                          <span className="text-amber-700 font-bold">Guest (No Login Account)</span>
-                        )}
-                      </p>
                     </div>
                   </div>
 

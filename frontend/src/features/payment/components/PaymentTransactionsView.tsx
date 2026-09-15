@@ -336,7 +336,7 @@ export const PaymentTransactionsView = () => {
           </button>
 
           <Link
-            href="/dashboard/settings/theme"
+            href="/dashboard/settings/payment"
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           >
             <Settings className="w-3.5 h-3.5" aria-hidden="true" />

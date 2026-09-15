@@ -16,10 +16,9 @@ import {
 
 interface StorefrontMobileBottomNavProps {
   slug?: string;
-  primaryColor?: string;
 }
 
-export function StorefrontMobileBottomNav({ slug = 'main', primaryColor = '#2563eb' }: StorefrontMobileBottomNavProps) {
+export function StorefrontMobileBottomNav({ slug = 'main' }: StorefrontMobileBottomNavProps) {
   const pathname = usePathname();
   const dispatch = useDispatch();
   const cartItems = useSelector((state: RootState) => state.cart.items);
@@ -81,16 +80,12 @@ export function StorefrontMobileBottomNav({ slug = 'main', primaryColor = '#2563
         <button
           type="button"
           onClick={() => dispatch(toggleCartDrawer())}
-          className="flex items-center gap-1.5 hover:brightness-110 text-white text-[11px] font-bold py-2 px-4 rounded-full shadow-lg active:scale-90 transition-transform relative cursor-pointer"
-          style={{ backgroundColor: primaryColor, boxShadow: `0 8px 20px -4px ${primaryColor}66` }}
+          className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold py-2 px-4 rounded-full shadow-lg shadow-blue-600/40 active:scale-90 transition-transform relative cursor-pointer"
         >
           <div className="relative">
             <ShoppingBag className="w-4 h-4" />
             {mounted && totalItemCount > 0 && (
-              <span
-                className="absolute -top-1.5 -right-2 w-4 h-4 rounded-full bg-white text-[9px] font-black flex items-center justify-center shadow-xs"
-                style={{ color: primaryColor }}
-              >
+              <span className="absolute -top-1.5 -right-2 w-4 h-4 rounded-full bg-white text-blue-700 text-[9px] font-black flex items-center justify-center shadow-xs">
                 {totalItemCount}
               </span>
             )}

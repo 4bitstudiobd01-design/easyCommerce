@@ -114,13 +114,11 @@ export class OmnichannelCredentialsService {
         defaultHandle = `Phone ID: ${dto.credentials.phoneNumberId}`;
       } else if (dto.platform === 'facebook' && dto.credentials.pageId) {
         defaultHandle = `Page ID: ${dto.credentials.pageId}`;
-      } else if (dto.platform === 'messenger' && dto.credentials.pageId) {
-        defaultHandle = `Messenger Page ID: ${dto.credentials.pageId}`;
       } else if (dto.platform === 'instagram') {
         const igId = dto.credentials.instagramAccountId || dto.credentials.pageId;
         if (igId) defaultHandle = `IG ID: ${igId}`;
-      } else if (dto.platform === 'tiktok' && (dto.credentials.accountHandle || dto.credentials.clientKey)) {
-        defaultHandle = dto.credentials.accountHandle ? `@${dto.credentials.accountHandle}` : `TikTok: ${dto.credentials.clientKey}`;
+      } else if (dto.platform === 'slack' && dto.credentials.defaultChannel) {
+        defaultHandle = `#${dto.credentials.defaultChannel}`;
       }
     }
 
@@ -155,19 +153,6 @@ export class OmnichannelCredentialsService {
       }
 
       return this.credentialRepo.save(existing);
-    }
-
-    if (dto.platform === 'facebook' || dto.platform === 'messenger') {
-      const fbToken =
-        dto.credentials?.pageAccessToken ||
-        dto.credentials?.accessToken ||
-        (existing?.credentials as any)?.pageAccessToken;
-      if (fbToken && typeof fbToken === 'string' && !fbToken.includes('••••••••')) {
-        fetch(
-          `https://graph.facebook.com/v19.0/me/subscribed_apps?subscribed_fields=messages,messaging_postbacks,messaging_optins,message_deliveries,message_reads&access_token=${encodeURIComponent(fbToken.trim())}`,
-          { method: 'POST' },
-        ).catch(() => {});
-      }
     }
 
     const created = this.credentialRepo.create({
@@ -300,8 +285,7 @@ export class OmnichannelCredentialsService {
           };
         }
 
-        case 'facebook':
-        case 'messenger': {
+        case 'facebook': {
           const token = credsToTest.pageAccessToken || credsToTest.accessToken;
           const pageId = credsToTest.pageId;
           if (!token) {
@@ -328,13 +312,13 @@ export class OmnichannelCredentialsService {
               }
               return {
                 success: true,
-                message: `${platform === 'messenger' ? 'Messenger' : 'Facebook'} Page Token verified for ${displayName}`,
+                message: `Facebook Messenger Page Token verified for ${displayName}`,
                 data: { id: pageId, name: displayName },
               };
             }
 
             const errMsg =
-              data.error?.message || `Failed to authenticate ${platform}`;
+              data.error?.message || `Failed to authenticate facebook`;
             if (existing) {
               existing.status = 'error';
               await this.credentialRepo.save(existing);
@@ -355,7 +339,7 @@ export class OmnichannelCredentialsService {
 
           return {
             success: true,
-            message: `${platform.toUpperCase()} connected successfully for ${pageName}`,
+            message: `FACEBOOK connected successfully for ${pageName}`,
             data,
           };
         }
@@ -531,60 +515,40 @@ export class OmnichannelCredentialsService {
           };
         }
 
-        case 'tiktok': {
-          const clientKey = credsToTest.clientKey || credsToTest.appId;
-          const accessToken = credsToTest.accessToken;
-          if (!clientKey && !accessToken) {
+        case 'slack': {
+          const { botToken } = credsToTest;
+          if (!botToken) {
             return {
               success: false,
-              message: 'TikTok Client Key or Access Token is required.',
+              message: 'Slack Bot Token (xoxb-...) is required.',
             };
           }
 
-          let tiktokData: any = null;
-          let isVerified = false;
+          const response = await fetch('https://slack.com/api/auth.test', {
+            headers: { Authorization: `Bearer ${botToken.trim()}` },
+          });
+          const data = await response.json();
 
-          if (accessToken) {
-            try {
-              const res = await fetch(
-                'https://open.tiktokapis.com/v2/user/info/?fields=open_id,union_id,avatar_url,display_name',
-                {
-                  headers: {
-                    Authorization: `Bearer ${accessToken.trim()}`,
-                  },
-                },
-              );
-              const json = await res.json();
-              if (res.ok && json.data?.user) {
-                tiktokData = json.data.user;
-                isVerified = true;
-              }
-            } catch (e: any) {
-              this.logger.warn(`[TikTok] validation notice: ${e.message}`);
+          if (!data.ok) {
+            if (existing) {
+              existing.status = 'error';
+              await this.credentialRepo.save(existing);
             }
+            return { success: false, message: data.error || 'Invalid Slack token' };
           }
 
-          const displayName =
-            tiktokData?.display_name
-              ? `@${tiktokData.display_name}`
-              : clientKey
-              ? `@tiktok_${String(clientKey).slice(0, 8)}`
-              : 'TikTok Business Account';
-
           if (existing) {
-            existing.status = isVerified || accessToken ? 'connected' : 'pending';
-            existing.accountHandle = displayName;
+            existing.status = 'connected';
+            existing.accountHandle = `@${data.user} in team ${data.team}`;
             existing.lastSyncedAt = new Date();
-            existing.metadata = { ...existing.metadata, ...(tiktokData || {}) };
+            existing.metadata = { ...existing.metadata, ...data };
             await this.credentialRepo.save(existing);
           }
 
           return {
             success: true,
-            message: isVerified
-              ? `TikTok Business connected successfully for ${displayName}`
-              : `TikTok credentials saved and verified for ${displayName}.`,
-            data: tiktokData,
+            message: `Slack connected successfully as @${data.user} in workspace ${data.team}`,
+            data,
           };
         }
 
@@ -608,7 +572,7 @@ export class OmnichannelCredentialsService {
 
           return {
             success: true,
-            message: `${String(platform).toUpperCase()} credentials validated successfully!`,
+            message: `${platform.toUpperCase()} credentials validated successfully!`,
           };
         }
       }

@@ -34,10 +34,6 @@
 - [ ] Cart, Checkout & Orders Pipeline.
 - [ ] bKash, Nagad, and COD Payment Module.
 - [ ] Courier APIs (Steadfast, Pathao) Integration.
-- [x] ✔ Marketing — multi-instance pixels + per-page targeting + browser & server-side
-      (Meta CAPI / TikTok Events API / GA4 MP / Google Ads) dispatch + Sales-by-Source
-      report with ROAS/CPA and event log. Legacy `stores.*PixelId` columns dropped.
-      See `docs/PIXEL_AND_MARKETING_WORKFLOW.md`.
 
 
 ---

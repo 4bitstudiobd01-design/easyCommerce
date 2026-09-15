@@ -42,12 +42,7 @@ export class PermissionsGuard implements CanActivate {
     }
 
     const storeId = request.headers['x-store-id'] as string | undefined;
-    const branchId = request.headers['x-branch-id'] as string | undefined;
-    const { permissions, isOwner } = await this.getMyPermissionsService.execute(
-      userId,
-      storeId,
-      branchId,
-    );
+    const { permissions, isOwner } = await this.getMyPermissionsService.execute(userId, storeId);
 
     // Owners and super admins resolve to the full permission set already.
     if (isOwner) {

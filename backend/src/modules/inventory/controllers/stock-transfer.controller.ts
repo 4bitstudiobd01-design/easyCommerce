@@ -1,11 +1,10 @@
-import { Controller, Post, Get, Body, Param, Query, Headers, UseGuards, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Get, Body, Headers, UseGuards, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { StockTransferService } from '../services/stock-transfer.service';
 import { FindStoreByUserService } from '../../tenant/services/find-store-by-user.service';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { TransferStockDto } from '../dto/transfer-stock.dto';
-import { ListStockTransfersQueryDto } from '../dto/list-stock-transfers-query.dto';
 
 @ApiTags('Multi-Warehouse Stock Transfers')
 @Controller('inventory/transfers')
@@ -36,7 +35,7 @@ export class StockTransferController {
     @Headers('x-store-id') storeId?: string,
   ) {
     const tenantId = await this.getMerchantTenantId(userId, storeId);
-    return this.stockTransferService.transferStock(tenantId, { ...dto, createdByUserId: userId });
+    return this.stockTransferService.transferStock(tenantId, dto);
   }
 
   @Get()
@@ -48,37 +47,9 @@ export class StockTransferController {
   @ApiResponse({ status: 400, description: 'Merchant has not created a store yet' })
   async listTransfers(
     @CurrentUser('sub') userId: string,
-    @Query() query: ListStockTransfersQueryDto,
     @Headers('x-store-id') storeId?: string,
   ) {
     const tenantId = await this.getMerchantTenantId(userId, storeId);
-    return this.stockTransferService.listStockTransfers(tenantId, query);
-  }
-
-  @Get('branches/stock')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'List stock across every branch (for per-branch unit counts on the Branches page)' })
-  @ApiResponse({ status: 200, description: 'Stock rows across all branches' })
-  async listAllBranchesStock(
-    @CurrentUser('sub') userId: string,
-    @Headers('x-store-id') storeId?: string,
-  ) {
-    const tenantId = await this.getMerchantTenantId(userId, storeId);
-    return this.stockTransferService.listAllBranchesStock(tenantId);
-  }
-
-  @Get('branches/:branchId/stock')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: "List a branch's own stock (products/variants and quantities)" })
-  @ApiResponse({ status: 200, description: 'Stock rows for the branch' })
-  async listBranchStock(
-    @CurrentUser('sub') userId: string,
-    @Param('branchId') branchId: string,
-    @Headers('x-store-id') storeId?: string,
-  ) {
-    const tenantId = await this.getMerchantTenantId(userId, storeId);
-    return this.stockTransferService.listBranchStock(tenantId, branchId);
+    return this.stockTransferService.listStockTransfers(tenantId);
   }
 }

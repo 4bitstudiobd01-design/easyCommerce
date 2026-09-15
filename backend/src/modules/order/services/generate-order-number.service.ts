@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { OrderNumberSequenceEntity } from '../entities/order-number-sequence.entity';
 
-const DEFAULT_NUMBER_PREFIX = 'ORD-';
+const NUMBER_PREFIX = 'ORD-';
 const PAD_LENGTH = 6;
 
 @Injectable()
@@ -12,7 +12,7 @@ export class GenerateOrderNumberService {
    * `FOR UPDATE` lock actually serializes concurrent callers for this tenant — calling
    * it outside a transaction would still work but loses the collision guarantee.
    */
-  async execute(manager: EntityManager, tenantId: string, prefix?: string): Promise<string> {
+  async execute(manager: EntityManager, tenantId: string): Promise<string> {
     let sequence = await manager.findOne(OrderNumberSequenceEntity, {
       where: { tenantId },
       lock: { mode: 'pessimistic_write' },
@@ -38,7 +38,6 @@ export class GenerateOrderNumberService {
     const nextValue = (sequence?.lastValue ?? 0) + 1;
     await manager.update(OrderNumberSequenceEntity, { tenantId }, { lastValue: nextValue });
 
-    const numberPrefix = prefix || DEFAULT_NUMBER_PREFIX;
-    return `${numberPrefix}${nextValue.toString().padStart(PAD_LENGTH, '0')}`;
+    return `${NUMBER_PREFIX}${nextValue.toString().padStart(PAD_LENGTH, '0')}`;
   }
 }

@@ -18,6 +18,7 @@ describe('sanitizePublicStore', () => {
       heroBanners: [],
       ownerId: 'owner-1',
       tenantId: 'tenant-1',
+      facebookCapiToken: 'EAAG-secret',
       steadfastApiKey: 'sf-secret',
       steadfastSecretKey: 'sf-secret-2',
       pathaoClientId: 'pathao-id',
@@ -37,6 +38,7 @@ describe('sanitizePublicStore', () => {
     const sanitized = sanitizePublicStore(buildStore());
 
     expect(sanitized).not.toHaveProperty('ownerId');
+    expect(sanitized).not.toHaveProperty('facebookCapiToken');
     expect(sanitized).not.toHaveProperty('steadfastApiKey');
     expect(sanitized).not.toHaveProperty('steadfastSecretKey');
     expect(sanitized).not.toHaveProperty('pathaoClientId');

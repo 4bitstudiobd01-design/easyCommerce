@@ -16,8 +16,6 @@ export interface CategoryListItem {
   icon?: string;
   image?: string;
   isFeatured: boolean;
-  isVisible: boolean;
-  showInStorefront: boolean;
   tenantId: string;
   createdAt: Date;
   updatedAt: Date;
@@ -141,8 +139,6 @@ export class ListCategoriesService {
         icon: entity.icon,
         image: entity.image,
         isFeatured: entity.isFeatured,
-        isVisible: entity.isVisible,
-        showInStorefront: entity.showInStorefront,
         tenantId: entity.tenantId,
         createdAt: entity.createdAt,
         updatedAt: entity.updatedAt,

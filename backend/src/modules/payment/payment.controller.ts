@@ -29,6 +29,7 @@ import { GetPaymentSummaryService } from './services/get-payment-summary.service
 import { GetPaymentDetailsService } from './services/get-payment-details.service';
 import { ListPaymentGatewaysService } from './services/list-payment-gateways.service';
 import { ExportPaymentTransactionsService } from './services/export-payment-transactions.service';
+import { SeedPaymentDemoDataService } from './services/seed-payment-demo-data.service';
 import { GetOrderBalanceService } from './services/get-order-balance.service';
 import { GetOrderPaymentHistoryService } from './services/get-order-payment-history.service';
 import { RecordManualPaymentService } from './services/record-manual-payment.service';
@@ -43,6 +44,7 @@ import {
   PaymentGatewaySummaryDto,
 } from './dto/payment-summary-response.dto';
 import { PaymentDetailsResponseDto } from './dto/payment-details-response.dto';
+import { SeedPaymentDemoDataResponseDto } from './dto/seed-payment-demo-data-response.dto';
 import { RecordManualPaymentDto } from './dto/record-manual-payment.dto';
 import { VoidPaymentDto } from './dto/void-payment.dto';
 import { CreatePaymentLinkDto } from './dto/create-payment-link.dto';
@@ -60,6 +62,7 @@ export class PaymentController {
     private readonly getPaymentDetailsService: GetPaymentDetailsService,
     private readonly listPaymentGatewaysService: ListPaymentGatewaysService,
     private readonly exportPaymentTransactionsService: ExportPaymentTransactionsService,
+    private readonly seedPaymentDemoDataService: SeedPaymentDemoDataService,
     private readonly getOrderBalanceService: GetOrderBalanceService,
     private readonly getOrderPaymentHistoryService: GetOrderPaymentHistoryService,
     private readonly recordManualPaymentService: RecordManualPaymentService,
@@ -107,16 +110,13 @@ export class PaymentController {
       status: payload.status,
     });
 
-    const slug = result.storeSlug || '';
-    const base = slug ? `${frontendUrl}/store/${encodeURIComponent(slug)}` : frontendUrl;
-
     if (result.success) {
       return res.redirect(
-        `${base}/checkout/success?orderNumber=${encodeURIComponent(result.orderNumber || '')}&storeSlug=${encodeURIComponent(slug)}`,
+        `${frontendUrl}/checkout/success?orderNumber=${result.orderNumber || ''}&status=SUCCESS`,
       );
     }
 
-    return res.redirect(`${base}/checkout?status=FAIL`);
+    return res.redirect(`${frontendUrl}/checkout?status=FAIL`);
   }
 
   @Post('sslcommerz/fail')
@@ -242,6 +242,24 @@ export class PaymentController {
   ): Promise<PaymentGatewaySummaryDto[]> {
     const tenantId = await this.getMerchantTenantId(userId, storeId);
     return this.listPaymentGatewaysService.execute(tenantId);
+  }
+
+  @Post('transactions/seed-demo-data')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('orders:manage')
+  @ApiOperation({ summary: 'Seed realistic payment demo transactions, refunds and events' })
+  @ApiResponse({ status: 200, description: 'Demo data seeded', type: SeedPaymentDemoDataResponseDto })
+  @ApiResponse({ status: 403, description: 'Demo seeder disabled in production environment' })
+  async seedPaymentDemoData(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') storeId?: string,
+  ): Promise<SeedPaymentDemoDataResponseDto> {
+    const store = await this.findStoreByUserService.execute(userId, storeId);
+    if (!store) {
+      throw new BadRequestException('Merchant must create a store before seeding payments.');
+    }
+    return this.seedPaymentDemoDataService.execute(store.tenantId, store.slug);
   }
 
   @Get('transactions/:id')

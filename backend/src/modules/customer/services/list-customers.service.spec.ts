@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { ListCustomersService } from './list-customers.service';
-import { SeedCustomersService } from './seed-customers.service';
 import { CustomerEntity } from '../entities/customer.entity';
 import { CustomerSegmentEntity } from '../entities/customer-segment.entity';
 
@@ -12,15 +11,10 @@ describe('ListCustomersService', () => {
   let segmentRepository: any;
   let dataSource: any;
   let queryBuilder: any;
-  let seedCustomersService: any;
 
   const mockTenantId = 'tenant-uuid-1';
 
   beforeEach(async () => {
-    seedCustomersService = {
-      execute: jest.fn().mockResolvedValue([]),
-    };
-
     queryBuilder = {
       where: jest.fn().mockReturnThis(),
       andWhere: jest.fn().mockReturnThis(),
@@ -51,7 +45,6 @@ describe('ListCustomersService', () => {
 
     repository = {
       createQueryBuilder: jest.fn(() => queryBuilder),
-      count: jest.fn().mockResolvedValue(5),
     };
 
     segmentRepository = {
@@ -96,10 +89,6 @@ describe('ListCustomersService', () => {
           provide: DataSource,
           useValue: dataSource,
         },
-        {
-          provide: SeedCustomersService,
-          useValue: seedCustomersService,
-        },
       ],
     }).compile();
 
@@ -114,7 +103,7 @@ describe('ListCustomersService', () => {
     expect(result.data[0].id).toBe('cust-1');
     expect(result.data[0].ordersCount).toBe(3);
     expect(result.data[0].totalSpent).toBe(4500);
-    expect(result.meta.statusCounts).toEqual({ ALL: 12, ACTIVE: 10, INACTIVE: 2, BLOCKED: 0, GUEST: 0 });
+    expect(result.meta.statusCounts).toEqual({ ALL: 12, ACTIVE: 10, INACTIVE: 2, BLOCKED: 0 });
   });
 
   it('should filter by search term across name, email, and phone', async () => {

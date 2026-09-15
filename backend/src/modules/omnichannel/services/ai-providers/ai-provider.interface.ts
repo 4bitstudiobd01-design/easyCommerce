@@ -31,7 +31,7 @@ export interface TestConnectionResult {
 }
 
 export interface IAiProvider {
-  readonly providerName: 'gemini' | 'openai' | 'claude' | 'deepseek' | 'groq';
+  readonly providerName: 'gemini' | 'openai';
   generateReply(params: GenerateReplyParams): Promise<GenerateReplyResult>;
   testConnection(apiKey: string, model: string): Promise<TestConnectionResult>;
 }

@@ -33,34 +33,9 @@ export type StaffPermissionType =
   | 'coupons:read'
   | 'coupons:write'
   | 'analytics:read'
-  | 'marketing:read'
-  | 'marketing:manage'
   | 'settings:read'
   | 'settings:write'
-  | 'staff:manage'
-  | 'hr:employees:manage'
-  | 'hr:employees:read'
-  | 'hr:attendance:manage'
-  | 'hr:leave:manage'
-  | 'hr:leave:self'
-  | 'hr:shifts:manage'
-  | 'hr:expenses:manage'
-  | 'hr:payroll:manage'
-  | 'hr:notices:manage'
-  | 'finance:read'
-  | 'finance:manage'
-  | 'finance:transactions:manage'
-  | 'finance:invoices:manage'
-  | 'finance:bills:manage'
-  | 'finance:accounts:manage'
-  | 'finance:transfers:manage'
-  | 'finance:reports:read'
-  | 'finance:settings:manage'
-  | 'accounting:read'
-  | 'accounting:manage'
-  | 'accounting:settings:manage'
-  | 'purchases:read'
-  | 'purchases:manage';
+  | 'staff:manage';
 
 @Entity('staff_members')
 export class StaffMemberEntity {
@@ -72,15 +47,6 @@ export class StaffMemberEntity {
 
   @Column({ type: 'uuid' })
   storeId: string;
-
-  /**
-   * Raw branch reference (no relation object — cross-module entity relations are
-   * forbidden by this repo's module-boundary rules). Null means "store-wide": the
-   * staff member works across every branch of their store. This is the default and
-   * must remain the behavior for every staff row created before branch scoping existed.
-   */
-  @Column({ type: 'uuid', nullable: true })
-  branchId?: string;
 
   @Column({ type: 'uuid', nullable: true })
   userId?: string;

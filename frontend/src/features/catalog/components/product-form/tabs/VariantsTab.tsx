@@ -12,13 +12,11 @@ export function VariantsTab({ form }: VariantsTabProps) {
   const {
     hasVariants,
     setHasVariants,
-    pendingVariants,
-    setPendingVariants,
     numericBasePrice,
-    numericCompareAt,
     currencySymbol,
     editId,
     sourceProduct,
+    ensureProductSaved,
   } = form;
 
   return (
@@ -27,11 +25,9 @@ export function VariantsTab({ form }: VariantsTabProps) {
       hasVariants={hasVariants}
       onHasVariantsChange={setHasVariants}
       existingVariants={sourceProduct?.variants || []}
-      pendingVariants={pendingVariants}
-      onPendingVariantsChange={setPendingVariants}
       basePrice={numericBasePrice}
-      compareAtPrice={numericCompareAt}
       currencySymbol={currencySymbol}
+      onEnsureSaved={ensureProductSaved}
     />
   );
 }

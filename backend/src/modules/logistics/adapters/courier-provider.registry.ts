@@ -5,6 +5,7 @@ import { SteadfastCourierAdapter } from './steadfast.adapter';
 import { PathaoCourierAdapter } from './pathao.adapter';
 import { PaperflyCourierAdapter } from './paperfly.adapter';
 import { RedxCourierAdapter } from './redx.adapter';
+import { ParceldexCourierAdapter } from './parceldex.adapter';
 import { CarrybeeCourierAdapter } from './carrybee.adapter';
 
 /**
@@ -24,10 +25,11 @@ export class CourierProviderRegistry {
     pathao: PathaoCourierAdapter,
     paperfly: PaperflyCourierAdapter,
     redx: RedxCourierAdapter,
+    parceldex: ParceldexCourierAdapter,
     carrybee: CarrybeeCourierAdapter,
   ) {
     this.adapters = new Map(
-      [steadfast, pathao, paperfly, redx, carrybee].map((adapter) => [
+      [steadfast, pathao, paperfly, redx, parceldex, carrybee].map((adapter) => [
         adapter.provider,
         adapter,
       ]),

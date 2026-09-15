@@ -13,15 +13,16 @@ import {
   Loader2,
   AlertCircle,
   X,
+  Database,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import {
   useGetShipmentsQuery,
   useGetShipmentSummaryQuery,
   useGetCourierProvidersQuery,
   useCancelShipmentMutation,
   useSyncShipmentMutation,
+  useSeedShipmentDemoDataMutation,
   type Shipment,
   type ShipmentFilters,
   type ShipmentStatus,
@@ -206,8 +207,9 @@ export const ShipmentsView = () => {
 
   const { data: couriers } = useGetCourierProvidersQuery();
 
-  const [cancelShipment, { isLoading: isCancellingShipment }] = useCancelShipmentMutation();
+  const [cancelShipment] = useCancelShipmentMutation();
   const [syncShipment] = useSyncShipmentMutation();
+  const [seedDemoData, { isLoading: isSeeding }] = useSeedShipmentDemoDataMutation();
 
   const shipments = shipmentsData?.data ?? [];
   const meta = shipmentsData?.meta ?? { page: 1, limit: limitParam, total: 0, totalPages: 0 };
@@ -301,18 +303,15 @@ export const ShipmentsView = () => {
     }
   };
 
-  const [shipmentPendingCancel, setShipmentPendingCancel] = useState<Shipment | null>(null);
+  const handleCancelShipment = async (shipment: Shipment) => {
+    const confirmed = window.confirm(
+      `Cancel shipment ${shipment.shipmentNumber}? The courier booking will be cancelled.`,
+    );
+    if (!confirmed) return;
 
-  const handleCancelShipment = (shipment: Shipment) => {
-    setShipmentPendingCancel(shipment);
-  };
-
-  const confirmCancelShipment = async () => {
-    if (!shipmentPendingCancel) return;
     try {
-      await cancelShipment({ id: shipmentPendingCancel.id }).unwrap();
-      toast.success(`${shipmentPendingCancel.shipmentNumber} cancelled.`);
-      setShipmentPendingCancel(null);
+      await cancelShipment({ id: shipment.id }).unwrap();
+      toast.success(`${shipment.shipmentNumber} cancelled.`);
     } catch (err) {
       const message =
         (err as { data?: { message?: string } })?.data?.message ??
@@ -329,6 +328,20 @@ export const ShipmentsView = () => {
       const message =
         (err as { data?: { message?: string } })?.data?.message ??
         'Could not reach the courier.';
+      toast.error(message);
+    }
+  };
+
+  const handleSeedDemoData = async () => {
+    try {
+      const result = await seedDemoData().unwrap();
+      toast.success(
+        `Seeded ${result.shipmentsCreated} shipments across ${result.ordersCreated} orders.`,
+      );
+    } catch (err) {
+      const message =
+        (err as { data?: { message?: string } })?.data?.message ??
+        'Could not seed demo shipments.';
       toast.error(message);
     }
   };
@@ -363,6 +376,11 @@ export const ShipmentsView = () => {
   const rangeStart = meta.total === 0 ? 0 : (meta.page - 1) * meta.limit + 1;
   const rangeEnd = Math.min(meta.page * meta.limit, meta.total);
 
+  // The empty dataset is what makes the seeder worth offering, so the control
+  // only appears when the merchant genuinely has nothing to look at.
+  const showSeedAction =
+    !isShipmentsLoading && !isShipmentsError && meta.total === 0 && !hasActiveFilters;
+
   return (
     <div className="space-y-5 pb-12">
       {/* 1. PAGE HEADER */}
@@ -375,6 +393,22 @@ export const ShipmentsView = () => {
         </div>
 
         <div className="flex items-center gap-2.5 self-start sm:self-auto">
+          {showSeedAction && (
+            <button
+              type="button"
+              onClick={handleSeedDemoData}
+              disabled={isSeeding}
+              className="px-3.5 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-2xs transition-colors active:scale-95 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            >
+              {isSeeding ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" aria-hidden="true" />
+              ) : (
+                <Database className="w-3.5 h-3.5" aria-hidden="true" />
+              )}
+              {isSeeding ? 'Seeding...' : 'Load Demo Data'}
+            </button>
+          )}
+
           <button
             type="button"
             onClick={handleExport}
@@ -814,22 +848,6 @@ export const ShipmentsView = () => {
         isOpen={createDrawerMode !== null}
         mode={createDrawerMode ?? 'single'}
         onClose={() => setCreateDrawerMode(null)}
-      />
-
-      <ConfirmDialog
-        isOpen={shipmentPendingCancel !== null}
-        onClose={() => setShipmentPendingCancel(null)}
-        onConfirm={confirmCancelShipment}
-        title="Cancel Shipment"
-        message={
-          <>
-            Cancel shipment <strong>{shipmentPendingCancel?.shipmentNumber}</strong>? The courier
-            booking will be cancelled.
-          </>
-        }
-        confirmLabel="Cancel Shipment"
-        cancelLabel="Keep Shipment"
-        isLoading={isCancellingShipment}
       />
     </div>
   );

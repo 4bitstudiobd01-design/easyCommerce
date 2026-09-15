@@ -26,15 +26,6 @@ export enum LeadSourceEnum {
   MANUAL = 'MANUAL',
 }
 
-export interface LeadInquiryItem {
-  id: string;
-  authorName: string;
-  authorRole?: string;
-  authorId?: string;
-  note: string;
-  createdAt: string;
-}
-
 @Entity('crm_leads')
 @Index(['tenantId', 'stage'])
 @Index(['tenantId', 'createdAt'])
@@ -89,9 +80,6 @@ export class LeadEntity {
   @Column({ type: 'text', nullable: true })
   notes?: string;
 
-  @Column({ name: 'inquiries', type: 'jsonb', nullable: true, default: () => "'[]'" })
-  inquiries?: LeadInquiryItem[];
-
   @Column({ name: 'tags', type: 'text', array: true, default: '{}' })
   tags: string[];
 
@@ -115,7 +103,4 @@ export class LeadEntity {
 
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt: Date;
-
-  // Virtual property for associated customer purchase orders
-  orders?: any[];
 }

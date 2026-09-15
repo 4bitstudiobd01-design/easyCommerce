@@ -185,7 +185,6 @@ export class TelegramChannelService implements OnModuleInit, OnModuleDestroy {
     chatId: string | number,
     text: string,
     storeId?: string,
-    options?: { skipDbSave?: boolean },
   ): Promise<any> {
     const token = await this.getBotToken(tenantId);
     if (!chatId || !text) {
@@ -211,25 +210,23 @@ export class TelegramChannelService implements OnModuleInit, OnModuleDestroy {
       );
     }
 
-    if (!options?.skipDbSave) {
-      // Save outbound message to DB
-      const outbound = this.messageRepo.create({
-        tenantId,
-        storeId,
-        platform: 'telegram',
-        conversationId: `tg-${chatId}`,
-        externalMessageId: `tg-out-${data.result?.message_id || Date.now()}`,
-        senderId: 'agent',
-        senderName: 'Merchant Agent',
-        recipientId: String(chatId),
-        text,
-        direction: 'OUTBOUND',
-        status: 'DELIVERED',
-        type: 'text',
-        rawMetadata: data.result,
-      });
-      await this.messageRepo.save(outbound);
-    }
+    // Save outbound message to DB
+    const outbound = this.messageRepo.create({
+      tenantId,
+      storeId,
+      platform: 'telegram',
+      conversationId: `tg-${chatId}`,
+      externalMessageId: `tg-out-${data.result?.message_id || Date.now()}`,
+      senderId: 'agent',
+      senderName: 'Merchant Agent',
+      recipientId: String(chatId),
+      text,
+      direction: 'OUTBOUND',
+      status: 'DELIVERED',
+      type: 'text',
+      rawMetadata: data.result,
+    });
+    await this.messageRepo.save(outbound);
 
     return {
       success: true,

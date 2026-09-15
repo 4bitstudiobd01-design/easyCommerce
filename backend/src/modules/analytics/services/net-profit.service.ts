@@ -12,8 +12,6 @@ export interface NetProfitMetricsResponse {
   netProfit: number;
   profitMarginPercentage: number;
   totalCompletedOrdersCount: number;
-  itemsMissingCostPriceCount: number;
-  productsMissingCostPriceCount: number;
 }
 
 @Injectable()
@@ -37,40 +35,24 @@ export class NetProfitService {
       })
       .getRawOne<{ grossRevenue: string; totalDeliveryFees: string; totalCompletedOrdersCount: string }>();
 
-    // Only items whose product has a real costPrice contribute to totalProductCost —
-    // items with no costPrice are excluded rather than estimated, so Net Profit never
-    // silently mixes real and guessed costs.
     const productCostRow = await this.orderItemRepository
       .createQueryBuilder('item')
       .leftJoin(OrderEntity, 'order', 'order.id = item.orderId')
       .leftJoin(ProductEntity, 'product', 'product.id = item.productId')
-      .select('COALESCE(SUM(product.costPrice * item.quantity), 0)', 'totalProductCost')
-      .addSelect(
-        'COALESCE(SUM(CASE WHEN product.costPrice IS NULL THEN item.quantity ELSE 0 END), 0)',
-        'itemsMissingCostPriceCount',
-      )
-      .addSelect(
-        'COUNT(DISTINCT CASE WHEN product.costPrice IS NULL THEN product.id END)',
-        'productsMissingCostPriceCount',
+      .select(
+        'COALESCE(SUM(COALESCE(product.costPrice, item.unitPrice * 0.6) * item.quantity), 0)',
+        'totalProductCost',
       )
       .where('order.tenantId = :tenantId', { tenantId })
       .andWhere('order.orderStatus NOT IN (:...excludedStatuses)', {
         excludedStatuses: ['CANCELLED', 'RETURNED'],
       })
-      .getRawOne<{
-        totalProductCost: string;
-        itemsMissingCostPriceCount: string;
-        productsMissingCostPriceCount: string;
-      }>();
+      .getRawOne<{ totalProductCost: string }>();
 
     const grossRevenue = Number(orderTotals?.grossRevenue || 0);
     const totalDeliveryFees = Number(orderTotals?.totalDeliveryFees || 0);
     const totalCompletedOrdersCount = Number(orderTotals?.totalCompletedOrdersCount || 0);
     const totalProductCost = Number(productCostRow?.totalProductCost || 0);
-    const itemsMissingCostPriceCount = Number(productCostRow?.itemsMissingCostPriceCount || 0);
-    const productsMissingCostPriceCount = Number(
-      productCostRow?.productsMissingCostPriceCount || 0,
-    );
 
     const netProfit = Number((grossRevenue - totalProductCost).toFixed(2));
     const profitMarginPercentage =
@@ -83,8 +65,6 @@ export class NetProfitService {
       netProfit,
       profitMarginPercentage,
       totalCompletedOrdersCount,
-      itemsMissingCostPriceCount,
-      productsMissingCostPriceCount,
     };
   }
 }

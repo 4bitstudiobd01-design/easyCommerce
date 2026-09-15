@@ -46,12 +46,7 @@ export function MarketingKpiCards({ kpis, isLoading }: MarketingKpiCardsProps) {
             </div>
           </div>
           <div className="text-2xl font-extrabold text-slate-900 tracking-tight">
-            {kpis.connectedPixels.count}
-            {kpis.connectedPixels.total ? (
-              <span className="text-[13px] text-slate-500 font-medium tracking-normal"> of {kpis.connectedPixels.total} pixels</span>
-            ) : (
-              <span className="text-[13px] text-slate-500 font-medium tracking-normal"> pixels</span>
-            )}
+            {kpis.connectedPixels.count} <span className="text-[13px] text-slate-500 font-medium tracking-normal">out of {kpis.connectedPixels.total}</span>
           </div>
         </div>
         <div className="mt-3">

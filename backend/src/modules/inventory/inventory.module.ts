@@ -6,10 +6,8 @@ import { WarehouseEntity } from './entities/warehouse.entity';
 import { InventoryStockEntity } from './entities/inventory-stock.entity';
 import { InventoryMovementEntity } from './entities/inventory-movement.entity';
 import { StockTransferEntity } from './entities/stock-transfer.entity';
-import { BranchStockEntity } from './entities/branch-stock.entity';
 import { ProductEntity } from '../catalog/entities/product.entity';
 import { ProductVariantEntity } from '../catalog/entities/product-variant.entity';
-import { BranchEntity } from '../tenant/entities/branch.entity';
 import { TenantModule } from '../tenant/tenant.module';
 import { CatalogModule } from '../catalog/catalog.module';
 import { CreateWarehouseService } from './services/create-warehouse.service';
@@ -28,6 +26,7 @@ import { ListInventoryHistoryService } from './services/list-inventory-history.s
 import { GetProductVariantInventoryService } from './services/get-product-variant-inventory.service';
 import { BulkAdjustStockService } from './services/bulk-adjust-stock.service';
 import { GetInventorySettingsOverviewService } from './services/get-inventory-settings-overview.service';
+import { SeedInventoryDemoDataService } from './services/seed-inventory-demo-data.service';
 import { InventoryController } from './inventory.controller';
 import { StockTransferController } from './controllers/stock-transfer.controller';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -39,10 +38,8 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
       InventoryStockEntity,
       InventoryMovementEntity,
       StockTransferEntity,
-      BranchStockEntity,
       ProductEntity,
       ProductVariantEntity,
-      BranchEntity,
     ]),
     TenantModule,
     CatalogModule,
@@ -55,11 +52,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
       }),
     }),
   ],
-  // StockTransferController must be registered before InventoryController:
-  // InventoryController's GET /inventory/:id wildcard would otherwise shadow
-  // StockTransferController's more specific /inventory/transfers/* routes,
-  // since Nest matches routes across controllers in registration order.
-  controllers: [StockTransferController, InventoryController],
+  controllers: [InventoryController, StockTransferController],
   providers: [
     CreateWarehouseService,
     ListWarehousesService,
@@ -77,6 +70,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     ListInventoryHistoryService,
     GetProductVariantInventoryService,
     GetInventorySettingsOverviewService,
+    SeedInventoryDemoDataService,
     JwtAuthGuard,
   ],
   exports: [
@@ -96,6 +90,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     ListInventoryHistoryService,
     GetProductVariantInventoryService,
     GetInventorySettingsOverviewService,
+    SeedInventoryDemoDataService,
     TypeOrmModule,
   ],
 })

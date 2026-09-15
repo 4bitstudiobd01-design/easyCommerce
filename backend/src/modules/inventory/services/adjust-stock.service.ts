@@ -200,7 +200,7 @@ export class AdjustStockService {
         previousQuantity: beforeOnHand,
         newQuantity: newOnHand,
         reason: adjustmentReason,
-        referenceType: dto.referenceType?.trim() || 'MANUAL_ADJUSTMENT',
+        referenceType: 'MANUAL_ADJUSTMENT',
         referenceId: dto.reference?.trim() || undefined,
         note: dto.notes?.trim() || undefined,
         createdBy: userId || undefined,

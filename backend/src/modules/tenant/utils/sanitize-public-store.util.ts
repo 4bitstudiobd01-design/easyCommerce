@@ -7,6 +7,7 @@ import { StoreEntity } from '../entities/store.entity';
  */
 const PRIVATE_STORE_FIELDS = [
   'ownerId',
+  'facebookCapiToken',
   'steadfastApiKey',
   'steadfastSecretKey',
   'pathaoClientId',

@@ -43,14 +43,7 @@ export class TestCourierConnectionService {
       );
     }
 
-    const credentials = {
-      ...this.credentialsCrypto.decrypt(integration.encryptedCredentials),
-      // The sandbox toggle lives on the row, not the encrypted bag, so the test
-      // hits the same host a real booking would. tenantId lets an adapter key
-      // any per-tenant state it caches (e.g. Pathao's token).
-      sandbox: integration.sandbox,
-      tenantId,
-    };
+    const credentials = this.credentialsCrypto.decrypt(integration.encryptedCredentials);
 
     // The adapter reports a failed handshake as `success: false` rather than
     // throwing; a thrown error here is an unexpected fault and is still turned

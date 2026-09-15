@@ -28,19 +28,14 @@ import { GetShipmentDetailsService } from './services/get-shipment-details.servi
 import { CancelShipmentService } from './services/cancel-shipment.service';
 import { ExportShipmentsService } from './services/export-shipments.service';
 import { SyncConsignmentService } from './services/sync-consignment.service';
+import { SeedShipmentDemoDataService } from './services/seed-shipment-demo-data.service';
 import { ListCourierIntegrationsService } from './services/list-courier-integrations.service';
 import { GetCourierIntegrationService } from './services/get-courier-integration.service';
 import { UpsertCourierIntegrationService } from './services/upsert-courier-integration.service';
 import { ToggleCourierIntegrationService } from './services/toggle-courier-integration.service';
 import { SetDefaultCourierService } from './services/set-default-courier.service';
 import { TestCourierConnectionService } from './services/test-courier-connection.service';
-import { PathaoStoreService } from './services/pathao-store.service';
-import { PathaoLocationService } from './services/pathao-location.service';
-import { PathaoPriceService } from './services/pathao-price.service';
-import { RedxAreaService } from './services/redx-area.service';
-import { RedxChargeService } from './services/redx-charge.service';
-import { RedxStoreService } from './services/redx-store.service';
-import { PaperflyExchangeService } from './services/paperfly-exchange.service';
+import { SeedCourierDemoDataService } from './services/seed-courier-demo-data.service';
 import { CourierProviderRegistry } from './adapters/courier-provider.registry';
 import { CourierProviderEnum } from './entities/consignment.entity';
 
@@ -50,6 +45,7 @@ import { ListShipmentsQueryDto } from './dto/list-shipments-query.dto';
 import { ShipmentListResponseDto } from './dto/shipment-list-response.dto';
 import { ShipmentSummaryResponseDto } from './dto/shipment-summary-response.dto';
 import { ShipmentDetailsResponseDto } from './dto/shipment-details-response.dto';
+import { SeedShipmentDemoDataResponseDto } from './dto/seed-shipment-demo-data-response.dto';
 import {
   UpsertCourierIntegrationDto,
   ToggleCourierIntegrationDto,
@@ -58,18 +54,8 @@ import {
   CouriersDashboardResponseDto,
   CourierIntegrationDto,
   CourierConnectionTestResponseDto,
+  SeedCourierDemoDataResponseDto,
 } from './dto/courier-integration-response.dto';
-import {
-  CreatePathaoStoreDto,
-  CreatePathaoStoreResponseDto,
-  PathaoStoreDto,
-} from './dto/pathao-store.dto';
-import { PathaoAreaDto, PathaoCityDto, PathaoZoneDto } from './dto/pathao-location.dto';
-import { CalculatePathaoPriceDto, PathaoPriceDto } from './dto/pathao-price.dto';
-import { RedxAreaDto } from './dto/redx-area.dto';
-import { CalculateRedxChargeDto, RedxChargeDto } from './dto/redx-charge.dto';
-import { CreateRedxStoreDto, RedxStoreDto } from './dto/redx-store.dto';
-import { CreatePaperflyExchangeOrderDto, PaperflyExchangeOrderResultDto } from './dto/paperfly-exchange.dto';
 
 /**
  * Courier & shipment endpoints for the merchant admin.
@@ -90,19 +76,14 @@ export class LogisticsController {
     private readonly cancelShipmentService: CancelShipmentService,
     private readonly exportShipmentsService: ExportShipmentsService,
     private readonly syncConsignmentService: SyncConsignmentService,
+    private readonly seedShipmentDemoDataService: SeedShipmentDemoDataService,
     private readonly listCourierIntegrationsService: ListCourierIntegrationsService,
     private readonly getCourierIntegrationService: GetCourierIntegrationService,
     private readonly upsertCourierIntegrationService: UpsertCourierIntegrationService,
     private readonly toggleCourierIntegrationService: ToggleCourierIntegrationService,
     private readonly setDefaultCourierService: SetDefaultCourierService,
     private readonly testCourierConnectionService: TestCourierConnectionService,
-    private readonly pathaoStoreService: PathaoStoreService,
-    private readonly pathaoLocationService: PathaoLocationService,
-    private readonly pathaoPriceService: PathaoPriceService,
-    private readonly redxAreaService: RedxAreaService,
-    private readonly redxChargeService: RedxChargeService,
-    private readonly redxStoreService: RedxStoreService,
-    private readonly paperflyExchangeService: PaperflyExchangeService,
+    private readonly seedCourierDemoDataService: SeedCourierDemoDataService,
     private readonly courierProviderRegistry: CourierProviderRegistry,
     private readonly findStoreByUserService: FindStoreByUserService,
   ) {}
@@ -196,6 +177,25 @@ export class LogisticsController {
     return res.send(result.content);
   }
 
+  @Post('shipments/seed-demo-data')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('orders:manage')
+  @ApiOperation({ summary: 'Seed realistic shipment demo data for this merchant' })
+  @ApiResponse({ status: 201, description: 'Demo data seeded', type: SeedShipmentDemoDataResponseDto })
+  @ApiResponse({ status: 403, description: 'Demo seeder disabled in production environment' })
+  async seedShipmentDemoData(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') storeId?: string,
+  ): Promise<SeedShipmentDemoDataResponseDto> {
+    const store = await this.getMerchantStore(userId, storeId);
+    return this.seedShipmentDemoDataService.execute(
+      store.tenantId,
+      store.slug,
+      store.address,
+    );
+  }
+
   @Get('shipments/:id')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
@@ -281,6 +281,21 @@ export class LogisticsController {
   ): Promise<CouriersDashboardResponseDto> {
     const store = await this.getMerchantStore(userId, storeId);
     return this.listCourierIntegrationsService.execute(store.tenantId);
+  }
+
+  @Post('courier-integrations/seed-demo-data')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('settings:write')
+  @ApiOperation({ summary: 'Seed sandbox courier integrations so the Couriers tab has data' })
+  @ApiResponse({ status: 201, description: 'Demo integrations seeded', type: SeedCourierDemoDataResponseDto })
+  @ApiResponse({ status: 403, description: 'Demo seeder disabled in production environment' })
+  async seedCourierDemoData(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') storeId?: string,
+  ): Promise<SeedCourierDemoDataResponseDto> {
+    const store = await this.getMerchantStore(userId, storeId);
+    return this.seedCourierDemoDataService.execute(store.tenantId);
   }
 
   @Get('courier-integrations/:provider')
@@ -371,231 +386,6 @@ export class LogisticsController {
   ): Promise<CourierConnectionTestResponseDto> {
     const store = await this.getMerchantStore(userId, storeId);
     return this.testCourierConnectionService.execute(this.parseProvider(provider), store.tenantId);
-  }
-
-  // ---------------------------------------------------------------------------
-  // Pathao store (pickup point) management — one-time setup, not part of the
-  // per-order booking flow. Lets a merchant create/list Pathao stores from the
-  // Couriers tab instead of copying a store_id in from Pathao's own panel.
-  // ---------------------------------------------------------------------------
-
-  @Post('pathao/stores')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @ApiBearerAuth()
-  @RequirePermissions('settings:write')
-  @ApiOperation({ summary: 'Create a Pathao pickup store (Pathao approves it ~1h later)' })
-  @ApiResponse({ status: 201, description: 'Store submitted', type: CreatePathaoStoreResponseDto })
-  @ApiResponse({ status: 400, description: 'Pathao is not connected, or the request was rejected' })
-  async createPathaoStore(
-    @CurrentUser('sub') userId: string,
-    @Body() dto: CreatePathaoStoreDto,
-    @Headers('x-store-id') storeId?: string,
-  ): Promise<CreatePathaoStoreResponseDto> {
-    const store = await this.getMerchantStore(userId, storeId);
-    return this.pathaoStoreService.createStore(store.tenantId, store, dto);
-  }
-
-  @Get('pathao/stores')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @ApiBearerAuth()
-  @RequirePermissions('orders:read')
-  @ApiOperation({ summary: 'List this merchant’s Pathao pickup stores' })
-  @ApiResponse({ status: 200, description: 'Pathao stores', type: [PathaoStoreDto] })
-  @ApiResponse({ status: 400, description: 'Pathao is not connected' })
-  async listPathaoStores(
-    @CurrentUser('sub') userId: string,
-    @Headers('x-store-id') storeId?: string,
-  ): Promise<PathaoStoreDto[]> {
-    const store = await this.getMerchantStore(userId, storeId);
-    return this.pathaoStoreService.listStores(store.tenantId, store);
-  }
-
-  // ---------------------------------------------------------------------------
-  // Pathao location lookups (city → zone → area) — cascading dropdowns for
-  // pickup/recipient address selection. Results are cached process-wide (see
-  // PathaoLocationService), so these are cheap to call from the checkout/admin
-  // UI on each dropdown level rather than pre-fetching everything up front.
-  // ---------------------------------------------------------------------------
-
-  @Get('pathao/cities')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @ApiBearerAuth()
-  @RequirePermissions('orders:read')
-  @ApiOperation({ summary: 'List Pathao delivery cities' })
-  @ApiResponse({ status: 200, description: 'Cities', type: [PathaoCityDto] })
-  @ApiResponse({ status: 400, description: 'Pathao is not connected' })
-  async listPathaoCities(
-    @CurrentUser('sub') userId: string,
-    @Headers('x-store-id') storeId?: string,
-  ): Promise<PathaoCityDto[]> {
-    const store = await this.getMerchantStore(userId, storeId);
-    return this.pathaoLocationService.listCities(store.tenantId, store);
-  }
-
-  @Get('pathao/cities/:cityId/zones')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @ApiBearerAuth()
-  @RequirePermissions('orders:read')
-  @ApiOperation({ summary: 'List Pathao delivery zones within a city' })
-  @ApiResponse({ status: 200, description: 'Zones', type: [PathaoZoneDto] })
-  @ApiResponse({ status: 400, description: 'Pathao is not connected' })
-  async listPathaoZones(
-    @CurrentUser('sub') userId: string,
-    @Param('cityId') cityId: string,
-    @Headers('x-store-id') storeId?: string,
-  ): Promise<PathaoZoneDto[]> {
-    const store = await this.getMerchantStore(userId, storeId);
-    return this.pathaoLocationService.listZones(store.tenantId, store, Number(cityId));
-  }
-
-  @Get('pathao/zones/:zoneId/areas')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @ApiBearerAuth()
-  @RequirePermissions('orders:read')
-  @ApiOperation({ summary: 'List Pathao delivery areas within a zone' })
-  @ApiResponse({ status: 200, description: 'Areas', type: [PathaoAreaDto] })
-  @ApiResponse({ status: 400, description: 'Pathao is not connected' })
-  async listPathaoAreas(
-    @CurrentUser('sub') userId: string,
-    @Param('zoneId') zoneId: string,
-    @Headers('x-store-id') storeId?: string,
-  ): Promise<PathaoAreaDto[]> {
-    const store = await this.getMerchantStore(userId, storeId);
-    return this.pathaoLocationService.listAreas(store.tenantId, store, Number(zoneId));
-  }
-
-  @Post('pathao/price-plan')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @ApiBearerAuth()
-  @RequirePermissions('orders:read')
-  @ApiOperation({ summary: 'Calculate the Pathao delivery fee for a route before booking' })
-  @ApiResponse({ status: 201, description: 'Price', type: PathaoPriceDto })
-  @ApiResponse({ status: 400, description: 'Pathao is not connected, or the route is invalid' })
-  async calculatePathaoPrice(
-    @CurrentUser('sub') userId: string,
-    @Body() dto: CalculatePathaoPriceDto,
-    @Headers('x-store-id') storeId?: string,
-  ): Promise<PathaoPriceDto> {
-    const store = await this.getMerchantStore(userId, storeId);
-    return this.pathaoPriceService.calculatePrice(store.tenantId, store, dto);
-  }
-
-  // ---------------------------------------------------------------------------
-  // RedX delivery-area lookups. Results are cached process-wide (see
-  // RedxAreaService), so these are cheap to call from the admin UI.
-  // ---------------------------------------------------------------------------
-
-  @Get('redx/areas')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @ApiBearerAuth()
-  @RequirePermissions('orders:read')
-  @ApiOperation({ summary: 'List RedX delivery areas, optionally filtered by post code or district' })
-  @ApiResponse({ status: 200, description: 'Areas', type: [RedxAreaDto] })
-  @ApiResponse({ status: 400, description: 'RedX is not connected' })
-  async listRedxAreas(
-    @CurrentUser('sub') userId: string,
-    @Query('postCode') postCode?: string,
-    @Query('district') district?: string,
-    @Headers('x-store-id') storeId?: string,
-  ): Promise<RedxAreaDto[]> {
-    const store = await this.getMerchantStore(userId, storeId);
-    if (postCode) {
-      return this.redxAreaService.listAreasByPostCode(store.tenantId, store, Number(postCode));
-    }
-    if (district) {
-      return this.redxAreaService.listAreasByDistrict(store.tenantId, store, district);
-    }
-    return this.redxAreaService.listAllAreas(store.tenantId, store);
-  }
-
-  @Get('redx/charge')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @ApiBearerAuth()
-  @RequirePermissions('orders:read')
-  @ApiOperation({ summary: 'Calculate the RedX delivery + COD charge for a route before booking' })
-  @ApiResponse({ status: 200, description: 'Charge', type: RedxChargeDto })
-  @ApiResponse({ status: 400, description: 'RedX is not connected, or the route is invalid' })
-  async calculateRedxCharge(
-    @CurrentUser('sub') userId: string,
-    @Query() dto: CalculateRedxChargeDto,
-    @Headers('x-store-id') storeId?: string,
-  ): Promise<RedxChargeDto> {
-    const store = await this.getMerchantStore(userId, storeId);
-    return this.redxChargeService.calculateCharge(store.tenantId, store, dto);
-  }
-
-  // ---------------------------------------------------------------------------
-  // RedX pickup store (pickup point) management — one-time setup, not part of
-  // the per-order booking flow. A store's id becomes `pickup_store_id` on a
-  // Create Parcel call.
-  // ---------------------------------------------------------------------------
-
-  @Post('redx/stores')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @ApiBearerAuth()
-  @RequirePermissions('settings:write')
-  @ApiOperation({ summary: 'Create a RedX pickup store' })
-  @ApiResponse({ status: 201, description: 'Store created', type: RedxStoreDto })
-  @ApiResponse({ status: 400, description: 'RedX is not connected, or the request was rejected' })
-  async createRedxStore(
-    @CurrentUser('sub') userId: string,
-    @Body() dto: CreateRedxStoreDto,
-    @Headers('x-store-id') storeId?: string,
-  ): Promise<RedxStoreDto> {
-    const store = await this.getMerchantStore(userId, storeId);
-    return this.redxStoreService.createStore(store.tenantId, store, dto);
-  }
-
-  @Get('redx/stores')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @ApiBearerAuth()
-  @RequirePermissions('orders:read')
-  @ApiOperation({ summary: 'List this merchant’s RedX pickup stores' })
-  @ApiResponse({ status: 200, description: 'RedX pickup stores', type: [RedxStoreDto] })
-  @ApiResponse({ status: 400, description: 'RedX is not connected' })
-  async listRedxStores(
-    @CurrentUser('sub') userId: string,
-    @Headers('x-store-id') storeId?: string,
-  ): Promise<RedxStoreDto[]> {
-    const store = await this.getMerchantStore(userId, storeId);
-    return this.redxStoreService.listStores(store.tenantId, store);
-  }
-
-  @Get('redx/stores/:pickupStoreId')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @ApiBearerAuth()
-  @RequirePermissions('orders:read')
-  @ApiOperation({ summary: 'Get one RedX pickup store’s details' })
-  @ApiResponse({ status: 200, description: 'RedX pickup store', type: RedxStoreDto })
-  @ApiResponse({ status: 400, description: 'RedX is not connected, or the store was not found' })
-  async getRedxStore(
-    @CurrentUser('sub') userId: string,
-    @Param('pickupStoreId') pickupStoreId: string,
-    @Headers('x-store-id') storeId?: string,
-  ): Promise<RedxStoreDto> {
-    const store = await this.getMerchantStore(userId, storeId);
-    return this.redxStoreService.getStore(store.tenantId, store, Number(pickupStoreId));
-  }
-
-  // ---------------------------------------------------------------------------
-  // Paperfly exchange orders — a merchant-initiated action against an
-  // already-delivered order, not part of the standard shipment booking flow.
-  // ---------------------------------------------------------------------------
-
-  @Post('paperfly/exchange-orders')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @ApiBearerAuth()
-  @RequirePermissions('orders:manage')
-  @ApiOperation({ summary: 'Create a Paperfly exchange order for an already-delivered order' })
-  @ApiResponse({ status: 201, description: 'Exchange order created', type: PaperflyExchangeOrderResultDto })
-  @ApiResponse({ status: 400, description: 'Paperfly is not connected, or the request was rejected' })
-  async createPaperflyExchangeOrder(
-    @CurrentUser('sub') userId: string,
-    @Body() dto: CreatePaperflyExchangeOrderDto,
-    @Headers('x-store-id') storeId?: string,
-  ): Promise<PaperflyExchangeOrderResultDto> {
-    const store = await this.getMerchantStore(userId, storeId);
-    return this.paperflyExchangeService.createExchangeOrder(store.tenantId, store, dto);
   }
 
   // ---------------------------------------------------------------------------

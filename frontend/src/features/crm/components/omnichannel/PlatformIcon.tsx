@@ -1,12 +1,16 @@
 import React from 'react';
 
 export type OmnichannelPlatform =
-  | 'facebook'
-  | 'messenger'
-  | 'instagram'
-  | 'tiktok'
+  | 'telegram'
   | 'whatsapp'
-  | 'telegram';
+  | 'facebook'
+  | 'instagram'
+  | 'linkedin'
+  | 'x'
+  | 'shopify'
+  | 'slack'
+  | 'hubspot'
+  | 'custom';
 
 interface PlatformIconProps {
   platform: OmnichannelPlatform | string;
@@ -21,7 +25,6 @@ export function PlatformIcon({
 }: PlatformIconProps) {
   const norm = (platform || '').toLowerCase();
 
-  // Facebook
   if (norm === 'facebook' || norm === 'fb') {
     return (
       <svg
@@ -40,33 +43,6 @@ export function PlatformIcon({
     );
   }
 
-  // Messenger
-  if (norm === 'messenger' || norm === 'fb-messenger') {
-    return (
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 24 24"
-        fill="none"
-        className={`shrink-0 ${className}`}
-      >
-        <defs>
-          <linearGradient id="msg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#00B2FF" />
-            <stop offset="50%" stopColor="#006AFF" />
-            <stop offset="100%" stopColor="#9B3FE4" />
-          </linearGradient>
-        </defs>
-        <rect width="24" height="24" rx="6" fill="url(#msg-grad)" />
-        <path
-          d="M12 4C7.58 4 4 7.24 4 11.23c0 2.28 1.17 4.32 3 5.66v2.85l2.74-1.51c.71.2 1.47.3 2.26.3 4.42 0 8-3.24 8-7.23S16.42 4 12 4zm.8 9.77l-2.05-2.18-4 2.18 4.4-4.68 2.05 2.18 4-2.18-4.4 4.68z"
-          fill="#FFFFFF"
-        />
-      </svg>
-    );
-  }
-
-  // Instagram
   if (norm === 'instagram' || norm === 'ig') {
     return (
       <svg
@@ -107,26 +83,6 @@ export function PlatformIcon({
     );
   }
 
-  // TikTok
-  if (norm === 'tiktok') {
-    return (
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 24 24"
-        fill="none"
-        className={`shrink-0 ${className}`}
-      >
-        <rect width="24" height="24" rx="6" fill="#010101" />
-        <path
-          d="M16.8 8.2a4.4 4.4 0 0 1-2.9-2V4h-2.6v11.2a2.3 2.3 0 1 1-2.3-2.3c.4 0 .7.1 1 .28V10.7A4.8 4.8 0 0 0 6.5 15a4.8 4.8 0 0 0 4.8 4.8c2.6 0 4.8-2.1 4.8-4.8V9.6a6.5 6.5 0 0 0 3.4.9V8a4.5 4.5 0 0 1-2.7-.8z"
-          fill="#FFFFFF"
-        />
-      </svg>
-    );
-  }
-
-  // WhatsApp
   if (norm === 'whatsapp' || norm === 'wa') {
     return (
       <svg
@@ -145,7 +101,6 @@ export function PlatformIcon({
     );
   }
 
-  // Telegram
   if (norm === 'telegram' || norm === 'tg') {
     return (
       <svg
@@ -164,6 +119,78 @@ export function PlatformIcon({
     );
   }
 
+  if (norm === 'linkedin' || norm === 'li') {
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        className={`shrink-0 ${className}`}
+      >
+        <rect width="24" height="24" rx="6" fill="#0A66C2" />
+        <path
+          d="M7.4 9.1H4.6V18h2.8V9.1zM6 4.9C5.1 4.9 4.4 5.6 4.4 6.5s.7 1.6 1.6 1.6 1.6-.7 1.6-1.6c0-.9-.7-1.6-1.6-1.6zM19.6 12.8c0-2.6-1.4-3.9-3.3-3.9-1.5 0-2.2.8-2.6 1.4V9.1h-2.8c.04.8 0 8.9 0 8.9h2.8v-5c0-.27.02-.54.1-.73.22-.54.72-1.1 1.57-1.1 1.1 0 1.55.84 1.55 2.08V18h2.8v-5.2z"
+          fill="#FFFFFF"
+        />
+      </svg>
+    );
+  }
+
+  if (norm === 'x' || norm === 'twitter') {
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        className={`shrink-0 ${className}`}
+      >
+        <rect width="24" height="24" rx="6" fill="#000000" />
+        <path
+          d="M14.9 5.5h2.3l-5 5.72 5.9 7.78h-4.6l-3.6-4.72-4.1 4.72H3.5l5.36-6.13L3.2 5.5h4.7l3.25 4.3 3.75-4.3zm-.8 12.1h1.27L7.96 6.8H6.6l7.5 10.8z"
+          fill="#FFFFFF"
+        />
+      </svg>
+    );
+  }
+
+  if (norm === 'shopify') {
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        className={`shrink-0 ${className}`}
+      >
+        <rect width="24" height="24" rx="6" fill="#95BF47" />
+        <path
+          d="M17.4 6.9c-.1-.3-.4-.5-.7-.5s-.4 0-.5.1c-.1-.9-.7-2.5-2.2-2.5h-.4C13.4 3.7 13 4 12.7 4.5c-.7-.1-1.3.3-1.6.8L9.2 6.5C8.9 6.6 8.7 6.8 8.6 7.1L6.5 17.2c-.1.5.3 1 .8 1.1h9.4c.5 0 .9-.4 1-.9l1.4-9.8c0-.2 0-.5-.3-.7z"
+          fill="#FFFFFF"
+        />
+      </svg>
+    );
+  }
+
+  if (norm === 'slack') {
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        className={`shrink-0 ${className}`}
+      >
+        <rect width="24" height="24" rx="6" fill="#4A154B" />
+        <path
+          d="M8.5 12a1.5 1.5 0 1 1-1.5-1.5H8.5V12zm.8 0a1.5 1.5 0 0 1 3 0v3.8a1.5 1.5 0 0 1-3 0V12zm3.7-3.5a1.5 1.5 0 1 1 1.5-1.5v1.5H13zm0 .8a1.5 1.5 0 0 1 0 3H9.2a1.5 1.5 0 0 1 0-3H13zm2.5 4.7a1.5 1.5 0 1 1 1.5 1.5h-1.5V14zm-.8 0a1.5 1.5 0 0 1-3 0v-3.8a1.5 1.5 0 0 1 3 0V14zm-3.7 3.5a1.5 1.5 0 1 1-1.5 1.5v-1.5H11zm0-.8a1.5 1.5 0 0 1 0-3h3.8a1.5 1.5 0 0 1 0 3H11z"
+          fill="#FFFFFF"
+        />
+      </svg>
+    );
+  }
+
   return (
     <div
       style={{ width: size, height: size }}
@@ -173,4 +200,3 @@ export function PlatformIcon({
     </div>
   );
 }
-

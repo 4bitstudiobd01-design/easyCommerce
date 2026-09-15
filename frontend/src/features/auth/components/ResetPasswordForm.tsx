@@ -1,45 +1,12 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
-import { useForgotPasswordMutation, useResetPasswordMutation } from '../api/authApi';
+import { useResetPasswordMutation } from '../api/authApi';
 import { useRouter } from 'next/navigation';
-import { Mail, Lock, KeyRound, Eye, EyeOff, ShieldCheck, RefreshCw } from 'lucide-react';
-
-/** Matches the backend's 60s request cooldown (RequestPasswordResetService). */
-const RESEND_COOLDOWN_SECONDS = 60;
-const COOLDOWN_STORAGE_PREFIX = 'bitcommerce_reset_otp_cooldown_';
-
-/**
- * The cooldown "expires at" timestamp is persisted per-email in localStorage so a
- * page refresh doesn't reset the visible timer back to 60s — the backend's own
- * cooldown (passwordResetLastRequestedAt) is unaffected by the refresh either way,
- * this just keeps the UI honest about how much of it is actually left.
- *
- * Returns `null` when no cooldown was ever recorded for this email (first visit —
- * a fresh 60s window should start), vs. `0` when one was recorded but has already
- * run out (a refresh long after the code was sent — the button should already be
- * enabled, not restarted).
- */
-function readStoredCooldownSeconds(email: string): number | null {
-  if (!email) return null;
-  try {
-    const stored = localStorage.getItem(COOLDOWN_STORAGE_PREFIX + email);
-    if (stored === null) return null;
-    return Math.max(0, Math.ceil((Number(stored) - Date.now()) / 1000));
-  } catch {
-    return null;
-  }
-}
-
-function storeCooldownExpiry(email: string): void {
-  try {
-    localStorage.setItem(COOLDOWN_STORAGE_PREFIX + email, String(Date.now() + RESEND_COOLDOWN_SECONDS * 1000));
-  } catch {
-    // Ignore — localStorage may be unavailable (private mode, etc.); the cooldown just won't survive a refresh.
-  }
-}
+import { Mail, Lock, KeyRound, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 
 export function ResetPasswordForm() {
   const searchParams = useSearchParams();
@@ -51,63 +18,9 @@ export function ResetPasswordForm() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  // Always starts at the full cooldown on the server (localStorage isn't available
-  // there) so the initial markup matches between server and client and React can
-  // hydrate cleanly; the real remaining time (if any) is read from localStorage in
-  // the effect below, right after mount.
-  const [resendCooldown, setResendCooldown] = useState(RESEND_COOLDOWN_SECONDS);
 
   const [resetPassword, { isLoading }] = useResetPasswordMutation();
-  const [forgotPassword, { isLoading: isResending }] = useForgotPasswordMutation();
   const router = useRouter();
-
-  // Runs once on mount (client-only): resume whatever cooldown time is actually
-  // left for this email, or start a fresh window if none was stored yet.
-  useEffect(() => {
-    if (emailFromQuery) {
-      const remaining = readStoredCooldownSeconds(emailFromQuery);
-      if (remaining === null) {
-        // Never recorded before — this is presumed to be a fresh landing right
-        // after a code was sent, so start the real 60s window now.
-        storeCooldownExpiry(emailFromQuery);
-      } else {
-        // Recorded before — trust it exactly, whether time is left or it has
-        // already run out (don't restart the cooldown on a plain refresh).
-        setResendCooldown(remaining);
-      }
-    }
-
-    const timer = setInterval(() => {
-      setResendCooldown((seconds) => Math.max(0, seconds - 1));
-    }, 1000);
-    return () => clearInterval(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleResend = async () => {
-    const trimmedEmail = email.trim();
-    if (!trimmedEmail) {
-      setErrorMsg('Enter your account email first.');
-      return;
-    }
-
-    try {
-      await forgotPassword({ email: trimmedEmail }).unwrap();
-      toast.success('A new reset code has been sent.');
-      storeCooldownExpiry(trimmedEmail);
-      setResendCooldown(RESEND_COOLDOWN_SECONDS);
-    } catch (err: any) {
-      let message = 'Could not resend the code. Please try again.';
-      if (err?.status === 'FETCH_ERROR' || err?.error?.includes?.('Failed to fetch')) {
-        message = 'Unable to connect to server. Please ensure the backend server is running on port 5001.';
-      } else if (err?.data?.message) {
-        message = Array.isArray(err.data.message) ? err.data.message[0] : err.data.message;
-      } else if (err?.data?.errorSources?.[0]?.details) {
-        message = err.data.errorSources[0].details;
-      }
-      toast.error(message);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -257,18 +170,10 @@ export function ResetPasswordForm() {
 
       </form>
 
-      <div className="mt-5 flex items-center gap-1.5 text-[12.5px] font-medium text-slate-500">
-        <span>Didn't get a code?</span>
-        <button
-          type="button"
-          onClick={handleResend}
-          disabled={isResending || resendCooldown > 0}
-          className="inline-flex items-center gap-1 text-blue-600 font-bold hover:underline disabled:text-slate-400 disabled:no-underline disabled:cursor-not-allowed"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${isResending ? 'animate-spin' : ''}`} />
-          {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : isResending ? 'Sending...' : 'Resend code'}
-        </button>
-      </div>
+      <p className="text-[12.5px] font-medium text-slate-500 mt-5">
+        Didn't get a code?{' '}
+        <Link href="/forgot-password" className="text-blue-600 font-bold hover:underline">Request a new one</Link>
+      </p>
 
       {/* Security Badge */}
       <div className="flex items-center gap-2.5 text-[10.5px] font-medium text-slate-500 max-w-[280px] text-left mt-6">

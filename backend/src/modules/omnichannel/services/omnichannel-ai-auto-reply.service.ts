@@ -1,13 +1,7 @@
-import {
-  Injectable,
-  Logger,
-  forwardRef,
-  Inject,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, Logger, forwardRef, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { OmnichannelAiConfigEntity, AiProviderType } from '../entities/omnichannel-ai-config.entity';
+import { OmnichannelAiConfigEntity } from '../entities/omnichannel-ai-config.entity';
 import {
   OmnichannelConversationStateEntity,
   AiPausedReason,
@@ -16,17 +10,12 @@ import { OmnichannelAiLogEntity } from '../entities/omnichannel-ai-log.entity';
 import { OmnichannelMessageEntity } from '../entities/omnichannel-message.entity';
 import { OmnichannelPlatformType } from '../entities/omnichannel-credential.entity';
 import { OmnichannelAiCryptoService } from './omnichannel-ai-crypto.service';
-import { OmnichannelAiConfigService } from './omnichannel-ai-config.service';
 import { GeminiAiProvider } from './ai-providers/gemini-ai.provider';
 import { OpenAiProvider } from './ai-providers/openai-ai.provider';
-import { ClaudeAiProvider } from './ai-providers/claude-ai.provider';
 import { TelegramChannelService } from './telegram-channel.service';
 import { WhatsAppChannelService } from './whatsapp-channel.service';
 import { FacebookChannelService } from './facebook-channel.service';
 import { InstagramChannelService } from './instagram-channel.service';
-
-import { OmnichannelAiRagService } from './omnichannel-ai-rag.service';
-import { OmnichannelAiToolsService } from './omnichannel-ai-tools.service';
 
 export interface InboundMessageAiContext {
   tenantId: string;
@@ -53,12 +42,8 @@ export class OmnichannelAiAutoReplyService {
     @InjectRepository(OmnichannelMessageEntity)
     private readonly messageRepo: Repository<OmnichannelMessageEntity>,
     private readonly cryptoService: OmnichannelAiCryptoService,
-    private readonly aiConfigService: OmnichannelAiConfigService,
     private readonly geminiProvider: GeminiAiProvider,
     private readonly openAiProvider: OpenAiProvider,
-    private readonly claudeProvider: ClaudeAiProvider,
-    private readonly ragService: OmnichannelAiRagService,
-    private readonly toolsService: OmnichannelAiToolsService,
     @Inject(forwardRef(() => TelegramChannelService))
     private readonly telegramService: TelegramChannelService,
     @Inject(forwardRef(() => WhatsAppChannelService))
@@ -81,32 +66,9 @@ export class OmnichannelAiAutoReplyService {
       return false;
     }
 
-    // Check Per-Platform Enablement
-    if (config.enabledPlatforms && config.enabledPlatforms[platform] === false) {
-      this.logger.log(`AI Auto-Reply skipped for platform "${platform}" (disabled in AI Settings).`);
-      return false;
-    }
-
-    // Resolve the key for the active provider with auto-fallback
-    let activeProvider: AiProviderType = (config.provider || 'gemini') as AiProviderType;
-    let apiKey = this.aiConfigService.getDecryptedKeyForProvider(config, activeProvider);
-
+    const apiKey = this.cryptoService.decrypt(config.encryptedApiKey);
     if (!apiKey) {
-      const allProviders: AiProviderType[] = ['openai', 'gemini', 'claude', 'deepseek', 'groq'];
-      for (const p of allProviders) {
-        const candidateKey = this.aiConfigService.getDecryptedKeyForProvider(config, p);
-        if (candidateKey) {
-          activeProvider = p;
-          apiKey = candidateKey;
-          break;
-        }
-      }
-    }
-
-    if (!apiKey) {
-      this.logger.warn(
-        `AI Auto-Reply enabled for tenant ${tenantId} but no valid API Key configured for any provider. Please add a key in Channel Settings.`,
-      );
+      this.logger.warn(`AI Auto-Reply enabled for tenant ${tenantId} but no valid API Key configured.`);
       return false;
     }
 
@@ -124,43 +86,19 @@ export class OmnichannelAiAutoReplyService {
 
     // 3. Check Conversation Pause Condition
     if (state.isAiPaused) {
-      if (state.pausedReason === 'AGENT_MANUAL') {
-        // Explicitly paused by an agent clicking "Pause AI" in the UI
-        await this.logRepo.save(
-          this.logRepo.create({
-            tenantId,
-            conversationId,
-            platform,
-            provider: config.provider,
-            model: config.model,
-            userQuery: text,
-            status: 'SKIPPED_PAUSED',
-            errorMessage: `AI Auto-reply skipped: explicitly paused by agent`,
-          }),
-        );
-        return false;
-      }
-
-      if (config.triggerMode === 'ALWAYS') {
-        // In ALWAYS mode, incoming customer messages automatically resume AI auto-replies
-        state.isAiPaused = false;
-        state.pausedReason = 'NONE';
-        await this.stateRepo.save(state);
-      } else {
-        await this.logRepo.save(
-          this.logRepo.create({
-            tenantId,
-            conversationId,
-            platform,
-            provider: config.provider,
-            model: config.model,
-            userQuery: text,
-            status: 'SKIPPED_PAUSED',
-            errorMessage: `AI Auto-reply skipped: paused by ${state.pausedReason}`,
-          }),
-        );
-        return false;
-      }
+      await this.logRepo.save(
+        this.logRepo.create({
+          tenantId,
+          conversationId,
+          platform,
+          provider: config.provider,
+          model: config.model,
+          userQuery: text,
+          status: 'SKIPPED_PAUSED',
+          errorMessage: `AI Auto-reply skipped: paused by ${state.pausedReason}`,
+        }),
+      );
+      return false;
     }
 
     // 4. Trigger Mode & Human Activity Check
@@ -203,86 +141,21 @@ export class OmnichannelAiAutoReplyService {
       history.pop();
     }
 
+    const provider = config.provider === 'openai' ? this.openAiProvider : this.geminiProvider;
+
     try {
-      this.logger.log(`Generating AI Auto-Reply for tenant ${tenantId} via ${activeProvider} (${config.model})...`);
+      this.logger.log(`Generating AI Auto-Reply for tenant ${tenantId} via ${config.provider} (${config.model})...`);
 
-      const enrichedContext = await this.enrichStoreContext(
-        tenantId,
-        storeId || config.storeId,
-        text,
+      const result = await provider.generateReply({
         apiKey,
-        activeProvider === 'openai' ? 'openai' : 'gemini',
-        config.businessContext,
-      );
-
-      let result: any = null;
-      let usedProvider = activeProvider;
-      let usedModel = config.model;
-
-      try {
-        result = await this.executeProviderReply({
-          provider: activeProvider,
-          apiKey,
-          model: config.model,
-          systemPrompt: config.systemPrompt,
-          history,
-          latestMessage: text,
-          temperature: config.temperature,
-          maxTokens: Math.max(config.maxTokens || 500, 800),
-          businessContext: enrichedContext,
-        });
-      } catch (primaryErr: any) {
-        this.logger.warn(
-          `Primary provider ${activeProvider} failed: ${primaryErr.message}. Attempting provider fallback...`,
-        );
-
-        // Try other configured providers
-        const otherProviders: AiProviderType[] = (['gemini', 'openai', 'claude', 'deepseek', 'groq'] as AiProviderType[]).filter(
-          (p) => p !== activeProvider,
-        );
-
-        for (const fallbackP of otherProviders) {
-          const fallbackKey = this.aiConfigService.getDecryptedKeyForProvider(config, fallbackP);
-          if (fallbackKey) {
-            try {
-              this.logger.log(`Attempting fallback to ${fallbackP}...`);
-              const defaultFallbackModel =
-                fallbackP === 'gemini'
-                  ? 'gemini-2.5-flash'
-                  : fallbackP === 'openai'
-                  ? 'gpt-4o-mini'
-                  : fallbackP === 'claude'
-                  ? 'claude-3-5-haiku-20241022'
-                  : fallbackP === 'deepseek'
-                  ? 'deepseek-chat'
-                  : 'llama-3.3-70b-versatile';
-
-              result = await this.executeProviderReply({
-                provider: fallbackP,
-                apiKey: fallbackKey,
-                model: defaultFallbackModel,
-                systemPrompt: config.systemPrompt,
-                history,
-                latestMessage: text,
-                temperature: config.temperature,
-                maxTokens: Math.max(config.maxTokens || 500, 800),
-                businessContext: enrichedContext,
-              });
-
-              usedProvider = fallbackP;
-              usedModel = defaultFallbackModel;
-              this.logger.log(`Fallback to ${fallbackP} succeeded!`);
-              break;
-            } catch (fallbackErr: any) {
-              this.logger.warn(`Fallback to ${fallbackP} also failed: ${fallbackErr.message}`);
-            }
-          }
-        }
-
-        if (!result) {
-          throw primaryErr;
-        }
-      }
+        model: config.model,
+        systemPrompt: config.systemPrompt,
+        history,
+        latestMessage: text,
+        temperature: config.temperature,
+        maxTokens: config.maxTokens,
+        businessContext: config.businessContext,
+      });
 
       // 6. Save AI message record with metadata
       const aiMessageRecord = this.messageRepo.create({
@@ -324,8 +197,8 @@ export class OmnichannelAiAutoReplyService {
           tenantId,
           conversationId,
           platform,
-          provider: usedProvider,
-          model: usedModel,
+          provider: config.provider,
+          model: config.model,
           userQuery: text,
           aiResponse: result.reply,
           status: 'SUCCESS',
@@ -370,19 +243,13 @@ export class OmnichannelAiAutoReplyService {
     }
 
     state.lastHumanAgentMessageAt = new Date();
-
-    const config = await this.configRepo.findOne({ where: { tenantId } });
-    if (config?.triggerMode === 'NO_HUMAN_ACTIVE') {
-      state.isAiPaused = true;
-      state.pausedReason = 'HUMAN_AGENT_TAKEOVER';
-      state.pausedByUserId = agentUserId || 'dashboard_agent';
-      state.aiPausedAt = new Date();
-      this.logger.log(`AI Auto-Reply paused for conversation ${conversationId} (Human Agent Takeover).`);
-    } else {
-      this.logger.log(`Human agent message sent in ALWAYS mode for conversation ${conversationId}.`);
-    }
+    state.isAiPaused = true;
+    state.pausedReason = 'HUMAN_AGENT_TAKEOVER';
+    state.pausedByUserId = agentUserId || 'dashboard_agent';
+    state.aiPausedAt = new Date();
 
     await this.stateRepo.save(state);
+    this.logger.log(`AI Auto-Reply automatically paused for conversation ${conversationId} (Human Agent Takeover).`);
   }
 
   /**
@@ -431,208 +298,6 @@ export class OmnichannelAiAutoReplyService {
     return state;
   }
 
-  /**
-   * Generate an on-demand AI Draft reply for a merchant agent to review, edit, or insert into the chat composer.
-   */
-  async generateDraftReply(
-    tenantId: string,
-    conversationId: string,
-    promptOverride?: string,
-    providerOverride?: string,
-    modelOverride?: string,
-  ): Promise<{
-    success: boolean;
-    reply: string;
-    model: string;
-    provider: string;
-    latencyMs: number;
-    tokensUsed: number;
-  }> {
-    const config = await this.configRepo.findOne({ where: { tenantId } });
-    if (!config) {
-      throw new BadRequestException(
-        'AI is not configured for this store. Please add an API Key in Channel Settings → AI Configuration.',
-      );
-    }
-
-    // Determine active provider: explicit override -> config.provider -> first provider with key
-    let targetProvider: AiProviderType = (providerOverride || config.provider || 'openai') as AiProviderType;
-    let apiKey = this.aiConfigService.getDecryptedKeyForProvider(config, targetProvider);
-
-    // If requested provider has no key, look for any provider that has a valid key
-    if (!apiKey) {
-      const allProviders: AiProviderType[] = ['openai', 'gemini', 'claude', 'deepseek', 'groq'];
-      for (const p of allProviders) {
-        const candidateKey = this.aiConfigService.getDecryptedKeyForProvider(config, p);
-        if (candidateKey) {
-          targetProvider = p;
-          apiKey = candidateKey;
-          break;
-        }
-      }
-    }
-
-    if (!apiKey) {
-      throw new BadRequestException(
-        `No active AI API key found. Please add an API key (OpenAI, Gemini, Claude, DeepSeek, or Groq) in Channel Settings → AI Configuration.`,
-      );
-    }
-
-    // Gather recent messages for context
-    const recentMessages = await this.messageRepo.find({
-      where: { tenantId, conversationId },
-      order: { createdAt: 'DESC' },
-      take: 10,
-    });
-
-    if (recentMessages.length === 0) {
-      throw new BadRequestException('No conversation history found to draft a reply.');
-    }
-
-    const sorted = recentMessages.reverse();
-    const latestMsg = sorted[sorted.length - 1];
-    const previousHistory = sorted.slice(0, sorted.length - 1).map((m) => ({
-      role: (m.direction === 'OUTBOUND' ? 'model' : 'user') as 'model' | 'user',
-      text: m.text,
-    }));
-
-    const systemPrompt = promptOverride || config.systemPrompt;
-    const defaultModel = targetProvider === 'openai' ? 'gpt-4o-mini' : targetProvider === 'gemini' ? 'gemini-2.5-flash' : targetProvider === 'claude' ? 'claude-3-5-haiku-20241022' : targetProvider === 'deepseek' ? 'deepseek-chat' : 'llama-3.3-70b-versatile';
-    const targetModel = modelOverride || (targetProvider === config.provider ? config.model : undefined) || defaultModel;
-
-    const enrichedContext = await this.enrichStoreContext(
-      tenantId,
-      config.storeId,
-      latestMsg.text,
-      apiKey,
-      targetProvider === 'openai' ? 'openai' : 'gemini',
-      config.businessContext,
-    );
-
-    const result = await this.executeProviderReply({
-      provider: targetProvider,
-      apiKey,
-      model: targetModel,
-      systemPrompt,
-      history: previousHistory,
-      latestMessage: latestMsg.text,
-      temperature: config.temperature || 0.7,
-      maxTokens: Math.max(config.maxTokens || 500, 800),
-      businessContext: enrichedContext,
-    });
-
-    return {
-      success: true,
-      reply: result.reply,
-      model: result.model,
-      provider: result.provider,
-      latencyMs: result.latencyMs,
-      tokensUsed: result.tokensUsed,
-    };
-  }
-
-  /**
-   * Helper to enrich AI context with store-isolated RAG chunks and real-time live product/order lookups.
-   */
-  private async enrichStoreContext(
-    tenantId: string,
-    storeId?: string,
-    query?: string,
-    apiKey?: string,
-    provider: 'gemini' | 'openai' = 'gemini',
-    existingContext?: Record<string, any>,
-  ): Promise<Record<string, any>> {
-    const enriched: Record<string, any> = { ...(existingContext || {}) };
-
-    if (!query || !query.trim()) return enriched;
-
-    // 1. Multi-Tenant RAG Knowledge Base Search
-    try {
-      const ragChunks = await this.ragService.searchRelevantChunks(
-        tenantId,
-        storeId || '',
-        query,
-        3,
-        apiKey,
-        provider,
-      );
-      if (ragChunks.length > 0) {
-        enriched.storePolicyAndKnowledgeBase = ragChunks.map(
-          (c) => `[Source Document: ${c.documentName}] ${c.content}`,
-        );
-      }
-    } catch (e: any) {
-      this.logger.warn(`RAG context enrichment failed: ${e.message}`);
-    }
-
-    // 2. Real-time Order Tracking Lookup
-    const orderMatch = query.match(/\b(ORD-\d+|01[3-9]\d{8})\b/i);
-    if (orderMatch) {
-      try {
-        const orderRes = await this.toolsService.executeTool(
-          'track_customer_order',
-          {
-            orderNumber: orderMatch[1].toUpperCase().startsWith('ORD') ? orderMatch[1] : undefined,
-            phoneNumber: !orderMatch[1].toUpperCase().startsWith('ORD') ? orderMatch[1] : undefined,
-          },
-          tenantId,
-          storeId,
-        );
-        if (orderRes.found && orderRes.orders?.length > 0) {
-          enriched.liveCustomerOrderLookup = orderRes.orders;
-        }
-      } catch (e: any) {
-        this.logger.warn(`Order tool enrichment failed: ${e.message}`);
-      }
-    }
-
-    // 3. Real-time Product & Inventory Stock Lookup
-    try {
-      const productRes = await this.toolsService.executeTool(
-        'search_product_inventory',
-        { query },
-        tenantId,
-        storeId,
-      );
-      if (productRes.found && productRes.products?.length > 0) {
-        enriched.liveStoreProductsAndInventory = {
-          totalProductsCount: productRes.count,
-          products: productRes.products,
-        };
-      }
-    } catch (e: any) {
-      this.logger.warn(`Product tool enrichment failed: ${e.message}`);
-    }
-
-    return enriched;
-  }
-
-  private async executeProviderReply(
-    params: {
-      provider?: string;
-      apiKey: string;
-      model: string;
-      systemPrompt: string;
-      history: any[];
-      latestMessage: string;
-      temperature?: number;
-      maxTokens?: number;
-      businessContext?: any;
-    },
-  ) {
-    const provider = params.provider || 'gemini';
-    if (provider === 'gemini') {
-      return this.geminiProvider.generateReply(params);
-    }
-    if (provider === 'claude') {
-      return this.claudeProvider.generateReply(params);
-    }
-    return this.openAiProvider.generateReply({
-      ...params,
-      providerType: provider as 'openai' | 'deepseek' | 'groq',
-    });
-  }
-
   private async deliverOutboundReply(
     tenantId: string,
     platform: OmnichannelPlatformType,
@@ -644,15 +309,11 @@ export class OmnichannelAiAutoReplyService {
       if (platform === 'whatsapp') {
         await this.whatsappService.sendMessage(tenantId, recipientId, text, storeId);
       } else if (platform === 'telegram') {
-        await this.telegramService.sendMessage(tenantId, recipientId, text, storeId, {
-          skipDbSave: true,
-        });
+        await this.telegramService.sendMessage(tenantId, recipientId, text, storeId);
       } else if (platform === 'instagram') {
         await this.instagramService.sendMessage(tenantId, recipientId, text, storeId);
       } else if (platform === 'facebook') {
-        await this.facebookService.sendMessage(tenantId, recipientId, text, storeId, {
-          skipDbSave: true,
-        });
+        await this.facebookService.sendMessage(tenantId, recipientId, text, storeId);
       }
     } catch (err: any) {
       this.logger.warn(`Failed to deliver external message to ${platform} recipient ${recipientId}: ${err.message}`);

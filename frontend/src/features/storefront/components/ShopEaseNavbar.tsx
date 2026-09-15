@@ -125,10 +125,7 @@ export const ShopEaseNavbar = ({
                 </div>
               )}
               <div className="flex flex-col min-w-0">
-                <div
-                  className="truncate text-base sm:text-lg font-black text-slate-900 tracking-tight leading-tight transition-colors group-hover:[color:var(--brand-hover)]"
-                  style={{ ['--brand-hover' as any]: primaryColor }}
-                >
+                <div className="truncate text-base sm:text-lg font-black text-slate-900 tracking-tight leading-tight group-hover:text-blue-600 transition-colors">
                   {storeName}
                 </div>
                 <div className="flex items-center gap-1.5 mt-0.5">
@@ -142,10 +139,7 @@ export const ShopEaseNavbar = ({
 
             {/* SEARCH BAR (SOLID BLUE & WHITE CAPSULE) */}
             <div className="hidden md:flex flex-1 max-w-2xl mx-6">
-              <div
-                className="flex items-center w-full bg-white hover:border-slate-300 border border-slate-200 rounded-xl shadow-2xs transition-all duration-200 overflow-hidden h-10 px-1.5 focus-within:[border-color:var(--search-focus)] focus-within:[box-shadow:0_0_0_2px_var(--search-ring)]"
-                style={{ ['--search-focus' as any]: primaryColor, ['--search-ring' as any]: `${primaryColor}22` }}
-              >
+              <div className="flex items-center w-full bg-white hover:border-slate-300 border border-slate-200 rounded-xl shadow-2xs focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100 transition-all duration-200 overflow-hidden h-10 px-1.5">
                 <div className="pl-2.5 pr-2 flex items-center justify-center text-slate-400">
                   <Search className="w-4 h-4" strokeWidth={2} />
                 </div>
@@ -176,13 +170,9 @@ export const ShopEaseNavbar = ({
                 <button
                   type="button"
                   onClick={() => setIsAccountMenuOpen(!isAccountMenuOpen)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-bold transition-all focus:outline-none cursor-pointer active:scale-95 shadow-2xs hover:[background-color:var(--acct-hover-bg)] hover:[color:var(--acct-hover-fg)]"
-                  style={{ ['--acct-hover-bg' as any]: `${primaryColor}0f`, ['--acct-hover-fg' as any]: primaryColor }}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white hover:bg-blue-50/60 border border-slate-200 text-slate-700 hover:text-blue-600 text-xs font-bold transition-all focus:outline-none cursor-pointer active:scale-95 shadow-2xs"
                 >
-                  <div
-                    className="w-6 h-6 rounded-lg flex items-center justify-center"
-                    style={{ backgroundColor: `${primaryColor}14`, color: primaryColor }}
-                  >
+                  <div className="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
                     <User className="w-3.5 h-3.5" />
                   </div>
                   <div className="hidden sm:flex flex-col text-left leading-tight">
@@ -200,7 +190,7 @@ export const ShopEaseNavbar = ({
                   <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-xl py-2 z-50 animate-in fade-in zoom-in-95 duration-150 divide-y divide-slate-100">
                     {customer ? (
                       <>
-                        <div className="px-4 py-2.5" style={{ backgroundColor: `${primaryColor}0a` }}>
+                        <div className="px-4 py-2.5 bg-blue-50/40">
                           <p className="text-xs font-black text-slate-900 truncate">{customer.name}</p>
                           <p className="text-[10px] text-slate-500 font-medium truncate">
                             {customer.phone || customer.email || 'Customer Account'}
@@ -210,28 +200,25 @@ export const ShopEaseNavbar = ({
                           <Link
                             href={`/store/${slug}/account`}
                             onClick={() => setIsAccountMenuOpen(false)}
-                            className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-700 transition-colors hover:[background-color:var(--menu-hover-bg)] hover:[color:var(--menu-hover-fg)]"
-                            style={{ ['--menu-hover-bg' as any]: `${primaryColor}0f`, ['--menu-hover-fg' as any]: primaryColor }}
+                            className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                           >
-                            <UserCircle className="w-4 h-4" style={{ color: primaryColor }} />
+                            <UserCircle className="w-4 h-4 text-blue-500" />
                             <span>My Profile</span>
                           </Link>
                           <Link
                             href={`/store/${slug}/account/orders`}
                             onClick={() => setIsAccountMenuOpen(false)}
-                            className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-700 transition-colors hover:[background-color:var(--menu-hover-bg)] hover:[color:var(--menu-hover-fg)]"
-                            style={{ ['--menu-hover-bg' as any]: `${primaryColor}0f`, ['--menu-hover-fg' as any]: primaryColor }}
+                            className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                           >
-                            <Package className="w-4 h-4" style={{ color: primaryColor }} />
+                            <Package className="w-4 h-4 text-blue-500" />
                             <span>My Orders</span>
                           </Link>
                           <Link
                             href={`/store/${slug}/track`}
                             onClick={() => setIsAccountMenuOpen(false)}
-                            className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-700 transition-colors hover:[background-color:var(--menu-hover-bg)] hover:[color:var(--menu-hover-fg)]"
-                            style={{ ['--menu-hover-bg' as any]: `${primaryColor}0f`, ['--menu-hover-fg' as any]: primaryColor }}
+                            className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                           >
-                            <Search className="w-4 h-4" style={{ color: primaryColor }} />
+                            <Search className="w-4 h-4 text-blue-500" />
                             <span>Track an Order</span>
                           </Link>
                         </div>
@@ -257,16 +244,15 @@ export const ShopEaseNavbar = ({
                           <button
                             type="button"
                             onClick={() => handleOpenCustomerAuth('login')}
-                            className="w-full flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-800 transition-colors text-left cursor-pointer hover:[background-color:var(--menu-hover-bg)] hover:[color:var(--menu-hover-fg)]"
-                            style={{ ['--menu-hover-bg' as any]: `${primaryColor}0f`, ['--menu-hover-fg' as any]: primaryColor }}
+                            className="w-full flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-800 hover:bg-blue-50 hover:text-blue-600 transition-colors text-left cursor-pointer"
                           >
-                            <LogIn className="w-4 h-4" style={{ color: primaryColor }} />
+                            <LogIn className="w-4 h-4 text-blue-600" />
                             <span>Customer Sign In</span>
                           </button>
                           <button
                             type="button"
                             onClick={() => handleOpenCustomerAuth('register')}
-                            className="w-full flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-800 hover:bg-slate-50 transition-colors text-left cursor-pointer"
+                            className="w-full flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-800 hover:bg-blue-50 hover:text-blue-600 transition-colors text-left cursor-pointer"
                           >
                             <UserPlus className="w-4 h-4 text-emerald-600" />
                             <span>Create Account</span>
@@ -288,29 +274,26 @@ export const ShopEaseNavbar = ({
                 )}
               </div>
 
-              {/* SOLID BRAND-COLORED CART BUTTON (NO GRADIENT) */}
+              {/* SOLID ROYAL BLUE CART BUTTON (NO GRADIENT) */}
               <button
                 type="button"
                 onClick={() => dispatch(toggleCartDrawer(true))}
                 aria-label="View Cart"
-                className="flex items-center gap-2.5 px-3.5 sm:px-4 py-2 rounded-xl hover:brightness-110 text-white shadow-md transition-all duration-150 active:scale-95 cursor-pointer group"
-                style={{ backgroundColor: primaryColor, boxShadow: `0 4px 12px -2px ${primaryColor}33` }}
+                className="flex items-center gap-2.5 px-3.5 sm:px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/20 transition-all duration-150 active:scale-95 cursor-pointer group"
+                style={primaryColor && primaryColor !== '#2563eb' ? { backgroundColor: primaryColor } : {}}
               >
                 <div className="relative flex items-center justify-center">
                   <div className="w-6 h-6 rounded-lg bg-white/20 text-white flex items-center justify-center group-hover:scale-105 transition-transform">
                     <ShoppingBag className="w-3.5 h-3.5 text-white" strokeWidth={2.2} />
                   </div>
                   {displayCount > 0 && (
-                    <span
-                      className="absolute -top-1.5 -right-1.5 min-w-[17px] h-[17px] px-1 bg-white rounded-full text-[9px] font-black flex items-center justify-center shadow-xs ring-2 animate-in zoom-in"
-                      style={{ color: primaryColor, ['--tw-ring-color' as any]: primaryColor }}
-                    >
+                    <span className="absolute -top-1.5 -right-1.5 min-w-[17px] h-[17px] px-1 bg-white text-blue-700 rounded-full text-[9px] font-black flex items-center justify-center shadow-xs ring-2 ring-blue-600 animate-in zoom-in">
                       {displayCount}
                     </span>
                   )}
                 </div>
                 <div className="flex flex-col text-left leading-tight pr-0.5">
-                  <span className="text-[9px] font-extrabold uppercase tracking-wider text-white/70 hidden sm:inline">
+                  <span className="text-[9px] font-extrabold uppercase tracking-wider text-blue-100 hidden sm:inline">
                     Cart
                   </span>
                   <span className="text-xs font-black text-white">
@@ -335,31 +318,21 @@ export const ShopEaseNavbar = ({
           <nav aria-label="Storefront navigation" className="hidden md:flex items-center gap-8 pt-1 border-t border-slate-100">
             <Link
               href={`/store/${slug}`}
-              className={`text-xs pb-2.5 pt-1 transition-all border-b-2 ${
+              className={`text-xs pb-2.5 pt-1 transition-all ${
                 activeTab === 'home'
-                  ? 'font-bold'
-                  : 'font-medium text-slate-600 border-transparent hover:[color:var(--tab-hover)]'
+                  ? 'font-bold text-blue-600 border-b-2 border-blue-600'
+                  : 'font-medium text-slate-600 hover:text-blue-600'
               }`}
-              style={
-                activeTab === 'home'
-                  ? { color: primaryColor, borderColor: primaryColor }
-                  : { ['--tab-hover' as any]: primaryColor }
-              }
             >
               Home
             </Link>
             <Link
               href={`/store/${slug}/shop`}
-              className={`text-xs pb-2.5 pt-1 transition-all border-b-2 ${
+              className={`text-xs pb-2.5 pt-1 transition-all ${
                 activeTab === 'shop'
-                  ? 'font-bold'
-                  : 'font-medium text-slate-600 border-transparent hover:[color:var(--tab-hover)]'
+                  ? 'font-bold text-blue-600 border-b-2 border-blue-600'
+                  : 'font-medium text-slate-600 hover:text-blue-600'
               }`}
-              style={
-                activeTab === 'shop'
-                  ? { color: primaryColor, borderColor: primaryColor }
-                  : { ['--tab-hover' as any]: primaryColor }
-              }
             >
               Shop
             </Link>
@@ -383,16 +356,14 @@ export const ShopEaseNavbar = ({
               <Link
                 href={`/store/${slug}`}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className={`px-3 py-2 rounded-lg ${activeTab === 'home' ? 'font-bold' : 'hover:bg-slate-50 font-medium text-slate-600'}`}
-                style={activeTab === 'home' ? { color: primaryColor, backgroundColor: `${primaryColor}14` } : undefined}
+                className={`px-3 py-2 rounded-lg ${activeTab === 'home' ? 'text-blue-600 bg-blue-50 font-bold' : 'hover:bg-slate-50 font-medium text-slate-600'}`}
               >
                 Home
               </Link>
               <Link
                 href={`/store/${slug}/shop`}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className={`px-3 py-2 rounded-lg ${activeTab === 'shop' ? 'font-bold' : 'hover:bg-slate-50 font-medium text-slate-600'}`}
-                style={activeTab === 'shop' ? { color: primaryColor, backgroundColor: `${primaryColor}14` } : undefined}
+                className={`px-3 py-2 rounded-lg ${activeTab === 'shop' ? 'text-blue-600 bg-blue-50 font-bold' : 'hover:bg-slate-50 font-medium text-slate-600'}`}
               >
                 Shop
               </Link>
@@ -432,16 +403,14 @@ export const ShopEaseNavbar = ({
                   <button
                     type="button"
                     onClick={() => handleOpenCustomerAuth('login')}
-                    className="flex-1 py-2 rounded-xl text-center font-bold hover:brightness-95"
-                    style={{ backgroundColor: `${primaryColor}14`, color: primaryColor }}
+                    className="flex-1 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-center font-bold"
                   >
                     Customer Sign In
                   </button>
                   <button
                     type="button"
                     onClick={() => handleOpenCustomerAuth('register')}
-                    className="flex-1 py-2 hover:brightness-110 text-white rounded-xl text-center font-bold shadow-xs"
-                    style={{ backgroundColor: primaryColor }}
+                    className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-center font-bold shadow-xs"
                   >
                     Create Account
                   </button>

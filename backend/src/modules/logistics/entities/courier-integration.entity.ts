@@ -23,17 +23,11 @@ export interface CourierCredentialBag {
   secretKey?: string;
   clientId?: string;
   clientSecret?: string;
-  /** CarryBee's third auth header, issued alongside Client-ID / Client-Secret. */
-  clientContext?: string;
-  /** Pathao's / CarryBee's merchant store id, distinct from the BitCommerce store. */
+  /** Pathao's merchant store id, distinct from the BitCommerce store. */
   merchantStoreId?: string;
   username?: string;
   password?: string;
   baseUrl?: string;
-  /** Cached OAuth bearer (Pathao token persistence — see PathaoTokenEntity). */
-  accessToken?: string;
-  /** Cached OAuth refresh token, paired with accessToken. */
-  refreshToken?: string;
 }
 
 /**

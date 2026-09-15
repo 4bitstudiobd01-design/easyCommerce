@@ -9,16 +9,7 @@ interface MediaTabProps {
 }
 
 export function MediaTab({ form }: MediaTabProps) {
-  const { localImages, setLocalImages, editId } = form;
+  const { localImages, setLocalImages } = form;
 
-  // In edit mode the product already exists, so pass its id — the gallery then
-  // attaches each upload to the product immediately (addMedia) instead of only
-  // holding URLs in form state, which the update payload no longer carries.
-  return (
-    <ProductMediaGallery
-      productId={editId || undefined}
-      localImages={localImages}
-      onLocalImagesChange={setLocalImages}
-    />
-  );
+  return <ProductMediaGallery localImages={localImages} onLocalImagesChange={setLocalImages} />;
 }

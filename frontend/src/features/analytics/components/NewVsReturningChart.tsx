@@ -3,12 +3,10 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useGetNewVsReturningTrendQuery } from '../api/analyticsApi';
-import { useAnalyticsFilters } from '../context/AnalyticsFiltersContext';
 import { Skeleton } from '@/components/ui/Skeleton';
 
 export function NewVsReturningChart() {
-  const { days } = useAnalyticsFilters();
-  const { data, isLoading } = useGetNewVsReturningTrendQuery({ days });
+  const { data, isLoading } = useGetNewVsReturningTrendQuery({ days: 7 });
 
   if (isLoading) {
     return (

@@ -9,7 +9,7 @@ export default function OmnichannelChannelsPage() {
     <div className="space-y-6">
       <CrmNavigationHeader
         title="Channel Credentials & Integrations"
-        subtitle="Manage secure API credentials, webhook endpoints, and live connections for Facebook, Messenger, Instagram, TikTok, WhatsApp, and Telegram."
+        subtitle="Manage secure API credentials, webhook endpoints, and live connections for WhatsApp, Telegram, Facebook, and Twitter."
       />
       <ChannelCredentialsManager />
     </div>

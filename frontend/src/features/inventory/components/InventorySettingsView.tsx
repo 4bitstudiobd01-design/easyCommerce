@@ -1,24 +1,54 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
+  Database,
   ShieldCheck,
   SlidersHorizontal,
   CheckCircle2,
+  AlertTriangle,
+  Sparkles,
+  Loader2,
   ArrowLeft,
 } from 'lucide-react';
-import { useGetInventorySettingsOverviewQuery } from '../api/inventoryApi';
+import {
+  useGetInventorySettingsOverviewQuery,
+  useSeedInventoryDemoDataMutation,
+} from '../api/inventoryApi';
 
 export function InventorySettingsView() {
   const router = useRouter();
-  const { data: settingsData, isLoading } = useGetInventorySettingsOverviewQuery(undefined, {
+  const { data: settingsData, isLoading, refetch } = useGetInventorySettingsOverviewQuery(undefined, {
     pollingInterval: 30000,
   });
-
+  
   const overview = settingsData?.overview;
   const integrity = settingsData?.integrity;
+
+  const [seedDemoData, { isLoading: isSeeding }] = useSeedInventoryDemoDataMutation();
+  const [showSeedModal, setShowSeedModal] = useState(false);
+  const [seedSuccessMessage, setSeedSuccessMessage] = useState<string | null>(null);
+  const [seedErrorMessage, setSeedErrorMessage] = useState<string | null>(null);
+
+  const handleSeedConfirm = async () => {
+    setSeedSuccessMessage(null);
+    setSeedErrorMessage(null);
+    try {
+      const res = await seedDemoData().unwrap();
+      setShowSeedModal(false);
+      setSeedSuccessMessage(
+        `Successfully seeded ${res.productsCreated} products, ${res.variantsCreated} variants, ${res.inventoryStocksCreated} inventory items, and ${res.movementsCreated} movement ledger entries!`,
+      );
+      refetch();
+    } catch (err: any) {
+      setShowSeedModal(false);
+      setSeedErrorMessage(
+        err?.data?.message || err?.message || 'Failed to seed demo inventory records.',
+      );
+    }
+  };
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
@@ -48,15 +78,64 @@ export function InventorySettingsView() {
           </nav>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Inventory Settings</h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Platform security guarantees and live database invariant overview.
+            Development seed data, platform security guarantees, and live database invariant overview.
           </p>
         </div>
       </div>
+
+      {/* Success / Error Feedback Banners */}
+      {seedSuccessMessage && (
+        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-start gap-3 text-emerald-900 text-xs font-medium animate-in fade-in">
+          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+          <div className="flex-1">{seedSuccessMessage}</div>
+        </div>
+      )}
+
+      {seedErrorMessage && (
+        <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-start gap-3 text-rose-900 text-xs font-medium animate-in fade-in">
+          <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+          <div className="flex-1">{seedErrorMessage}</div>
+        </div>
+      )}
 
       {/* 2-Column Grid Layout for Screen 9 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Column */}
         <div className="space-y-6">
+          {/* Main Seed / Demo Data Card */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+                <Database className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-base font-extrabold text-slate-900">Seed / Demo Data</h2>
+                <p className="text-xs text-slate-500 mt-1">
+                  Add realistic inventory data for testing and development. Generates catalog products, multi-level variants, stock distributions, and movement logs.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowSeedModal(true)}
+              disabled={isSeeding}
+              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm shadow-blue-600/30 flex items-center justify-center gap-2 transition-all"
+            >
+              {isSeeding ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Seeding Demo Data...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  <span>Seed Demo Data</span>
+                </>
+              )}
+            </button>
+          </div>
+
           {/* Live Data Overview Section */}
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -225,6 +304,39 @@ export function InventorySettingsView() {
           </div>
         </div>
       </div>
+
+      {/* Confirmation Modal for Demo Data Seed */}
+      {showSeedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => !isSeeding && setShowSeedModal(false)} />
+          <div className="relative bg-white rounded-[24px] shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <h2 className="text-lg font-extrabold text-slate-900">Seed Demo Data</h2>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl flex gap-3 text-blue-800 text-sm">
+                <Database className="w-5 h-5 text-blue-600 shrink-0" />
+                <div>
+                  <p className="font-bold">This will populate your database with dummy data.</p>
+                  <p className="mt-1 text-xs text-blue-700/80">It is safe to run multiple times, but it will create many records.</p>
+                </div>
+              </div>
+            </div>
+            <div className="px-6 py-5 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+              <button onClick={() => setShowSeedModal(false)} disabled={isSeeding} className="px-4 py-2 text-slate-600 text-sm font-bold hover:bg-slate-100 rounded-xl">
+                Cancel
+              </button>
+              <button onClick={handleSeedConfirm} disabled={isSeeding} className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-sm shadow-blue-600/30 flex items-center gap-2">
+                {isSeeding ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /><span>Seeding...</span></>
+                ) : (
+                  <span>Confirm & Seed</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

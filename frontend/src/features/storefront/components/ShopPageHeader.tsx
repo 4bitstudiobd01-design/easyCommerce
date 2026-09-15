@@ -7,10 +7,9 @@ import { ChevronRight } from 'lucide-react';
 interface ShopPageHeaderProps {
   slug?: string;
   totalProducts?: number;
-  primaryColor?: string;
 }
 
-export const ShopPageHeader = ({ slug = 'main', totalProducts, primaryColor = '#2563eb' }: ShopPageHeaderProps) => {
+export const ShopPageHeader = ({ slug = 'main', totalProducts }: ShopPageHeaderProps) => {
   return (
     <div className="bg-gradient-to-r from-slate-50/80 via-white to-blue-50/20 border-b border-slate-200/80 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -19,11 +18,7 @@ export const ShopPageHeader = ({ slug = 'main', totalProducts, primaryColor = '#
           <div className="space-y-2">
             {/* Breadcrumb */}
             <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-              <Link
-                href={`/store/${slug}`}
-                className="transition-colors hover:[color:var(--breadcrumb-hover)]"
-                style={{ ['--breadcrumb-hover' as any]: primaryColor }}
-              >
+              <Link href={`/store/${slug}`} className="hover:text-blue-600 transition-colors">
                 Home
               </Link>
               <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
@@ -31,10 +26,7 @@ export const ShopPageHeader = ({ slug = 'main', totalProducts, primaryColor = '#
             </nav>
 
             <div className="flex items-center gap-2">
-              <span
-                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider"
-                style={{ backgroundColor: `${primaryColor}14`, color: primaryColor, border: `1px solid ${primaryColor}33` }}
-              >
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-200/80 text-blue-700 text-[10px] font-extrabold uppercase tracking-wider">
                 🛍️ Full Collection
               </span>
             </div>

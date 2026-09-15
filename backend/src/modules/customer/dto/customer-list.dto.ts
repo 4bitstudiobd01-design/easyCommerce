@@ -1,7 +1,7 @@
 import { IsOptional, IsString, IsEnum, IsInt, Min, Max, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { CustomerStatusEnum, CustomerAccountTypeEnum, CustomerSourceEnum } from '../entities/customer.entity';
+import { CustomerStatusEnum, CustomerSourceEnum } from '../entities/customer.entity';
 
 export const ALLOWED_CUSTOMER_SORT_FIELDS = [
   'createdAt',
@@ -40,11 +40,6 @@ export class CustomerListDto {
   @IsOptional()
   @IsEnum(CustomerStatusEnum)
   status?: CustomerStatusEnum;
-
-  @ApiPropertyOptional({ enum: CustomerAccountTypeEnum, description: 'Filter by customer account type (REGISTERED vs GUEST)' })
-  @IsOptional()
-  @IsEnum(CustomerAccountTypeEnum)
-  accountType?: CustomerAccountTypeEnum;
 
   @ApiPropertyOptional({ enum: CustomerSourceEnum, description: 'Filter by customer source' })
   @IsOptional()

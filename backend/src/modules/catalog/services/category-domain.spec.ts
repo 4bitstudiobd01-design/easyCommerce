@@ -69,11 +69,6 @@ describe('Category Domain & Database Foundation (Chunk 1)', () => {
         });
         return { affected: 1 };
       }),
-      count: jest.fn().mockImplementation(async ({ where }) => {
-        return categoriesStore.filter((c) => {
-          return Object.entries(where).every(([key, val]) => (c as any)[key] === val);
-        }).length;
-      }),
       createQueryBuilder: jest.fn().mockImplementation(() => {
         let tenantFilter = '';
         const qb: any = {
@@ -106,7 +101,6 @@ describe('Category Domain & Database Foundation (Chunk 1)', () => {
 
     productRepo = {
       update: jest.fn().mockResolvedValue({ affected: 1 }),
-      count: jest.fn().mockResolvedValue(0),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -354,25 +348,15 @@ describe('Category Domain & Database Foundation (Chunk 1)', () => {
   });
 
   describe('9. Delete Category Safety', () => {
-    it('should delete a category that has no products or subcategories', async () => {
+    it('should unbind product categoryIds when category is deleted', async () => {
       const cat = await createService.execute(tenantA, { name: 'Temporary Category' });
 
       const res = await deleteService.execute(cat.id, tenantA);
       expect(res.message).toBe('Category deleted successfully');
-    });
-
-    it('should block deletion when the category still has products assigned', async () => {
-      const cat = await createService.execute(tenantA, { name: 'Occupied Category' });
-      productRepo.count = jest.fn().mockResolvedValue(2);
-
-      await expect(deleteService.execute(cat.id, tenantA)).rejects.toThrow(BadRequestException);
-    });
-
-    it('should block deletion when the category still has subcategories', async () => {
-      const parent = await createService.execute(tenantA, { name: 'Parent Category' });
-      await createService.execute(tenantA, { name: 'Child Category', parentId: parent.id });
-
-      await expect(deleteService.execute(parent.id, tenantA)).rejects.toThrow(BadRequestException);
+      expect(productRepo.update).toHaveBeenCalledWith(
+        { categoryId: cat.id, tenantId: tenantA },
+        { categoryId: undefined },
+      );
     });
   });
 });

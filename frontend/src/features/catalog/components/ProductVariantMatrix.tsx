@@ -12,12 +12,9 @@ import {
   useUpdateVariantMutation,
   useDeleteProductVariantMutation,
   useBulkUpdateVariantsMutation,
-  useBulkDeleteVariantsMutation,
   ProductVariant,
   AttributeDefinition,
-  VariantOptionMeta,
 } from '@/features/catalog/api/catalogApi';
-import type { PendingVariant } from '@/features/catalog/hooks/useProductForm';
 import {
   Layers,
   Sliders,
@@ -36,44 +33,18 @@ import {
   Wand2,
   Trash2,
   Edit2,
+  AlertTriangle,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-
-// One place for whichever destructive variant/attribute action is awaiting
-// confirmation, so all three share the themed ConfirmDialog instead of window.confirm.
-type PendingConfirm =
-  | { kind: 'delete-attribute'; attr: AttributeDefinition }
-  | { kind: 'delete-variant'; variantId: string; variantTitle: string }
-  | { kind: 'bulk-delete-variants'; count: number };
 
 interface ProductVariantMatrixProps {
-  /** Present in edit mode — variants are then read/written against the database. */
   productId?: string;
   hasVariants: boolean;
   onHasVariantsChange: (val: boolean) => void;
-  /** Edit mode: the product's saved variants. */
   existingVariants?: ProductVariant[];
-  /** Create mode: variant combinations held in form state until the product is saved. */
-  pendingVariants?: PendingVariant[];
-  onPendingVariantsChange?: (variants: PendingVariant[]) => void;
   basePrice?: number;
-  compareAtPrice?: number;
   currencySymbol?: string;
-}
-
-// Rows the table renders — either real ProductVariant (edit) or a synthetic view
-// over a PendingVariant (create). id is a stable local key in create mode.
-interface VariantRow {
-  id: string;
-  title: string;
-  sku?: string;
-  price?: number;
-  compareAtPrice?: number;
-  isEnabled: boolean;
-  /** Create mode only — per-variant initial stock, saved with the product. */
-  initialStock?: number;
-  options: VariantOptionMeta[];
+  onEnsureSaved?: () => Promise<string | null>;
 }
 
 // Common preset options for instant 1-click creation
@@ -110,14 +81,10 @@ export function ProductVariantMatrix({
   hasVariants,
   onHasVariantsChange,
   existingVariants = [],
-  pendingVariants = [],
-  onPendingVariantsChange,
   basePrice = 0,
-  compareAtPrice,
   currencySymbol = '৳',
+  onEnsureSaved,
 }: ProductVariantMatrixProps) {
-  // No productId => a brand-new product; variants live in form state, not the DB.
-  const isCreateMode = !productId;
   const { data: allAttributes = [], refetch: refetchAttributes } = useGetAttributesQuery();
   const [createAttribute, { isLoading: isCreatingAttr }] = useCreateAttributeMutation();
   const [updateAttribute, { isLoading: isUpdatingAttr }] = useUpdateAttributeMutation();
@@ -129,10 +96,6 @@ export function ProductVariantMatrix({
   const [updateVariant, { isLoading: isUpdatingVariant }] = useUpdateVariantMutation();
   const [deleteProductVariant, { isLoading: isDeletingVariant }] = useDeleteProductVariantMutation();
   const [bulkUpdateVariants, { isLoading: isBulkUpdating }] = useBulkUpdateVariantsMutation();
-  const [bulkDeleteVariants, { isLoading: isBulkDeleting }] = useBulkDeleteVariantsMutation();
-
-  // Whichever destructive action is waiting for the user to confirm in the dialog.
-  const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm | null>(null);
 
   // Filter only attributes where isVariantOption = true
   const variantAttributes = useMemo(
@@ -147,8 +110,6 @@ export function ProductVariantMatrix({
   // Bulk edit values
   const [bulkPrice, setBulkPrice] = useState<number | ''>('');
   const [bulkComparePrice, setBulkComparePrice] = useState<number | ''>('');
-  // Create mode only — bulk-set the initial stock across selected variants.
-  const [bulkStock, setBulkStock] = useState<number | ''>('');
   const [showBulkBar, setShowBulkBar] = useState(false);
 
   // Inline Create Attribute Modal/Card State
@@ -165,11 +126,8 @@ export function ProductVariantMatrix({
   const [quickOptionInputs, setQuickOptionInputs] = useState<Record<string, string>>({});
   const [activeAddOptionAttrId, setActiveAddOptionAttrId] = useState<string | null>(null);
 
-  // Local editing buffer for variants. `initialStock` only applies in create mode
-  // (a not-yet-saved product), where per-variant stock is seeded with the product.
-  const [variantBuffer, setVariantBuffer] = useState<
-    Record<string, Partial<ProductVariant> & { initialStock?: number }>
-  >({});
+  // Local editing buffer for variants
+  const [variantBuffer, setVariantBuffer] = useState<Record<string, Partial<ProductVariant>>>({});
 
   // Toggle option selection
   const toggleOption = (attributeId: string, optionId: string) => {
@@ -297,8 +255,12 @@ export function ProductVariantMatrix({
     }
   };
 
-  // Perform the attribute deletion once confirmed in the dialog.
-  const performDeleteAttribute = async (attr: AttributeDefinition) => {
+  // Handle Delete Attribute
+  const handleDeleteAttribute = async (attr: AttributeDefinition) => {
+    if (!confirm(`Are you sure you want to delete attribute "${attr.name}" and all its options?`)) {
+      return;
+    }
+
     try {
       await deleteAttribute(attr.id).unwrap();
       toast.success(`Attribute "${attr.name}" deleted`);
@@ -372,83 +334,23 @@ export function ProductVariantMatrix({
     }
   };
 
-  // Builds the selected attribute -> option[] map into an array the Cartesian
-  // helper can walk, resolving ids to the attribute/option records.
-  const buildSelectedAxes = () => {
-    const keys = Object.keys(selectedDimensions);
-    return keys
-      .map((attrId) => {
-        const attr = variantAttributes.find((a) => a.id === attrId);
-        if (!attr) return null;
-        const opts = (attr.options || []).filter((o) => selectedDimensions[attrId].includes(o.id!));
-        return { attr, opts };
-      })
-      .filter((x): x is { attr: AttributeDefinition; opts: NonNullable<AttributeDefinition['options']> } => !!x && x.opts.length > 0);
-  };
-
   // Generate Matrix
   const handleGenerate = async () => {
+    let targetProductId = productId;
+    if (!targetProductId && onEnsureSaved) {
+      targetProductId = (await onEnsureSaved()) || undefined;
+    }
+
+    if (!targetProductId) {
+      return;
+    }
+
     const keys = Object.keys(selectedDimensions);
     if (keys.length === 0) {
       toast.error('Select at least one variant attribute option.');
       return;
     }
 
-    // --- Create mode: compute combinations locally, keep them in form state ---
-    if (isCreateMode) {
-      const axes = buildSelectedAxes();
-      if (axes.length === 0) {
-        toast.error('Select at least one option for a variant attribute.');
-        return;
-      }
-
-      // Cartesian product of the selected option sets.
-      let combos: { attr: AttributeDefinition; opt: NonNullable<AttributeDefinition['options']>[number] }[][] = [[]];
-      for (const axis of axes) {
-        const next: typeof combos = [];
-        for (const combo of combos) {
-          for (const opt of axis.opts) {
-            next.push([...combo, { attr: axis.attr, opt }]);
-          }
-        }
-        combos = next;
-      }
-
-      if (combos.length > 200) {
-        toast.error(`That produces ${combos.length} variants — the limit is 200. Select fewer options.`);
-        return;
-      }
-
-      const built: PendingVariant[] = combos.map((combo) => {
-        const options: VariantOptionMeta[] = combo.map((c) => ({
-          attributeId: c.attr.id,
-          attributeName: c.attr.name,
-          optionId: c.opt.id!,
-          optionLabel: c.opt.label || c.opt.value,
-          value: c.opt.value,
-        }));
-        const combinationKey = combo
-          .map((c) => `${(c.attr.key || c.attr.name).toLowerCase()}:${c.opt.value.toLowerCase()}`)
-          .join('|');
-        const title = combo.map((c) => c.opt.label || c.opt.value).join(' / ');
-        return {
-          title,
-          combinationKey,
-          sku: undefined,
-          price: basePrice > 0 ? basePrice : undefined,
-          compareAtPrice: compareAtPrice && compareAtPrice > 0 ? compareAtPrice : undefined,
-          isEnabled: true,
-          initialStock: 0,
-          options,
-        };
-      });
-
-      onPendingVariantsChange?.(built);
-      toast.success(`${built.length} variant${built.length === 1 ? '' : 's'} ready — they'll be saved with the product.`);
-      return;
-    }
-
-    // --- Edit mode: the product exists, generate against the database ---
     const payloadDimensions = keys.map((attrId) => ({
       attributeId: attrId,
       optionIds: selectedDimensions[attrId],
@@ -456,7 +358,7 @@ export function ProductVariantMatrix({
 
     try {
       const variants = await generateVariants({
-        productId: productId!,
+        productId: targetProductId,
         dimensions: payloadDimensions,
       }).unwrap();
 
@@ -468,28 +370,10 @@ export function ProductVariantMatrix({
 
   // Save Single Variant Row
   const handleSaveVariantRow = async (variantId: string) => {
+    if (!productId) return;
     const patch = variantBuffer[variantId];
     if (!patch) return;
 
-    // Create mode: no product yet — just update the pending variant in form state.
-    if (isCreateMode) {
-      patchPendingVariant(variantId, {
-        sku: patch.sku,
-        price: patch.price,
-        compareAtPrice: patch.compareAtPrice,
-        isEnabled: patch.isEnabled,
-        initialStock: patch.initialStock,
-      });
-      setVariantBuffer((prev) => {
-        const copy = { ...prev };
-        delete copy[variantId];
-        return copy;
-      });
-      toast.success('Variant updated.');
-      return;
-    }
-
-    if (!productId) return;
     try {
       await updateVariant({
         productId,
@@ -508,14 +392,11 @@ export function ProductVariantMatrix({
     }
   };
 
-  // Perform a single variant deletion once confirmed in the dialog.
-  const performDeleteSingleVariant = async (variantId: string, variantTitle: string) => {
-    if (isCreateMode) {
-      removePendingVariant(variantId);
-      toast.success(`Variant "${variantTitle}" removed.`);
-      return;
-    }
+  // Delete Single Variant
+  const handleDeleteSingleVariant = async (variantId: string, variantTitle: string) => {
     if (!productId) return;
+    if (!confirm(`Delete variant "${variantTitle}"?`)) return;
+
     try {
       await deleteProductVariant({ productId, variantId }).unwrap();
       toast.success(`Variant "${variantTitle}" deleted.`);
@@ -525,72 +406,25 @@ export function ProductVariantMatrix({
     }
   };
 
-  // Delete every selected variant in one transactional request, so a mid-way
-  // failure cannot leave half the selection removed.
-  const performBulkDeleteVariants = async () => {
-    if (selectedVariantIds.length === 0) return;
-    if (isCreateMode) {
-      const next = pendingVariants.filter(
-        (v, i) => !selectedVariantIds.includes(v.combinationKey || `pending-${i}`),
-      );
-      onPendingVariantsChange?.(next);
-      toast.success(`${selectedVariantIds.length} variants removed.`);
-      setSelectedVariantIds([]);
-      return;
-    }
-    if (!productId) return;
+  // Bulk Delete Variants
+  const handleBulkDeleteVariants = async () => {
+    if (!productId || selectedVariantIds.length === 0) return;
+    if (!confirm(`Are you sure you want to delete ${selectedVariantIds.length} selected variants?`)) return;
+
     try {
-      const res = await bulkDeleteVariants({ productId, variantIds: selectedVariantIds }).unwrap();
-      toast.success(res.message || `${selectedVariantIds.length} variants deleted.`);
+      for (const variantId of selectedVariantIds) {
+        await deleteProductVariant({ productId, variantId }).unwrap();
+      }
+      toast.success(`${selectedVariantIds.length} variants deleted.`);
       setSelectedVariantIds([]);
     } catch (err: any) {
-      toast.error(err?.data?.message || 'Failed to delete the selected variants.');
+      toast.error(err?.data?.message || 'Failed to delete some variants.');
     }
   };
-
-  // Runs whichever destructive action the ConfirmDialog is currently gating.
-  const handleConfirmedAction = async () => {
-    if (!pendingConfirm) return;
-    if (pendingConfirm.kind === 'delete-attribute') {
-      await performDeleteAttribute(pendingConfirm.attr);
-    } else if (pendingConfirm.kind === 'delete-variant') {
-      await performDeleteSingleVariant(pendingConfirm.variantId, pendingConfirm.variantTitle);
-    } else if (pendingConfirm.kind === 'bulk-delete-variants') {
-      await performBulkDeleteVariants();
-    }
-    setPendingConfirm(null);
-  };
-
-  const confirmBusy = isDeletingAttr || isDeletingVariant || isBulkDeleting;
 
   // Bulk Apply
-  const handleBulkApply = async (
-    actionType: 'PRICE' | 'COMPARE_PRICE' | 'STOCK' | 'ENABLE' | 'DISABLE',
-  ) => {
-    if (selectedVariantIds.length === 0) return;
-
-    // Create mode: apply to the pending variants in form state.
-    if (isCreateMode) {
-      const next = pendingVariants.map((v, i) => {
-        const key = v.combinationKey || `pending-${i}`;
-        if (!selectedVariantIds.includes(key)) return v;
-        if (actionType === 'PRICE' && bulkPrice !== '') return { ...v, price: Number(bulkPrice) };
-        if (actionType === 'COMPARE_PRICE' && bulkComparePrice !== '') return { ...v, compareAtPrice: Number(bulkComparePrice) };
-        if (actionType === 'STOCK' && bulkStock !== '') return { ...v, initialStock: Number(bulkStock) };
-        if (actionType === 'ENABLE') return { ...v, isEnabled: true };
-        if (actionType === 'DISABLE') return { ...v, isEnabled: false };
-        return v;
-      });
-      onPendingVariantsChange?.(next);
-      toast.success(`${selectedVariantIds.length} variants updated.`);
-      setSelectedVariantIds([]);
-      setBulkPrice('');
-      setBulkComparePrice('');
-      setBulkStock('');
-      return;
-    }
-
-    if (!productId) return;
+  const handleBulkApply = async (actionType: 'PRICE' | 'COMPARE_PRICE' | 'ENABLE' | 'DISABLE') => {
+    if (!productId || selectedVariantIds.length === 0) return;
 
     try {
       const patch: any = {
@@ -618,49 +452,11 @@ export function ProductVariantMatrix({
     }
   };
 
-  // Unified row list for the table. Edit mode reads the DB variants; create mode
-  // maps the in-form pending variants (keyed by combinationKey / index).
-  const rows: VariantRow[] = isCreateMode
-    ? pendingVariants.map((v, i) => ({
-        id: v.combinationKey || `pending-${i}`,
-        title: v.title,
-        sku: v.sku,
-        price: v.price,
-        compareAtPrice: v.compareAtPrice,
-        isEnabled: v.isEnabled,
-        initialStock: v.initialStock,
-        options: v.options,
-      }))
-    : existingVariants.map((v) => ({
-        id: v.id,
-        title: v.title,
-        sku: v.sku,
-        price: v.price,
-        compareAtPrice: v.compareAtPrice,
-        isEnabled: v.isEnabled,
-        options: v.options,
-      }));
-
-  // Mutates one pending variant in place (create mode) and lifts it to the parent.
-  const patchPendingVariant = (rowId: string, patch: Partial<PendingVariant>) => {
-    const next = pendingVariants.map((v, i) => {
-      const key = v.combinationKey || `pending-${i}`;
-      return key === rowId ? { ...v, ...patch } : v;
-    });
-    onPendingVariantsChange?.(next);
-  };
-
-  const removePendingVariant = (rowId: string) => {
-    const next = pendingVariants.filter((v, i) => (v.combinationKey || `pending-${i}`) !== rowId);
-    onPendingVariantsChange?.(next);
-    setSelectedVariantIds((prev) => prev.filter((id) => id !== rowId));
-  };
-
   const toggleSelectAllVariants = () => {
-    if (selectedVariantIds.length === rows.length) {
+    if (selectedVariantIds.length === existingVariants.length) {
       setSelectedVariantIds([]);
     } else {
-      setSelectedVariantIds(rows.map((v) => v.id));
+      setSelectedVariantIds(existingVariants.map((v) => v.id));
     }
   };
 
@@ -783,7 +579,7 @@ export function ProductVariantMatrix({
                           placeholder="e.g. Size, Color, Storage, Material"
                           value={newAttrName}
                           onChange={(e) => setNewAttrName(e.target.value)}
-                          className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
                         />
                       </div>
 
@@ -797,7 +593,7 @@ export function ProductVariantMatrix({
                           placeholder="e.g.&#10;Small&#10;Medium&#10;Large&#10;XL"
                           value={newAttrOptionsText}
                           onChange={(e) => setNewAttrOptionsText(e.target.value)}
-                          className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
                         />
                       </div>
                     </div>
@@ -866,7 +662,7 @@ export function ProductVariantMatrix({
                         type="text"
                         value={editAttrName}
                         onChange={(e) => setEditAttrName(e.target.value)}
-                        className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-600 transition-all"
                       />
                     </div>
 
@@ -878,7 +674,7 @@ export function ProductVariantMatrix({
                         rows={4}
                         value={editAttrOptionsText}
                         onChange={(e) => setEditAttrOptionsText(e.target.value)}
-                        className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-600 transition-all"
                       />
                     </div>
                   </div>
@@ -887,7 +683,7 @@ export function ProductVariantMatrix({
                   <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50">
                     <button
                       type="button"
-                      onClick={() => setPendingConfirm({ kind: 'delete-attribute', attr: editingAttribute })}
+                      onClick={() => handleDeleteAttribute(editingAttribute)}
                       className="text-xs font-bold text-red-600 hover:text-red-700 flex items-center gap-1.5 hover:underline"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -987,7 +783,7 @@ export function ProductVariantMatrix({
                           <span className="text-slate-300">|</span>
                           <button
                             type="button"
-                            onClick={() => setPendingConfirm({ kind: 'delete-attribute', attr })}
+                            onClick={() => handleDeleteAttribute(attr)}
                             className="text-red-500 hover:text-red-700 flex items-center gap-0.5 hover:underline"
                             title="Delete this attribute"
                           >
@@ -1087,11 +883,6 @@ export function ProductVariantMatrix({
                 <strong className="text-blue-700 font-extrabold text-sm">
                   {cartesianCount} variant{cartesianCount === 1 ? '' : 's'}
                 </strong>
-                {isCreateMode && (
-                  <span className="block text-[10.5px] text-slate-400 mt-0.5">
-                    Saved with the product — no need to save first.
-                  </span>
-                )}
               </div>
 
               <button
@@ -1101,19 +892,17 @@ export function ProductVariantMatrix({
                 className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-600/20 transition-all flex items-center justify-center gap-2 active:scale-95"
               >
                 {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                <span>
-                  {isCreateMode ? 'Build' : 'Generate'} {cartesianCount > 0 ? `${cartesianCount} ` : ''}Variants Matrix
-                </span>
+                <span>Generate {cartesianCount > 0 ? `${cartesianCount} ` : ''}Variants Matrix</span>
               </button>
             </div>
           </div>
 
           {/* Generated Variants Table */}
-          {rows.length > 0 && (
+          {existingVariants.length > 0 && (
             <div className="space-y-3 pt-2">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-800">
-                  Variant Matrix ({rows.length} Variant{rows.length === 1 ? "" : "s"})
+                  Variant Matrix ({existingVariants.length} Active Variants)
                 </h3>
 
                 <button
@@ -1135,7 +924,7 @@ export function ProductVariantMatrix({
                       onClick={toggleSelectAllVariants}
                       className="text-blue-700 underline text-[11px]"
                     >
-                      {selectedVariantIds.length === rows.length ? 'Deselect All' : 'Select All Variants'}
+                      {selectedVariantIds.length === existingVariants.length ? 'Deselect All' : 'Select All Variants'}
                     </button>
                   </div>
 
@@ -1176,27 +965,6 @@ export function ProductVariantMatrix({
                       </button>
                     </div>
 
-                    {isCreateMode && (
-                      <div className="flex items-center gap-1.5">
-                        <input
-                          type="number"
-                          min="0"
-                          placeholder="Stock qty..."
-                          value={bulkStock}
-                          onChange={(e) => setBulkStock(e.target.value !== '' ? Number(e.target.value) : '')}
-                          className="px-2.5 py-1.5 bg-white border rounded-lg text-xs w-32"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleBulkApply('STOCK')}
-                          disabled={selectedVariantIds.length === 0}
-                          className="px-3 py-1.5 bg-blue-600 text-white font-bold text-xs rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                        >
-                          Apply Stock
-                        </button>
-                      </div>
-                    )}
-
                     <div className="flex items-center gap-1.5">
                       <button
                         type="button"
@@ -1220,10 +988,8 @@ export function ProductVariantMatrix({
                     <div className="flex items-center ml-auto">
                       <button
                         type="button"
-                        onClick={() =>
-                          setPendingConfirm({ kind: 'bulk-delete-variants', count: selectedVariantIds.length })
-                        }
-                        disabled={selectedVariantIds.length === 0 || isBulkDeleting}
+                        onClick={handleBulkDeleteVariants}
+                        disabled={selectedVariantIds.length === 0}
                         className="px-3 py-1.5 bg-red-600 text-white font-bold text-xs rounded-lg hover:bg-red-700 disabled:opacity-40 flex items-center gap-1.5"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -1244,7 +1010,7 @@ export function ProductVariantMatrix({
                           type="checkbox"
                           checked={
                             selectedVariantIds.length > 0 &&
-                            selectedVariantIds.length === rows.length
+                            selectedVariantIds.length === existingVariants.length
                           }
                           onChange={toggleSelectAllVariants}
                           className="rounded text-blue-600 border-slate-300"
@@ -1254,13 +1020,12 @@ export function ProductVariantMatrix({
                       <th className="p-3">SKU</th>
                       <th className="p-3">Price ({currencySymbol})</th>
                       <th className="p-3">Compare Price ({currencySymbol})</th>
-                      {isCreateMode && <th className="p-3">Initial Stock</th>}
                       <th className="p-3">Status</th>
                       <th className="p-3 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {rows.map((variant) => {
+                    {existingVariants.map((variant) => {
                       const patch = variantBuffer[variant.id] || {};
                       const isRowSelected = selectedVariantIds.includes(variant.id);
                       const currentPrice = patch.price !== undefined ? patch.price : variant.price;
@@ -1269,10 +1034,6 @@ export function ProductVariantMatrix({
                           ? patch.compareAtPrice
                           : variant.compareAtPrice || '';
                       const currentSku = patch.sku !== undefined ? patch.sku : variant.sku || '';
-                      const currentStock =
-                        patch.initialStock !== undefined
-                          ? patch.initialStock
-                          : variant.initialStock ?? 0;
                       const isEnabled =
                         patch.isEnabled !== undefined ? patch.isEnabled : variant.isEnabled;
                       const isDirty = Object.keys(patch).length > 0;
@@ -1353,25 +1114,6 @@ export function ProductVariantMatrix({
                               className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs w-24 text-slate-500"
                             />
                           </td>
-                          {isCreateMode && (
-                            <td className="p-3">
-                              <input
-                                type="number"
-                                min="0"
-                                value={currentStock}
-                                onChange={(e) =>
-                                  setVariantBuffer((prev) => ({
-                                    ...prev,
-                                    [variant.id]: {
-                                      ...prev[variant.id],
-                                      initialStock: e.target.value !== '' ? Number(e.target.value) : 0,
-                                    },
-                                  }))
-                                }
-                                className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs w-20 font-bold"
-                              />
-                            </td>
-                          )}
                           <td className="p-3">
                             <button
                               type="button"
@@ -1414,13 +1156,7 @@ export function ProductVariantMatrix({
                               {/* Delete single variant row */}
                               <button
                                 type="button"
-                                onClick={() =>
-                                  setPendingConfirm({
-                                    kind: 'delete-variant',
-                                    variantId: variant.id,
-                                    variantTitle,
-                                  })
-                                }
+                                onClick={() => handleDeleteSingleVariant(variant.id, variantTitle)}
                                 disabled={isDeletingVariant}
                                 className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                 title="Delete variant row"
@@ -1439,38 +1175,6 @@ export function ProductVariantMatrix({
           )}
         </div>
       )}
-
-      <ConfirmDialog
-        isOpen={pendingConfirm !== null}
-        onClose={() => setPendingConfirm(null)}
-        onConfirm={handleConfirmedAction}
-        isLoading={confirmBusy}
-        title={
-          pendingConfirm?.kind === 'delete-attribute'
-            ? 'Delete this option?'
-            : pendingConfirm?.kind === 'bulk-delete-variants'
-              ? 'Delete selected variants?'
-              : 'Delete this variant?'
-        }
-        confirmLabel="Delete"
-        message={
-          pendingConfirm?.kind === 'delete-attribute' ? (
-            <>
-              Delete the option <strong>{pendingConfirm.attr.name}</strong> and all its values? Variants
-              already generated from it are not removed.
-            </>
-          ) : pendingConfirm?.kind === 'bulk-delete-variants' ? (
-            <>
-              Delete <strong>{pendingConfirm.count}</strong> selected variant
-              {pendingConfirm.count === 1 ? '' : 's'}? This cannot be undone.
-            </>
-          ) : pendingConfirm?.kind === 'delete-variant' ? (
-            <>
-              Delete the variant <strong>{pendingConfirm.variantTitle}</strong>? This cannot be undone.
-            </>
-          ) : null
-        }
-      />
     </div>
   );
 }

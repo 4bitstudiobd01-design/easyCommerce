@@ -3,16 +3,10 @@
 import React from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useGetAnalyticsOverviewQuery } from '../api/analyticsApi';
-import {
-  useAnalyticsOverviewParams,
-  useAnalyticsShowComparison,
-} from '../context/AnalyticsFiltersContext';
 import { Skeleton } from '@/components/ui/Skeleton';
 
 export function RevenueOverviewChart() {
-  const dateParams = useAnalyticsOverviewParams();
-  const showComparison = useAnalyticsShowComparison();
-  const { data, isLoading } = useGetAnalyticsOverviewQuery(dateParams);
+  const { data, isLoading } = useGetAnalyticsOverviewQuery();
 
   if (isLoading) {
     return (
@@ -28,7 +22,7 @@ export function RevenueOverviewChart() {
   const chartData = current.map((point, i) => ({
     date: point.dayName,
     current: point.revenue,
-    previous: showComparison ? previous[i]?.revenue ?? null : null,
+    previous: previous[i]?.revenue ?? null,
   }));
   const hasData = chartData.some((d) => d.current > 0);
 
@@ -43,14 +37,10 @@ export function RevenueOverviewChart() {
           <div className="w-2.5 h-2.5 rounded-full bg-blue-600"></div>
           <span className="text-[11px] font-medium text-slate-600">Revenue</span>
         </div>
-        {showComparison && (
-          <div className="flex items-center gap-2">
-            <div className="w-4 border-t-2 border-dashed border-blue-300"></div>
-            <span className="text-[11px] font-medium text-slate-600">
-              {dateParams.compare === 'previousYear' ? 'Previous Year' : 'Previous Period'}
-            </span>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <div className="w-4 border-t-2 border-dashed border-blue-300"></div>
+          <span className="text-[11px] font-medium text-slate-600">Previous Period</span>
+        </div>
       </div>
 
       {!hasData ? (

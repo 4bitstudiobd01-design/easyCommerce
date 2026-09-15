@@ -1,9 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository } from 'typeorm';
 import { CustomerEntity, CustomerStatusEnum, CustomerAccountTypeEnum, CustomerSourceEnum } from '../entities/customer.entity';
 import { CustomerAddressEntity } from '../entities/customer-address.entity';
-import { getPhoneLookupVariants } from '../../../common/utils/normalize-phone.util';
 
 export interface FindOrCreateCustomerInput {
   phone: string;
@@ -12,7 +11,6 @@ export interface FindOrCreateCustomerInput {
   storeId?: string;
   source?: CustomerSourceEnum;
   userId?: string;
-  customerId?: string;
   isGuest?: boolean;
   address?: {
     recipientName?: string;
@@ -68,26 +66,9 @@ export class FindOrCreateCustomerService {
     let customer: CustomerEntity | null = null;
 
     try {
-      let existing: CustomerEntity | null = null;
-
-      // 1. If logged-in customer, first look up by customer ID / userId
-      if (input.userId || input.customerId) {
-        const lookupId = input.customerId || input.userId;
-        existing = await this.customerRepository.findOne({
-          where: [
-            { id: lookupId, tenantId },
-            { userId: lookupId, tenantId },
-          ],
-        });
-      }
-
-      // 2. Fallback to phone lookup variants
-      if (!existing && phone) {
-        const phoneVariants = getPhoneLookupVariants(phone);
-        existing = await this.customerRepository.findOne({
-          where: { tenantId, phone: In(phoneVariants) },
-        });
-      }
+      const existing = await this.customerRepository.findOne({
+        where: { tenantId, phone },
+      });
 
       if (existing) {
         let changed = false;
@@ -105,7 +86,7 @@ export class FindOrCreateCustomerService {
           changed = true;
         }
 
-        // If customer is logged in, ensure REGISTERED / ACTIVE
+        // If customer just logged in, upgrade from GUEST to REGISTERED / ACTIVE
         if (isLoggedIn) {
           if (input.userId && !existing.userId) {
             existing.userId = input.userId;
@@ -141,7 +122,6 @@ export class FindOrCreateCustomerService {
           phone,
           status,
           accountType,
-          hasAccount: isLoggedIn,
           source: input.source ?? CustomerSourceEnum.ONLINE_STORE,
         });
 
@@ -159,8 +139,7 @@ export class FindOrCreateCustomerService {
       // (tenantId, phone) unique index — re-read rather than failing the order.
       const isUniqueViolation = err?.code === '23505';
       if (isUniqueViolation) {
-        const phoneVariants = getPhoneLookupVariants(phone);
-        const fallback = await this.customerRepository.findOne({ where: { tenantId, phone: In(phoneVariants) } });
+        const fallback = await this.customerRepository.findOne({ where: { tenantId, phone } });
         if (fallback) return fallback;
       }
 

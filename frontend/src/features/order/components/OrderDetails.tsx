@@ -20,7 +20,6 @@ import {
   DollarSign
 } from 'lucide-react';
 import { useGetOrderByIdQuery, useUpdateOrderStatusMutation, OrderStatusType, useGetReturnsByOrderQuery, useGetRefundsByOrderQuery, useProcessRefundMutation, useUpdateReturnStatusMutation } from '../api/orderApi';
-import { useGetBranchesQuery } from '../../tenant/api/tenantApi';
 import { useSyncConsignmentMutation } from '../../logistics/api/logisticsApi';
 import { useGetOrderBalanceQuery, useGetOrderPaymentHistoryQuery, useVoidPaymentMutation } from '../../payment/api/paymentApi';
 import { SendCourierModal } from './SendCourierModal';
@@ -41,10 +40,6 @@ interface OrderDetailsProps {
 export function OrderDetails({ orderId }: OrderDetailsProps) {
   const router = useRouter();
   const { data: order, isLoading, error } = useGetOrderByIdQuery(orderId);
-  const { data: branches } = useGetBranchesQuery();
-  const branchName = order?.branchId
-    ? branches?.find((branch) => branch.id === order.branchId)?.name
-    : undefined;
 
   const [updateStatus, { isLoading: isUpdating }] = useUpdateOrderStatusMutation();
   const [syncConsignment, { isLoading: isSyncing }] = useSyncConsignmentMutation();
@@ -679,7 +674,6 @@ export function OrderDetails({ orderId }: OrderDetailsProps) {
           <div className="px-2 text-xs text-slate-400 space-y-1.5 text-center font-medium">
             <p>ID: {order.id}</p>
             <p>Source: {order.storeSlug || 'Online Store'}</p>
-            {order.branchId && <p>Branch: {branchName ?? order.branchId}</p>}
           </div>
 
         </div>

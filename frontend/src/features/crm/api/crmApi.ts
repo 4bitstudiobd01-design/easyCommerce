@@ -4,12 +4,17 @@ import {
   Customer360,
   Lead,
   CustomerSegment,
-  SegmentRuleGroup,
   CrmActivity,
-  ActivityType,
   CrmAnalyticsMetrics,
   LeadStageType,
 } from '../types/crm.types';
+import {
+  mockCustomers,
+  mockLeads,
+  mockSegments,
+  mockActivities,
+  mockCrmAnalytics,
+} from '../data/crmMockData';
 
 const API_ROOT = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1')
   .replace(/\/+$/, '')
@@ -42,7 +47,7 @@ export const crmApi = createApi({
             total: payload?.meta?.total ?? list.length,
           };
         }
-        return { data: [], total: 0 };
+        return { data: mockCustomers, total: mockCustomers.length };
       },
     }),
 
@@ -60,7 +65,8 @@ export const crmApi = createApi({
             avgOrderValue: Number(c.avgOrderValue || (c.ordersCount ? Math.round(c.totalSpent / c.ordersCount) : 0)),
           };
         }
-        return c;
+        const foundMock = mockCustomers.find((m) => m.id === arg);
+        return foundMock || mockCustomers[0];
       },
     }),
 
@@ -164,51 +170,7 @@ export const crmApi = createApi({
       transformResponse: (response: any) => response?.data ?? response,
     }),
 
-    updateLeadDetails: builder.mutation<Lead, { id: string; notes?: string; estimatedValue?: number }>({
-      query: ({ id, ...body }) => ({
-        url: `/leads/${id}/details`,
-        method: 'PATCH',
-        body,
-      }),
-      invalidatesTags: ['CrmLead'],
-      transformResponse: (response: any) => response?.data ?? response,
-    }),
-
-    addLeadInquiry: builder.mutation<Lead, { id: string; note: string; authorName?: string; authorRole?: string; authorId?: string }>({
-      query: ({ id, ...body }) => ({
-        url: `/leads/${id}/inquiries`,
-        method: 'POST',
-        body,
-      }),
-      invalidatesTags: ['CrmLead'],
-      transformResponse: (response: any) => response?.data ?? response,
-    }),
-
-    deleteLeadInquiry: builder.mutation<Lead, { id: string; inquiryId: string }>({
-      query: ({ id, inquiryId }) => ({
-        url: `/leads/${id}/inquiries/${inquiryId}`,
-        method: 'DELETE',
-      }),
-      invalidatesTags: ['CrmLead'],
-      transformResponse: (response: any) => response?.data ?? response,
-    }),
-
-    convertLeadToCustomer: builder.mutation<
-      Customer360,
-      {
-        leadId: string;
-        wonAmount?: number;
-        createInitialOrder?: boolean;
-        paymentMethod?: string;
-        items?: Array<{
-          productId?: string;
-          productTitle: string;
-          quantity: number;
-          unitPrice: number;
-          totalPrice?: number;
-        }>;
-      }
-    >({
+    convertLeadToCustomer: builder.mutation<Customer360, { leadId: string; createInitialOrder?: boolean }>({
       query: ({ leadId, ...body }) => ({
         url: `/leads/${leadId}/convert`,
         method: 'POST',
@@ -239,7 +201,7 @@ export const crmApi = createApi({
       },
     }),
 
-    createCrmSegment: builder.mutation<CustomerSegment, { name: string; description?: string; rules: SegmentRuleGroup; isActive?: boolean }>({
+    createCrmSegment: builder.mutation<CustomerSegment, Partial<CustomerSegment>>({
       query: (body) => ({
         url: '/segments',
         method: 'POST',
@@ -247,37 +209,6 @@ export const crmApi = createApi({
       }),
       invalidatesTags: ['CrmSegment'],
       transformResponse: (response: any) => response?.data ?? response,
-    }),
-
-    updateCrmSegment: builder.mutation<CustomerSegment, { id: string; name?: string; description?: string; rules?: SegmentRuleGroup; isActive?: boolean }>({
-      query: ({ id, ...body }) => ({
-        url: `/segments/${id}`,
-        method: 'PATCH',
-        body,
-      }),
-      invalidatesTags: ['CrmSegment'],
-      transformResponse: (response: any) => response?.data ?? response,
-    }),
-
-    deleteCrmSegment: builder.mutation<{ success: boolean }, string>({
-      query: (id) => ({
-        url: `/segments/${id}`,
-        method: 'DELETE',
-      }),
-      invalidatesTags: ['CrmSegment'],
-      transformResponse: (response: any) => response?.data ?? response,
-    }),
-
-    seedCrmSegments: builder.mutation<CustomerSegment[], void>({
-      query: () => ({
-        url: '/segments/seed',
-        method: 'POST',
-      }),
-      invalidatesTags: ['CrmSegment'],
-      transformResponse: (response: any) => {
-        const payload = response?.data ?? response;
-        return Array.isArray(payload) ? payload : [];
-      },
     }),
 
     // Omnichannel Activities (store-wide real feed)
@@ -305,32 +236,14 @@ export const crmApi = createApi({
       },
     }),
 
-    logCrmActivity: builder.mutation<
-      CrmActivity,
-      { customerId: string; type: string; title: string; description: string; outcome?: string }
-    >({
-      query: ({ customerId, ...body }) => ({
-        url: `/${customerId}/activities`,
+    logCrmActivity: builder.mutation<CrmActivity, Partial<CrmActivity>>({
+      query: (body) => ({
+        url: '/activities',
         method: 'POST',
         body,
       }),
       invalidatesTags: ['CrmActivity', 'CrmCustomer'],
-      transformResponse: (response: any, meta, arg) => {
-        const a = response?.data ?? response;
-        return {
-          id: a.id,
-          tenantId: a.tenantId,
-          customerId: a.customerId ?? arg.customerId,
-          type: (a.eventType ?? arg.type) as ActivityType,
-          title: a.title ?? arg.title,
-          description: a.description ?? arg.description,
-          authorName: a.actorName,
-          actorName: a.actorName,
-          outcome: a.metadata?.outcome ?? arg.outcome,
-          metadata: a.metadata,
-          createdAt: a.createdAt ?? new Date().toISOString(),
-        };
-      },
+      transformResponse: (response: any) => response?.data ?? response,
     }),
 
     // CRM Analytics — Full real-data analytics
@@ -380,16 +293,10 @@ export const {
   useCreateCrmLeadMutation,
   useUpdateLeadStageMutation,
   useScheduleLeadFollowUpMutation,
-  useUpdateLeadDetailsMutation,
-  useAddLeadInquiryMutation,
-  useDeleteLeadInquiryMutation,
   useConvertLeadToCustomerMutation,
   useGetCrmSegmentsQuery,
   useGetSegmentCustomersQuery,
   useCreateCrmSegmentMutation,
-  useUpdateCrmSegmentMutation,
-  useDeleteCrmSegmentMutation,
-  useSeedCrmSegmentsMutation,
   useGetCrmActivitiesQuery,
   useLogCrmActivityMutation,
   useGetCrmAnalyticsQuery,

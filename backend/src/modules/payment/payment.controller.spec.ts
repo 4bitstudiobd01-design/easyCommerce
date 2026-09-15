@@ -15,6 +15,7 @@ import { GetPaymentSummaryService } from './services/get-payment-summary.service
 import { GetPaymentDetailsService } from './services/get-payment-details.service';
 import { ListPaymentGatewaysService } from './services/list-payment-gateways.service';
 import { ExportPaymentTransactionsService } from './services/export-payment-transactions.service';
+import { SeedPaymentDemoDataService } from './services/seed-payment-demo-data.service';
 import { GetOrderBalanceService } from './services/get-order-balance.service';
 import { GetOrderPaymentHistoryService } from './services/get-order-payment-history.service';
 import { RecordManualPaymentService } from './services/record-manual-payment.service';
@@ -57,6 +58,7 @@ describe('PaymentController', () => {
         { provide: GetPaymentDetailsService, useValue: getDetails },
         { provide: ListPaymentGatewaysService, useValue: { execute: jest.fn().mockResolvedValue([]) } },
         { provide: ExportPaymentTransactionsService, useValue: exportTransactions },
+        { provide: SeedPaymentDemoDataService, useValue: { execute: jest.fn() } },
         { provide: GetOrderBalanceService, useValue: { execute: jest.fn() } },
         { provide: GetOrderPaymentHistoryService, useValue: { execute: jest.fn() } },
         { provide: RecordManualPaymentService, useValue: { execute: jest.fn() } },

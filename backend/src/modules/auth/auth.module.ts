@@ -9,8 +9,6 @@ import { LoginService } from './services/login.service';
 import { RefreshTokenService } from './services/refresh-token.service';
 import { RequestPasswordResetService } from './services/request-password-reset.service';
 import { ResetPasswordService } from './services/reset-password.service';
-import { ListDevMerchantsService } from './services/list-dev-merchants.service';
-import { DevLoginAsMerchantService } from './services/dev-login-as-merchant.service';
 import { AuthController } from './auth.controller';
 
 @Module({
@@ -34,8 +32,6 @@ import { AuthController } from './auth.controller';
     RefreshTokenService,
     RequestPasswordResetService,
     ResetPasswordService,
-    ListDevMerchantsService,
-    DevLoginAsMerchantService,
   ],
   exports: [
     RegisterMerchantService,

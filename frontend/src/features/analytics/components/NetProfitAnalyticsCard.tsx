@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { useGetNetProfitQuery } from '../api/analyticsApi';
-import Link from 'next/link';
 import {
   TrendingUp,
   TrendingDown,
@@ -11,7 +10,6 @@ import {
   Truck,
   BarChart3,
   RefreshCw,
-  AlertTriangle,
 } from 'lucide-react';
 
 export function NetProfitAnalyticsCard() {
@@ -137,31 +135,18 @@ export function NetProfitAnalyticsCard() {
         ))}
       </div>
 
-      {/* MISSING COST PRICE WARNING */}
-      {data && data.itemsMissingCostPriceCount > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
-          <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-700" />
-          </div>
-          <div className="flex-1">
-            <p className="font-bold text-amber-900 text-xs">
-              {data.productsMissingCostPriceCount} product(s) are missing a cost price
-            </p>
-            <p className="text-[11px] text-amber-700 mt-0.5">
-              {data.itemsMissingCostPriceCount} sold unit(s) across these products were excluded
-              from Total Product Cost and Net Profit — no cost price means no accurate cost, so
-              they are left out rather than estimated. Gross Revenue still includes them. Set a
-              cost price on each product for a complete, accurate Net Profit figure.
-            </p>
-            <Link
-              href="/dashboard/products"
-              className="inline-flex items-center gap-1 mt-2 text-[11px] font-bold text-amber-800 hover:text-amber-900 underline"
-            >
-              Go to Products →
-            </Link>
-          </div>
+      {/* COST PRICE SETUP NOTE */}
+      <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex items-start gap-3">
+        <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <span className="text-blue-700 font-black text-xs">i</span>
         </div>
-      )}
+        <div>
+          <p className="font-bold text-blue-900 text-xs">Set product cost prices for accuracy</p>
+          <p className="text-[11px] text-blue-700 mt-0.5">
+            Go to Products → Edit Product → Add Cost Price to get accurate profit calculations. Without cost prices set, the system estimates costs as 60% of selling price.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

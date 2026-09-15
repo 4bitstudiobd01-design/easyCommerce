@@ -12,7 +12,6 @@ import {
   ArrowDownLeft,
 } from 'lucide-react';
 import { useGetAnalyticsKpiSummaryQuery } from '../api/analyticsApi';
-import { useAnalyticsDateParams } from '../context/AnalyticsFiltersContext';
 import { Skeleton } from '@/components/ui/Skeleton';
 
 interface KpiCardConfig {
@@ -34,8 +33,7 @@ const percentChange = (current: number, previous: number): string | null => {
 };
 
 export function AnalyticsKpiCards() {
-  const dateParams = useAnalyticsDateParams();
-  const { data, isLoading } = useGetAnalyticsKpiSummaryQuery(dateParams);
+  const { data, isLoading } = useGetAnalyticsKpiSummaryQuery();
 
   if (isLoading || !data) {
     return (

@@ -39,26 +39,29 @@ export const SegmentCustomersModal: React.FC<SegmentCustomersModalProps> = ({
   if (!isOpen || !segment) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs" onClick={onClose} />
+
       {/* Modal Content */}
-      <div className="bg-white rounded-3xl max-w-3xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative bg-white rounded-3xl max-w-3xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="p-5 border-b border-slate-200 flex items-start justify-between bg-slate-50/50 shrink-0">
+        <div className="p-5 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white flex items-start justify-between shrink-0">
           <div className="flex items-start gap-3.5">
             <div
-              className="w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-white shadow-xs shrink-0 mt-0.5"
+              className="w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-white shadow-md shrink-0 mt-0.5"
               style={{ backgroundColor: segment.color || '#3B82F6' }}
             >
-              <Users className="w-5 h-5" />
+              <Users className="w-6 h-6" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-extrabold text-slate-900">{segment.name}</h3>
-                <span className="px-2.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-200/60 rounded-full text-[10px] font-black uppercase">
+                <h2 className="text-lg font-black text-white">{segment.name}</h2>
+                <span className="px-2.5 py-0.5 bg-white/20 text-white rounded-full text-[10px] font-black uppercase">
                   {segment.type} Segment
                 </span>
               </div>
-              <p className="text-xs text-slate-500 mt-0.5 max-w-xl leading-relaxed">
+              <p className="text-xs text-slate-300 mt-1 max-w-xl leading-relaxed">
                 {segment.description}
               </p>
             </div>
@@ -66,9 +69,9 @@ export const SegmentCustomersModal: React.FC<SegmentCustomersModalProps> = ({
 
           <button
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition-colors"
+            className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-white/10 transition-all"
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 

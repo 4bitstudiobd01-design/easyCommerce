@@ -3,18 +3,6 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(req: NextRequest) {
   const url = req.nextUrl;
-  const { pathname } = url;
-
-  // Never rewrite Next.js internal assets, static files, or API routes
-  if (
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/api') ||
-    pathname.startsWith('/static') ||
-    pathname.includes('.')
-  ) {
-    return NextResponse.next();
-  }
-
   const hostname = req.headers.get('host') || '';
 
   // Subdomain Wildcard Routing Rewrite (e.g. sumon-fashion.localhost:3000 -> /store/sumon-fashion)

@@ -29,16 +29,6 @@ export class PushNotificationEntity {
   @Column({ type: 'boolean', default: false })
   isRead: boolean;
 
-  /**
-   * What this notification points at, so the dashboard bell can deep-link.
-   * e.g. referenceType 'ORDER' + referenceId = order UUID → /dashboard/orders/:id
-   */
-  @Column({ type: 'varchar', length: 50, nullable: true })
-  referenceType?: string;
-
-  @Column({ type: 'uuid', nullable: true })
-  referenceId?: string;
-
   @Column({ type: 'uuid' })
   tenantId: string;
 

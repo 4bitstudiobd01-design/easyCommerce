@@ -32,9 +32,6 @@ export interface DispatchNotificationPayload {
   pushTitle?: string;
   pushMessage?: string;
   notificationType?: NotificationTypeEnum;
-  /** What the dashboard bell should deep-link to, e.g. 'ORDER' + an order id. */
-  referenceType?: string;
-  referenceId?: string;
   /** Optional: use a built-in HTML template instead of plain emailBody */
   template?: {
     type: 'ORDER_PLACED' | 'ORDER_STATUS' | 'OTP';
@@ -136,8 +133,6 @@ export class NotificationDispatcherService {
       message: pushMessage,
       type: payload.notificationType || NotificationTypeEnum.ORDER_PLACED,
       isRead: false,
-      referenceType: payload.referenceType,
-      referenceId: payload.referenceId,
       tenantId: payload.tenantId,
     });
 

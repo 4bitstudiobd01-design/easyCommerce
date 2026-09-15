@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { useGetProductsQuery, ProductStatus, ProductType } from '@/features/catalog/api/catalogApi';
 import { ProductListTable } from '@/features/catalog/components/ProductListTable';
 import { ProductFilterBar } from '@/features/catalog/components/ProductFilterBar';
@@ -9,7 +10,7 @@ import { ProductStatsCards } from '@/features/catalog/components/ProductStatsCar
 import { ProductImportModal } from '@/features/catalog/components/ProductImportModal';
 import { ProductReorderPanel } from '@/features/catalog/components/ProductReorderPanel';
 import { Modal } from '@/components/ui/Modal';
-import { Plus, Upload, Download, ListOrdered } from 'lucide-react';
+import { Plus, Upload, Download, ChevronRight, ListOrdered } from 'lucide-react';
 
 export default function ProductsPage() {
   const router = useRouter();
@@ -161,9 +162,21 @@ export default function ProductsPage() {
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Products</h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Manage your product catalog, inventory status and listings.
-          </p>
+          <nav aria-label="Breadcrumb" className="mt-1">
+            <ol className="flex items-center gap-1 text-xs text-slate-500">
+              <li>
+                <Link href="/dashboard" className="hover:text-slate-700 transition-colors font-medium">
+                  Dashboard
+                </Link>
+              </li>
+              <li aria-hidden="true">
+                <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
+              </li>
+              <li className="font-semibold text-slate-700" aria-current="page">
+                Products
+              </li>
+            </ol>
+          </nav>
         </div>
 
         <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">

@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -12,19 +12,13 @@ import { AbandonedCartEntity } from './entities/abandoned-cart.entity';
 import { OrderNoteEntity } from './entities/order-note.entity';
 import { UserEntity } from '../user/entities/user.entity';
 import { ProductEntity } from '../catalog/entities/product.entity';
-import { ProductVariantEntity } from '../catalog/entities/product-variant.entity';
-import { InventoryStockEntity } from '../inventory/entities/inventory-stock.entity';
-import { InventoryMovementEntity } from '../inventory/entities/inventory-movement.entity';
-import { WarehouseEntity } from '../inventory/entities/warehouse.entity';
 import { ConsignmentEntity } from '../logistics/entities/consignment.entity';
-import { LeadEntity } from '../customer/entities/lead.entity';
 import { TenantModule } from '../tenant/tenant.module';
 import { CustomerModule } from '../customer/customer.module';
 import { CatalogModule } from '../catalog/catalog.module';
 import { InventoryModule } from '../inventory/inventory.module';
 import { SmsModule } from '../sms/sms.module';
 import { CouponModule } from '../coupon/coupon.module';
-import { FinanceModule } from '../finance/finance.module';
 import { CreateOrderService } from './services/create-order.service';
 import { CreateManualOrderService } from './services/create-manual-order.service';
 import { ListMerchantOrdersService } from './services/list-merchant-orders.service';
@@ -68,14 +62,9 @@ import { GenerateOrderNumberService } from './services/generate-order-number.ser
       AbandonedCartEntity,
       OrderNoteEntity,
       ProductEntity,
-      ProductVariantEntity,
-      InventoryStockEntity,
-      InventoryMovementEntity,
-      WarehouseEntity,
       ConsignmentEntity,
       PaymentEntity,
       UserEntity,
-      LeadEntity,
     ]),
     TenantModule,
     CustomerModule,
@@ -83,7 +72,6 @@ import { GenerateOrderNumberService } from './services/generate-order-number.ser
     InventoryModule,
     SmsModule,
     CouponModule,
-    forwardRef(() => FinanceModule),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

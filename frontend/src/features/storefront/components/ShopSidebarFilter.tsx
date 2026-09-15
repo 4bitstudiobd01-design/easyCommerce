@@ -11,14 +11,11 @@ import {
 
 interface ShopSidebarFilterProps {
   categories?: string[];
-  primaryColor?: string;
   selectedCategory: string;
   onSelectCategory: (category: string) => void;
   priceRange: [number, number];
-  priceBounds?: [number, number];
   onPriceRangeChange: (range: [number, number]) => void;
   brands?: string[];
-  brandCounts?: Record<string, number>;
   selectedBrands: string[];
   onToggleBrand: (brandName: string) => void;
   selectedMinRating: number;
@@ -29,14 +26,11 @@ interface ShopSidebarFilterProps {
 
 export const ShopSidebarFilter = ({
   categories = [],
-  primaryColor = '#2563eb',
   selectedCategory,
   onSelectCategory,
   priceRange,
-  priceBounds = [0, 5000],
   onPriceRangeChange,
   brands = [],
-  brandCounts = {},
   selectedBrands,
   onToggleBrand,
   selectedMinRating,
@@ -50,16 +44,13 @@ export const ShopSidebarFilter = ({
   const [isRatingsOpen, setIsRatingsOpen] = useState(true);
   const [showAllBrands, setShowAllBrands] = useState(false);
 
-  const [minBound, maxBound] = priceBounds;
-  const priceStep = Math.max(1, Math.round((maxBound - minBound) / 100) || 1);
-
   const availableBrands = brands.length > 0 ? brands : [];
   const displayBrands = showAllBrands ? availableBrands : availableBrands.slice(0, 5);
 
   const hasActiveFilters =
     selectedCategory !== 'ALL' ||
-    priceRange[0] > minBound ||
-    priceRange[1] < maxBound ||
+    priceRange[0] > 0 ||
+    priceRange[1] < 5000 ||
     selectedBrands.length > 0 ||
     selectedMinRating > 0;
 
@@ -74,8 +65,7 @@ export const ShopSidebarFilter = ({
           <button
             type="button"
             onClick={onResetFilters}
-            className="text-[11px] font-bold hover:brightness-110 flex items-center gap-1 transition-colors"
-            style={{ color: primaryColor }}
+            className="text-[11px] font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors"
           >
             <RotateCcw className="w-3 h-3" />
             <span>Reset</span>
@@ -113,10 +103,9 @@ export const ShopSidebarFilter = ({
                       onClick={() => onSelectCategory(isSelected ? 'ALL' : catName)}
                       className={`w-full flex items-center justify-between py-1.5 px-2 rounded-lg transition-colors text-left ${
                         isSelected
-                          ? 'font-extrabold'
+                          ? 'text-blue-600 font-extrabold bg-blue-50/60'
                           : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium'
                       }`}
-                      style={isSelected ? { color: primaryColor, backgroundColor: `${primaryColor}0f` } : undefined}
                     >
                       <span>{catName}</span>
                     </button>
@@ -145,44 +134,29 @@ export const ShopSidebarFilter = ({
 
         {isPriceOpen && (
           <div className="space-y-3 pt-1">
-            {/* Range Slider (upper bound) */}
+            {/* Range Slider */}
             <div className="px-1">
               <input
                 type="range"
-                min={minBound}
-                max={maxBound}
-                step={priceStep}
+                min="0"
+                max="5000"
+                step="100"
                 value={priceRange[1]}
-                onChange={(e) =>
-                  onPriceRangeChange([
-                    priceRange[0],
-                    Math.max(priceRange[0], Number(e.target.value)),
-                  ])
-                }
-                className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
-                style={{ accentColor: primaryColor }}
+                onChange={(e) => onPriceRangeChange([priceRange[0], Number(e.target.value)])}
+                className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
               />
-              <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-1">
-                <span>৳{minBound.toLocaleString()}</span>
-                <span>৳{maxBound.toLocaleString()}</span>
-              </div>
             </div>
 
-            {/* Min / Max numeric inputs */}
+            {/* Inputs: ৳ 0 - ৳ 5,000 */}
             <div className="flex items-center gap-2">
               <div className="flex-1 flex items-center bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-700 font-medium">
                 <span className="text-slate-400 mr-1">৳</span>
                 <input
                   type="number"
-                  min={minBound}
+                  min="0"
                   max={priceRange[1]}
                   value={priceRange[0]}
-                  onChange={(e) =>
-                    onPriceRangeChange([
-                      Math.min(Number(e.target.value), priceRange[1]),
-                      priceRange[1],
-                    ])
-                  }
+                  onChange={(e) => onPriceRangeChange([Number(e.target.value), priceRange[1]])}
                   className="w-full bg-transparent focus:outline-none text-slate-800 text-xs font-bold"
                 />
               </div>
@@ -192,14 +166,9 @@ export const ShopSidebarFilter = ({
                 <input
                   type="number"
                   min={priceRange[0]}
-                  max={maxBound}
+                  max="5000"
                   value={priceRange[1]}
-                  onChange={(e) =>
-                    onPriceRangeChange([
-                      priceRange[0],
-                      Math.max(Number(e.target.value), priceRange[0]),
-                    ])
-                  }
+                  onChange={(e) => onPriceRangeChange([priceRange[0], Number(e.target.value)])}
                   className="w-full bg-transparent focus:outline-none text-slate-800 text-xs font-bold"
                 />
               </div>
@@ -231,7 +200,6 @@ export const ShopSidebarFilter = ({
               <ul className="space-y-2 text-xs">
                 {displayBrands.map((brandName) => {
                   const isChecked = selectedBrands.includes(brandName);
-                  const count = brandCounts[brandName];
                   return (
                     <li key={brandName} className="flex items-center justify-between">
                       <label className="flex items-center gap-2.5 cursor-pointer select-none text-slate-700 hover:text-slate-900">
@@ -239,19 +207,12 @@ export const ShopSidebarFilter = ({
                           type="checkbox"
                           checked={isChecked}
                           onChange={() => onToggleBrand(brandName)}
-                          className="w-4 h-4 rounded border-slate-300 rounded-md cursor-pointer"
-                          style={{ accentColor: primaryColor }}
+                          className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500 rounded-md cursor-pointer"
                         />
-                        <span
-                          className={`text-xs font-medium ${isChecked ? 'font-bold' : ''}`}
-                          style={isChecked ? { color: primaryColor } : undefined}
-                        >
+                        <span className={`text-xs font-medium ${isChecked ? 'font-bold text-blue-600' : ''}`}>
                           {brandName}
                         </span>
                       </label>
-                      {count != null && (
-                        <span className="text-[11px] text-slate-400 font-semibold">({count})</span>
-                      )}
                     </li>
                   );
                 })}
@@ -261,8 +222,7 @@ export const ShopSidebarFilter = ({
                 <button
                   type="button"
                   onClick={() => setShowAllBrands(!showAllBrands)}
-                  className="text-[11px] font-bold hover:brightness-110 pt-1 flex items-center gap-1"
-                  style={{ color: primaryColor }}
+                  className="text-[11px] font-bold text-blue-600 hover:text-blue-700 pt-1 flex items-center gap-1"
                 >
                   <span>{showAllBrands ? 'Show Less' : `+${availableBrands.length - 5} More`}</span>
                 </button>
@@ -299,8 +259,7 @@ export const ShopSidebarFilter = ({
                       type="checkbox"
                       checked={isChecked}
                       onChange={() => onSelectMinRating(isChecked ? 0 : stars)}
-                      className="w-4 h-4 rounded border-slate-300 cursor-pointer"
-                      style={{ accentColor: primaryColor }}
+                      className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer"
                     />
                     <div className="flex items-center gap-0.5">
                       {[...Array(5)].map((_, i) => (

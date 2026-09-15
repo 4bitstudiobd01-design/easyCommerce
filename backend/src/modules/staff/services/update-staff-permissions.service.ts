@@ -27,7 +27,6 @@ export class UpdateStaffPermissionsService {
     if (dto.role !== undefined) staff.role = dto.role;
     if (dto.permissions !== undefined) staff.permissions = dto.permissions;
     if (dto.status !== undefined) staff.status = dto.status;
-    if (dto.branchId !== undefined) staff.branchId = dto.branchId ?? undefined;
 
     return await this.staffRepository.save(staff);
   }

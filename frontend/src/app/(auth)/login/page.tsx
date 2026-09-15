@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { LoginForm } from '@/features/auth/components/LoginForm';
-import { DevMerchantSwitcher } from '@/features/auth/components/DevMerchantSwitcher';
 import { Store, BarChart3, CreditCard, Truck, Globe, ChevronDown, ShoppingBag } from 'lucide-react';
 
 export const metadata = {
@@ -114,7 +113,6 @@ export default function LoginPage() {
 
         {/* Top Nav */}
         <div className="p-6 lg:p-8 flex items-center justify-end gap-6 shrink-0">
-          <DevMerchantSwitcher />
           <p className="text-[13px] font-medium text-slate-500">
             Don't have an account? <Link href="/register" className="text-blue-600 font-bold hover:underline">Sign up</Link>
           </p>

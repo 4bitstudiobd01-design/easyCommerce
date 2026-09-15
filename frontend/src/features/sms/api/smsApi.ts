@@ -18,8 +18,6 @@ export interface PushNotification {
   message: string;
   type: string;
   isRead: boolean;
-  referenceType?: string | null;
-  referenceId?: string | null;
   tenantId: string;
   createdAt: string;
 }
@@ -50,13 +48,6 @@ export const smsApi = createApi({
       }),
       invalidatesTags: ['PushNotification'],
     }),
-    markNotificationRead: builder.mutation<{ success: boolean }, string>({
-      query: (id) => ({
-        url: `/notifications/${id}/read`,
-        method: 'PATCH',
-      }),
-      invalidatesTags: ['PushNotification'],
-    }),
   }),
 });
 
@@ -64,5 +55,4 @@ export const {
   useGetSmsLogsQuery,
   useGetPushNotificationsQuery,
   useMarkNotificationsReadMutation,
-  useMarkNotificationReadMutation,
 } = smsApi;

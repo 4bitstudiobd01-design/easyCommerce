@@ -1,19 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { FindOrCreateCustomerService } from './find-or-create-customer.service';
-import { CustomerEntity, CustomerSourceEnum, CustomerAccountTypeEnum, CustomerStatusEnum } from '../entities/customer.entity';
-import { CustomerAddressEntity } from '../entities/customer-address.entity';
+import { CustomerEntity, CustomerSourceEnum } from '../entities/customer.entity';
 
 const TENANT = 'tenant-1';
 
 describe('FindOrCreateCustomerService', () => {
   let service: FindOrCreateCustomerService;
   let repo: {
-    findOne: jest.Mock;
-    create: jest.Mock;
-    save: jest.Mock;
-  };
-  let addressRepo: {
     findOne: jest.Mock;
     create: jest.Mock;
     save: jest.Mock;
@@ -25,17 +19,11 @@ describe('FindOrCreateCustomerService', () => {
       create: jest.fn((data) => data),
       save: jest.fn(async (data) => ({ id: 'new-customer', ...data })),
     };
-    addressRepo = {
-      findOne: jest.fn(),
-      create: jest.fn((data) => data),
-      save: jest.fn(async (data) => ({ id: 'new-addr', ...data })),
-    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         FindOrCreateCustomerService,
         { provide: getRepositoryToken(CustomerEntity), useValue: repo },
-        { provide: getRepositoryToken(CustomerAddressEntity), useValue: addressRepo },
       ],
     }).compile();
 
@@ -43,14 +31,7 @@ describe('FindOrCreateCustomerService', () => {
   });
 
   it('returns the existing customer instead of creating a duplicate', async () => {
-    repo.findOne.mockResolvedValue({
-      id: 'existing',
-      tenantId: TENANT,
-      phone: '01711000111',
-      firstName: 'Rahim',
-      lastName: 'Hossain',
-      accountType: CustomerAccountTypeEnum.GUEST,
-    });
+    repo.findOne.mockResolvedValue({ id: 'existing', tenantId: TENANT, phone: '01711000111' });
 
     const result = await service.execute(TENANT, { phone: '01711000111', name: 'Rahim Hossain' });
 
@@ -58,7 +39,7 @@ describe('FindOrCreateCustomerService', () => {
     expect(repo.save).not.toHaveBeenCalled();
   });
 
-  it('creates a tenant-scoped guest customer when none exists on guest checkout', async () => {
+  it('creates a tenant-scoped customer when none exists', async () => {
     repo.findOne.mockResolvedValue(null);
 
     const result = await service.execute(TENANT, {
@@ -66,7 +47,6 @@ describe('FindOrCreateCustomerService', () => {
       name: 'Nusrat Jahan',
       email: 'Nusrat@Example.COM',
       storeId: 'store-1',
-      isGuest: true,
     });
 
     expect(result?.id).toBe('new-customer');
@@ -76,38 +56,9 @@ describe('FindOrCreateCustomerService', () => {
     expect(created.tenantId).toBe(TENANT);
     expect(created.firstName).toBe('Nusrat');
     expect(created.lastName).toBe('Jahan');
+    // Email is normalised so the unique index on lower(email) behaves predictably.
     expect(created.email).toBe('nusrat@example.com');
-    expect(created.accountType).toBe(CustomerAccountTypeEnum.GUEST);
-    expect(created.hasAccount).toBe(false);
     expect(created.source).toBe(CustomerSourceEnum.ONLINE_STORE);
-  });
-
-  it('upgrades existing guest customer to registered when user is logged in', async () => {
-    const existing = {
-      id: 'existing-guest',
-      tenantId: TENANT,
-      phone: '01886807417',
-      firstName: 'Guest',
-      lastName: 'Customer',
-      status: CustomerStatusEnum.GUEST,
-      accountType: CustomerAccountTypeEnum.GUEST,
-      hasAccount: false,
-    };
-    repo.findOne.mockResolvedValue(existing);
-
-    const result = await service.execute(TENANT, {
-      phone: '01886807417',
-      name: 'Rahat Chowdhury',
-      userId: 'user-uuid-1',
-      isGuest: false,
-    });
-
-    expect(result?.id).toBe('existing-guest');
-    expect(repo.save).toHaveBeenCalledTimes(1);
-    expect(existing.accountType).toBe(CustomerAccountTypeEnum.REGISTERED);
-    expect(existing.status).toBe(CustomerStatusEnum.ACTIVE);
-    expect(existing.firstName).toBe('Rahat');
-    expect(existing.lastName).toBe('Chowdhury');
   });
 
   it('splits a single-word name without losing it', async () => {
@@ -157,4 +108,3 @@ describe('FindOrCreateCustomerService', () => {
     await expect(service.execute(TENANT, { phone: '01711000111' })).resolves.toBeNull();
   });
 });
-

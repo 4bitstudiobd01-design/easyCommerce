@@ -2,13 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer utilities {
-  .outline-hidden {
-    outline: 2px solid transparent;
-    outline-offset: 2px;
-  }
-}
-
 :root {
   --foreground-rgb: 15, 23, 42;
   --background-rgb: 248, 250, 252;

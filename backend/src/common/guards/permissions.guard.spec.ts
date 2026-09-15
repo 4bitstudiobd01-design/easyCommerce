@@ -10,15 +10,12 @@ import { StaffPermissionType } from '../../modules/staff/entities/staff.entity';
  * calling the endpoint directly.
  */
 describe('PermissionsGuard', () => {
-  const buildContext = (userId?: string, storeId?: string, branchId?: string): ExecutionContext =>
+  const buildContext = (userId?: string, storeId?: string): ExecutionContext =>
     ({
       switchToHttp: () => ({
         getRequest: () => ({
           user: userId ? { sub: userId } : undefined,
-          headers: {
-            ...(storeId ? { 'x-store-id': storeId } : {}),
-            ...(branchId ? { 'x-branch-id': branchId } : {}),
-          },
+          headers: storeId ? { 'x-store-id': storeId } : {},
         }),
       }),
       getHandler: () => jest.fn(),
@@ -87,17 +84,6 @@ describe('PermissionsGuard', () => {
 
     await guard.canActivate(buildContext('user-1', 'store-42'));
 
-    expect(permissionsService.execute).toHaveBeenCalledWith('user-1', 'store-42', undefined);
-  });
-
-  it('passes the x-branch-id header through to permission resolution', async () => {
-    const { guard, permissionsService } = buildGuard(['orders:read'], {
-      permissions: ['orders:read'],
-      isOwner: false,
-    });
-
-    await guard.canActivate(buildContext('user-1', 'store-42', 'branch-7'));
-
-    expect(permissionsService.execute).toHaveBeenCalledWith('user-1', 'store-42', 'branch-7');
+    expect(permissionsService.execute).toHaveBeenCalledWith('user-1', 'store-42');
   });
 });

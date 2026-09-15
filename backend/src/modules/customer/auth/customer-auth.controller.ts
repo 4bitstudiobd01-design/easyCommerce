@@ -27,7 +27,7 @@ export class CustomerAuthController {
     @Body() dto: CustomerRegisterDto,
   ): Promise<CustomerAuthResponseDto> {
     const store = await this.findStoreBySlugService.execute(storeSlug);
-    return this.registerCustomerService.execute(store.tenantId, store.id, dto, store.allowCustomerRegistration);
+    return this.registerCustomerService.execute(store.tenantId, store.id, dto);
   }
 
   @Post('login')

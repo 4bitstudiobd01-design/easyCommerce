@@ -7,7 +7,7 @@ import {
   Index,
 } from 'typeorm';
 
-export type AiProviderType = 'gemini' | 'openai' | 'claude' | 'deepseek' | 'groq';
+export type AiProviderType = 'gemini' | 'openai';
 export type AiTriggerMode = 'NO_HUMAN_ACTIVE' | 'ALWAYS' | 'OUTSIDE_HOURS';
 
 @Entity('omnichannel_ai_configs')
@@ -36,34 +36,12 @@ export class OmnichannelAiConfigEntity {
   @Column({
     type: 'varchar',
     length: 100,
-    default: 'gemini-2.5-flash',
+    default: 'gemini-1.5-flash',
   })
   model: string;
 
-  // ─── Per-provider encrypted API keys (stored independently) ───────────────
-  // Each provider key is stored in its own column so switching providers
-  // never overwrites keys for other providers.
-
-  /** @deprecated Legacy single-key column. Kept for zero-downtime migration. */
   @Column({ type: 'text', nullable: true })
   encryptedApiKey?: string | null;
-
-  @Column({ type: 'text', nullable: true })
-  encryptedGeminiKey?: string | null;
-
-  @Column({ type: 'text', nullable: true })
-  encryptedOpenaiKey?: string | null;
-
-  @Column({ type: 'text', nullable: true })
-  encryptedClaudeKey?: string | null;
-
-  @Column({ type: 'text', nullable: true })
-  encryptedDeepseekKey?: string | null;
-
-  @Column({ type: 'text', nullable: true })
-  encryptedGroqKey?: string | null;
-
-  // ──────────────────────────────────────────────────────────────────────────
 
   @Column({
     type: 'text',
@@ -87,12 +65,6 @@ export class OmnichannelAiConfigEntity {
 
   @Column({ type: 'jsonb', default: {} })
   businessContext: Record<string, any>;
-
-  @Column({
-    type: 'jsonb',
-    default: { telegram: true, whatsapp: true, instagram: true, facebook: true, x: true },
-  })
-  enabledPlatforms: Record<string, boolean>;
 
   @CreateDateColumn({ type: 'timestamp with time zone' })
   createdAt: Date;

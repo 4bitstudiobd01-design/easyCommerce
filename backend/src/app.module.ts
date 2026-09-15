@@ -19,6 +19,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { SmsModule } from './modules/sms/sms.module';
 import { CouponModule } from './modules/coupon/coupon.module';
 import { StaffModule } from './modules/staff/staff.module';
+import { EmailMarketingModule } from './modules/email-marketing/email-marketing.module';
 import { SeoModule } from './modules/seo/seo.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { CustomerModule } from './modules/customer/customer.module';
@@ -28,12 +29,8 @@ import { MarketingModule } from './modules/marketing/marketing.module';
 import { TrackingModule } from './modules/tracking/tracking.module';
 import { BlogModule } from './modules/blog/blog.module';
 import { FileModule } from './modules/file/file.module';
-import { HrmModule } from './modules/hrm/hrm.module';
-import { AccountingModule } from './modules/accounting/accounting.module';
-import { PurchaseModule } from './modules/purchase/purchase.module';
 import { NotificationModule } from './common/notification/notification.module';
 import { OmnichannelModule } from './modules/omnichannel/omnichannel.module';
-import { FinanceModule } from './modules/finance/finance.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { APP_FILTER } from '@nestjs/core';
 
@@ -50,12 +47,6 @@ import { APP_FILTER } from '@nestjs/core';
         connection: {
           host: config.get<string>('REDIS_HOST', 'localhost'),
           port: config.get<number>('REDIS_PORT', 6379),
-          // Local dev without Redis running: fail fast instead of retrying forever,
-          // so boot doesn't hang. Queue-backed features (email/SMS) just won't fire.
-          maxRetriesPerRequest: null,
-          enableOfflineQueue: false,
-          enableReadyCheck: false,
-          retryStrategy: () => null,
         },
         defaultJobOptions: {
           attempts: 3,
@@ -90,6 +81,7 @@ import { APP_FILTER } from '@nestjs/core';
     SmsModule,
     CouponModule,
     StaffModule,
+    EmailMarketingModule,
     SeoModule,
     BillingModule,
     CustomerModule,
@@ -100,10 +92,6 @@ import { APP_FILTER } from '@nestjs/core';
     BlogModule,
     FileModule,
     OmnichannelModule,
-    HrmModule,
-    FinanceModule,
-    AccountingModule,
-    PurchaseModule,
   ],
   controllers: [],
   providers: [

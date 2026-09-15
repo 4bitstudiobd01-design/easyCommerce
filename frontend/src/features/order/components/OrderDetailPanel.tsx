@@ -4,7 +4,6 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { Order, OrderStatusType } from '../api/orderApi';
-import { useGetBranchesQuery } from '@/features/tenant/api/tenantApi';
 import { getPaymentMethodLabel, getPaymentStatusLabel, getPaymentStatusColorClasses } from '../utils/paymentMethod';
 import { requiresReason } from '../utils/statusTransition';
 import {
@@ -15,7 +14,6 @@ import {
   Truck,
   ChevronDown,
   Eye,
-  Store,
 } from 'lucide-react';
 
 interface OrderDetailPanelProps {
@@ -86,10 +84,6 @@ export function OrderDetailPanel({
   isUpdatingStatus,
 }: OrderDetailPanelProps) {
   const isOpen = Boolean(order);
-  const { data: branches } = useGetBranchesQuery();
-  const branchName = order?.branchId
-    ? branches?.find((branch) => branch.id === order.branchId)?.name
-    : undefined;
 
   // Portal target isn't available during SSR/first paint.
   const [mounted, setMounted] = React.useState(false);
@@ -301,13 +295,6 @@ export function OrderDetailPanel({
               <Copy className="w-3.5 h-3.5" />
             </button>
           </div>
-
-          {order.branchId && (
-            <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-slate-100 text-xs text-slate-600">
-              <Store className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-              <span>Branch: <span className="font-bold text-slate-800">{branchName ?? order.branchId}</span></span>
-            </div>
-          )}
 
           <div className="mt-3 pt-3 border-t border-slate-100">
             <p className="text-[10px] font-bold text-slate-400 uppercase">Placed At</p>

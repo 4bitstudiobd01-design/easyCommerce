@@ -3,8 +3,7 @@
 import React from 'react';
 import { Order } from '../api/orderApi';
 import { useGetOrderInvoiceQuery } from '../api/orderApi';
-import { useGetMyStoresQuery } from '@/features/tenant/api/tenantApi';
-import { X, Printer, Loader2, Phone, MapPin, Globe, Store as StoreIcon } from 'lucide-react';
+import { X, Printer, Loader2, Phone } from 'lucide-react';
 import { getPaymentMethodLabel, getPaymentStatusLabel } from '../utils/paymentMethod';
 
 interface InvoiceModalProps {
@@ -29,7 +28,6 @@ const TERMS_AND_CONDITIONS =
 
 export function InvoiceModal({ isOpen, onClose, order }: InvoiceModalProps) {
   const { data: invoice, isLoading } = useGetOrderInvoiceQuery(order?.id ?? '', { skip: !isOpen || !order });
-  const { data: stores = [] } = useGetMyStoresQuery();
 
   if (!isOpen || !order) return null;
 
@@ -37,15 +35,10 @@ export function InvoiceModal({ isOpen, onClose, order }: InvoiceModalProps) {
     window.print();
   };
 
-  const savedStoreId = typeof window !== 'undefined' ? localStorage.getItem('bitcommerce_active_store_id') : null;
-  const activeStore = stores.find((s) => s.id === savedStoreId) || stores[0];
-
   const displayOrder = invoice?.order ?? order;
-  const storeName = invoice?.storeName || activeStore?.name || 'BitCommerce Store';
-  const storePhone = invoice?.storePhone && invoice.storePhone !== 'N/A' ? invoice.storePhone : activeStore?.phone;
-  const storeAddress = invoice?.storeAddress && invoice.storeAddress !== 'N/A' ? invoice.storeAddress : activeStore?.address;
-  const storeLogo = invoice?.storeLogo || activeStore?.logo;
-  const storeDomain = invoice?.storeDomain || activeStore?.domain || activeStore?.slug;
+  const storeName = invoice?.storeName ?? 'Your Store';
+  const storePhone = invoice?.storePhone;
+  const storeAddress = invoice?.storeAddress;
   const balanceDue = invoice?.balanceDue ?? Number(displayOrder.grandTotal);
   const generatedAt = invoice?.generatedAt ? new Date(invoice.generatedAt) : new Date();
 
@@ -63,7 +56,7 @@ export function InvoiceModal({ isOpen, onClose, order }: InvoiceModalProps) {
             <button
               onClick={handlePrint}
               disabled={isLoading}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md shadow-emerald-600/20 flex items-center gap-2 transition-all disabled:opacity-50 cursor-pointer"
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md shadow-emerald-600/20 flex items-center gap-2 transition-all disabled:opacity-50"
             >
               <Printer className="w-4 h-4" />
               <span>Print Invoice</span>
@@ -71,7 +64,7 @@ export function InvoiceModal({ isOpen, onClose, order }: InvoiceModalProps) {
 
             <button
               onClick={onClose}
-              className="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
+              className="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -85,62 +78,29 @@ export function InvoiceModal({ isOpen, onClose, order }: InvoiceModalProps) {
         ) : (
           /* Printable Invoice Document Area */
           <div className="p-8 font-sans text-slate-800 print:p-0">
-            {/* Header: Store Branding with Logo, Name, Address & Contact */}
-            <div className="flex items-start justify-between pb-6 border-b border-slate-100">
-              <div className="flex items-start gap-4">
-                {/* Store Logo or Brand Badge */}
-                {storeLogo ? (
-                  <div className="w-14 h-14 rounded-2xl border border-slate-200 overflow-hidden bg-white p-1 shrink-0 shadow-xs flex items-center justify-center">
-                    <img
-                      src={storeLogo}
-                      alt={storeName}
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white font-black text-xl flex items-center justify-center shrink-0 shadow-xs">
-                    {storeName.charAt(0).toUpperCase()}
-                  </div>
-                )}
-
-                <div>
-                  <h1 className="font-extrabold text-2xl text-slate-900 tracking-tight">{storeName}</h1>
-                  
-                  {storeAddress && (
-                    <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-                      <span>{storeAddress}</span>
-                    </p>
+            {/* Header */}
+            <div className="flex items-start justify-between pb-6">
+              <div>
+                <h1 className="font-extrabold text-2xl text-slate-900 tracking-tight">{storeName}</h1>
+                {storeAddress && <p className="text-xs text-slate-500 mt-1">{storeAddress}</p>}
+                <div className="flex flex-col gap-0.5 mt-1.5 text-xs text-slate-500">
+                  {storePhone && storePhone !== 'N/A' && (
+                    <span className="flex items-center gap-1.5">
+                      <Phone className="w-3 h-3" /> {storePhone}
+                    </span>
                   )}
-
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-xs text-slate-500 font-medium">
-                    {storePhone && (
-                      <span className="flex items-center gap-1">
-                        <Phone className="w-3 h-3 text-slate-400 shrink-0" />
-                        <span>{storePhone}</span>
-                      </span>
-                    )}
-
-                    {storeDomain && (
-                      <span className="flex items-center gap-1">
-                        <Globe className="w-3 h-3 text-slate-400 shrink-0" />
-                        <span>{storeDomain}</span>
-                      </span>
-                    )}
-                  </div>
                 </div>
               </div>
-
-              <div className="text-right shrink-0">
+              <div className="text-right">
                 <h2 className="font-black text-3xl text-slate-900 tracking-tight">INVOICE</h2>
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-slate-500 mt-2">
                   Invoice# <span className="font-bold text-slate-900">{displayOrder.orderNumber}</span>
                 </p>
               </div>
             </div>
 
             {/* Bill To / Ship To */}
-            <div className="grid grid-cols-2 gap-8 py-6">
+            <div className="grid grid-cols-2 gap-8 pb-6">
               <div>
                 <p className="font-extrabold text-[10px] uppercase text-slate-400 tracking-wider mb-1.5">Bill To</p>
                 <p className="font-bold text-slate-900 text-sm">{displayOrder.customerName}</p>
@@ -241,15 +201,9 @@ export function InvoiceModal({ isOpen, onClose, order }: InvoiceModalProps) {
               <p className="text-[10px] text-slate-500 leading-relaxed">{TERMS_AND_CONDITIONS}</p>
             </div>
 
-            {invoice?.invoiceFooterNote && (
-              <div className="pt-4 mt-4 border-t border-slate-200">
-                <p className="text-[10px] text-slate-500 leading-relaxed whitespace-pre-line">{invoice.invoiceFooterNote}</p>
-              </div>
-            )}
-
             {/* Powered by footer */}
             <div className="pt-4 mt-4 border-t border-slate-100 text-center text-[10px] text-slate-400">
-              {storeName} {storePhone ? `• ${storePhone}` : ''} • Generated {generatedAt.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+              Powered by {storeName} • Generated {generatedAt.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
             </div>
           </div>
         )}

@@ -14,9 +14,8 @@ import {
 import { ProductBulkActionBar } from './ProductBulkActionBar';
 import { ProductImportModal } from './ProductImportModal';
 import Link from 'next/link';
-import { Package, Image as ImageIcon, ChevronLeft, ChevronRight, RefreshCw, Eye, Pencil, Trash2 } from 'lucide-react';
+import { Package, Image as ImageIcon, ChevronLeft, ChevronRight, RefreshCw, Eye, Pencil, Trash2, AlertTriangle, X } from 'lucide-react';
 import { TableRowSkeleton } from '@/components/ui/Skeleton';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface ProductListTableProps {
   searchQuery?: string;
@@ -543,23 +542,76 @@ export function ProductListTable({
       />
 
       {/* Delete confirmation */}
-      <ConfirmDialog
-        isOpen={deleteTarget !== null}
-        onClose={() => setDeleteTarget(null)}
-        onConfirm={handleConfirmDelete}
-        isLoading={isDeleting}
-        title="Delete this product?"
-        confirmLabel="Delete Product"
-        message={
-          <>
-            <span className="font-semibold text-slate-700">
-              {deleteTarget?.name || deleteTarget?.title}
-            </span>{' '}
-            will be removed from your catalog. If it already appears in customer orders it is
-            archived instead, so order history and reporting stay intact.
-          </>
-        }
-      />
+      {deleteTarget && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-product-title"
+          onClick={() => !isDeleting && setDeleteTarget(null)}
+        >
+          <div
+            className="bg-white rounded-2xl border border-slate-200 shadow-xl w-full max-w-md"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-5 flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 border border-rose-100 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 id="delete-product-title" className="font-extrabold text-base text-slate-900">
+                  Delete this product?
+                </h3>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  <span className="font-semibold text-slate-700">
+                    {deleteTarget.name || deleteTarget.title}
+                  </span>{' '}
+                  will be removed from your catalog. If it already appears in customer orders it is
+                  archived instead, so order history and reporting stay intact.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                disabled={isDeleting}
+                aria-label="Close"
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg transition-colors shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="px-5 py-4 border-t border-slate-100 bg-slate-50/50 rounded-b-2xl flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                disabled={isDeleting}
+                className="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-50 disabled:opacity-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-md shadow-rose-600/20 disabled:opacity-60 transition-colors inline-flex items-center gap-1.5"
+              >
+                {isDeleting ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Deleting…</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Product</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

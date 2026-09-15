@@ -34,20 +34,12 @@ export class ListStoreActivitiesService {
     const activities: StoreActivityItem[] = [];
 
     // ─── 1. Customer creation events ──────────────────────────────────────
-    const customerSql = storeId
-      ? `SELECT c.id, c."firstName", c."lastName", c.phone, c.email, c.source, c."createdAt"
-         FROM customers c
-         WHERE c."tenantId" = $1 AND (c."storeId" = $2 OR c."storeId" IS NULL)
-         ORDER BY c."createdAt" DESC
-         LIMIT $3`
-      : `SELECT c.id, c."firstName", c."lastName", c.phone, c.email, c.source, c."createdAt"
-         FROM customers c
-         WHERE c."tenantId" = $1
-         ORDER BY c."createdAt" DESC
-         LIMIT $2`;
-
     const customers = await this.dataSource.query(
-      customerSql,
+      `SELECT c.id, c."firstName", c."lastName", c.phone, c.email, c.source, c."createdAt"
+       FROM customers c
+       WHERE c."tenantId" = $1 ${storeId ? 'AND (c."storeId" = $2 OR c."storeId" IS NULL)' : ''}
+       ORDER BY c."createdAt" DESC
+       LIMIT $${storeId ? 3 : 2}`,
       storeId ? [tenantId, storeId, limit] : [tenantId, limit],
     );
 
@@ -66,28 +58,16 @@ export class ListStoreActivitiesService {
     }
 
     // ─── 2. Lead creation events ───────────────────────────────────────────
-    const leadSql = storeId
-      ? `SELECT l.id, l.name, l.phone, l.email, l.source, l.stage,
-              l.estimated_value AS "estimatedValue",
-              l.lead_score AS "leadScore",
-              l.store_id AS "storeId",
-              l.created_at AS "createdAt"
-       FROM crm_leads l
-       WHERE l.tenant_id = $1 AND (l.store_id = $2 OR l.store_id IS NULL)
-       ORDER BY l.created_at DESC
-       LIMIT $3`
-      : `SELECT l.id, l.name, l.phone, l.email, l.source, l.stage,
-              l.estimated_value AS "estimatedValue",
-              l.lead_score AS "leadScore",
-              l.store_id AS "storeId",
-              l.created_at AS "createdAt"
-       FROM crm_leads l
-       WHERE l.tenant_id = $1
-       ORDER BY l.created_at DESC
-       LIMIT $2`;
-
     const leads = await this.dataSource.query(
-      leadSql,
+      `SELECT l.id, l.name, l.phone, l.email, l.source, l.stage,
+              l.estimated_value AS "estimatedValue",
+              l.lead_score AS "leadScore",
+              l.store_id AS "storeId",
+              l.created_at AS "createdAt"
+       FROM crm_leads l
+       WHERE l.tenant_id = $1 ${storeId ? 'AND (l.store_id = $2 OR l.store_id IS NULL)' : ''}
+       ORDER BY l.created_at DESC
+       LIMIT $${storeId ? 3 : 2}`,
       storeId ? [tenantId, storeId, limit] : [tenantId, limit],
     );
 

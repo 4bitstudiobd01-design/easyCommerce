@@ -2,8 +2,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { createBaseQueryWithReauth } from '@/store/baseQueryWithReauth';
 import { RootState } from '@/store';
 
-export type CustomerStatusType = 'ACTIVE' | 'INACTIVE' | 'BLOCKED' | 'GUEST';
-export type CustomerAccountType = 'REGISTERED' | 'GUEST';
+export type CustomerStatusType = 'ACTIVE' | 'INACTIVE' | 'BLOCKED';
 export type CustomerSourceType = 'ONLINE_STORE' | 'MANUAL' | 'POS' | 'IMPORT';
 
 export interface Customer {
@@ -15,7 +14,6 @@ export interface Customer {
   email?: string;
   phone: string;
   status: CustomerStatusType;
-  accountType?: CustomerAccountType;
   source: CustomerSourceType;
   createdAt: string;
   updatedAt: string;
@@ -270,7 +268,6 @@ export interface CustomerListQueryParams {
   limit?: number;
   search?: string;
   status?: string;
-  accountType?: string;
   source?: string;
   origin?: string;
   segmentId?: string;

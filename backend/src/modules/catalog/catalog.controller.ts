@@ -58,7 +58,6 @@ import { GenerateProductVariantsService } from './services/generate-product-vari
 import { UpdateProductVariantService } from './services/update-product-variant.service';
 import { DeleteProductVariantService } from './services/delete-product-variant.service';
 import { BulkUpdateVariantsService } from './services/bulk-update-variants.service';
-import { BulkDeleteVariantsService } from './services/bulk-delete-variants.service';
 
 import { CreateShippingProfileService, ListShippingProfilesService, CreateShippingProfileDto } from './services/shipping-profile.service';
 
@@ -96,7 +95,6 @@ import { ListProductsService } from './services/list-products.service';
 import { FindProductByIdService } from './services/find-product-by-id.service';
 import { FindPublicStoreProductsService, PublicStoreProductsResponse } from './services/find-public-store-products.service';
 import { FindPublicStoreProductBySlugService, PublicStoreProductResponse } from './services/find-public-store-product-by-slug.service';
-import { FindPublicStoreCategoriesService, PublicStoreCategory } from './services/find-public-store-categories.service';
 import { HomepageSection } from './enums/homepage-section.enum';
 import { FindStoreByUserService } from '../tenant/services/find-store-by-user.service';
 import { CreateReviewService } from './services/create-review.service';
@@ -124,7 +122,6 @@ import { SetProductAttributeValuesDto } from './dto/set-product-attribute-values
 import { GenerateProductVariantsDto } from './dto/generate-product-variants.dto';
 import { UpdateProductVariantDto } from './dto/update-product-variant.dto';
 import { BulkUpdateVariantsDto } from './dto/bulk-update-variants.dto';
-import { BulkDeleteVariantsDto } from './dto/bulk-delete-variants.dto';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductListDto } from './dto/product-list.dto';
@@ -185,7 +182,6 @@ export class CatalogController {
     private readonly updateProductVariantService: UpdateProductVariantService,
     private readonly deleteProductVariantService: DeleteProductVariantService,
     private readonly bulkUpdateVariantsService: BulkUpdateVariantsService,
-    private readonly bulkDeleteVariantsService: BulkDeleteVariantsService,
     private readonly createShippingProfileService: CreateShippingProfileService,
     private readonly listShippingProfilesService: ListShippingProfilesService,
     private readonly bulkUpdateProductStatusService: BulkUpdateProductStatusService,
@@ -205,7 +201,6 @@ export class CatalogController {
     private readonly findProductByIdService: FindProductByIdService,
     private readonly findPublicStoreProductsService: FindPublicStoreProductsService,
     private readonly findPublicStoreProductBySlugService: FindPublicStoreProductBySlugService,
-    private readonly findPublicStoreCategoriesService: FindPublicStoreCategoriesService,
     private readonly findStoreByUserService: FindStoreByUserService,
     private readonly createReviewService: CreateReviewService,
     private readonly listProductReviewsService: ListProductReviewsService,
@@ -250,17 +245,6 @@ export class CatalogController {
     return this.findPublicStoreProductBySlugService.execute(slug, productSlug);
   }
 
-  @Get('public/store/:slug/categories')
-  @ApiOperation({ summary: 'Get storefront-visible categories for a store, in merchant-defined order' })
-  @ApiResponse({ status: 200, description: 'Active, storefront-visible categories sorted by sortOrder' })
-  @ApiResponse({ status: 404, description: 'Store not found' })
-  async getPublicStoreCategories(
-    @Param('slug') slug: string,
-    @Query('limit') limit?: number,
-  ): Promise<PublicStoreCategory[]> {
-    return this.findPublicStoreCategoriesService.execute(slug, limit ? Number(limit) : undefined);
-  }
-
   @Post('products/:id/reviews')
   @ApiOperation({ summary: 'Submit a product review' })
   @ApiResponse({ status: 201, description: 'Review submitted successfully, pending moderation' })
@@ -277,55 +261,6 @@ export class CatalogController {
   @ApiResponse({ status: 200, description: 'List of approved reviews for the product' })
   async getApprovedReviews(@Param('id') productId: string) {
     return this.listProductReviewsService.listApprovedForProduct(productId);
-  }
-
-  @Get('reviews/merchant')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'List every review for the merchant store (any moderation state)' })
-  @ApiResponse({ status: 200, description: 'All reviews across the merchant catalog' })
-  async getMerchantReviews(@CurrentUser('sub') userId: string): Promise<ReviewEntity[]> {
-    const store = await this.findStoreByUserService.execute(userId);
-    if (!store) {
-      throw new BadRequestException('Merchant must create a store first.');
-    }
-    return this.listProductReviewsService.listAllForMerchant(store.tenantId);
-  }
-
-  @Patch('reviews/:id/approval')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Approve or unapprove a customer review' })
-  @ApiResponse({ status: 200, description: 'Review moderation state updated' })
-  @ApiResponse({ status: 404, description: 'Review not found for this store' })
-  async moderateReview(
-    @CurrentUser('sub') userId: string,
-    @Param('id') reviewId: string,
-    @Body('isApproved') isApproved: boolean,
-  ): Promise<ReviewEntity> {
-    const store = await this.findStoreByUserService.execute(userId);
-    if (!store) {
-      throw new BadRequestException('Merchant must create a store first.');
-    }
-    return this.moderateReviewService.toggleApproval(reviewId, store.tenantId, isApproved);
-  }
-
-  @Delete('reviews/:id')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Delete a customer review' })
-  @ApiResponse({ status: 200, description: 'Review deleted' })
-  @ApiResponse({ status: 404, description: 'Review not found for this store' })
-  async deleteReview(
-    @CurrentUser('sub') userId: string,
-    @Param('id') reviewId: string,
-  ): Promise<{ message: string }> {
-    const store = await this.findStoreByUserService.execute(userId);
-    if (!store) {
-      throw new BadRequestException('Merchant must create a store first.');
-    }
-    await this.moderateReviewService.deleteReview(reviewId, store.tenantId);
-    return { message: 'Review deleted successfully.' };
   }
 
   // --- ATTRIBUTE DEFINITION & CATEGORY BINDING ENDPOINTS (CHUNK 6) ---
@@ -502,21 +437,6 @@ export class CatalogController {
   ): Promise<ProductVariantEntity[]> {
     const tenantId = await this.getMerchantTenantId(userId, storeId);
     return this.bulkUpdateVariantsService.execute(productId, tenantId, dto);
-  }
-
-  @Post('products/:id/variants/bulk-delete')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Delete several variants of a product in one transaction' })
-  @RequirePermissions('products:write')
-  async bulkDeleteVariants(
-    @CurrentUser('sub') userId: string,
-    @Param('id') productId: string,
-    @Body() dto: BulkDeleteVariantsDto,
-    @Headers('x-store-id') storeId?: string,
-  ) {
-    const tenantId = await this.getMerchantTenantId(userId, storeId);
-    return this.bulkDeleteVariantsService.execute(productId, tenantId, dto.variantIds);
   }
 
   @Patch('products/:id/variants/:variantId')

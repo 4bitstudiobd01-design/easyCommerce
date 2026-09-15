@@ -44,8 +44,8 @@ describe('Product Shipping & Fulfillment Services (Chunk 10)', () => {
       };
 
       const categoryRepo = { findOne: jest.fn().mockResolvedValue(null) };
+      const variantRepo = { create: jest.fn(), save: jest.fn() };
       const imageRepo = { create: jest.fn(), save: jest.fn() };
-      const variantRepo = { create: jest.fn().mockImplementation((v) => v), save: jest.fn().mockImplementation((v) => Promise.resolve({ id: "var-1", ...v })) };
       const collectionRepo = { find: jest.fn().mockResolvedValue([]) };
       const stockRepo = { create: jest.fn(), save: jest.fn().mockResolvedValue({ id: 's-1' }) };
       const movementRepo = { create: jest.fn(), save: jest.fn() };
@@ -55,8 +55,8 @@ describe('Product Shipping & Fulfillment Services (Chunk 10)', () => {
       const service = new CreateProductService(
         productRepo as any,
         categoryRepo as any,
-        imageRepo as any,
         variantRepo as any,
+        imageRepo as any,
         collectionRepo as any,
         stockRepo as any,
         movementRepo as any,
@@ -101,8 +101,8 @@ describe('Product Shipping & Fulfillment Services (Chunk 10)', () => {
       };
 
       const categoryRepo = { findOne: jest.fn().mockResolvedValue(null) };
+      const variantRepo = { create: jest.fn(), save: jest.fn() };
       const imageRepo = { create: jest.fn(), save: jest.fn() };
-      const variantRepo = { create: jest.fn().mockImplementation((v) => v), save: jest.fn().mockImplementation((v) => Promise.resolve({ id: "var-1", ...v })) };
       const collectionRepo = { find: jest.fn().mockResolvedValue([]) };
       const stockRepo = { create: jest.fn(), save: jest.fn().mockResolvedValue({ id: 's-2' }) };
       const movementRepo = { create: jest.fn(), save: jest.fn() };
@@ -112,8 +112,8 @@ describe('Product Shipping & Fulfillment Services (Chunk 10)', () => {
       const service = new CreateProductService(
         productRepo as any,
         categoryRepo as any,
-        imageRepo as any,
         variantRepo as any,
+        imageRepo as any,
         collectionRepo as any,
         stockRepo as any,
         movementRepo as any,
@@ -149,8 +149,8 @@ describe('Product Shipping & Fulfillment Services (Chunk 10)', () => {
       };
 
       const categoryRepo = { findOne: jest.fn().mockResolvedValue(null) };
+      const variantRepo = { create: jest.fn(), save: jest.fn() };
       const imageRepo = { create: jest.fn(), save: jest.fn() };
-      const variantRepo = { create: jest.fn().mockImplementation((v) => v), save: jest.fn().mockImplementation((v) => Promise.resolve({ id: "var-1", ...v })) };
       const collectionRepo = { find: jest.fn().mockResolvedValue([]) };
       const stockRepo = { create: jest.fn(), save: jest.fn().mockResolvedValue({ id: 's-3' }) };
       const movementRepo = { create: jest.fn(), save: jest.fn() };
@@ -160,8 +160,8 @@ describe('Product Shipping & Fulfillment Services (Chunk 10)', () => {
       const service = new CreateProductService(
         productRepo as any,
         categoryRepo as any,
-        imageRepo as any,
         variantRepo as any,
+        imageRepo as any,
         collectionRepo as any,
         stockRepo as any,
         movementRepo as any,

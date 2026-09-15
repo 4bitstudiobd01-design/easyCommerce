@@ -288,7 +288,7 @@ export class GetCustomerAnalyticsService {
 
     const channelMap = new Map<string, { customersCount: number; revenue: number }>();
     for (const row of sourceRevAgg) {
-      const channelName = (row.source && sourceChannelMap[row.source]) || (row.source ? row.source.replace(/_/g, ' ') : 'Direct');
+      const channelName = sourceChannelMap[row.source] || row.source.replace(/_/g, ' ');
       const existing = channelMap.get(channelName) || { customersCount: 0, revenue: 0 };
       channelMap.set(channelName, {
         customersCount: existing.customersCount + Number(row.custCount || 0),

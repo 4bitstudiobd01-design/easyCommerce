@@ -78,15 +78,6 @@ export class AdjustStockDto {
   @MaxLength(100)
   reference?: string;
 
-  @ApiPropertyOptional({
-    example: 'PURCHASE_ORDER',
-    description: 'Origin of this movement (defaults to MANUAL_ADJUSTMENT)',
-  })
-  @IsOptional()
-  @IsString()
-  @MaxLength(50)
-  referenceType?: string;
-
   @ApiPropertyOptional({ example: 'Restock from Dhaka primary hub', description: 'Optional audit note' })
   @IsOptional()
   @IsString()

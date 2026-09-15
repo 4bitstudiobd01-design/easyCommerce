@@ -1,11 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InventoryDomainService } from './inventory-domain.service';
 import { AdjustStockService } from './adjust-stock.service';
 import { BulkAdjustStockService } from './bulk-adjust-stock.service';
 import { GetInventorySettingsOverviewService } from './get-inventory-settings-overview.service';
+import { SeedInventoryDemoDataService } from './seed-inventory-demo-data.service';
 import { ProductEntity } from '../../catalog/entities/product.entity';
 import { ProductVariantEntity } from '../../catalog/entities/product-variant.entity';
 import { InventoryStockEntity } from '../entities/inventory-stock.entity';
@@ -16,6 +17,7 @@ import { StockStatus } from '../../catalog/enums/stock-status.enum';
 describe('Inventory Security, Invariants & Edge Cases', () => {
   let domainService: InventoryDomainService;
   let overviewService: GetInventorySettingsOverviewService;
+  let seedService: SeedInventoryDemoDataService;
 
   let productRepo: any;
   let variantRepo: any;
@@ -100,6 +102,7 @@ describe('Inventory Security, Invariants & Edge Cases', () => {
       providers: [
         InventoryDomainService,
         GetInventorySettingsOverviewService,
+        SeedInventoryDemoDataService,
         { provide: getRepositoryToken(ProductEntity), useValue: productRepo },
         { provide: getRepositoryToken(ProductVariantEntity), useValue: variantRepo },
         { provide: getRepositoryToken(InventoryStockEntity), useValue: stockRepo },
@@ -111,6 +114,7 @@ describe('Inventory Security, Invariants & Edge Cases', () => {
 
     domainService = module.get<InventoryDomainService>(InventoryDomainService);
     overviewService = module.get<GetInventorySettingsOverviewService>(GetInventorySettingsOverviewService);
+    seedService = module.get<SeedInventoryDemoDataService>(SeedInventoryDemoDataService);
   });
 
   describe('Negative Stock Protection & Invariant Checks', () => {
@@ -198,6 +202,34 @@ describe('Inventory Security, Invariants & Edge Cases', () => {
       expect(result.integrity.status).toBe('DEGRADED');
       expect(result.integrity.violationCount).toBe(1);
       expect(result.integrity.violations[0].type).toBe('RESERVED_EXCEEDS_ON_HAND');
+    });
+  });
+
+  describe('Seed Demo Data Safety & Protection', () => {
+    it('should reject demo seed execution when NODE_ENV is production', async () => {
+      const prevEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'production';
+
+      try {
+        await expect(seedService.execute('tenant-prod-1')).rejects.toThrow(ForbiddenException);
+      } finally {
+        process.env.NODE_ENV = prevEnv;
+      }
+    });
+
+    it('should execute successfully in development mode and create deterministic records', async () => {
+      const prevEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'development';
+
+      try {
+        const result = await seedService.execute('tenant-dev-1', 'admin-user');
+        expect(result.success).toBe(true);
+        expect(result.productsCreated).toBeGreaterThan(0);
+        expect(result.inventoryStocksCreated).toBeGreaterThan(0);
+        expect(result.movementsCreated).toBeGreaterThan(0);
+      } finally {
+        process.env.NODE_ENV = prevEnv;
+      }
     });
   });
 });

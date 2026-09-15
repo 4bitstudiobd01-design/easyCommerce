@@ -44,15 +44,10 @@ export class RegisterMerchantService {
     const storeName = dto.storeName?.trim();
     const rawSlug = dto.storeSlug?.trim() || dto.subdomain?.trim();
     if (storeName && rawSlug) {
-      const category = dto.businessType || dto.category;
-      if (!category) {
-        throw new BadRequestException('businessType is required to create a store.');
-      }
-
       await this.createStoreService.execute(savedUser.id, {
         name: storeName,
         slug: rawSlug,
-        category,
+        category: dto.businessType || dto.category || 'Fashion & Apparel',
         country: dto.country || 'Bangladesh',
         phone: dto.phone ? normalizePhone(dto.phone) : undefined,
         address: dto.address,

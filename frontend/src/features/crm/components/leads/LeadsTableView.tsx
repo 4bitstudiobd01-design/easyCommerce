@@ -15,11 +15,9 @@ import {
   ArrowUpDown,
   Filter,
   Clock,
-  AlertTriangle,
   X,
 } from 'lucide-react';
 import { formatCrmDate } from '../../utils/formatDate';
-import { getFollowUpInfo } from '../../utils/followUpHelper';
 import { LeadStageDropdown } from './LeadStageDropdown';
 
 interface LeadsTableViewProps {
@@ -45,16 +43,11 @@ export const LeadsTableView: React.FC<LeadsTableViewProps> = ({
   const [stageFilter, setStageFilter] = useState<string>('ALL');
 
   const filteredLeads = leads.filter((l) => {
-    const q = search.toLowerCase().trim();
     const matchSearch =
-      !q ||
-      l.name.toLowerCase().includes(q) ||
-      l.phone.includes(q) ||
-      (l.companyName && l.companyName.toLowerCase().includes(q)) ||
-      (l.email && l.email.toLowerCase().includes(q)) ||
-      (l.notes && l.notes.toLowerCase().includes(q)) ||
-      (l.followUpNote && l.followUpNote.toLowerCase().includes(q)) ||
-      (l.tags && l.tags.some((t) => t.toLowerCase().includes(q)));
+      l.name.toLowerCase().includes(search.toLowerCase()) ||
+      l.phone.includes(search) ||
+      (l.companyName && l.companyName.toLowerCase().includes(search.toLowerCase())) ||
+      (l.notes && l.notes.toLowerCase().includes(search.toLowerCase()));
 
     const matchStage = stageFilter === 'ALL' || l.stage === stageFilter;
     return matchSearch && matchStage;
@@ -88,18 +81,8 @@ export const LeadsTableView: React.FC<LeadsTableViewProps> = ({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search leads by name, phone, company, or requirement..."
-            className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/30"
+            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/30"
           />
-          {search && (
-            <button
-              type="button"
-              onClick={() => setSearch('')}
-              className="p-1 text-slate-400 hover:text-slate-600 absolute right-2.5 top-1/2 -translate-y-1/2 rounded"
-              title="Clear search"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
         </div>
 
         <select
@@ -158,32 +141,25 @@ export const LeadsTableView: React.FC<LeadsTableViewProps> = ({
                         <span>{lead.phone}</span>
                         {lead.companyName && <span>• {lead.companyName}</span>}
                       </div>
-                      {lead.nextFollowUpAt && (() => {
-                        const info = getFollowUpInfo(lead.nextFollowUpAt, lead.stage);
-                        return (
-                          <div className="mt-1.5 flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                            <span
-                              onClick={() => onOpenScheduleFollowUp(lead)}
-                              className={`inline-flex items-center gap-1 px-2 py-0.5 border rounded-md text-[10px] font-bold cursor-pointer transition-colors ${info.badgeClasses}`}
-                            >
-                              {info.isMissed ? (
-                                <AlertTriangle className="w-3 h-3 text-rose-600 animate-pulse" />
-                              ) : (
-                                <Clock className="w-3 h-3 text-amber-600" />
-                              )}
-                              <span>{info.isMissed ? `🔴 Missed: ${info.label}` : info.formattedDate}</span>
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => onClearFollowUp && onClearFollowUp(lead.id)}
-                              className="p-0.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                              title="সময় রিসেট / মুছে ফেলুন (Remove Time)"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </div>
-                        );
-                      })()}
+                      {lead.nextFollowUpAt && (
+                        <div className="mt-1.5 flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                          <span
+                            onClick={() => onOpenScheduleFollowUp(lead)}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-900 border border-amber-200/80 rounded-md text-[10px] font-bold cursor-pointer hover:bg-amber-100 transition-colors"
+                          >
+                            <Clock className="w-3 h-3 text-amber-600" />
+                            <span>{formatCrmDate(lead.nextFollowUpAt, { showTime: true })}</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => onClearFollowUp && onClearFollowUp(lead.id)}
+                            className="p-0.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                            title="সময় রিসেট / মুছে ফেলুন (Remove Time)"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      )}
                     </td>
 
                     <td className="py-3.5 px-4">

@@ -16,7 +16,6 @@ import {
   Download,
   MoreVertical,
   Warehouse as WarehouseIcon,
-  Store as BranchIcon,
   ArrowRightLeft,
 } from 'lucide-react';
 
@@ -28,7 +27,6 @@ import {
   ListInventoryParams,
   InventoryListItem,
 } from '../api/inventoryApi';
-import { useGetBranchesQuery } from '@/features/tenant/api/tenantApi';
 
 import { InventoryKpiCards } from './InventoryKpiCards';
 import { InventoryOverviewSection } from './InventoryOverviewSection';
@@ -36,10 +34,7 @@ import { InventoryFilterBar } from './InventoryFilterBar';
 import { InventoryTable } from './InventoryTable';
 import { InventoryPagination } from './InventoryPagination';
 import { BulkAdjustStockModal } from './BulkAdjustStockModal';
-import { InventoryTabsHeader, InventoryTabKey } from './InventoryTabsHeader';
 import { useGetMyStoreQuery } from '@/features/tenant/api/tenantApi';
-
-const VALID_INVENTORY_TABS: InventoryTabKey[] = ['overview', 'inventory'];
 
 
 
@@ -56,7 +51,6 @@ export function InventoryListView() {
   const initialCategory = searchParams?.get('categoryId') || '';
   const initialProductType = searchParams?.get('productType') || '';
   const initialWarehouseId = searchParams?.get('warehouseId') || '';
-  const initialBranchId = searchParams?.get('branchId') || '';
   const initialSortBy = searchParams?.get('sortBy') || 'updatedAt';
   const initialSortOrder = (searchParams?.get('sortOrder') as 'ASC' | 'DESC') || 'DESC';
 
@@ -68,31 +62,12 @@ export function InventoryListView() {
   const [categoryId, setCategoryId] = useState<string>(initialCategory);
   const [productType, setProductType] = useState<string>(initialProductType);
   const [warehouseId, setWarehouseId] = useState<string>(initialWarehouseId);
-  const [branchId, setBranchId] = useState<string>(initialBranchId);
   const [sortBy, setSortBy] = useState<string>(initialSortBy);
   const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>(initialSortOrder);
 
   // Bulk selection state
   const [selectedInventoryIds, setSelectedInventoryIds] = useState<string[]>([]);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState<boolean>(false);
-
-  // Page-level section tab (Overview vs Inventory table)
-  const initialSection = searchParams?.get('section') as InventoryTabKey | null;
-  const [activeSection, setActiveSection] = useState<InventoryTabKey>(
-    initialSection && VALID_INVENTORY_TABS.includes(initialSection) ? initialSection : 'overview',
-  );
-
-  const handleSectionChange = (tab: InventoryTabKey) => {
-    setActiveSection(tab);
-    const params = new URLSearchParams(searchParams?.toString());
-    if (tab === 'overview') {
-      params.delete('section');
-    } else {
-      params.set('section', tab);
-    }
-    const query = params.toString();
-    router.push(`/dashboard/inventory${query ? `?${query}` : ''}`, { scroll: false });
-  };
 
   // Sync state when URL searchParams change
   useEffect(() => {
@@ -107,21 +82,14 @@ export function InventoryListView() {
       setPage(1);
       setSelectedInventoryIds([]);
     }
-    const urlBranchId = searchParams?.get('branchId') || '';
-    if (urlBranchId !== branchId) {
-      setBranchId(urlBranchId);
-      setPage(1);
-      setSelectedInventoryIds([]);
-    }
   }, [searchParams]);
 
-  // Jump straight to the Inventory tab when arriving with a warehouse/branch
-  // filter already in the URL (e.g. clicked in from a warehouse or branch
-  // card) — otherwise the filtered result lands on the Overview tab and is
-  // easy to miss.
+  // Jump straight to the table when arriving with a warehouse filter already
+  // in the URL (e.g. clicked in from a warehouse card) — the KPI/overview
+  // sections above the table make the filtered result easy to miss otherwise.
   useEffect(() => {
-    if (initialWarehouseId || initialBranchId) {
-      setActiveSection('inventory');
+    if (initialWarehouseId) {
+      document.getElementById('inventory-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -152,9 +120,8 @@ export function InventoryListView() {
     if (categoryId) p.categoryId = categoryId;
     if (productType) p.productType = productType;
     if (warehouseId) p.warehouseId = warehouseId;
-    if (branchId) p.branchId = branchId;
     return p;
-  }, [page, limit, debouncedSearch, status, categoryId, productType, warehouseId, branchId, sortBy, sortOrder]);
+  }, [page, limit, debouncedSearch, status, categoryId, productType, warehouseId, sortBy, sortOrder]);
 
   // Fetch Inventory List & Store-wide KPIs
   const {
@@ -167,9 +134,7 @@ export function InventoryListView() {
 
   const { data: kpis, isLoading: isKpisLoading } = useGetInventoryKpisQuery();
   const { data: warehouses = [] } = useGetWarehousesQuery();
-  const { data: branches = [] } = useGetBranchesQuery();
   const activeWarehouse = warehouseId ? warehouses.find((w) => w.id === warehouseId) : undefined;
-  const activeBranch = branchId ? branches.find((b) => b.id === branchId) : undefined;
 
   const items: InventoryListItem[] = useMemo(() => {
     if (!listResponse) return [];
@@ -212,9 +177,8 @@ export function InventoryListView() {
     if (categoryId) count += 1;
     if (productType) count += 1;
     if (warehouseId) count += 1;
-    if (branchId) count += 1;
     return count;
-  }, [debouncedSearch, status, categoryId, productType, warehouseId, branchId]);
+  }, [debouncedSearch, status, categoryId, productType, warehouseId]);
 
   const handleResetFilters = () => {
     setSearchInput('');
@@ -223,7 +187,6 @@ export function InventoryListView() {
     setCategoryId('');
     setProductType('');
     setWarehouseId('');
-    setBranchId('');
     setPage(1);
     setSelectedInventoryIds([]);
     router.push('/dashboard/inventory', { scroll: false });
@@ -267,13 +230,20 @@ export function InventoryListView() {
     }
   };
 
-  const isFiltered = Boolean(debouncedSearch || categoryId || productType || status || warehouseId || branchId);
+  const isFiltered = Boolean(debouncedSearch || categoryId || productType || status || warehouseId);
 
   return (
     <div className="space-y-6">
-      {/* Top Header */}
+      {/* Top Header & Breadcrumb */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
+          <nav className="flex items-center gap-1.5 text-xs text-slate-400 font-medium mb-1">
+            <Link href="/dashboard" className="hover:text-slate-600 transition-colors">
+              Dashboard
+            </Link>
+            <span>&gt;</span>
+            <span className="text-slate-700 font-semibold">Inventory</span>
+          </nav>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Inventory</h1>
           <p className="text-xs text-slate-500 mt-0.5">
             Manage your product stock, track inventory and keep your business running smoothly.
@@ -296,24 +266,6 @@ export function InventoryListView() {
               </button>
             </div>
           )}
-          {activeBranch && (
-            <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-[11px] font-bold">
-              <BranchIcon className="w-3 h-3" />
-              <span>Showing stock at: {activeBranch.name}</span>
-              <button
-                type="button"
-                onClick={() => {
-                  setBranchId('');
-                  setPage(1);
-                  router.push('/dashboard/inventory', { scroll: false });
-                }}
-                className="ml-1 hover:text-blue-900"
-                title="Clear branch filter"
-              >
-                ×
-              </button>
-            </div>
-          )}
         </div>
 
         {/* Top Action Buttons (Mockup Screen 2) */}
@@ -325,15 +277,6 @@ export function InventoryListView() {
             <Download className="w-4 h-4 text-slate-500" />
             <span>Export</span>
           </button>
-
-          <Link
-            href="/dashboard/inventory/branches"
-            className="px-3.5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 shadow-sm flex items-center gap-1.5 transition-all"
-            title="Manage Branches"
-          >
-            <BranchIcon className="w-4 h-4 text-slate-500" />
-            <span>Branches</span>
-          </Link>
 
           <Link
             href="/dashboard/inventory/warehouses"
@@ -371,134 +314,124 @@ export function InventoryListView() {
         </div>
       </div>
 
-      {/* Section Tabs: Overview vs Inventory */}
-      <InventoryTabsHeader activeTab={activeSection} onTabChange={handleSectionChange} />
+      {/* KPI Stat Cards (Matching Showcase Mockup) */}
+      <InventoryKpiCards kpis={kpis} isLoading={isKpisLoading} />
 
-      {activeSection === 'overview' && (
-        <div className="space-y-6">
-          {/* KPI Stat Cards (Matching Showcase Mockup) */}
-          <InventoryKpiCards kpis={kpis} isLoading={isKpisLoading} />
+      {/* Recent Inventory Activity & Stock Status Donut Chart (Showcase Screen 1) */}
+      <InventoryOverviewSection kpis={kpis} isLoadingKpis={isKpisLoading} />
 
-          {/* Recent Inventory Activity & Stock Status Donut Chart (Showcase Screen 1) */}
-          <InventoryOverviewSection kpis={kpis} isLoadingKpis={isKpisLoading} />
-        </div>
-      )}
 
-      {activeSection === 'inventory' && (
-        <div className="space-y-6">
-          {/* Stock Health Quick Navigation Tabs (Solid button style like Screen 6) */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1">
-            <button
-              type="button"
-              onClick={() => handleTabChange('')}
-              className={`px-4 py-2 text-xs font-bold rounded-xl flex items-center gap-2 transition-all whitespace-nowrap border ${
-                status === '' || (status !== 'LOW_STOCK' && status !== 'OUT_OF_STOCK' && status !== 'IN_STOCK')
-                  ? 'bg-slate-100 text-slate-800 border-slate-200 shadow-sm'
-                  : 'bg-white text-slate-500 border-transparent hover:bg-slate-50 hover:text-slate-700'
-              }`}
-            >
-              <span>All ({kpis?.totalItems ?? 1248})</span>
-            </button>
+      {/* Stock Health Quick Navigation Tabs (Solid button style like Screen 6) */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        <button
+          type="button"
+          onClick={() => handleTabChange('')}
+          className={`px-4 py-2 text-xs font-bold rounded-xl flex items-center gap-2 transition-all whitespace-nowrap border ${
+            status === '' || (status !== 'LOW_STOCK' && status !== 'OUT_OF_STOCK' && status !== 'IN_STOCK')
+              ? 'bg-slate-100 text-slate-800 border-slate-200 shadow-sm'
+              : 'bg-white text-slate-500 border-transparent hover:bg-slate-50 hover:text-slate-700'
+          }`}
+        >
+          <span>All ({kpis?.totalItems ?? 1248})</span>
+        </button>
 
-            <button
-              type="button"
-              onClick={() => handleTabChange('IN_STOCK')}
-              className={`px-4 py-2 text-xs font-bold rounded-xl flex items-center gap-2 transition-all whitespace-nowrap border ${
-                status === 'IN_STOCK'
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-100 shadow-sm'
-                  : 'bg-white text-slate-500 border-transparent hover:bg-slate-50 hover:text-slate-700'
-              }`}
-            >
-              <span>In Stock ({kpis ? kpis.totalItems - kpis.lowStockCount - kpis.outOfStockCount : 1130})</span>
-            </button>
+        <button
+          type="button"
+          onClick={() => handleTabChange('IN_STOCK')}
+          className={`px-4 py-2 text-xs font-bold rounded-xl flex items-center gap-2 transition-all whitespace-nowrap border ${
+            status === 'IN_STOCK'
+              ? 'bg-emerald-50 text-emerald-700 border-emerald-100 shadow-sm'
+              : 'bg-white text-slate-500 border-transparent hover:bg-slate-50 hover:text-slate-700'
+          }`}
+        >
+          <span>In Stock ({kpis ? kpis.totalItems - kpis.lowStockCount - kpis.outOfStockCount : 1130})</span>
+        </button>
 
-            <button
-              type="button"
-              onClick={() => handleTabChange('LOW_STOCK')}
-              className={`px-4 py-2 text-xs font-bold rounded-xl flex items-center gap-2 transition-all whitespace-nowrap border ${
-                status === 'LOW_STOCK'
-                  ? 'bg-amber-50 text-amber-700 border-amber-100 shadow-sm'
-                  : 'bg-white text-slate-500 border-transparent hover:bg-slate-50 hover:text-slate-700'
-              }`}
-            >
-              <span>Low Stock ({kpis?.lowStockCount ?? 24})</span>
-            </button>
+        <button
+          type="button"
+          onClick={() => handleTabChange('LOW_STOCK')}
+          className={`px-4 py-2 text-xs font-bold rounded-xl flex items-center gap-2 transition-all whitespace-nowrap border ${
+            status === 'LOW_STOCK'
+              ? 'bg-amber-50 text-amber-700 border-amber-100 shadow-sm'
+              : 'bg-white text-slate-500 border-transparent hover:bg-slate-50 hover:text-slate-700'
+          }`}
+        >
+          <span>Low Stock ({kpis?.lowStockCount ?? 24})</span>
+        </button>
 
-            <button
-              type="button"
-              onClick={() => handleTabChange('OUT_OF_STOCK')}
-              className={`px-4 py-2 text-xs font-bold rounded-xl flex items-center gap-2 transition-all whitespace-nowrap border ${
-                status === 'OUT_OF_STOCK'
-                  ? 'bg-rose-50 text-rose-700 border-rose-100 shadow-sm'
-                  : 'bg-white text-slate-500 border-transparent hover:bg-slate-50 hover:text-slate-700'
-              }`}
-            >
-              <span>Out of Stock ({kpis?.outOfStockCount ?? 8})</span>
-            </button>
-          </div>
+        <button
+          type="button"
+          onClick={() => handleTabChange('OUT_OF_STOCK')}
+          className={`px-4 py-2 text-xs font-bold rounded-xl flex items-center gap-2 transition-all whitespace-nowrap border ${
+            status === 'OUT_OF_STOCK'
+              ? 'bg-rose-50 text-rose-700 border-rose-100 shadow-sm'
+              : 'bg-white text-slate-500 border-transparent hover:bg-slate-50 hover:text-slate-700'
+          }`}
+        >
+          <span>Out of Stock ({kpis?.outOfStockCount ?? 8})</span>
+        </button>
+      </div>
 
-          {/* Search & Filters */}
-          <InventoryFilterBar
-            search={searchInput}
-            onSearchChange={setSearchInput}
-            status={status}
-            onStatusChange={(val) => {
-              setStatus(val);
-              setPage(1);
-            }}
-            categoryId={categoryId}
-            onCategoryChange={(val) => {
-              setCategoryId(val);
-              setPage(1);
-            }}
-            productType={productType}
-            onProductTypeChange={(val) => {
-              setProductType(val);
-              setPage(1);
-            }}
-            warehouseId={warehouseId}
-            onWarehouseChange={(val) => {
-              setWarehouseId(val);
-              setPage(1);
-            }}
-            activeFilterCount={activeFilterCount}
-            onResetFilters={handleResetFilters}
-          />
+      {/* Search & Filters */}
+      <InventoryFilterBar
+        search={searchInput}
+        onSearchChange={setSearchInput}
+        status={status}
+        onStatusChange={(val) => {
+          setStatus(val);
+          setPage(1);
+        }}
+        categoryId={categoryId}
+        onCategoryChange={(val) => {
+          setCategoryId(val);
+          setPage(1);
+        }}
+        productType={productType}
+        onProductTypeChange={(val) => {
+          setProductType(val);
+          setPage(1);
+        }}
+        warehouseId={warehouseId}
+        onWarehouseChange={(val) => {
+          setWarehouseId(val);
+          setPage(1);
+        }}
+        activeFilterCount={activeFilterCount}
+        onResetFilters={handleResetFilters}
+      />
 
-          {/* Main Inventory Table */}
-          <div id="inventory-table" />
-          <InventoryTable
-            items={items}
-            isLoading={isListLoading}
-            isError={isListError}
-            sortBy={sortBy}
-            sortOrder={sortOrder}
-            currentStatusFilter={status}
-            selectedIds={selectedInventoryIds}
-            onToggleSelect={handleToggleSelect}
-            onToggleSelectAll={handleToggleSelectAll}
-            onSortChange={handleSortChange}
-            onResetFilters={handleResetFilters}
-            isFiltered={isFiltered}
-            onAdjustStockClick={handleAddStockClick}
-          />
+      {/* Main Inventory Table */}
+      <div id="inventory-table" />
+      <InventoryTable
+        items={items}
+        isLoading={isListLoading}
+        isError={isListError}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        currentStatusFilter={status}
+        selectedIds={selectedInventoryIds}
+        onToggleSelect={handleToggleSelect}
+        onToggleSelectAll={handleToggleSelectAll}
+        onSortChange={handleSortChange}
+        onResetFilters={handleResetFilters}
+        isFiltered={isFiltered}
+        onAdjustStockClick={handleAddStockClick}
+      />
 
-          {/* Pagination Controls */}
-          {listResponse?.meta && listResponse.meta.totalPages > 1 && (
-            <InventoryPagination
-              page={page}
-              limit={limit}
-              total={listResponse.meta.total}
-              totalPages={listResponse.meta.totalPages}
-              onPageChange={handlePageChange}
-              onLimitChange={(newLimit) => {
-                setLimit(newLimit);
-                setPage(1);
-                setSelectedInventoryIds([]);
-              }}
-            />
-          )}
-        </div>
+      {/* Pagination Controls */}
+      {listResponse?.meta && listResponse.meta.totalPages > 1 && (
+        <InventoryPagination
+          page={page}
+          limit={limit}
+          total={listResponse.meta.total}
+          totalPages={listResponse.meta.totalPages}
+          onPageChange={handlePageChange}
+          onLimitChange={(newLimit) => {
+            setLimit(newLimit);
+            setPage(1);
+            setSelectedInventoryIds([]);
+          }}
+        />
       )}
 
       {/* Floating Bulk Action Toolbar */}

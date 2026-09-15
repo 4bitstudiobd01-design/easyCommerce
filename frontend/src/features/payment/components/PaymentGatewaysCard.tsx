@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Smartphone, CreditCard, Landmark, Truck } from 'lucide-react';
+import { Plus, Smartphone, CreditCard, Landmark, Truck } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import type { PaymentGatewayCode, PaymentGatewaySummary } from '../api/paymentApi';
 import { getBrandStyle } from '../utils/paymentFormatters';
@@ -98,6 +98,14 @@ export const PaymentGatewaysCard = ({ gateways, isLoading }: PaymentGatewaysCard
           })}
         </ul>
       )}
+
+      <Link
+        href="/dashboard/settings/payment"
+        className="mt-5 w-full py-2.5 border border-dashed border-slate-300 hover:border-blue-400 hover:bg-blue-50/50 text-slate-600 hover:text-blue-700 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+      >
+        <Plus className="w-3.5 h-3.5" aria-hidden="true" />
+        Connect New Gateway
+      </Link>
     </div>
   );
 };

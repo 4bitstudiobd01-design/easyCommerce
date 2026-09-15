@@ -35,10 +35,7 @@ describe('ManageCustomerSegmentService', () => {
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
         leftJoin: jest.fn().mockReturnThis(),
-        select: jest.fn().mockReturnThis(),
-        addSelect: jest.fn().mockReturnThis(),
         getCount: jest.fn().mockResolvedValue(5),
-        getRawOne: jest.fn().mockResolvedValue({ count: 5, avg_spend: 12000 }),
       }),
     };
 

@@ -4,7 +4,6 @@ import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { BarChart3 } from 'lucide-react';
 import { useGetAnalyticsOverviewQuery } from '../api/analyticsApi';
-import { useAnalyticsOverviewParams } from '../context/AnalyticsFiltersContext';
 import { Skeleton } from '@/components/ui/Skeleton';
 
 const CHANNEL_COLORS: Record<string, string> = {
@@ -28,8 +27,7 @@ const CHANNEL_LABELS: Record<string, string> = {
 };
 
 export function SalesByChannelChart() {
-  const dateParams = useAnalyticsOverviewParams();
-  const { data, isLoading } = useGetAnalyticsOverviewQuery(dateParams);
+  const { data, isLoading } = useGetAnalyticsOverviewQuery();
 
   if (isLoading) {
     return (

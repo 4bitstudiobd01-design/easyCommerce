@@ -10,7 +10,6 @@ import {
   IsNumber,
   Min,
   IsUUID,
-  IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PaymentMethodEnum } from '../entities/order.entity';
@@ -53,27 +52,15 @@ export class CreateOrderDto {
   @IsEmail()
   customerEmail?: string;
 
-  // Address / city can be turned off in the store's checkout field config, so the
-  // storefront may legitimately send them empty. They are still stored as-is.
-  @ApiProperty({ example: 'House 12, Road 4, Dhanmondi, Dhaka', required: false })
-  @IsOptional()
+  @ApiProperty({ example: 'House 12, Road 4, Dhanmondi, Dhaka' })
   @IsString()
-  shippingAddress?: string;
+  @IsNotEmpty()
+  shippingAddress: string;
 
-  @ApiProperty({ example: 'Dhaka', description: 'City (Dhaka / Outside Dhaka)', required: false })
-  @IsOptional()
+  @ApiProperty({ example: 'Dhaka', description: 'City (Dhaka / Outside Dhaka)' })
   @IsString()
-  city?: string;
-
-  @ApiProperty({
-    enum: ['INSIDE_DHAKA', 'OUTSIDE_DHAKA'],
-    required: false,
-    description:
-      'Delivery zone chosen at checkout. Determines the flat delivery charge from store settings; falls back to inferring from the city name when omitted.',
-  })
-  @IsOptional()
-  @IsIn(['INSIDE_DHAKA', 'OUTSIDE_DHAKA'])
-  deliveryZone?: 'INSIDE_DHAKA' | 'OUTSIDE_DHAKA';
+  @IsNotEmpty()
+  city: string;
 
   @ApiProperty({ enum: PaymentMethodEnum, example: PaymentMethodEnum.COD })
   @IsEnum(PaymentMethodEnum)

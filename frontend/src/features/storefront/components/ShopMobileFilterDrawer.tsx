@@ -20,14 +20,11 @@ interface ShopMobileFilterDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   categories?: string[];
-  primaryColor?: string;
   selectedCategory: string;
   onSelectCategory: (category: string) => void;
   priceRange: [number, number];
-  priceBounds?: [number, number];
   onPriceRangeChange: (range: [number, number]) => void;
   brands?: string[];
-  brandCounts?: Record<string, number>;
   selectedBrands: string[];
   onToggleBrand: (brandName: string) => void;
   selectedMinRating: number;
@@ -41,14 +38,11 @@ export function ShopMobileFilterDrawer({
   isOpen,
   onClose,
   categories = [],
-  primaryColor = '#2563eb',
   selectedCategory,
   onSelectCategory,
   priceRange,
-  priceBounds = [0, 5000],
   onPriceRangeChange,
   brands = [],
-  brandCounts = {},
   selectedBrands,
   onToggleBrand,
   selectedMinRating,
@@ -61,13 +55,10 @@ export function ShopMobileFilterDrawer({
 
   if (!isOpen) return null;
 
-  const [minBound, maxBound] = priceBounds;
-  const priceStep = Math.max(1, Math.round((maxBound - minBound) / 100) || 1);
-
   const hasActiveFilters =
     selectedCategory !== 'ALL' ||
-    priceRange[0] > minBound ||
-    priceRange[1] < maxBound ||
+    priceRange[0] > 0 ||
+    priceRange[1] < 5000 ||
     selectedBrands.length > 0 ||
     selectedMinRating > 0;
 
@@ -89,7 +80,7 @@ export function ShopMobileFilterDrawer({
           <div className="w-10 h-1 bg-slate-300 rounded-full mb-3" />
           <div className="w-full flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <SlidersHorizontal className="w-4 h-4" style={{ color: primaryColor }} />
+              <SlidersHorizontal className="w-4 h-4 text-blue-600" />
               <h2 className="text-base font-black text-slate-900">Filter Products</h2>
             </div>
             <div className="flex items-center gap-3">
@@ -97,8 +88,7 @@ export function ShopMobileFilterDrawer({
                 <button
                   type="button"
                   onClick={onResetFilters}
-                  className="text-xs font-bold hover:brightness-110 flex items-center gap-1 active:scale-95 transition-transform"
-                  style={{ color: primaryColor }}
+                  className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 active:scale-95 transition-transform"
                 >
                   <RotateCcw className="w-3 h-3" />
                   <span>Reset</span>
@@ -128,9 +118,10 @@ export function ShopMobileFilterDrawer({
                 type="button"
                 onClick={() => onSelectCategory('ALL')}
                 className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${
-                  selectedCategory === 'ALL' ? 'text-white shadow-md' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  selectedCategory === 'ALL'
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
-                style={selectedCategory === 'ALL' ? { backgroundColor: primaryColor, boxShadow: `0 4px 12px -2px ${primaryColor}33` } : undefined}
               >
                 All Categories
               </button>
@@ -142,9 +133,10 @@ export function ShopMobileFilterDrawer({
                     type="button"
                     onClick={() => onSelectCategory(catName)}
                     className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 ${
-                      isSelected ? 'text-white shadow-md' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      isSelected
+                        ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                     }`}
-                    style={isSelected ? { backgroundColor: primaryColor, boxShadow: `0 4px 12px -2px ${primaryColor}33` } : undefined}
                   >
                     <span>{catName}</span>
                     {isSelected && <Check className="w-3.5 h-3.5" />}
@@ -160,37 +152,30 @@ export function ShopMobileFilterDrawer({
               <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
                 Price Range
               </h3>
-              <span className="text-xs font-bold" style={{ color: primaryColor }}>
-                ৳{priceRange[0].toLocaleString()} - ৳{priceRange[1].toLocaleString()}
+              <span className="text-xs font-bold text-blue-600">
+                ৳{priceRange[0]} - ৳{priceRange[1]}
               </span>
             </div>
 
             <input
               type="range"
-              min={minBound}
-              max={maxBound}
-              step={priceStep}
+              min={0}
+              max={5000}
+              step={100}
               value={priceRange[1]}
-              onChange={(e) =>
-                onPriceRangeChange([priceRange[0], Math.max(priceRange[0], Number(e.target.value))])
-              }
-              className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
-              style={{ accentColor: primaryColor }}
+              onChange={(e) => onPriceRangeChange([priceRange[0], Number(e.target.value)])}
+              className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
             />
 
             <div className="flex items-center gap-3">
               <div className="flex-1 bg-slate-50 border border-slate-200 rounded-xl p-2 text-center">
                 <span className="text-[10px] text-slate-400 font-bold block">MIN</span>
-                <span className="text-xs font-black text-slate-800">
-                  ৳{priceRange[0].toLocaleString()}
-                </span>
+                <span className="text-xs font-black text-slate-800">৳{priceRange[0]}</span>
               </div>
               <span className="text-slate-300 font-bold">-</span>
               <div className="flex-1 bg-slate-50 border border-slate-200 rounded-xl p-2 text-center">
                 <span className="text-[10px] text-slate-400 font-bold block">MAX</span>
-                <span className="text-xs font-black text-slate-800">
-                  ৳{priceRange[1].toLocaleString()}
-                </span>
+                <span className="text-xs font-black text-slate-800">৳{priceRange[1]}</span>
               </div>
             </div>
           </div>
@@ -204,23 +189,18 @@ export function ShopMobileFilterDrawer({
               <div className="flex flex-wrap gap-2">
                 {brands.map((brandName) => {
                   const isSelected = selectedBrands.includes(brandName);
-                  const count = brandCounts[brandName];
                   return (
                     <button
                       key={brandName}
                       type="button"
                       onClick={() => onToggleBrand(brandName)}
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 ${
-                        isSelected ? 'text-white shadow-sm' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        isSelected
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                       }`}
-                      style={isSelected ? { backgroundColor: primaryColor } : undefined}
                     >
                       <span>{brandName}</span>
-                      {count != null && (
-                        <span className={isSelected ? 'opacity-80' : 'text-slate-400'}>
-                          ({count})
-                        </span>
-                      )}
                     </button>
                   );
                 })}
@@ -243,20 +223,17 @@ export function ShopMobileFilterDrawer({
                     type="button"
                     onClick={() => onSelectMinRating(isSelected ? 0 : stars)}
                     className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-between transition-all active:scale-95 ${
-                      isSelected ? '' : 'border-slate-200 bg-white text-slate-700'
-                    }`}
-                    style={
                       isSelected
-                        ? { borderColor: primaryColor, backgroundColor: `${primaryColor}0d`, color: primaryColor }
-                        : undefined
-                    }
+                        ? 'border-blue-600 bg-blue-50/50 text-blue-700'
+                        : 'border-slate-200 bg-white text-slate-700'
+                    }`}
                   >
                     <div className="flex items-center gap-1">
                       <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                       <span>{stars} & Up</span>
                       <span className="text-[10px] text-slate-400 font-semibold">({count})</span>
                     </div>
-                    {isSelected && <Check className="w-3.5 h-3.5" style={{ color: primaryColor }} />}
+                    {isSelected && <Check className="w-3.5 h-3.5 text-blue-600" />}
                   </button>
                 );
               })}
@@ -279,8 +256,7 @@ export function ShopMobileFilterDrawer({
           <button
             type="button"
             onClick={onClose}
-            className="flex-2 py-3 hover:brightness-110 text-white font-bold text-xs rounded-2xl shadow-lg transition-all active:scale-95 text-center"
-            style={{ backgroundColor: primaryColor, boxShadow: `0 10px 25px -6px ${primaryColor}66` }}
+            className="flex-2 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-2xl shadow-lg shadow-blue-600/30 transition-all active:scale-95 text-center"
           >
             Show {totalProductsCount} Products
           </button>

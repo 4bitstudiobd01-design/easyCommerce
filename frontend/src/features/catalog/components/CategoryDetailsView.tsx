@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronDown,
   FolderTree,
+  Folder,
   ArrowLeft,
   Edit,
   Trash2,
@@ -46,8 +47,6 @@ import {
   CategoryStatus,
   ProductStatus,
 } from '../api/catalogApi';
-import { getCategoryIcon } from '../utils/categoryIcons';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface CategoryDetailsViewProps {
   categoryId: string;
@@ -88,17 +87,20 @@ export function CategoryDetailsView({ categoryId }: CategoryDetailsViewProps) {
   );
 
   const [deleteCategory, { isLoading: isDeleting }] = useDeleteCategoryMutation();
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const handleConfirmDelete = async () => {
+  const handleDelete = async () => {
     if (!category) return;
+    const confirmed = window.confirm(
+      `Are you sure you want to delete category "${category.name}"? Products assigned to this category will be unlinked safely.`,
+    );
+    if (!confirmed) return;
+
     try {
       await deleteCategory(categoryId).unwrap();
       toast.success(`Category "${category.name}" deleted successfully.`);
       router.push('/dashboard/categories');
     } catch (err: any) {
       toast.error(err?.data?.message || 'Failed to delete category.');
-      setShowDeleteConfirm(false);
     }
   };
 
@@ -127,12 +129,7 @@ export function CategoryDetailsView({ categoryId }: CategoryDetailsViewProps) {
     }
   };
 
-  const getCategoryIconComponent = (name: string, slug: string, iconId?: string | null) => {
-    // Honour the icon the merchant explicitly picked in the form; only fall back to
-    // guessing from the name/slug when none was chosen.
-    if (iconId) {
-      return getCategoryIcon(iconId);
-    }
+  const getCategoryIconComponent = (name: string, slug: string) => {
     const lower = (name + ' ' + slug).toLowerCase();
     if (
       lower.includes('fashion') ||
@@ -278,7 +275,7 @@ export function CategoryDetailsView({ categoryId }: CategoryDetailsViewProps) {
   const productsList = productsResponse?.data || [];
   const productsMeta = productsResponse?.meta || { total: 0, totalPages: 1, page: 1, limit: 10 };
 
-  const CategoryIcon = getCategoryIconComponent(category.name, category.slug, category.icon);
+  const CategoryIcon = getCategoryIconComponent(category.name, category.slug);
 
   const topProducts = productsList.slice(0, 3);
 
@@ -363,7 +360,7 @@ export function CategoryDetailsView({ categoryId }: CategoryDetailsViewProps) {
                   type="button"
                   onClick={() => {
                     setShowMoreMenu(false);
-                    setShowDeleteConfirm(true);
+                    handleDelete();
                   }}
                   disabled={isDeleting}
                   className="w-full text-left flex items-center gap-2 px-3.5 py-2 hover:bg-rose-50 text-rose-600 font-medium disabled:opacity-50"
@@ -536,7 +533,7 @@ export function CategoryDetailsView({ categoryId }: CategoryDetailsViewProps) {
               {subcategories.length > 0 ? (
                 <div className="space-y-3.5">
                   {subcategories.slice(0, 3).map((sub: any) => {
-                    const SubIcon = getCategoryIconComponent(sub.name, sub.slug, sub.icon);
+                    const SubIcon = getCategoryIconComponent(sub.name, sub.slug);
                     return (
                       <div key={sub.id} className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
@@ -785,7 +782,7 @@ export function CategoryDetailsView({ categoryId }: CategoryDetailsViewProps) {
           {subcategories.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {subcategories.map((sub: any) => {
-                const SubIcon = getCategoryIconComponent(sub.name, sub.slug, sub.icon);
+                const SubIcon = getCategoryIconComponent(sub.name, sub.slug);
                 return (
                   <div
                     key={sub.id}
@@ -888,21 +885,6 @@ export function CategoryDetailsView({ categoryId }: CategoryDetailsViewProps) {
           </div>
         </div>
       )}
-
-      <ConfirmDialog
-        isOpen={showDeleteConfirm}
-        onClose={() => setShowDeleteConfirm(false)}
-        onConfirm={handleConfirmDelete}
-        title="Delete Category"
-        message={
-          <>
-            Are you sure you want to delete <strong>&quot;{category.name}&quot;</strong>? This only
-            works if it has no products or subcategories.
-          </>
-        }
-        confirmLabel="Delete"
-        isLoading={isDeleting}
-      />
     </div>
   );
 }

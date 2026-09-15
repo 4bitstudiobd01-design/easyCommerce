@@ -10,23 +10,8 @@ describe('FindPublicStoreProductsService', () => {
   const build = (store: any, products: any[]) => {
     const productRepository = { find: jest.fn().mockResolvedValue(products) };
     const inventoryStockRepository = { find: jest.fn().mockResolvedValue([]) };
-    const reviewRepository = {
-      createQueryBuilder: jest.fn().mockReturnValue({
-        select: jest.fn().mockReturnThis(),
-        addSelect: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-        groupBy: jest.fn().mockReturnThis(),
-        getRawMany: jest.fn().mockResolvedValue([]),
-      }),
-    };
     const findStoreBySlugService = { execute: jest.fn().mockResolvedValue(store) } as unknown as FindStoreBySlugService;
-    return new FindPublicStoreProductsService(
-      productRepository as any,
-      inventoryStockRepository as any,
-      reviewRepository as any,
-      findStoreBySlugService,
-    );
+    return new FindPublicStoreProductsService(productRepository as any, inventoryStockRepository as any, findStoreBySlugService);
   };
 
   it('strips merchant-private store credentials from the response', async () => {

@@ -10,7 +10,6 @@ import { CustomerActivityEntity } from './entities/customer-activity.entity';
 import { CustomerSegmentEntity } from './entities/customer-segment.entity';
 import { LeadEntity } from './entities/lead.entity';
 import { OrderEntity } from '../order/entities/order.entity';
-import { OrderItemEntity } from '../order/entities/order-item.entity';
 import { CustomerController } from './customer.controller';
 import { TenantModule } from '../tenant/tenant.module';
 
@@ -35,7 +34,6 @@ import { CreateCustomerNoteService } from './services/create-customer-note.servi
 import { DeleteCustomerNoteService } from './services/delete-customer-note.service';
 import { RecordCustomerActivityService } from './services/record-customer-activity.service';
 import { ListCustomerActivitiesService } from './services/list-customer-activities.service';
-import { LogCustomerActivityService } from './services/log-customer-activity.service';
 
 import { ExportCustomersService } from './services/export-customers.service';
 import { ImportCustomersService } from './services/import-customers.service';
@@ -47,15 +45,12 @@ import { FraudCheckService } from './services/fraud-check.service';
 import { ListLeadsService } from './services/list-leads.service';
 import { CreateLeadService } from './services/create-lead.service';
 import { UpdateLeadStageService } from './services/update-lead-stage.service';
-import { UpdateLeadDetailsService } from './services/update-lead-details.service';
 import { ScheduleLeadFollowUpService } from './services/schedule-lead-follow-up.service';
 import { ConvertLeadToCustomerService } from './services/convert-lead-to-customer.service';
 import { SeedLeadsService } from './services/seed-leads.service';
 import { SeedCustomersService } from './services/seed-customers.service';
+import { CustomerSeederBootstrapService } from './services/customer-seeder-bootstrap.service';
 import { ListStoreActivitiesService } from './services/list-store-activities.service';
-import { AddLeadInquiryService } from './services/add-lead-inquiry.service';
-import { DeleteLeadInquiryService } from './services/delete-lead-inquiry.service';
-import { UserEntity } from '../user/entities/user.entity';
 
 @Module({
   imports: [
@@ -67,8 +62,6 @@ import { UserEntity } from '../user/entities/user.entity';
       CustomerSegmentEntity,
       LeadEntity,
       OrderEntity,
-      OrderItemEntity,
-      UserEntity,
     ]),
     TenantModule,
     JwtModule.registerAsync({
@@ -101,22 +94,18 @@ import { UserEntity } from '../user/entities/user.entity';
     DeleteCustomerNoteService,
     RecordCustomerActivityService,
     ListCustomerActivitiesService,
-    LogCustomerActivityService,
     ExportCustomersService,
     ImportCustomersService,
     GetCustomerAnalyticsService,
-    ManageCustomerSegmentService,
     FraudCheckService,
     ListLeadsService,
     CreateLeadService,
     UpdateLeadStageService,
-    UpdateLeadDetailsService,
     ScheduleLeadFollowUpService,
     ConvertLeadToCustomerService,
-    AddLeadInquiryService,
-    DeleteLeadInquiryService,
     SeedLeadsService,
     SeedCustomersService,
+    CustomerSeederBootstrapService,
     ListStoreActivitiesService,
   ],
   exports: [
@@ -139,7 +128,6 @@ import { UserEntity } from '../user/entities/user.entity';
     DeleteCustomerNoteService,
     RecordCustomerActivityService,
     ListCustomerActivitiesService,
-    LogCustomerActivityService,
     ExportCustomersService,
     ImportCustomersService,
     GetCustomerAnalyticsService,
@@ -148,11 +136,8 @@ import { UserEntity } from '../user/entities/user.entity';
     ListLeadsService,
     CreateLeadService,
     UpdateLeadStageService,
-    UpdateLeadDetailsService,
     ScheduleLeadFollowUpService,
     ConvertLeadToCustomerService,
-    AddLeadInquiryService,
-    DeleteLeadInquiryService,
     SeedLeadsService,
     SeedCustomersService,
     TypeOrmModule,

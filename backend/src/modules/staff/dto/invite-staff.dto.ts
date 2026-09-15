@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsEmail, IsArray, IsOptional, IsUUID } from 'class-validator';
+import { IsNotEmpty, IsString, IsEmail, IsArray, IsOptional } from 'class-validator';
 import { StaffPermissionType } from '../entities/staff.entity';
 
 export class InviteStaffDto {
@@ -26,13 +26,4 @@ export class InviteStaffDto {
   @ApiProperty({ example: ['products:read', 'inventory:read', 'inventory:transfer'] })
   @IsArray()
   permissions: StaffPermissionType[];
-
-  @ApiProperty({
-    example: '3f6e6b1a-2b8a-4c5a-8f3a-1e2d3c4b5a6f',
-    required: false,
-    description: 'Restrict this staff member to a single branch. Omit for store-wide access across all branches.',
-  })
-  @IsOptional()
-  @IsUUID()
-  branchId?: string;
 }

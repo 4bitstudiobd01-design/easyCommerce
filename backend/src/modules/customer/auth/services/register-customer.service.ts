@@ -1,19 +1,13 @@
-import { Injectable, ConflictException, ForbiddenException } from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import {
-  CustomerEntity,
-  CustomerSourceEnum,
-  CustomerStatusEnum,
-  CustomerAccountTypeEnum,
-} from '../../entities/customer.entity';
+import { CustomerEntity, CustomerSourceEnum } from '../../entities/customer.entity';
 import { CustomerSessionEntity } from '../../entities/customer-session.entity';
 import { CustomerRegisterDto } from '../dto/customer-register.dto';
 import { CustomerAuthResponseDto } from '../dto/customer-auth-response.dto';
 import { normalizeChannel } from '../../../../common/utils/normalize-channel.util';
-import { getPhoneLookupVariants } from '../../../../common/utils/normalize-phone.util';
 
 const SESSION_REFRESH_EXPIRY = '7d';
 const GUEST_NAME_PLACEHOLDERS = new Set(['Guest', 'Customer']);
@@ -32,16 +26,15 @@ export class RegisterCustomerService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async execute(
-    tenantId: string,
-    storeId: string,
-    dto: CustomerRegisterDto,
-    allowCustomerRegistration = true,
-  ): Promise<CustomerAuthResponseDto> {
-    if (!allowCustomerRegistration) {
-      throw new ForbiddenException('This store is not accepting new customer registrations right now.');
-    }
-
+  async execute(tenantId: string, storeId: string, dto: CustomerRegisterDto): Promise<CustomerAuthResponseDto> {
+    // NOTE: guest checkout (FindOrCreateCustomerService / create-order.service.ts)
+    // stores whatever raw phone string the storefront sends, unnormalized — and the
+    // storefront's own formatting doesn't match normalizePhone()'s output (it
+    // naively prepends +880 without stripping a leading 0, e.g. "+88001700000000"
+    // vs normalizePhone's "+8801700000000"). Normalizing here before the lookup
+    // would silently fail to find the guest row and create a duplicate instead of
+    // upgrading it. So this matches on the phone exactly as submitted, same as
+    // FindOrCreateCustomerService does, rather than introducing a new format.
     const phone = dto.phone.trim();
     const email = dto.email.trim().toLowerCase();
 
@@ -64,13 +57,7 @@ export class RegisterCustomerService {
       // against the partial unique index — re-read and upgrade instead of
       // failing the request, mirroring FindOrCreateCustomerService's pattern.
       if (err?.code === '23505') {
-        const phoneVariants = getPhoneLookupVariants(phone);
-        const existing = await this.customerRepository.findOne({
-          where: [
-            { tenantId, phone: In(phoneVariants) },
-            ...(email ? [{ tenantId, email }] : []),
-          ],
-        });
+        const existing = await this.customerRepository.findOne({ where: { tenantId, phone } });
         if (existing) {
           if (existing.hasAccount) {
             throw new ConflictException('An account with this email or phone already exists.');
@@ -89,13 +76,7 @@ export class RegisterCustomerService {
     email: string,
     dto: CustomerRegisterDto,
   ): Promise<CustomerEntity> {
-    const phoneVariants = getPhoneLookupVariants(phone);
-    const existing = await this.customerRepository.findOne({
-      where: [
-        { tenantId, phone: In(phoneVariants) },
-        ...(email ? [{ tenantId, email }] : []),
-      ],
-    });
+    const existing = await this.customerRepository.findOne({ where: { tenantId, phone } });
 
     if (existing) {
       if (existing.hasAccount) {
@@ -122,8 +103,6 @@ export class RegisterCustomerService {
       source: CustomerSourceEnum.ONLINE_STORE,
       passwordHash,
       hasAccount: true,
-      status: CustomerStatusEnum.ACTIVE,
-      accountType: CustomerAccountTypeEnum.REGISTERED,
       registrationChannel,
       registrationUtmSource: dto.utmSource,
       registrationUtmMedium: dto.utmMedium,
@@ -143,10 +122,6 @@ export class RegisterCustomerService {
 
     existing.passwordHash = passwordHash;
     existing.hasAccount = true;
-    existing.accountType = CustomerAccountTypeEnum.REGISTERED;
-    if (existing.status === CustomerStatusEnum.GUEST) {
-      existing.status = CustomerStatusEnum.ACTIVE;
-    }
     if (!existing.email) {
       existing.email = email;
     }

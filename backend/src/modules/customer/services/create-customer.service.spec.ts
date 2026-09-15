@@ -53,29 +53,30 @@ describe('CreateCustomerService', () => {
     expect(repository.save).toHaveBeenCalled();
   });
 
-  it('should gracefully update existing customer to REGISTERED if phone matches', async () => {
-    const existing = {
-      id: 'existing-id',
-      phone: '01711000111',
-      firstName: 'Guest',
-      lastName: 'User',
-      status: CustomerStatusEnum.GUEST,
-      accountType: 'GUEST',
-    };
-    repository.findOne.mockResolvedValue(existing);
+  it('should throw ConflictException if customer with phone already exists in tenant', async () => {
+    repository.findOne.mockResolvedValue({ id: 'existing-id', phone: '01711000111' });
 
     const dto = {
       firstName: 'Rahim',
       lastName: 'Hossain',
       phone: '01711000111',
+    };
+
+    await expect(service.execute(mockTenantId, dto, mockStoreId)).rejects.toThrow(ConflictException);
+  });
+
+  it('should throw ConflictException if customer with email already exists in tenant', async () => {
+    repository.findOne
+      .mockResolvedValueOnce(null) // phone check passes
+      .mockResolvedValueOnce({ id: 'existing-id', email: 'rahim@example.com' }); // email check fails
+
+    const dto = {
+      firstName: 'Rahim',
+      lastName: 'Hossain',
+      phone: '01711000222',
       email: 'rahim@example.com',
     };
 
-    const result = await service.execute(mockTenantId, dto, mockStoreId);
-    expect(result).toBeDefined();
-    expect(result.id).toBe('existing-id');
-    expect(result.firstName).toBe('Rahim');
-    expect(result.accountType).toBe('REGISTERED');
-    expect(repository.save).toHaveBeenCalled();
+    await expect(service.execute(mockTenantId, dto, mockStoreId)).rejects.toThrow(ConflictException);
   });
 });

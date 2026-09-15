@@ -93,14 +93,14 @@ export function ImageInputWithUpload({
   const getPreviewClasses = () => {
     switch (previewShape) {
       case 'icon':
-        return 'w-20 h-20 rounded-xl';
+        return 'w-14 h-14 rounded-xl';
       case 'square':
-        return 'w-36 h-36 rounded-2xl';
+        return 'w-24 h-24 rounded-2xl';
       case 'banner':
-        return 'w-full h-40 rounded-2xl';
+        return 'w-full h-32 rounded-2xl';
       case 'rectangle':
       default:
-        return 'w-48 h-32 rounded-2xl';
+        return 'w-36 h-24 rounded-2xl';
     }
   };
 
@@ -156,7 +156,7 @@ export function ImageInputWithUpload({
       {value ? (
         <div
           className={`p-3 bg-white border border-slate-200 rounded-2xl shadow-xs flex gap-4 ${
-            previewShape === 'banner' ? 'flex-col' : 'items-start'
+            previewShape === 'banner' ? 'flex-col' : 'items-center'
           }`}
         >
           <div
@@ -166,7 +166,6 @@ export function ImageInputWithUpload({
             <img
               src={value}
               alt={`${label} Preview`}
-              title={value}
               className="w-full h-full object-contain p-1"
               onError={(e) => {
                 (e.target as HTMLElement).style.display = 'none';
@@ -184,6 +183,7 @@ export function ImageInputWithUpload({
               <CheckCircle2 className="w-3.5 h-3.5" />
               <span>Image Active</span>
             </div>
+            <p className="text-[11px] font-mono text-slate-500 truncate max-w-full">{value}</p>
 
             <div className="flex items-center gap-2 pt-1">
               <button

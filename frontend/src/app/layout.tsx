@@ -4,11 +4,6 @@ import { Metadata } from 'next';
 import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ||
-      process.env.NEXT_PUBLIC_APP_URL ||
-      'http://localhost:3000',
-  ),
   title: 'BitCommerce | Enterprise Multi-Tenant eCommerce Platform',
   description: 'Enterprise Multi-Tenant eCommerce SaaS Platform for merchants in Bangladesh and worldwide.',
   icons: {

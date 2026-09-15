@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   PowerOff,
   Loader2,
+  Database,
   Star,
   Power,
   X,
@@ -20,6 +21,7 @@ import {
   useGetCouriersDashboardQuery,
   useToggleCourierIntegrationMutation,
   useSetDefaultCourierMutation,
+  useSeedCourierDemoDataMutation,
   type CourierDashboardItem,
   type CourierConnectionStatus,
 } from '../api/logisticsApi';
@@ -114,6 +116,7 @@ export function CouriersView() {
 
   const [toggleIntegration] = useToggleCourierIntegrationMutation();
   const [setDefaultCourier] = useSetDefaultCourierMutation();
+  const [seedDemoData, { isLoading: isSeeding }] = useSeedCourierDemoDataMutation();
 
   const couriers = useMemo(() => data?.couriers ?? [], [data]);
 
@@ -176,6 +179,18 @@ export function CouriersView() {
     }
   };
 
+  const handleSeed = async () => {
+    try {
+      const result = await seedDemoData().unwrap();
+      toast.success(result.message);
+    } catch (err) {
+      const message =
+        (err as { data?: { message?: string } })?.data?.message ??
+        'Could not seed courier demo data.';
+      toast.error(message);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-5">
@@ -217,6 +232,8 @@ export function CouriersView() {
   }
 
   const { summary } = data;
+  // The seeder is only worth offering when there is genuinely nothing set up.
+  const showSeedAction = summary.connected.count === 0 && !hasActiveFilters;
 
   return (
     <div className="space-y-5 animate-in fade-in duration-500">
@@ -329,6 +346,21 @@ export function CouriersView() {
             )}
           </div>
 
+          {showSeedAction && (
+            <button
+              type="button"
+              onClick={handleSeed}
+              disabled={isSeeding}
+              className="h-9 px-4 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-2xs transition-colors active:scale-95 disabled:opacity-50 shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            >
+              {isSeeding ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" aria-hidden="true" />
+              ) : (
+                <Database className="w-3.5 h-3.5" aria-hidden="true" />
+              )}
+              {isSeeding ? 'Seeding...' : 'Load Demo Data'}
+            </button>
+          )}
         </div>
 
         <div className="overflow-x-auto">

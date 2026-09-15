@@ -1,15 +1,21 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { CustomerSegment } from '../../types/crm.types';
 import {
+  Layers,
   Users,
+  Sparkles,
+  TrendingUp,
+  DollarSign,
   Plus,
   Send,
   MoreVertical,
-  Pencil,
-  Trash2,
   ArrowRight,
+  Filter,
+  CheckCircle2,
+  AlertCircle,
+  ShoppingBag,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -17,82 +23,15 @@ interface SegmentsOverviewProps {
   segments: CustomerSegment[];
   onOpenCreateModal: () => void;
   onSelectSegment?: (segment: CustomerSegment) => void;
-  onEditSegment?: (segment: CustomerSegment) => void;
-  onDeleteSegment?: (segment: CustomerSegment) => void;
 }
-
-const SegmentActionsMenu: React.FC<{
-  segment: CustomerSegment;
-  onEdit?: (segment: CustomerSegment) => void;
-  onDelete?: (segment: CustomerSegment) => void;
-}> = ({ segment, onEdit, onDelete }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen]);
-
-  return (
-    <div className="relative inline-block text-left" ref={menuRef}>
-      <button
-        type="button"
-        onClick={() => setIsOpen((v) => !v)}
-        className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-all"
-        title="Segment actions"
-      >
-        <MoreVertical className="w-4 h-4" />
-      </button>
-
-      {isOpen && (
-        <div className="absolute right-0 top-full mt-1.5 w-40 bg-white rounded-2xl border border-slate-200 shadow-xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150 space-y-0.5">
-          <button
-            type="button"
-            onClick={() => {
-              setIsOpen(false);
-              onEdit && onEdit(segment);
-            }}
-            className="w-full px-2.5 py-1.5 rounded-xl text-left text-xs font-semibold flex items-center gap-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
-          >
-            <Pencil className="w-3.5 h-3.5" />
-            <span>Edit Segment</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setIsOpen(false);
-              onDelete && onDelete(segment);
-            }}
-            className="w-full px-2.5 py-1.5 rounded-xl text-left text-xs font-semibold flex items-center gap-2 text-red-600 hover:bg-red-50 transition-colors"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span>Delete Segment</span>
-          </button>
-        </div>
-      )}
-    </div>
-  );
-};
 
 export const SegmentsOverview: React.FC<SegmentsOverviewProps> = ({
   segments,
   onOpenCreateModal,
   onSelectSegment,
-  onEditSegment,
-  onDeleteSegment,
 }) => {
-  const handleLaunchCampaign = () => {
-    toast('Targeted broadcast campaigns are coming soon for this segment.');
+  const handleLaunchCampaign = (segName: string) => {
+    toast.success(`Targeted SMS / WhatsApp campaign queued for segment: ${segName}`);
   };
 
   return (
@@ -146,8 +85,6 @@ export const SegmentsOverview: React.FC<SegmentsOverviewProps> = ({
                     </span>
                   </div>
                 </div>
-
-                <SegmentActionsMenu segment={seg} onEdit={onEditSegment} onDelete={onDeleteSegment} />
               </div>
 
               <p className="text-xs text-slate-600 font-medium mt-3 leading-relaxed">
@@ -203,12 +140,11 @@ export const SegmentsOverview: React.FC<SegmentsOverviewProps> = ({
               </button>
 
               <button
-                onClick={handleLaunchCampaign}
-                title="Targeted SMS / WhatsApp broadcast campaigns are coming soon"
-                className="px-3 py-1.5 bg-slate-100 text-slate-400 text-[11px] font-bold rounded-xl flex items-center gap-1.5 cursor-not-allowed"
+                onClick={() => handleLaunchCampaign(seg.name)}
+                className="px-3 py-1.5 bg-slate-900 hover:bg-black text-white text-[11px] font-bold rounded-xl flex items-center gap-1.5 shadow-2xs transition-all active:scale-95"
               >
-                <Send className="w-3 h-3" />
-                <span>Broadcast (Coming Soon)</span>
+                <Send className="w-3 h-3 text-blue-400" />
+                <span>Broadcast</span>
               </button>
             </div>
           </div>

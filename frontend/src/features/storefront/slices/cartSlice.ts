@@ -85,10 +85,7 @@ export const cartSlice = createSlice({
         state.items.push({
           id: variant ? `cart-${product.id}-${variant.id}` : `cart-${product.id}`,
           productId: product.id,
-          // The public product payload exposes the display name as `name`
-          // (`title` was a legacy alias, absent from the current API). Accept
-          // either so the cart line never renders blank.
-          title: product.name || product.title || 'Product',
+          title: product.title,
           price: variant ? Number(variant.price ?? product.basePrice) : Number(product.basePrice),
           imageUrl: variant ? variant.imageUrl ?? primaryImg : primaryImg,
           quantity,

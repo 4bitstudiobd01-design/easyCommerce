@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
-import { CustomerEntity, CustomerAccountTypeEnum } from '../entities/customer.entity';
+import { CustomerEntity } from '../entities/customer.entity';
 import { roundMoney, averageMoney, toAmount } from '../utils/money.util';
 
 export interface CustomerDetailResponse extends CustomerEntity {
@@ -81,13 +81,8 @@ export class FindCustomerByIdService {
       location = parts.join(', ');
     }
 
-    const hasAccount = Boolean(customer.hasAccount);
-    const accountType = hasAccount ? CustomerAccountTypeEnum.REGISTERED : CustomerAccountTypeEnum.GUEST;
-
     return {
       ...customer,
-      hasAccount,
-      accountType,
       location,
       stats: {
         totalOrders,

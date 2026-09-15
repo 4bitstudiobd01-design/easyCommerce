@@ -40,8 +40,7 @@ class SimpleMutex {
 }
 
 const AUTH_BASE_URL = (
-  process.env.NEXT_PUBLIC_AUTH_API_URL ||
-  (process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/auth` : 'http://localhost:5001/api/v1/auth')
+  process.env.NEXT_PUBLIC_AUTH_API_URL || 'http://localhost:5001/api/v1/auth'
 ).replace(/\/+$/, '');
 
 /**
@@ -66,10 +65,7 @@ export const createBaseQueryWithReauth = (baseUrl: string): BaseQueryFn<
       if (token) headers.set('authorization', `Bearer ${token}`);
 
       const storeId =
-        typeof window !== 'undefined'
-          ? localStorage.getItem('bitcommerce_active_store_id') ||
-            localStorage.getItem('bitcommerce_store_id')
-          : null;
+        typeof window !== 'undefined' ? localStorage.getItem('bitcommerce_active_store_id') : null;
       if (storeId) headers.set('x-store-id', storeId);
 
       return headers;

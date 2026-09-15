@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Customer } from '../api/customerApi';
 import { getOriginLabel } from '../utils/origin';
 import { FraudRiskBadge } from './FraudRiskBadge';
-import { MoreVertical, Eye, Edit2, User, UserCheck, UserX, ShieldAlert, ShieldCheck, ArrowUp, ArrowDown, ArrowUpDown, SearchX, RefreshCw } from 'lucide-react';
+import { MoreVertical, Eye, Edit2, UserCheck, UserX, ShieldAlert, ShieldCheck, ArrowUp, ArrowDown, ArrowUpDown, SearchX, RefreshCw } from 'lucide-react';
 
 interface CustomerTableProps {
   customers: Customer[];
@@ -254,23 +254,9 @@ export function CustomerTable({
                         {initials}
                       </div>
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-bold text-slate-900 text-xs truncate hover:text-blue-600 transition-colors">
-                            {customer.firstName} {customer.lastName}
-                          </span>
-                          {/* Account Type Badge: only registered if customer.hasAccount is true */}
-                          {customer.hasAccount ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200/80 shadow-2xs">
-                              <UserCheck className="w-2.5 h-2.5 text-blue-600" />
-                              Member
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200/80 shadow-2xs">
-                              <User className="w-2.5 h-2.5 text-amber-600" />
-                              Guest
-                            </span>
-                          )}
-                        </div>
+                        <span className="font-bold text-slate-900 text-xs block truncate hover:text-blue-600 transition-colors">
+                          {customer.firstName} {customer.lastName}
+                        </span>
                         <span className="text-[11px] text-slate-400 block truncate">
                           {customer.email || 'No email provided'}
                         </span>
@@ -332,11 +318,6 @@ export function CustomerTable({
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
                         <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                         Blocked
-                      </span>
-                    ) : customer.status === 'GUEST' ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                        Guest
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200">

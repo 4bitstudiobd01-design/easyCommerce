@@ -12,25 +12,27 @@ import { OmnichannelPlatformType } from '../entities/omnichannel-credential.enti
 export class UpsertCredentialDto {
   @ApiProperty({
     description: 'Platform type',
-    example: 'facebook',
+    example: 'telegram',
     enum: [
-      'facebook',
-      'messenger',
-      'instagram',
-      'tiktok',
-      'whatsapp',
       'telegram',
+      'whatsapp',
+      'facebook',
+      'instagram',
+      'x',
+      'slack',
+      'custom',
     ],
   })
   @IsString()
   @IsNotEmpty()
   @IsIn([
-    'facebook',
-    'messenger',
-    'instagram',
-    'tiktok',
-    'whatsapp',
     'telegram',
+    'whatsapp',
+    'facebook',
+    'instagram',
+    'x',
+    'slack',
+    'custom',
   ])
   platform: OmnichannelPlatformType;
 
@@ -75,26 +77,11 @@ export class ToggleActiveDto {
 export class SendMessageDto {
   @ApiProperty({
     description: 'Target platform for outbound delivery',
-    example: 'facebook',
-    enum: [
-      'facebook',
-      'messenger',
-      'instagram',
-      'tiktok',
-      'whatsapp',
-      'telegram',
-    ],
+    example: 'telegram',
+    enum: ['telegram', 'whatsapp', 'facebook', 'instagram', 'x', 'slack'],
   })
   @IsString()
   @IsNotEmpty()
-  @IsIn([
-    'facebook',
-    'messenger',
-    'instagram',
-    'tiktok',
-    'whatsapp',
-    'telegram',
-  ])
   platform: OmnichannelPlatformType;
 
   @ApiProperty({

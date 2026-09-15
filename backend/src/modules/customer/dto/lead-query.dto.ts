@@ -24,16 +24,6 @@ export class LeadQueryDto {
   @IsString()
   assignedStaffId?: string;
 
-  @ApiProperty({ required: false, description: 'Filter by follow-up timing: ALL, MISSED, TODAY, TOMORROW, UPCOMING, CUSTOM' })
-  @IsOptional()
-  @IsString()
-  followUpFilter?: string;
-
-  @ApiProperty({ required: false, description: 'Filter by specific follow-up date (YYYY-MM-DD)' })
-  @IsOptional()
-  @IsString()
-  followUpDate?: string;
-
   @ApiProperty({ required: false, default: 1 })
   @IsOptional()
   @Type(() => Number)

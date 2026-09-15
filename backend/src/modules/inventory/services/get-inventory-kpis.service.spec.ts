@@ -12,7 +12,6 @@ describe('GetInventoryKpisService', () => {
     qb = {
       leftJoin: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
-      andWhere: jest.fn().mockReturnThis(),
       select: jest.fn().mockReturnThis(),
       getRawOne: jest.fn().mockResolvedValue({
         totalItems: '1248',
@@ -48,10 +47,6 @@ describe('GetInventoryKpisService', () => {
     const kpis = await service.execute('tenant-1');
 
     expect(qb.where).toHaveBeenCalledWith('stock.tenantId = :tenantId', { tenantId: 'tenant-1' });
-    expect(qb.andWhere).toHaveBeenCalledWith('NOT (product.hasVariants = true AND stock.variantId IS NULL)');
-    expect(qb.andWhere).toHaveBeenCalledWith('product.status != :archivedStatus', {
-      archivedStatus: 'ARCHIVED',
-    });
     expect(kpis).toEqual({
       totalItems: 1248,
       totalUnits: 25430,
