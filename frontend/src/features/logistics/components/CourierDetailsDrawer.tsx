@@ -22,6 +22,7 @@ import {
   type CourierProvider,
 } from '../api/logisticsApi';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { PathaoStoresSection } from './PathaoStoresSection';
 
 interface CourierDetailsDrawerProps {
   /** Provider code, or null when the drawer is closed. */
@@ -459,6 +460,14 @@ export function CourierDetailsDrawer({
                       </div>
                     )}
                   </section>
+
+                  {/* Pathao needs a numeric store_id to book any parcel — let the
+                      merchant create/see one here instead of copying an id in
+                      from Pathao's own panel. Only meaningful once credentials
+                      exist, since the lookups authenticate as this merchant. */}
+                  {courier.code === 'PATHAO' && courier.hasCredentials && (
+                    <PathaoStoresSection />
+                  )}
                 </>
               )}
 

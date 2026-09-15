@@ -169,6 +169,8 @@ export class CreateShipmentService {
         codAmount,
         note: dto.deliveryNote,
         weight: dto.parcelWeight ?? 0.5,
+        deliveryAreaId: dto.redxDeliveryAreaId,
+        declaredValue: Number(order.grandTotal) || codAmount,
         ...credentials,
       });
 

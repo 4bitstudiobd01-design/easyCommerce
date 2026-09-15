@@ -30,6 +30,10 @@ export interface CourierCredentialBag {
   username?: string;
   password?: string;
   baseUrl?: string;
+  /** Cached OAuth bearer (Pathao token persistence — see PathaoTokenEntity). */
+  accessToken?: string;
+  /** Cached OAuth refresh token, paired with accessToken. */
+  refreshToken?: string;
 }
 
 /**

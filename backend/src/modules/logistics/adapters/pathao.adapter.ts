@@ -12,6 +12,7 @@ import {
 } from './courier.adapter';
 import { ConsignmentStatusEnum, CourierProviderEnum } from '../entities/consignment.entity';
 import { throwCourierError } from './courier-error.util';
+import { PathaoAuthService, PathaoAuthCredentials } from '../services/pathao-auth.service';
 import axios from 'axios';
 
 const PATHAO_PRODUCTION_URL = 'https://api-hermes.pathao.com';
@@ -41,11 +42,25 @@ const PATHAO_STATUS_MAP: Record<string, ConsignmentStatusEnum> = {
 /**
  * Pathao Courier Merchant API integration.
  *
- * Auth is OAuth2 password-grant: `issue-token` returns a bearer used for every
- * other call. Bookings require a Pathao `store_id` (the merchant's pickup
+ * Auth is OAuth2 password-grant. Token issuance/refresh/caching is delegated to
+ * PathaoAuthService (PATHAO_INTEGRATION_SPEC.md §3) — this adapter never calls
+ * `issue-token` directly, and retries exactly once on a 401 by forcing a fresh
+ * token. Bookings require a Pathao `store_id` (the merchant's pickup
  * location), collected as a credential field. With no credentials the adapter
  * runs in sandbox mode; with credentials, a failure surfaces as a real failure
  * rather than a fabricated booking.
+ *
+ * `tenantId` comes through `CourierCredentials`/`CourierBookingPayload` (set by
+ * the resolve-credentials / create-shipment / test-connection call sites) — the
+ * token cache is per tenant, since each merchant has its own Pathao account.
+ *
+ * Sibling services: PathaoStoreService (store create/list), PathaoLocationService
+ * (cached city/zone/area lookups), PathaoPriceService (delivery-fee quotes).
+ *
+ * NOT YET IMPLEMENTED — Pathao webhooks. Status currently advances by polling
+ * trackParcel(). See docs/integrations/pathao-webhook-todo.md for the full
+ * handshake header, signature header, event catalog and payload shapes needed
+ * to build that slice.
  */
 @Injectable()
 export class PathaoCourierAdapter implements ICourierAdapter {
@@ -101,7 +116,10 @@ export class PathaoCourierAdapter implements ICourierAdapter {
 
   private readonly logger = new Logger(PathaoCourierAdapter.name);
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly pathaoAuth: PathaoAuthService,
+  ) {}
 
   /**
    * Sandbox host when the integration's sandbox toggle is on, otherwise
@@ -113,32 +131,52 @@ export class PathaoCourierAdapter implements ICourierAdapter {
     return sandbox ? PATHAO_SANDBOX_URL : PATHAO_PRODUCTION_URL;
   }
 
-  private async issueToken(
+  private resolveAuthCreds(
+    input: CourierCredentials,
+  ): PathaoAuthCredentials | null {
+    const clientId = input.clientId || this.configService.get<string>('PATHAO_CLIENT_ID');
+    const clientSecret =
+      input.clientSecret || this.configService.get<string>('PATHAO_CLIENT_SECRET');
+    const username = input.username || this.configService.get<string>('PATHAO_USERNAME');
+    const password = input.password || this.configService.get<string>('PATHAO_PASSWORD');
+
+    if (!clientId || !clientSecret || !username || !password) return null;
+    return { clientId, clientSecret, username, password };
+  }
+
+  /**
+   * Runs `fn` with a cached/fresh bearer token, retrying exactly once with a
+   * forced re-issue if Pathao responds 401 (per spec §3.3).
+   */
+  private async withToken<T>(
+    tenantId: string,
     baseUrl: string,
-    creds: { clientId: string; clientSecret: string; username: string; password: string },
-  ): Promise<string> {
-    const res = await axios.post(
-      `${baseUrl}/aladdin/api/v1/issue-token`,
-      {
-        client_id: creds.clientId,
-        client_secret: creds.clientSecret,
-        username: creds.username,
-        password: creds.password,
-        grant_type: 'password',
-      },
-      { headers: { 'Content-Type': 'application/json' }, timeout: 10000 },
-    );
-    return res.data?.access_token;
+    sandbox: boolean,
+    creds: PathaoAuthCredentials,
+    fn: (token: string) => Promise<T>,
+  ): Promise<T> {
+    const token = await this.pathaoAuth.getValidAccessToken(tenantId, baseUrl, sandbox, creds);
+    try {
+      return await fn(token);
+    } catch (err) {
+      const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+      if (status !== 401) throw err;
+
+      await this.pathaoAuth.invalidate(tenantId);
+      const freshToken = await this.pathaoAuth.getValidAccessToken(
+        tenantId,
+        baseUrl,
+        sandbox,
+        creds,
+        true,
+      );
+      return fn(freshToken);
+    }
   }
 
   async testConnection(credentials: CourierCredentials): Promise<CourierConnectionTestResult> {
-    const clientId = credentials.clientId || this.configService.get<string>('PATHAO_CLIENT_ID');
-    const clientSecret =
-      credentials.clientSecret || this.configService.get<string>('PATHAO_CLIENT_SECRET');
-    const username = credentials.username || this.configService.get<string>('PATHAO_USERNAME');
-    const password = credentials.password || this.configService.get<string>('PATHAO_PASSWORD');
-
-    if (!clientId || !clientSecret || !username || !password) {
+    const creds = this.resolveAuthCreds(credentials);
+    if (!creds) {
       return {
         success: false,
         message:
@@ -147,13 +185,17 @@ export class PathaoCourierAdapter implements ICourierAdapter {
     }
 
     try {
-      // Issuing a token is the authentication check itself — nothing is booked.
-      const token = await this.issueToken(this.resolveBaseUrl(credentials.sandbox), {
-        clientId,
-        clientSecret,
-        username,
-        password,
-      });
+      // Issuing/validating a token is the authentication check itself —
+      // nothing is booked. tenantId falls back to a stable per-credential key
+      // when the caller is a diagnostic/pre-save test with no tenant yet.
+      const tenantId = credentials.tenantId ?? this.diagnosticTenantKey(creds);
+      const token = await this.pathaoAuth.getValidAccessToken(
+        tenantId,
+        this.resolveBaseUrl(credentials.sandbox),
+        Boolean(credentials.sandbox),
+        creds,
+        true, // always issue fresh for an explicit connection test
+      );
 
       if (token) {
         return { success: true, message: 'Connected to Pathao successfully.' };
@@ -170,11 +212,10 @@ export class PathaoCourierAdapter implements ICourierAdapter {
   }
 
   async bookParcel(payload: CourierBookingPayload): Promise<CourierBookingResult> {
-    const clientId = payload.clientId || this.configService.get<string>('PATHAO_CLIENT_ID');
-    const clientSecret = payload.clientSecret || this.configService.get<string>('PATHAO_CLIENT_SECRET');
+    const creds = this.resolveAuthCreds(payload);
 
     // No credentials configured at all — this is genuine sandbox/dev mode.
-    if (!clientId || !clientSecret) {
+    if (!creds) {
       const trackingCode = `PTH-${payload.invoice}-${Math.floor(1000 + Math.random() * 9000)}`;
       return {
         trackingCode,
@@ -183,57 +224,44 @@ export class PathaoCourierAdapter implements ICourierAdapter {
       };
     }
 
-    const username = payload.username || this.configService.get<string>('PATHAO_USERNAME');
-    const password = payload.password || this.configService.get<string>('PATHAO_PASSWORD');
     const storeId = payload.merchantStoreId || this.configService.get<string>('PATHAO_STORE_ID');
-
     if (!storeId) {
       throw new BadRequestException(
         'Pathao needs a Store ID to book a parcel. Add it in the Pathao courier settings.',
       );
     }
 
+    const tenantId = payload.tenantId ?? this.diagnosticTenantKey(creds);
     const baseUrl = this.resolveBaseUrl(payload.sandbox);
+    const sandbox = Boolean(payload.sandbox);
 
     // Real credentials exist — a failure here must surface as a real failure,
     // never as a fabricated "BOOKED" result.
     try {
-      // Per-merchant credentials take precedence; env values remain a fallback
-      // for single-tenant/dev setups.
-      const token = await this.issueToken(baseUrl, {
-        clientId,
-        clientSecret,
-        username: username || '',
-        password: password || '',
-      });
-
-      if (!token) {
-        this.logger.error(`Pathao token issuance failed for invoice ${payload.invoice}.`);
-        throw new BadGatewayException('Unable to authenticate with Pathao courier service.');
-      }
-
-      const orderRes = await axios.post(
-        `${baseUrl}/aladdin/api/v1/orders`,
-        {
-          store_id: Number(storeId),
-          merchant_order_id: payload.invoice,
-          recipient_name: payload.recipientName,
-          recipient_phone: payload.recipientPhone,
-          recipient_address: payload.recipientAddress,
-          delivery_type: 48, // Normal Delivery
-          item_type: 2, // Parcel
-          special_instruction: payload.note || 'BitCommerce Parcel',
-          item_quantity: 1,
-          item_weight: String(payload.weight ?? 0.5),
-          amount_to_collect: payload.codAmount,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
+      const orderRes = await this.withToken(tenantId, baseUrl, sandbox, creds, (token) =>
+        axios.post(
+          `${baseUrl}/aladdin/api/v1/orders`,
+          {
+            store_id: Number(storeId),
+            merchant_order_id: payload.invoice,
+            recipient_name: payload.recipientName,
+            recipient_phone: payload.recipientPhone,
+            recipient_address: payload.recipientAddress,
+            delivery_type: 48, // Normal Delivery
+            item_type: 2, // Parcel
+            special_instruction: payload.note || 'BitCommerce Parcel',
+            item_quantity: 1,
+            item_weight: String(payload.weight ?? 0.5),
+            amount_to_collect: payload.codAmount,
           },
-          timeout: 10000,
-        },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            timeout: 10000,
+          },
+        ),
       );
 
       const data = orderRes.data?.data;
@@ -268,30 +296,24 @@ export class PathaoCourierAdapter implements ICourierAdapter {
     trackingCode: string,
     credentials: CourierCredentials,
   ): Promise<CourierTrackingResult> {
-    const clientId = credentials.clientId || this.configService.get<string>('PATHAO_CLIENT_ID');
-    const clientSecret =
-      credentials.clientSecret || this.configService.get<string>('PATHAO_CLIENT_SECRET');
-    const username = credentials.username || this.configService.get<string>('PATHAO_USERNAME');
-    const password = credentials.password || this.configService.get<string>('PATHAO_PASSWORD');
+    const creds = this.resolveAuthCreds(credentials);
 
     // Sandbox mode: report the parcel as unchanged. Fabricating a delivery
     // history here would silently overwrite real shipment state with fiction.
-    if (!clientId || !clientSecret || !username || !password) {
+    if (!creds) {
       return { trackingCode, currentStatus: ConsignmentStatusEnum.BOOKED, events: [] };
     }
 
+    const tenantId = credentials.tenantId ?? this.diagnosticTenantKey(creds);
     const baseUrl = this.resolveBaseUrl(credentials.sandbox);
+    const sandbox = Boolean(credentials.sandbox);
 
     try {
-      const token = await this.issueToken(baseUrl, { clientId, clientSecret, username, password });
-      if (!token) {
-        this.logger.warn(`Pathao token issuance failed while tracking ${trackingCode}.`);
-        return { trackingCode, currentStatus: ConsignmentStatusEnum.BOOKED, events: [] };
-      }
-
-      const res = await axios.get(
-        `${baseUrl}/aladdin/api/v1/orders/${trackingCode}/info`,
-        { headers: { Authorization: `Bearer ${token}` }, timeout: 10000 },
+      const res = await this.withToken(tenantId, baseUrl, sandbox, creds, (token) =>
+        axios.get(`${baseUrl}/aladdin/api/v1/orders/${trackingCode}/info`, {
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 10000,
+        }),
       );
 
       const slug = String(res.data?.data?.order_status_slug ?? res.data?.data?.order_status ?? '')
@@ -339,5 +361,15 @@ export class PathaoCourierAdapter implements ICourierAdapter {
       cancelled: false,
       message: 'Pathao cancellation must be arranged directly with the courier.',
     };
+  }
+
+  /**
+   * The token cache is keyed by tenantId, but a handful of call sites (an
+   * ad-hoc credential test before anything is saved) may not carry one yet.
+   * Falls back to a deterministic key derived from the credentials themselves
+   * so those calls still benefit from caching without colliding across tenants.
+   */
+  private diagnosticTenantKey(creds: PathaoAuthCredentials): string {
+    return `diag:${creds.clientId}:${creds.username}`;
   }
 }

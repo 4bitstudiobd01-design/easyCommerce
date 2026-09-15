@@ -9,6 +9,10 @@ export interface CourierBookingPayload {
   codAmount: number;
   note?: string;
   weight?: number;
+  /** RedX's required delivery_area_id — from GET /logistics/redx/areas, picked by the merchant when booking. */
+  deliveryAreaId?: number;
+  /** Declared parcel value (RedX's `value`). Defaults to codAmount when omitted. */
+  declaredValue?: number;
   apiKey?: string;
   secretKey?: string;
   clientId?: string;
@@ -20,6 +24,8 @@ export interface CourierBookingPayload {
   merchantStoreId?: string;
   /** Point the adapter at the provider's sandbox host instead of production. */
   sandbox?: boolean;
+  /** Owning tenant — needed by adapters that cache per-tenant state (e.g. Pathao's token cache). */
+  tenantId?: string;
 }
 
 export interface CourierBookingResult {
@@ -135,4 +141,6 @@ export interface CourierCredentials {
   merchantStoreId?: string;
   /** Point the adapter at the provider's sandbox host instead of production. */
   sandbox?: boolean;
+  /** Owning tenant — needed by adapters that cache per-tenant state (e.g. Pathao's token cache). */
+  tenantId?: string;
 }
