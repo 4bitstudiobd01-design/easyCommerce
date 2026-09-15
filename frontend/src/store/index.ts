@@ -34,7 +34,6 @@ import { hrmApi } from '@/features/hrm/api/hrmApi';
 import { financeApi } from '@/features/finance/api/financeApi';
 import { accountingApi } from '@/features/accounting/api/accountingApi';
 import { purchaseApi } from '@/features/purchase/api/purchaseApi';
-import { financeApi } from '@/features/finance/api/financeApi';
 import { uploadApi } from '@/features/upload/api/uploadApi';
 
 export const store = configureStore({
@@ -74,7 +73,6 @@ export const store = configureStore({
     [financeApi.reducerPath]: financeApi.reducer,
     [accountingApi.reducerPath]: accountingApi.reducer,
     [purchaseApi.reducerPath]: purchaseApi.reducer,
-    [financeApi.reducerPath]: financeApi.reducer,
     [uploadApi.reducerPath]: uploadApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
@@ -108,7 +106,6 @@ export const store = configureStore({
       financeApi.middleware,
       accountingApi.middleware,
       purchaseApi.middleware,
-      financeApi.middleware,
       uploadApi.middleware,
     ),
 });

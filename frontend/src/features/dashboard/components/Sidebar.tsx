@@ -527,7 +527,7 @@ export const Sidebar = ({
           )}
 
           {/* 3. CRM & OMNICHANNEL ACCORDION */}
-          {/* <AccordionHeader 
+          <AccordionHeader 
             title="CRM & Growth" 
             groupKey="crm" 
             isOpen={openGroups.crm} 
@@ -626,10 +626,10 @@ export const Sidebar = ({
                 </div>
               </Link>
             </div>
-          )} */}
+          )}
 
           {/* 4. HUMAN RESOURCES ACCORDION */}
-          {/* <AccordionHeader 
+          <AccordionHeader 
             title="Human Resources" 
             groupKey="hrm" 
             isOpen={openGroups.hrm} 
@@ -780,10 +780,10 @@ export const Sidebar = ({
                 </div>
               </Link>
             </div>
-          )} */}
+          )}
 
           {/* 5. ACCOUNTING ACCORDION */}
-          {/* <AccordionHeader 
+          <AccordionHeader 
             title="Accounting" 
             groupKey="accounting" 
             isOpen={openGroups.accounting} 
@@ -853,10 +853,10 @@ export const Sidebar = ({
                 ]}
               />
             </div>
-          )} */}
+          )}
 
           {/* 6. FINANCE (Single Top-Level Navigation Link) */}
-          {/* <Link
+          <Link
             href="/dashboard/finance/overview"
             className={navItemClass('/dashboard/finance')}
             onMouseEnter={(e) => handleTooltipEnter(e, "Finance")}
@@ -868,7 +868,7 @@ export const Sidebar = ({
               <Landmark className={iconClass} strokeWidth={iconStroke} />
               {!isDesktopCollapsed && <span>Finance</span>}
             </div>
-          </Link> */}
+          </Link>
 
           {/* 7. MARKETING & ANALYTICS ACCORDION */}
           <AccordionHeader 
