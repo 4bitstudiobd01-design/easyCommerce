@@ -22,6 +22,7 @@ import {
   Printer,
   Trash2,
   PackageCheck,
+  Landmark,
 } from 'lucide-react';
 import {
   useGetPurchaseOrdersQuery,
@@ -32,6 +33,7 @@ import {
   useCancelPurchaseOrderMutation,
   useReceivePurchaseOrderMutation,
   type PurchaseOrderStatus,
+  type PurchaseOrderPaymentStatus,
 } from '../api/purchaseApi';
 import {
   LineItemEditor,
@@ -40,22 +42,42 @@ import {
   toLineInputs,
   type LineItemDraft,
 } from './LineItemEditor';
+import { SupplierSelectDropdown } from './SupplierSelectDropdown';
+import { CustomDropdown } from './CustomDropdown';
 
-const STATUS_LABELS: Record<PurchaseOrderStatus, string> = {
+const ORDER_STATUS_LABELS: Record<PurchaseOrderStatus, string> = {
   DRAFT: 'Draft',
+  PENDING_APPROVAL: 'Pending Approval',
+  APPROVED: 'Approved',
   SENT: 'Sent',
   PARTIALLY_RECEIVED: 'Partially Received',
-  FULLY_RECEIVED: 'Fully Received',
+  FULLY_RECEIVED: 'Received',
   CANCELLED: 'Cancelled',
 };
 
-const STATUS_BADGE: Record<PurchaseOrderStatus, string> = {
+const ORDER_STATUS_BADGE: Record<PurchaseOrderStatus, string> = {
   DRAFT: 'bg-slate-100 text-slate-600 border-slate-200/60',
-  SENT: 'bg-blue-50 text-blue-600 border-blue-200/60',
-  PARTIALLY_RECEIVED: 'bg-purple-50 text-purple-600 border-purple-200/60',
-  FULLY_RECEIVED: 'bg-emerald-50 text-emerald-600 border-emerald-200/60',
+  PENDING_APPROVAL: 'bg-amber-50 text-amber-700 border-amber-200/60 font-medium',
+  APPROVED: 'bg-emerald-50 text-emerald-700 border-emerald-200/60 font-semibold',
+  SENT: 'bg-blue-50 text-blue-700 border-blue-200/60 font-medium',
+  PARTIALLY_RECEIVED: 'bg-purple-50 text-purple-700 border-purple-200/60 font-medium',
+  FULLY_RECEIVED: 'bg-emerald-50 text-emerald-700 border-emerald-200/60 font-semibold',
   CANCELLED: 'bg-rose-50 text-rose-600 border-rose-200/60',
 };
+
+const PAYMENT_STATUS_LABELS: Record<PurchaseOrderPaymentStatus, string> = {
+  PENDING: 'Pending',
+  PAID: 'Paid',
+};
+
+const PAYMENT_STATUS_BADGE: Record<PurchaseOrderPaymentStatus, string> = {
+  PENDING: 'bg-amber-50 text-amber-700 border-amber-200/70',
+  PAID: 'bg-emerald-50 text-emerald-700 border-emerald-200/70',
+};
+
+// Aliases for backwards compatibility
+const STATUS_LABELS = ORDER_STATUS_LABELS;
+const STATUS_BADGE = ORDER_STATUS_BADGE;
 
 const AVATAR_STYLES = [
   'bg-blue-100 text-blue-600',
@@ -74,7 +96,8 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 export function PurchaseOrdersView() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All Status');
+  const [statusFilter, setStatusFilter] = useState('All Orders');
+  const [paymentFilter, setPaymentFilter] = useState('All Payment');
   const [supplierFilter, setSupplierFilter] = useState('All Suppliers');
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [perPage, setPerPage] = useState(10);
@@ -85,11 +108,16 @@ export function PurchaseOrdersView() {
   const [receivePoId, setReceivePoId] = useState<string | null>(null);
 
   const statusParam =
-    statusFilter === 'All Status'
+    statusFilter === 'All Orders' || statusFilter === 'All Status'
       ? undefined
-      : (Object.keys(STATUS_LABELS).find(
-          (k) => STATUS_LABELS[k as PurchaseOrderStatus] === statusFilter,
+      : (Object.keys(ORDER_STATUS_LABELS).find(
+          (k) => ORDER_STATUS_LABELS[k as PurchaseOrderStatus] === statusFilter,
         ) as PurchaseOrderStatus | undefined);
+
+  const paymentParam =
+    paymentFilter === 'All Payment'
+      ? undefined
+      : (paymentFilter as PurchaseOrderPaymentStatus);
 
   const { data: suppliersData } = useGetSuppliersQuery({ limit: 100 });
   const suppliers = suppliersData?.items ?? [];
@@ -97,6 +125,7 @@ export function PurchaseOrdersView() {
   const { data, isLoading, isFetching, isError } = useGetPurchaseOrdersQuery({
     search: searchTerm.trim() || undefined,
     status: statusParam,
+    paymentStatus: paymentParam,
     supplierId: supplierFilter === 'All Suppliers' ? undefined : supplierFilter,
     page: currentPage,
     limit: perPage,
@@ -117,15 +146,20 @@ export function PurchaseOrdersView() {
   const [poSupplierId, setPoSupplierId] = useState('');
   const [poOrderDate, setPoOrderDate] = useState(today());
   const [poExpectedDate, setPoExpectedDate] = useState('');
-  const [poStatus, setPoStatus] = useState<'DRAFT' | 'SENT'>('SENT');
+  const [poStatus, setPoStatus] = useState<'DRAFT' | 'PENDING_APPROVAL'>('PENDING_APPROVAL');
   const [poNotes, setPoNotes] = useState('');
   const [poLines, setPoLines] = useState<LineItemDraft[]>([makeEmptyLine()]);
+
+  const poGrandTotal = useMemo(
+    () => poLines.reduce((sum, l) => sum + l.quantity * l.unitCost, 0),
+    [poLines],
+  );
 
   const resetPoForm = () => {
     setPoSupplierId('');
     setPoOrderDate(today());
     setPoExpectedDate('');
-    setPoStatus('SENT');
+    setPoStatus('PENDING_APPROVAL');
     setPoNotes('');
     setPoLines([makeEmptyLine()]);
   };
@@ -138,6 +172,7 @@ export function PurchaseOrdersView() {
       toast.error('Choose a supplier and add at least one valid line item.');
       return;
     }
+
     try {
       await createPurchaseOrder({
         supplierId: poSupplierId,
@@ -147,14 +182,21 @@ export function PurchaseOrdersView() {
         notes: poNotes.trim() || undefined,
         lines: toLineInputs(poLines),
       }).unwrap();
-      toast.success('Purchase order created.');
-      setIsNewPoOpen(false);
-      resetPoForm();
-    } catch (err) {
-      toast.error(
-        (err as { data?: { message?: string } })?.data?.message ??
-          'Could not create the purchase order.',
+      toast.success(
+        poStatus === 'PENDING_APPROVAL'
+          ? 'Purchase order created and submitted for Finance approval!'
+          : 'Draft purchase order saved!',
       );
+      resetPoForm();
+      setIsNewPoOpen(false);
+    } catch (err: any) {
+      const msg =
+        (Array.isArray(err?.data?.message)
+          ? err.data.message.join(', ')
+          : err?.data?.message) ||
+        err?.message ||
+        'Could not create the purchase order.';
+      toast.error(msg);
     }
   };
 
@@ -164,11 +206,14 @@ export function PurchaseOrdersView() {
     try {
       await cancelPurchaseOrder(id).unwrap();
       toast.success('Purchase order cancelled.');
-    } catch (err) {
-      toast.error(
-        (err as { data?: { message?: string } })?.data?.message ??
-          'Could not cancel the purchase order.',
-      );
+    } catch (err: any) {
+      const msg =
+        (Array.isArray(err?.data?.message)
+          ? err.data.message.join(', ')
+          : err?.data?.message) ||
+        err?.message ||
+        'Could not cancel the purchase order.';
+      toast.error(msg);
     }
   };
 
@@ -183,18 +228,22 @@ export function PurchaseOrdersView() {
         note: 'This month',
       },
       {
-        label: 'Draft',
+        label: 'Pending Approval',
         icon: Clock,
-        tone: 'bg-amber-50 text-amber-500',
-        count: stats?.draft.count ?? 0,
-        amount: stats ? money(stats.draft.amount) : '—',
+        tone: 'bg-amber-50 text-amber-600',
+        count: stats?.pendingApproval?.count ?? 0,
+        amount: stats?.pendingApproval ? money(stats.pendingApproval.amount) : '—',
+        note: 'Payment pending',
       },
       {
-        label: 'Sent',
+        label: 'Sent to Supplier',
         icon: Send,
-        tone: 'bg-blue-50 text-blue-500',
-        count: stats?.sent.count ?? 0,
-        amount: stats ? money(stats.sent.amount) : '—',
+        tone: 'bg-blue-50 text-blue-600',
+        count: (stats?.sent?.count ?? 0) + (stats?.approved?.count ?? 0),
+        amount: money(
+          Number(stats?.sent?.amount ?? 0) + Number(stats?.approved?.amount ?? 0),
+        ),
+        note: 'Finance paid',
       },
       {
         label: 'Partially Received',
@@ -204,8 +253,8 @@ export function PurchaseOrdersView() {
         amount: stats ? money(stats.partiallyReceived.amount) : '—',
       },
       {
-        label: 'Fully Received',
-        icon: CheckCircle2,
+        label: 'Received',
+        icon: PackageCheck,
         tone: 'bg-emerald-50 text-emerald-600',
         count: stats?.fullyReceived.count ?? 0,
         amount: stats ? money(stats.fullyReceived.amount) : '—',
@@ -229,7 +278,7 @@ export function PurchaseOrdersView() {
             Purchase Orders
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
-            Create and manage purchase orders for your suppliers.
+            Create and manage purchase orders for your suppliers with automated Finance approval flow.
           </p>
         </div>
         <button
@@ -281,55 +330,71 @@ export function PurchaseOrdersView() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 w-full xl:w-auto justify-start xl:justify-end">
-          <div className="relative flex items-center">
-            <label className="text-[10px] uppercase font-bold text-slate-400 absolute -top-2 left-2 px-1 bg-white leading-none">
-              Status
-            </label>
-            <select
+          {/* Order Status Filter */}
+          <div className="min-w-[140px]">
+            <CustomDropdown
+              size="sm"
               value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
+              onChange={(val) => {
+                setStatusFilter(val);
                 setCurrentPage(1);
               }}
-              className="text-xs font-semibold bg-white border border-slate-200 rounded-xl pl-3 pr-8 py-2 text-slate-700 outline-none hover:border-slate-300 appearance-none shadow-2xs cursor-pointer min-w-[120px]"
-            >
-              <option>All Status</option>
-              <option>Draft</option>
-              <option>Sent</option>
-              <option>Partially Received</option>
-              <option>Fully Received</option>
-              <option>Cancelled</option>
-            </select>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              options={[
+                { value: 'All Orders', label: 'All Orders' },
+                { value: 'Pending Approval', label: 'Pending Approval', badge: 'Pending', badgeColor: 'bg-amber-50 text-amber-700' },
+                { value: 'Sent', label: 'Sent to Supplier', badge: 'Sent', badgeColor: 'bg-blue-50 text-blue-700' },
+                { value: 'Partially Received', label: 'Partially Received', badge: 'Partial', badgeColor: 'bg-purple-50 text-purple-700' },
+                { value: 'Received', label: 'Received', badge: 'Received', badgeColor: 'bg-emerald-50 text-emerald-700' },
+                { value: 'Draft', label: 'Draft', badge: 'Draft', badgeColor: 'bg-slate-100 text-slate-700' },
+                { value: 'Cancelled', label: 'Cancelled', badge: 'Cancelled', badgeColor: 'bg-rose-50 text-rose-700' },
+              ]}
+            />
           </div>
 
-          <div className="relative flex items-center">
-            <label className="text-[10px] uppercase font-bold text-slate-400 absolute -top-2 left-2 px-1 bg-white leading-none">
-              Supplier
-            </label>
-            <select
-              value={supplierFilter}
-              onChange={(e) => {
-                setSupplierFilter(e.target.value);
+          {/* Payment Status Filter */}
+          <div className="min-w-[130px]">
+            <CustomDropdown
+              size="sm"
+              value={paymentFilter}
+              onChange={(val) => {
+                setPaymentFilter(val);
                 setCurrentPage(1);
               }}
-              className="text-xs font-semibold bg-white border border-slate-200 rounded-xl pl-3 pr-8 py-2 text-slate-700 outline-none hover:border-slate-300 appearance-none shadow-2xs cursor-pointer min-w-[130px]"
-            >
-              <option value="All Suppliers">All Suppliers</option>
-              {suppliers.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              options={[
+                { value: 'All Payment', label: 'All Payment' },
+                { value: 'PAID', label: 'Paid', badge: 'Paid', badgeColor: 'bg-emerald-50 text-emerald-700' },
+                { value: 'PENDING', label: 'Pending', badge: 'Pending', badgeColor: 'bg-amber-50 text-amber-700' },
+              ]}
+            />
+          </div>
+
+          <div className="min-w-[170px]">
+            <CustomDropdown
+              size="sm"
+              searchable
+              searchPlaceholder="Search supplier..."
+              value={supplierFilter}
+              onChange={(val) => {
+                setSupplierFilter(val);
+                setCurrentPage(1);
+              }}
+              options={[
+                { value: 'All Suppliers', label: 'All Suppliers' },
+                ...suppliers.map((s) => ({
+                  value: s.id,
+                  label: s.name,
+                  subtitle: s.phone || s.location,
+                })),
+              ]}
+            />
           </div>
 
           <button
             type="button"
             onClick={() => {
               setSearchTerm('');
-              setStatusFilter('All Status');
+              setStatusFilter('All Orders');
+              setPaymentFilter('All Payment');
               setSupplierFilter('All Suppliers');
               setCurrentPage(1);
             }}
@@ -352,7 +417,8 @@ export function PurchaseOrdersView() {
                 <th className="px-4 py-3.5">EXPECTED DATE</th>
                 <th className="px-4 py-3.5">TOTAL AMOUNT</th>
                 <th className="px-4 py-3.5">RECEIVED</th>
-                <th className="px-4 py-3.5">STATUS</th>
+                <th className="px-4 py-3.5">ORDER STATUS</th>
+                <th className="px-4 py-3.5">PAYMENT STATUS</th>
                 <th className="px-4 py-3.5 text-center">ACTIONS</th>
               </tr>
             </thead>
@@ -360,7 +426,7 @@ export function PurchaseOrdersView() {
               {isLoading &&
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={`sk-${i}`}>
-                    {Array.from({ length: 8 }).map((__, j) => (
+                    {Array.from({ length: 9 }).map((__, j) => (
                       <td key={j} className="px-4 py-4">
                         <div className="h-3 bg-slate-100 rounded animate-pulse" />
                       </td>
@@ -370,7 +436,7 @@ export function PurchaseOrdersView() {
 
               {!isLoading && isError && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-10 text-center text-rose-500">
+                  <td colSpan={9} className="px-4 py-10 text-center text-rose-500">
                     Could not load purchase orders.
                   </td>
                 </tr>
@@ -378,7 +444,7 @@ export function PurchaseOrdersView() {
 
               {!isLoading && !isError && orders.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-10 text-center text-slate-400">
+                  <td colSpan={9} className="px-4 py-10 text-center text-slate-400">
                     No purchase orders yet.
                   </td>
                 </tr>
@@ -389,7 +455,9 @@ export function PurchaseOrdersView() {
                 orders.map((o) => {
                   const pct = Math.round(Number(o.receivedPct));
                   const canReceive =
-                    o.status === 'SENT' || o.status === 'PARTIALLY_RECEIVED';
+                    o.status === 'SENT' ||
+                    o.status === 'APPROVED' ||
+                    o.status === 'PARTIALLY_RECEIVED';
                   return (
                     <tr key={o.id} className="hover:bg-slate-50/70 transition">
                       <td className="px-4 py-4 font-bold text-slate-900 font-mono text-[11px]">
@@ -437,9 +505,25 @@ export function PurchaseOrdersView() {
                       </td>
                       <td className="px-4 py-4">
                         <span
-                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold border whitespace-nowrap ${STATUS_BADGE[o.status]}`}
+                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold border whitespace-nowrap ${ORDER_STATUS_BADGE[o.status] || 'bg-slate-100 text-slate-700'}`}
                         >
-                          {STATUS_LABELS[o.status]}
+                          {ORDER_STATUS_LABELS[o.status] || o.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4">
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border whitespace-nowrap ${
+                            o.paymentStatus === 'PAID'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200/70'
+                              : 'bg-amber-50 text-amber-700 border-amber-200/70'
+                          }`}
+                        >
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              o.paymentStatus === 'PAID' ? 'bg-emerald-500' : 'bg-amber-500'
+                            }`}
+                          />
+                          {o.paymentStatus === 'PAID' ? 'Paid' : 'Pending'}
                         </span>
                       </td>
                       <td className="px-4 py-4 text-center">
@@ -528,20 +612,20 @@ export function PurchaseOrdersView() {
           </p>
 
           <div className="flex items-center gap-3">
-            <div className="relative flex items-center">
-              <select
-                value={perPage}
-                onChange={(e) => {
-                  setPerPage(Number(e.target.value));
+            <div className="w-32">
+              <CustomDropdown
+                size="sm"
+                value={String(perPage)}
+                onChange={(val) => {
+                  setPerPage(Number(val));
                   setCurrentPage(1);
                 }}
-                className="text-xs font-semibold bg-white border border-slate-200 rounded-lg pl-3 pr-7 py-1.5 text-slate-700 outline-none hover:border-slate-300 appearance-none shadow-2xs cursor-pointer"
-              >
-                <option value={10}>10 per page</option>
-                <option value={20}>20 per page</option>
-                <option value={50}>50 per page</option>
-              </select>
-              <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                options={[
+                  { value: '10', label: '10 per page' },
+                  { value: '20', label: '20 per page' },
+                  { value: '50', label: '50 per page' },
+                ]}
+              />
             </div>
 
             <div className="flex items-center gap-1">
@@ -571,7 +655,7 @@ export function PurchaseOrdersView() {
 
       {isNewPoOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-xl border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col">
+          <div className="bg-white rounded-2xl w-full max-w-4xl shadow-xl border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col">
             <div className="p-5 border-b border-slate-100 flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-slate-900">New Purchase Order</h3>
@@ -592,20 +676,14 @@ export function PurchaseOrdersView() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Select Supplier
+                    Select Supplier <span className="text-rose-500">*</span>
                   </label>
-                  <select
+                  <SupplierSelectDropdown
+                    suppliers={suppliers}
                     value={poSupplierId}
-                    onChange={(e) => setPoSupplierId(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-blue-600 focus:outline-none"
-                  >
-                    <option value="">Choose a supplier</option>
-                    {suppliers.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(id) => setPoSupplierId(id)}
+                    placeholder="Choose a supplier"
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -615,7 +693,7 @@ export function PurchaseOrdersView() {
                     type="date"
                     value={poOrderDate}
                     onChange={(e) => setPoOrderDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-blue-600 focus:outline-none"
+                    className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-1 focus:ring-blue-600 focus:border-blue-600 focus:outline-hidden transition shadow-2xs"
                   />
                 </div>
               </div>
@@ -629,21 +707,58 @@ export function PurchaseOrdersView() {
                     type="date"
                     value={poExpectedDate}
                     onChange={(e) => setPoExpectedDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-blue-600 focus:outline-none"
+                    className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-1 focus:ring-blue-600 focus:border-blue-600 focus:outline-hidden transition shadow-2xs"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Status
+                    Status & Approval Flow
                   </label>
-                  <select
+                  <CustomDropdown
                     value={poStatus}
-                    onChange={(e) => setPoStatus(e.target.value as 'DRAFT' | 'SENT')}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-blue-600 focus:outline-none"
-                  >
-                    <option value="SENT">Sent</option>
-                    <option value="DRAFT">Draft</option>
-                  </select>
+                    onChange={(val) => setPoStatus(val as 'DRAFT' | 'PENDING_APPROVAL')}
+                    options={[
+                      {
+                        value: 'PENDING_APPROVAL',
+                        label: 'Submit for Finance Approval',
+                        subtitle: 'Queues budget requisition for disbursement approval',
+                        icon: <Clock className="w-3.5 h-3.5 text-amber-500" />,
+                        badge: 'Pending',
+                        badgeColor: 'bg-amber-50 text-amber-700 border border-amber-200/60',
+                      },
+                      {
+                        value: 'DRAFT',
+                        label: 'Save as Internal Draft',
+                        subtitle: 'Create draft PO without requesting budget disbursement',
+                        icon: <FileText className="w-3.5 h-3.5 text-slate-500" />,
+                        badge: 'Draft',
+                        badgeColor: 'bg-slate-100 text-slate-700 border border-slate-200/60',
+                      },
+                    ]}
+                  />
+                </div>
+              </div>
+
+              {/* Dual Status Preview Banner */}
+              <div className="bg-slate-50/80 border border-slate-200/90 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2.5 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-500 font-bold text-[11px]">Initial Status:</span>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200/70">
+                    Order: {poStatus === 'DRAFT' ? 'Draft' : 'Pending Approval'}
+                  </span>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200/70">
+                    Payment: Pending
+                  </span>
+                </div>
+                <div className="text-[11px] text-slate-500 font-medium">
+                  Finance Approval →{' '}
+                  <span className="font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200/60">
+                    Paid
+                  </span>{' '}
+                  &{' '}
+                  <span className="font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200/60">
+                    Sent
+                  </span>
                 </div>
               </div>
 
@@ -652,6 +767,31 @@ export function PurchaseOrdersView() {
                   Line Items
                 </label>
                 <LineItemEditor value={poLines} onChange={setPoLines} />
+              </div>
+
+              {/* Finance Approval Requisition Notice */}
+              <div className="bg-blue-50/60 border border-blue-200/70 rounded-2xl p-4 flex items-start gap-3">
+                <div className="w-8 h-8 rounded-xl bg-blue-100 border border-blue-200 flex items-center justify-center text-blue-600 shrink-0 mt-0.5">
+                  <Landmark className="w-4 h-4" />
+                </div>
+                <div className="min-w-0 text-xs">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-bold text-slate-900">Finance Budget & Disbursement Flow</h4>
+                    <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-md bg-blue-100 text-blue-700 border border-blue-200">
+                      Finance Approval Required
+                    </span>
+                  </div>
+                  <p className="text-slate-600 mt-1 leading-relaxed">
+                    Submitting this purchase order will automatically queue a budget requisition in the{' '}
+                    <span className="font-bold text-slate-800">Finance</span> module. The Finance team
+                    will review the total amount (৳ {poGrandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}),
+                    select which bank or cash account to deduct payment from, and approve disbursement.
+                    Once approved by Finance, this order will automatically update to{' '}
+                    <span className="font-bold text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-200/60">Paid</span> and{' '}
+                    <span className="font-bold text-blue-700 bg-blue-50 px-1 py-0.5 rounded border border-blue-200/60">Sent</span>,
+                    becoming ready for goods receipt at the warehouse.
+                  </p>
+                </div>
               </div>
 
               <div>
@@ -719,11 +859,36 @@ function PurchaseOrderDetailModal({
       <div className="bg-white rounded-2xl w-full max-w-2xl shadow-xl border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col">
         <div className="p-5 border-b border-slate-100 flex items-center justify-between">
           <div>
-            <h3 className="text-base font-bold text-slate-900">
-              {po ? po.poNumber : 'Purchase Order'}
-            </h3>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-base font-bold text-slate-900 font-mono">
+                {po ? po.poNumber : 'Purchase Order'}
+              </h3>
+              {po && (
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${ORDER_STATUS_BADGE[po.status] || 'bg-slate-100 text-slate-700'}`}
+                  >
+                    {ORDER_STATUS_LABELS[po.status] || po.status}
+                  </span>
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                      po.paymentStatus === 'PAID'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200/70'
+                        : 'bg-amber-50 text-amber-700 border-amber-200/70'
+                    }`}
+                  >
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        po.paymentStatus === 'PAID' ? 'bg-emerald-500' : 'bg-amber-500'
+                      }`}
+                    />
+                    {po.paymentStatus === 'PAID' ? 'Paid' : 'Pending Payment'}
+                  </span>
+                </div>
+              )}
+            </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              {po ? `${po.supplierName} · ${po.orderDate}` : 'Loading…'}
+              {po ? `${po.supplierName} · Ordered: ${po.orderDate}${po.expectedDate ? ` · Expected: ${po.expectedDate}` : ''}` : 'Loading…'}
             </p>
           </div>
           <button
@@ -735,7 +900,7 @@ function PurchaseOrderDetailModal({
           </button>
         </div>
 
-        <div className="p-5 overflow-y-auto">
+        <div className="p-5 overflow-y-auto space-y-4">
           {isLoading || !po ? (
             <div className="space-y-2">
               {Array.from({ length: 4 }).map((_, i) => (
@@ -746,48 +911,59 @@ function PurchaseOrderDetailModal({
               ))}
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-lg border border-slate-200">
-              <table className="min-w-full text-sm">
-                <thead className="bg-slate-50 text-xs uppercase text-slate-500">
-                  <tr>
-                    <th className="px-3 py-2 text-left font-medium">Product</th>
-                    <th className="px-3 py-2 text-right font-medium">Ordered</th>
-                    <th className="px-3 py-2 text-right font-medium">Received</th>
-                    <th className="px-3 py-2 text-right font-medium">Unit cost</th>
-                    <th className="px-3 py-2 text-right font-medium">Line total</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {po.lines.map((l) => (
-                    <tr key={l.id}>
-                      <td className="px-3 py-2">
-                        {l.productName}
-                        {l.sku ? (
-                          <span className="text-slate-400"> · {l.sku}</span>
-                        ) : null}
-                      </td>
-                      <td className="px-3 py-2 text-right">{l.quantity}</td>
-                      <td className="px-3 py-2 text-right">{l.receivedQuantity}</td>
-                      <td className="px-3 py-2 text-right">{money(l.unitCost)}</td>
-                      <td className="px-3 py-2 text-right">{money(l.lineTotal)}</td>
+            <>
+              <div className="overflow-x-auto rounded-lg border border-slate-200">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+                    <tr>
+                      <th className="px-3 py-2 text-left font-medium">Product</th>
+                      <th className="px-3 py-2 text-right font-medium">Ordered</th>
+                      <th className="px-3 py-2 text-right font-medium">Received</th>
+                      <th className="px-3 py-2 text-right font-medium">Unit cost</th>
+                      <th className="px-3 py-2 text-right font-medium">Line total</th>
                     </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="bg-slate-50 border-t border-slate-200">
-                    <td
-                      colSpan={4}
-                      className="px-3 py-2 text-right text-sm font-medium text-slate-600"
-                    >
-                      Total
-                    </td>
-                    <td className="px-3 py-2 text-right text-sm font-semibold text-slate-900">
-                      {money(po.totalAmount)}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {po.lines.map((l) => (
+                      <tr key={l.id}>
+                        <td className="px-3 py-2">
+                          {l.productName}
+                          {l.sku ? (
+                            <span className="text-slate-400"> · {l.sku}</span>
+                          ) : null}
+                        </td>
+                        <td className="px-3 py-2 text-right">{l.quantity}</td>
+                        <td className="px-3 py-2 text-right">{l.receivedQuantity}</td>
+                        <td className="px-3 py-2 text-right">{money(l.unitCost)}</td>
+                        <td className="px-3 py-2 text-right">{money(l.lineTotal)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-slate-50 border-t border-slate-200">
+                      <td
+                        colSpan={4}
+                        className="px-3 py-2 text-right text-sm font-medium text-slate-600"
+                      >
+                        Total
+                      </td>
+                      <td className="px-3 py-2 text-right text-sm font-semibold text-slate-900">
+                        {money(po.totalAmount)}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+
+              {po.notes && (
+                <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-xs">
+                  <span className="font-bold text-slate-700 block mb-1">Notes & Audit Trail:</span>
+                  <p className="text-slate-600 whitespace-pre-line leading-relaxed font-mono text-[11px]">
+                    {po.notes}
+                  </p>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -840,11 +1016,14 @@ function ReceivePurchaseOrderModal({
       }).unwrap();
       toast.success('Stock received. Inventory updated.');
       onClose();
-    } catch (err) {
-      toast.error(
-        (err as { data?: { message?: string } })?.data?.message ??
-          'Could not receive the goods.',
-      );
+    } catch (err: any) {
+      const msg =
+        (Array.isArray(err?.data?.message)
+          ? err.data.message.join(', ')
+          : err?.data?.message) ||
+        err?.message ||
+        'Could not receive the goods.';
+      toast.error(msg);
     }
   };
 

@@ -82,7 +82,7 @@ export class CreateBillService {
       paidAmount: String(paidAmount),
       balanceDue: String(balanceDue),
       currency: dto.currency || 'BDT',
-      status: dto.status || FinanceBillStatusEnum.UNPAID,
+      status: dto.status || FinanceBillStatusEnum.PENDING,
       notes: dto.notes,
       attachmentFileId: dto.attachmentFileId,
       items,

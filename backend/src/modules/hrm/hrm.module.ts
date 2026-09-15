@@ -71,6 +71,7 @@ import { GetPayrollRunService } from './services/get-payroll-run.service';
 import { FinalizePayrollRunService } from './services/finalize-payroll-run.service';
 import { MarkPayrollRunPaidService } from './services/mark-payroll-run-paid.service';
 import { DeletePayrollRunService } from './services/delete-payroll-run.service';
+import { SeedPayrollDemoDataService } from './services/seed-payroll-demo-data.service';
 import { GetTaxSlabsService } from './services/get-tax-slabs.service';
 import { SetTaxSlabsService } from './services/set-tax-slabs.service';
 import { ComputeTaxService } from './services/compute-tax.service';
@@ -166,6 +167,7 @@ import { InviteEmployeeSelfServiceService } from './services/invite-employee-sel
     FinalizePayrollRunService,
     MarkPayrollRunPaidService,
     DeletePayrollRunService,
+    SeedPayrollDemoDataService,
     GetTaxSlabsService,
     SetTaxSlabsService,
     ComputeTaxService,
@@ -180,6 +182,6 @@ import { InviteEmployeeSelfServiceService } from './services/invite-employee-sel
     JwtAuthGuard,
     PermissionsGuard,
   ],
-  exports: [ListEmployeesService, GetEmployeeService],
+  exports: [ListEmployeesService, GetEmployeeService, SeedPayrollDemoDataService],
 })
 export class HrmModule {}

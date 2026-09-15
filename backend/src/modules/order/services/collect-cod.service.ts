@@ -1,9 +1,11 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { OrderEntity, PaymentMethodEnum, PaymentStatusEnum } from '../entities/order.entity';
 import { OrderStatusHistoryEntity } from '../entities/order-status-history.entity';
 import { PaymentEntity, PaymentTransactionStatusEnum } from '../../payment/entities/payment.entity';
+import { SyncModuleFinanceService } from '../../finance/services/sync-module-finance.service';
+import { StoreEntity } from '../../tenant/entities/store.entity';
 
 @Injectable()
 export class CollectCodService {
@@ -14,6 +16,9 @@ export class CollectCodService {
     private readonly orderStatusHistoryRepository: Repository<OrderStatusHistoryEntity>,
     @InjectRepository(PaymentEntity)
     private readonly paymentRepository: Repository<PaymentEntity>,
+    private readonly dataSource: DataSource,
+    @Optional()
+    private readonly syncModuleFinanceService?: SyncModuleFinanceService,
   ) {}
 
   async execute(orderId: string, tenantId: string, userId: string): Promise<OrderEntity> {
@@ -63,6 +68,26 @@ export class CollectCodService {
       tenantId,
     });
     await this.orderStatusHistoryRepository.save(history);
+
+    // Sync collected COD cash into Finance
+    if (this.syncModuleFinanceService) {
+      try {
+        const store = await this.dataSource
+          .getRepository(StoreEntity)
+          .findOne({ where: { tenantId } });
+        const resolvedStoreId = store?.id || tenantId;
+
+        await this.syncModuleFinanceService.syncCodRemittance({
+          tenantId,
+          storeId: resolvedStoreId,
+          courierName: 'Courier Partner',
+          remittanceReference: `COD-${order.orderNumber}`,
+          amount: Number(order.grandTotal),
+        });
+      } catch (err) {
+        console.error('Failed to sync COD collection to Finance:', err);
+      }
+    }
 
     return updatedOrder;
   }

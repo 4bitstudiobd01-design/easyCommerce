@@ -1,14 +1,18 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { createBaseQueryWithReauth } from '@/store/baseQueryWithReauth';
+import { financeApi } from '@/features/finance/api/financeApi';
 
 // ─── Enums ──────────────────────────────────────────────────────────────────
 export type SupplierStatus = 'ACTIVE' | 'INACTIVE';
 export type PurchaseOrderStatus =
   | 'DRAFT'
+  | 'PENDING_APPROVAL'
+  | 'APPROVED'
   | 'SENT'
   | 'PARTIALLY_RECEIVED'
   | 'FULLY_RECEIVED'
   | 'CANCELLED';
+export type PurchaseOrderPaymentStatus = 'PENDING' | 'PAID';
 export type BillPaymentStatus = 'UNPAID' | 'PARTIAL' | 'PAID';
 export type BillStatus = 'OPEN' | 'CANCELLED';
 export type SupplierPaymentMethod =
@@ -95,6 +99,7 @@ export interface PurchaseOrder {
   orderDate: string;
   expectedDate?: string;
   status: PurchaseOrderStatus;
+  paymentStatus: PurchaseOrderPaymentStatus;
   subtotal: string;
   totalAmount: string;
   receivedValue: string;
@@ -116,6 +121,8 @@ export interface PurchaseOrderStatBucket {
 
 export interface PurchaseOrderStats {
   draft: PurchaseOrderStatBucket;
+  pendingApproval: PurchaseOrderStatBucket;
+  approved: PurchaseOrderStatBucket;
   sent: PurchaseOrderStatBucket;
   partiallyReceived: PurchaseOrderStatBucket;
   fullyReceived: PurchaseOrderStatBucket;
@@ -133,7 +140,7 @@ export interface CreatePurchaseOrderRequest {
   supplierId: string;
   orderDate: string;
   expectedDate?: string;
-  status?: 'DRAFT' | 'SENT';
+  status?: 'DRAFT' | 'PENDING_APPROVAL' | 'SENT';
   notes?: string;
   lines: PurchaseOrderLineInput[];
 }
@@ -153,6 +160,7 @@ export interface ReceivePurchaseOrderRequest {
 export interface ListPurchaseOrdersParams {
   search?: string;
   status?: PurchaseOrderStatus;
+  paymentStatus?: PurchaseOrderPaymentStatus;
   supplierId?: string;
   from?: string;
   to?: string;
@@ -437,6 +445,12 @@ export const purchaseApi = createApi({
       query: (body) => ({ url: '/purchase/purchase-orders', method: 'POST', body }),
       invalidatesTags: ['PurchaseOrder', 'PurchaseOverview'],
       transformResponse: unwrap<PurchaseOrder>,
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(financeApi.util.invalidateTags(['FinanceRequisitions']));
+        } catch {}
+      },
     }),
     updatePurchaseOrder: builder.mutation<PurchaseOrder, UpdatePurchaseOrderRequest>({
       query: ({ id, ...patch }) => ({
@@ -450,6 +464,12 @@ export const purchaseApi = createApi({
         'PurchaseOverview',
       ],
       transformResponse: unwrap<PurchaseOrder>,
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(financeApi.util.invalidateTags(['FinanceRequisitions']));
+        } catch {}
+      },
     }),
     cancelPurchaseOrder: builder.mutation<PurchaseOrder, string>({
       query: (id) => ({

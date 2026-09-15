@@ -15,10 +15,14 @@ import {
 } from '../enums/finance.enums';
 import { FinanceAccountEntity } from './finance-account.entity';
 import { FinanceCategoryEntity } from './finance-category.entity';
+import { UserEntity } from '../../user/entities/user.entity';
+import { FileEntity } from '../../file/entities/file.entity';
 
 @Entity('fin_transactions')
 @Index('IDX_fin_transactions_tenantId_storeId', ['tenantId', 'storeId'])
 @Index('IDX_fin_transactions_date', ['storeId', 'transactionDate'])
+@Index('IDX_fin_transactions_store_type_date', ['storeId', 'type', 'transactionDate'])
+@Index('IDX_fin_transactions_store_account', ['storeId', 'accountId'])
 export class FinanceTransactionEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -96,8 +100,16 @@ export class FinanceTransactionEntity {
   @Column({ type: 'uuid', nullable: true })
   receiptFileId?: string;
 
+  @ManyToOne(() => FileEntity, { onDelete: 'SET NULL', nullable: true })
+  @JoinColumn({ name: 'receiptFileId' })
+  receiptFile?: FileEntity;
+
   @Column({ type: 'uuid', nullable: true })
   createdByUserId?: string;
+
+  @ManyToOne(() => UserEntity, { onDelete: 'SET NULL', nullable: true })
+  @JoinColumn({ name: 'createdByUserId' })
+  createdByUser?: UserEntity;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;

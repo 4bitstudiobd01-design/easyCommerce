@@ -74,11 +74,12 @@ const QUICK_REPLIES = [
 
 const PLATFORM_FILTERS: { value: string; label: string }[] = [
   { value: 'all', label: 'All Channels' },
+  { value: 'facebook', label: 'Facebook' },
+  { value: 'messenger', label: 'Messenger' },
+  { value: 'instagram', label: 'Instagram' },
+  { value: 'tiktok', label: 'TikTok' },
   { value: 'whatsapp', label: 'WhatsApp' },
   { value: 'telegram', label: 'Telegram' },
-  { value: 'facebook', label: 'Facebook' },
-  { value: 'instagram', label: 'Instagram' },
-  { value: 'x', label: 'X (Twitter)' },
 ];
 
 export const OmnichannelChatInterface: React.FC = () => {
@@ -104,11 +105,12 @@ export const OmnichannelChatInterface: React.FC = () => {
   const [aiTriggerMode, setAiTriggerMode] = useState<'ALWAYS' | 'NO_HUMAN_ACTIVE'>('ALWAYS');
   const [aiModel, setAiModel] = useState('gemini-1.5-flash');
   const [aiEnabledPlatforms, setAiEnabledPlatforms] = useState<Record<string, boolean>>({
-    telegram: true,
-    whatsapp: true,
-    instagram: true,
     facebook: true,
-    x: false,
+    messenger: true,
+    instagram: true,
+    tiktok: true,
+    whatsapp: true,
+    telegram: true,
   });
   const [testResult, setTestResult] = useState<{ success: boolean; message: string; latencyMs?: number } | null>(null);
 
@@ -250,11 +252,12 @@ export const OmnichannelChatInterface: React.FC = () => {
       setAiModel(aiConfig.model || 'gemini-1.5-flash');
       if (aiConfig.enabledPlatforms) {
         setAiEnabledPlatforms({
-          telegram: aiConfig.enabledPlatforms.telegram !== false,
-          whatsapp: aiConfig.enabledPlatforms.whatsapp !== false,
-          instagram: aiConfig.enabledPlatforms.instagram !== false,
           facebook: aiConfig.enabledPlatforms.facebook !== false,
-          x: aiConfig.enabledPlatforms.x === true,
+          messenger: aiConfig.enabledPlatforms.messenger !== false,
+          instagram: aiConfig.enabledPlatforms.instagram !== false,
+          tiktok: aiConfig.enabledPlatforms.tiktok !== false,
+          whatsapp: aiConfig.enabledPlatforms.whatsapp !== false,
+          telegram: aiConfig.enabledPlatforms.telegram !== false,
         });
       }
       setAiApiKeyInput('');
@@ -1337,27 +1340,91 @@ export const OmnichannelChatInterface: React.FC = () => {
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {/* Telegram */}
+                  {/* Facebook */}
                   <div className="p-3 bg-white border border-slate-200 rounded-2xl flex items-center justify-between shadow-2xs">
                     <div className="flex items-center gap-2.5">
-                      <PlatformIcon platform="telegram" size={20} />
+                      <PlatformIcon platform="facebook" size={20} />
                       <div>
-                        <span className="font-bold text-slate-900 block">Telegram Bot</span>
-                        <span className="text-[10px] text-slate-400">
-                          {telegramInfo?.bot?.username ? `@${telegramInfo.bot.username}` : '@forsbit_bot'}
-                        </span>
+                        <span className="font-bold text-slate-900 block">Facebook Page</span>
+                        <span className="text-[10px] text-slate-400">Posts & Comments</span>
                       </div>
                     </div>
                     <button
                       type="button"
-                      onClick={() => handleTogglePlatformAi('telegram')}
+                      onClick={() => handleTogglePlatformAi('facebook')}
                       className={`px-3 py-1 rounded-lg font-bold text-[11px] transition-colors cursor-pointer ${
-                        aiEnabledPlatforms.telegram !== false
+                        aiEnabledPlatforms.facebook !== false
                           ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                           : 'bg-slate-100 text-slate-500 border border-slate-200'
                       }`}
                     >
-                      {aiEnabledPlatforms.telegram !== false ? 'AI Active' : 'Off'}
+                      {aiEnabledPlatforms.facebook !== false ? 'AI Active' : 'Off'}
+                    </button>
+                  </div>
+
+                  {/* Messenger */}
+                  <div className="p-3 bg-white border border-slate-200 rounded-2xl flex items-center justify-between shadow-2xs">
+                    <div className="flex items-center gap-2.5">
+                      <PlatformIcon platform="messenger" size={20} />
+                      <div>
+                        <span className="font-bold text-slate-900 block">Facebook Messenger</span>
+                        <span className="text-[10px] text-slate-400">Direct Chat</span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleTogglePlatformAi('messenger')}
+                      className={`px-3 py-1 rounded-lg font-bold text-[11px] transition-colors cursor-pointer ${
+                        aiEnabledPlatforms.messenger !== false
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                          : 'bg-slate-100 text-slate-500 border border-slate-200'
+                      }`}
+                    >
+                      {aiEnabledPlatforms.messenger !== false ? 'AI Active' : 'Off'}
+                    </button>
+                  </div>
+
+                  {/* Instagram */}
+                  <div className="p-3 bg-white border border-slate-200 rounded-2xl flex items-center justify-between shadow-2xs">
+                    <div className="flex items-center gap-2.5">
+                      <PlatformIcon platform="instagram" size={20} />
+                      <div>
+                        <span className="font-bold text-slate-900 block">Instagram Direct</span>
+                        <span className="text-[10px] text-slate-400">Direct Messages</span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleTogglePlatformAi('instagram')}
+                      className={`px-3 py-1 rounded-lg font-bold text-[11px] transition-colors cursor-pointer ${
+                        aiEnabledPlatforms.instagram !== false
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                          : 'bg-slate-100 text-slate-500 border border-slate-200'
+                      }`}
+                    >
+                      {aiEnabledPlatforms.instagram !== false ? 'AI Active' : 'Off'}
+                    </button>
+                  </div>
+
+                  {/* TikTok */}
+                  <div className="p-3 bg-white border border-slate-200 rounded-2xl flex items-center justify-between shadow-2xs">
+                    <div className="flex items-center gap-2.5">
+                      <PlatformIcon platform="tiktok" size={20} />
+                      <div>
+                        <span className="font-bold text-slate-900 block">TikTok Business</span>
+                        <span className="text-[10px] text-slate-400">Direct Messages & Shop</span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleTogglePlatformAi('tiktok')}
+                      className={`px-3 py-1 rounded-lg font-bold text-[11px] transition-colors cursor-pointer ${
+                        aiEnabledPlatforms.tiktok !== false
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                          : 'bg-slate-100 text-slate-500 border border-slate-200'
+                      }`}
+                    >
+                      {aiEnabledPlatforms.tiktok !== false ? 'AI Active' : 'Off'}
                     </button>
                   </div>
 
@@ -1383,47 +1450,25 @@ export const OmnichannelChatInterface: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* Instagram */}
+                  {/* Telegram */}
                   <div className="p-3 bg-white border border-slate-200 rounded-2xl flex items-center justify-between shadow-2xs">
                     <div className="flex items-center gap-2.5">
-                      <PlatformIcon platform="instagram" size={20} />
+                      <PlatformIcon platform="telegram" size={20} />
                       <div>
-                        <span className="font-bold text-slate-900 block">Instagram Direct</span>
-                        <span className="text-[10px] text-slate-400">@rahat.661</span>
+                        <span className="font-bold text-slate-900 block">Telegram Bot</span>
+                        <span className="text-[10px] text-slate-400">Live Chat</span>
                       </div>
                     </div>
                     <button
                       type="button"
-                      onClick={() => handleTogglePlatformAi('instagram')}
+                      onClick={() => handleTogglePlatformAi('telegram')}
                       className={`px-3 py-1 rounded-lg font-bold text-[11px] transition-colors cursor-pointer ${
-                        aiEnabledPlatforms.instagram !== false
+                        aiEnabledPlatforms.telegram !== false
                           ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                           : 'bg-slate-100 text-slate-500 border border-slate-200'
                       }`}
                     >
-                      {aiEnabledPlatforms.instagram !== false ? 'AI Active' : 'Off'}
-                    </button>
-                  </div>
-
-                  {/* Facebook */}
-                  <div className="p-3 bg-white border border-slate-200 rounded-2xl flex items-center justify-between shadow-2xs">
-                    <div className="flex items-center gap-2.5">
-                      <PlatformIcon platform="facebook" size={20} />
-                      <div>
-                        <span className="font-bold text-slate-900 block">Facebook Messenger</span>
-                        <span className="text-[10px] text-slate-400">Meta Page Messaging</span>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleTogglePlatformAi('facebook')}
-                      className={`px-3 py-1 rounded-lg font-bold text-[11px] transition-colors cursor-pointer ${
-                        aiEnabledPlatforms.facebook !== false
-                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                          : 'bg-slate-100 text-slate-500 border border-slate-200'
-                      }`}
-                    >
-                      {aiEnabledPlatforms.facebook !== false ? 'AI Active' : 'Off'}
+                      {aiEnabledPlatforms.telegram !== false ? 'AI Active' : 'Off'}
                     </button>
                   </div>
                 </div>

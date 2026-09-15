@@ -131,9 +131,9 @@ export function CreateBillModal({ isOpen, onClose }: Props) {
       title="Record Supplier Bill"
       subtitle="Log incoming invoice or bill from a vendor/supplier"
       icon={<Receipt className="w-5 h-5" />}
-      size="xl"
+      size="4xl"
     >
-      <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
+      <form onSubmit={handleSubmit} className="p-6 space-y-5">
         {/* Supplier Information */}
         <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
           <h4 className="text-xs font-bold text-slate-700 uppercase">Supplier / Vendor Info</h4>
@@ -217,95 +217,120 @@ export function CreateBillModal({ isOpen, onClose }: Props) {
             <button
               type="button"
               onClick={handleAddItem}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               Add Item
             </button>
           </div>
 
+          {/* Column Headers */}
+          <div className="hidden sm:grid grid-cols-12 gap-2 px-3 py-1.5 text-[11px] font-bold text-slate-500 uppercase tracking-wider bg-slate-100/90 rounded-lg">
+            <div className="col-span-4">Item Name / Title *</div>
+            <div className="col-span-2">Description</div>
+            <div className="col-span-1 text-center">Qty</div>
+            <div className="col-span-2 text-right">Price (৳)</div>
+            <div className="col-span-1 text-center">Tax %</div>
+            <div className="col-span-1 text-right pr-1">Total (৳)</div>
+            <div className="col-span-1 text-center">Action</div>
+          </div>
+
           <div className="space-y-2">
-            {items.map((item, index) => (
-              <div
-                key={index}
-                className="p-3 bg-slate-50 border border-slate-200 rounded-xl grid grid-cols-12 gap-2 items-center"
-              >
-                <div className="col-span-4">
-                  <input
-                    type="text"
-                    required
-                    placeholder="Item name / SKU *"
-                    value={item.title}
-                    onChange={(e) => handleItemChange(index, 'title', e.target.value)}
-                    className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium"
-                  />
+            {items.map((item, index) => {
+              const lineTotal = (item.quantity * item.unitPrice) * (1 + (item.taxRate || 0) / 100);
+              return (
+                <div
+                  key={index}
+                  className="p-3 sm:p-2.5 bg-slate-50 hover:bg-slate-100/60 border border-slate-200 rounded-xl grid grid-cols-1 sm:grid-cols-12 gap-2 items-center transition"
+                >
+                  <div className="col-span-12 sm:col-span-4">
+                    <label className="sm:hidden block text-[10px] font-bold text-slate-500 mb-0.5">Item Title *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Item name / SKU *"
+                      value={item.title}
+                      onChange={(e) => handleItemChange(index, 'title', e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    />
+                  </div>
+                  <div className="col-span-12 sm:col-span-2">
+                    <label className="sm:hidden block text-[10px] font-bold text-slate-500 mb-0.5">Description</label>
+                    <input
+                      type="text"
+                      placeholder="Description (opt)"
+                      value={item.description}
+                      onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    />
+                  </div>
+                  <div className="col-span-4 sm:col-span-1">
+                    <label className="sm:hidden block text-[10px] font-bold text-slate-500 mb-0.5">Qty</label>
+                    <input
+                      type="number"
+                      min="1"
+                      required
+                      placeholder="1"
+                      value={item.quantity}
+                      onChange={(e) =>
+                        handleItemChange(index, 'quantity', Math.max(1, Number(e.target.value)))
+                      }
+                      className="w-full px-2 py-2 bg-white border border-slate-200 rounded-lg text-xs text-center font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    />
+                  </div>
+                  <div className="col-span-4 sm:col-span-2">
+                    <label className="sm:hidden block text-[10px] font-bold text-slate-500 mb-0.5">Unit Price (৳)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      required
+                      placeholder="0.00"
+                      value={item.unitPrice || ''}
+                      onChange={(e) =>
+                        handleItemChange(index, 'unitPrice', Number(e.target.value))
+                      }
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-right font-mono font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    />
+                  </div>
+                  <div className="col-span-4 sm:col-span-1">
+                    <label className="sm:hidden block text-[10px] font-bold text-slate-500 mb-0.5">Tax %</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0%"
+                      value={item.taxRate || ''}
+                      onChange={(e) =>
+                        handleItemChange(index, 'taxRate', Number(e.target.value))
+                      }
+                      className="w-full px-2 py-2 bg-white border border-slate-200 rounded-lg text-xs text-center font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    />
+                  </div>
+                  <div className="col-span-6 sm:col-span-1 text-right font-mono text-xs font-bold text-slate-800 pr-1">
+                    <span className="sm:hidden text-slate-400 font-normal mr-1">Total:</span>
+                    ৳{lineTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                  <div className="col-span-6 sm:col-span-1 flex justify-end sm:justify-center">
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveItem(index)}
+                      disabled={items.length <= 1}
+                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition disabled:opacity-20 cursor-pointer"
+                      title="Remove item"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-                <div className="col-span-3">
-                  <input
-                    type="text"
-                    placeholder="Description (opt)"
-                    value={item.description}
-                    onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                    className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
-                  />
-                </div>
-                <div className="col-span-1">
-                  <input
-                    type="number"
-                    min="1"
-                    required
-                    placeholder="Qty"
-                    value={item.quantity}
-                    onChange={(e) =>
-                      handleItemChange(index, 'quantity', Math.max(1, Number(e.target.value)))
-                    }
-                    className="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-center"
-                  />
-                </div>
-                <div className="col-span-2">
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    required
-                    placeholder="Price"
-                    value={item.unitPrice || ''}
-                    onChange={(e) =>
-                      handleItemChange(index, 'unitPrice', Number(e.target.value))
-                    }
-                    className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-right font-mono"
-                  />
-                </div>
-                <div className="col-span-1">
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="Tax%"
-                    value={item.taxRate || ''}
-                    onChange={(e) =>
-                      handleItemChange(index, 'taxRate', Number(e.target.value))
-                    }
-                    className="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-center"
-                  />
-                </div>
-                <div className="col-span-1 flex justify-center">
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveItem(index)}
-                    className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
         {/* Totals */}
         <div className="flex justify-end">
-          <div className="w-72 bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 text-sm">
+          <div className="w-80 sm:w-96 bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 text-sm">
             <div className="flex justify-between text-slate-600">
               <span>Subtotal:</span>
               <span className="font-mono">৳{subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
@@ -334,21 +359,31 @@ export function CreateBillModal({ isOpen, onClose }: Props) {
           />
         </div>
 
-        <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-xl shadow-sm transition"
-          >
-            {isLoading ? 'Saving...' : 'Record Bill'}
-          </button>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t border-slate-100">
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <span className="font-bold text-slate-700">Initial Status:</span>
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-amber-50 text-amber-800 border border-amber-200">
+              Pending
+            </span>
+            <span className="text-[11px] text-slate-400 hidden sm:inline">• Choose account and deduct money upon marking as Paid</span>
+          </div>
+
+          <div className="flex items-center justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-xl shadow-md shadow-blue-600/20 transition cursor-pointer"
+            >
+              {isLoading ? 'Saving...' : 'Create Bill'}
+            </button>
+          </div>
         </div>
       </form>
     </Modal>

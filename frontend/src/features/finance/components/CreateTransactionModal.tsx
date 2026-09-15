@@ -7,6 +7,7 @@ import { Modal } from '@/components/ui/Modal';
 import {
   FinanceTransactionType,
   FinanceCategory,
+  FinanceAccount,
   useCreateTransactionMutation,
   useGetAccountsQuery,
   useGetCategoriesQuery,
@@ -33,7 +34,9 @@ export function CreateTransactionModal({ isOpen, onClose }: Props) {
   const { data: categories } = useGetCategoriesQuery();
   const [createTransaction, { isLoading }] = useCreateTransactionMutation();
 
-  const accounts = accountsData?.items || [];
+  const accounts: FinanceAccount[] = Array.isArray(accountsData)
+    ? accountsData
+    : (accountsData as any)?.items || [];
   const categoryList: FinanceCategory[] = Array.isArray(categories) ? categories : [];
 
   const handleSubmit = async (e: React.FormEvent) => {

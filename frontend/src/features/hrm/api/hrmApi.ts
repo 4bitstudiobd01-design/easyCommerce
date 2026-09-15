@@ -462,6 +462,17 @@ export interface TaxComputationResult {
   breakdown: TaxSlabBreakdown[];
 }
 
+export interface SeedPayrollDemoDataResponse {
+  success: boolean;
+  message: string;
+  departmentsCreated: number;
+  employeesCreated: number;
+  taxSlabsCreated: number;
+  salaryStructuresCreated: number;
+  payrollRunsCreated: number;
+  payslipsCreated: number;
+}
+
 export type NoticePriority = 'NORMAL' | 'IMPORTANT' | 'URGENT';
 
 export interface Notice {
@@ -826,6 +837,11 @@ export const hrmApi = createApi({
       invalidatesTags: ['PayrollRun'],
       transformResponse: unwrap<{ success: boolean; message: string }>,
     }),
+    seedPayrollDemoData: builder.mutation<SeedPayrollDemoDataResponse, void>({
+      query: () => ({ url: '/hr/payroll/seed-demo-data', method: 'POST' }),
+      invalidatesTags: ['PayrollRun', 'SalaryStructure', 'Employee', 'Department', 'TaxSlab'],
+      transformResponse: unwrap<SeedPayrollDemoDataResponse>,
+    }),
 
     getTaxSlabs: builder.query<TaxSlab[], { fiscalYear: string }>({
       query: (params) => ({ url: '/hr/tax/slabs', params }),
@@ -924,6 +940,7 @@ export const {
   useFinalizePayrollRunMutation,
   useMarkPayrollRunPaidMutation,
   useDeletePayrollRunMutation,
+  useSeedPayrollDemoDataMutation,
   useGetTaxSlabsQuery,
   useSetTaxSlabsMutation,
   useLazyEstimateTaxQuery,

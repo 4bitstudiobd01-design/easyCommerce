@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
+import { Module, OnModuleInit } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { StaffModule } from '../staff/staff.module';
@@ -14,8 +15,30 @@ import { FinanceBillEntity } from './entities/finance-bill.entity';
 import { FinanceBillItemEntity } from './entities/finance-bill-item.entity';
 import { FinanceTransferEntity } from './entities/finance-transfer.entity';
 import { FinanceSettingEntity } from './entities/finance-setting.entity';
+import { FinanceChartOfAccountEntity } from './entities/finance-chart-of-account.entity';
+import { FinanceJournalEntryEntity } from './entities/finance-journal-entry.entity';
+import { FinanceJournalLineEntity } from './entities/finance-journal-line.entity';
+import { FinancePeriodLockEntity } from './entities/finance-period-lock.entity';
+import { FinanceRequisitionEntity } from './entities/finance-requisition.entity';
+import { PurchaseOrderEntity } from '../purchase/entities/purchase-order.entity';
+import { InventoryStockEntity } from '../inventory/entities/inventory-stock.entity';
+import { ProductEntity } from '../catalog/entities/product.entity';
+import { PayrollRunEntity } from '../hrm/entities/payroll-run.entity';
+import { PayslipEntity } from '../hrm/entities/payslip.entity';
+import { EmployeeEntity } from '../hrm/entities/employee.entity';
+import { DepartmentEntity } from '../hrm/entities/department.entity';
+import { UserEntity } from '../user/entities/user.entity';
+import { StaffMemberEntity } from '../staff/entities/staff.entity';
+import { FileEntity } from '../file/entities/file.entity';
 
 import { FinanceController } from './finance.controller';
+
+import { ListRequisitionsService } from './services/list-requisitions.service';
+import { GetRequisitionService } from './services/get-requisition.service';
+import { GetRequisitionStatsService } from './services/get-requisition-stats.service';
+import { CreateRequisitionService } from './services/create-requisition.service';
+import { ApproveRequisitionService } from './services/approve-requisition.service';
+import { RejectRequisitionService } from './services/reject-requisition.service';
 
 import { RecordSyncedFinanceTransactionService } from './services/record-synced-finance-transaction.service';
 import { GetFinanceOverviewService } from './services/get-finance-overview.service';
@@ -24,8 +47,10 @@ import { CreateTransactionService } from './services/create-transaction.service'
 import { DeleteTransactionService } from './services/delete-transaction.service';
 import { ListIncomeService } from './services/list-income.service';
 import { CreateIncomeService } from './services/create-income.service';
+import { UpdateIncomeService } from './services/update-income.service';
 import { ListExpensesService } from './services/list-expenses.service';
 import { CreateExpenseService } from './services/create-expense.service';
+import { UpdateExpenseService } from './services/update-expense.service';
 import { ListInvoicesService } from './services/list-invoices.service';
 import { CreateInvoiceService } from './services/create-invoice.service';
 import { GetInvoiceService } from './services/get-invoice.service';
@@ -42,12 +67,28 @@ import { ListAccountsService } from './services/list-accounts.service';
 import { CreateAccountService } from './services/create-account.service';
 import { UpdateAccountService } from './services/update-account.service';
 import { GetAccountStatementService } from './services/get-account-statement.service';
+import { DepositToAccountService } from './services/deposit-to-account.service';
+import { DeleteAccountService } from './services/delete-account.service';
 import { ListTransfersService } from './services/list-transfers.service';
 import { CreateTransferService } from './services/create-transfer.service';
 import { GetProfitLossReportService } from './services/get-profit-loss-report.service';
 import { GetCashFlowReportService } from './services/get-cash-flow-report.service';
 import { GetReceivablesReportService } from './services/get-receivables-report.service';
 import { GetPayablesReportService } from './services/get-payables-report.service';
+import { GetTrialBalanceReportService } from './services/get-trial-balance-report.service';
+import { GetBalanceSheetReportService } from './services/get-balance-sheet-report.service';
+import { GetTaxVatReportService } from './services/get-tax-vat-report.service';
+import { SeedDefaultChartOfAccountsService } from './services/seed-default-chart-of-accounts.service';
+import { SeedRealisticFinanceDataService } from './services/seed-realistic-finance-data.service';
+import { ExportFinanceDataService } from './services/export-finance-data.service';
+import { ListChartOfAccountsService } from './services/list-chart-of-accounts.service';
+import { CreateChartOfAccountService } from './services/create-chart-of-account.service';
+import { UpdateChartOfAccountService } from './services/update-chart-of-account.service';
+import { PostJournalEntryService } from './services/post-journal-entry.service';
+import { ListJournalEntriesService } from './services/list-journal-entries.service';
+import { GetGeneralLedgerService } from './services/get-general-ledger.service';
+import { PeriodLockService } from './services/period-lock.service';
+import { SyncModuleFinanceService } from './services/sync-module-finance.service';
 import {
   GetFinanceSettingsService,
   UpdateFinanceSettingsService,
@@ -56,6 +97,10 @@ import {
   ListCategoriesService,
   CreateCategoryService,
 } from './services/finance-category.service';
+import { GetSalaryPaymentSummaryService } from './services/get-salary-payment-summary.service';
+import { ListSalaryPaymentRunsService } from './services/list-salary-payment-runs.service';
+import { GetSalaryPaymentRunDetailService } from './services/get-salary-payment-run-detail.service';
+import { DisburseSalaryPaymentService } from './services/disburse-salary-payment.service';
 
 @Module({
   imports: [
@@ -69,6 +114,21 @@ import {
       FinanceBillItemEntity,
       FinanceTransferEntity,
       FinanceSettingEntity,
+      FinanceChartOfAccountEntity,
+      FinanceJournalEntryEntity,
+      FinanceJournalLineEntity,
+      FinancePeriodLockEntity,
+      FinanceRequisitionEntity,
+      PurchaseOrderEntity,
+      InventoryStockEntity,
+      ProductEntity,
+      PayrollRunEntity,
+      PayslipEntity,
+      EmployeeEntity,
+      DepartmentEntity,
+      UserEntity,
+      StaffMemberEntity,
+      FileEntity,
     ]),
     StaffModule,
     TenantModule,
@@ -90,8 +150,10 @@ import {
     DeleteTransactionService,
     ListIncomeService,
     CreateIncomeService,
+    UpdateIncomeService,
     ListExpensesService,
     CreateExpenseService,
+    UpdateExpenseService,
     ListInvoicesService,
     CreateInvoiceService,
     GetInvoiceService,
@@ -108,21 +170,118 @@ import {
     CreateAccountService,
     UpdateAccountService,
     GetAccountStatementService,
+    DepositToAccountService,
+    DeleteAccountService,
     ListTransfersService,
     CreateTransferService,
     GetProfitLossReportService,
     GetCashFlowReportService,
     GetReceivablesReportService,
     GetPayablesReportService,
+    GetTrialBalanceReportService,
+    GetBalanceSheetReportService,
+    GetTaxVatReportService,
+    SeedDefaultChartOfAccountsService,
+    SeedRealisticFinanceDataService,
+    ListChartOfAccountsService,
+    CreateChartOfAccountService,
+    UpdateChartOfAccountService,
+    PostJournalEntryService,
+    ListJournalEntriesService,
+    GetGeneralLedgerService,
+    PeriodLockService,
+    SyncModuleFinanceService,
     GetFinanceSettingsService,
     UpdateFinanceSettingsService,
     ListCategoriesService,
     CreateCategoryService,
+    GetSalaryPaymentSummaryService,
+    ListSalaryPaymentRunsService,
+    GetSalaryPaymentRunDetailService,
+    DisburseSalaryPaymentService,
+    ExportFinanceDataService,
+    ListRequisitionsService,
+    GetRequisitionService,
+    GetRequisitionStatsService,
+    CreateRequisitionService,
+    ApproveRequisitionService,
+    RejectRequisitionService,
   ],
   exports: [
     RecordSyncedFinanceTransactionService,
+    SeedRealisticFinanceDataService,
+    ExportFinanceDataService,
+    SyncModuleFinanceService,
+    PostJournalEntryService,
     GetFinanceOverviewService,
     GetProfitLossReportService,
+    GetSalaryPaymentSummaryService,
+    ListSalaryPaymentRunsService,
+    DisburseSalaryPaymentService,
+    DepositToAccountService,
+    DeleteAccountService,
+    ListRequisitionsService,
+    GetRequisitionService,
+    GetRequisitionStatsService,
+    CreateRequisitionService,
+    ApproveRequisitionService,
+    RejectRequisitionService,
+    TypeOrmModule,
   ],
 })
-export class FinanceModule {}
+export class FinanceModule implements OnModuleInit {
+  constructor(private readonly dataSource: DataSource) {}
+
+  async onModuleInit() {
+    try {
+      await this.dataSource.query(
+        `ALTER TYPE "public"."fin_accounts_type_enum" ADD VALUE IF NOT EXISTS 'CARD'`,
+      );
+    } catch (e) {
+      // Ignored if type or value already exists
+    }
+
+    try {
+      await this.dataSource.query(`
+        CREATE TABLE IF NOT EXISTS "fin_requisitions" (
+          "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
+          "tenantId" uuid NOT NULL,
+          "storeId" uuid NOT NULL,
+          "requisitionNumber" character varying(50) NOT NULL,
+          "title" character varying(255) NOT NULL,
+          "category" character varying(50) NOT NULL DEFAULT 'PURCHASE',
+          "purchaseOrderId" uuid,
+          "poNumber" character varying(50),
+          "supplierId" uuid,
+          "supplierName" character varying(200),
+          "requestedAmount" numeric(14,2) NOT NULL DEFAULT 0,
+          "requestDate" date NOT NULL,
+          "requiredDate" date,
+          "status" character varying(30) NOT NULL DEFAULT 'PENDING',
+          "priority" character varying(30) NOT NULL DEFAULT 'NORMAL',
+          "notes" text,
+          "items" jsonb DEFAULT '[]',
+          "paidFromAccountId" uuid,
+          "paymentMethod" character varying(50),
+          "paymentReference" character varying(150),
+          "disbursedAmount" numeric(14,2),
+          "financeTransactionId" uuid,
+          "rejectionReason" text,
+          "approvedAt" TIMESTAMP WITH TIME ZONE,
+          "approvedByUserId" uuid,
+          "approvedByName" character varying(150),
+          "createdByUserId" uuid,
+          "createdByName" character varying(150),
+          "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+          "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+          CONSTRAINT "PK_fin_requisitions" PRIMARY KEY ("id")
+        );
+        CREATE INDEX IF NOT EXISTS "IDX_fin_requisitions_tenantId_storeId" ON "fin_requisitions" ("tenantId", "storeId");
+        CREATE INDEX IF NOT EXISTS "IDX_fin_requisitions_storeId_status" ON "fin_requisitions" ("storeId", "status");
+        CREATE INDEX IF NOT EXISTS "IDX_fin_requisitions_storeId_reqNumber" ON "fin_requisitions" ("storeId", "requisitionNumber");
+      `);
+    } catch (e) {
+      // Table already exists
+    }
+  }
+}

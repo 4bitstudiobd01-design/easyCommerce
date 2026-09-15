@@ -17,6 +17,24 @@ import {
   CreditCard,
   Wallet,
   Building2,
+  BookOpen,
+  DollarSign,
+  Package,
+  Users,
+  Megaphone,
+  Layers,
+  ArrowRight,
+  Calendar,
+  Download,
+  Truck,
+  Building,
+  Zap,
+  Cpu,
+  Box,
+  Wrench,
+  ShieldCheck,
+  PieChart as PieChartIcon,
+  ClipboardCheck,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -27,9 +45,13 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
+  AreaChart,
+  Area,
 } from 'recharts';
 import {
   useGetFinanceOverviewQuery,
+  useExportFinanceTransactionsMutation,
+  useGetRequisitionStatsQuery,
   FinanceTransaction,
   FinanceAccount,
 } from '../api/financeApi';
@@ -38,412 +60,734 @@ import { CreateExpenseModal } from './CreateExpenseModal';
 import { CreateTransferModal } from './CreateTransferModal';
 import { CreateInvoiceModal } from './CreateInvoiceModal';
 import { CreateBillModal } from './CreateBillModal';
+import { CreateJournalEntryModal } from './CreateJournalEntryModal';
+import { IncomeDetailModal } from './IncomeDetailModal';
+import { ExpenseDetailModal } from './ExpenseDetailModal';
+
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
 
 function formatMoney(amount: number | string) {
   const val = Number(amount || 0);
   return `৳${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+function renderGrowthBadge(rate: number, isGoodWhenPositive: boolean = true) {
+  if (rate === 0) return null;
+  const isPositive = rate > 0;
+  const isGood = isGoodWhenPositive ? isPositive : !isPositive;
+
+  return (
+    <span
+      className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-black ${
+        isGood ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
+      }`}
+    >
+      {isPositive ? '+' : ''}
+      {rate.toFixed(1)}%
+    </span>
+  );
+}
+
 export function FinanceOverviewView() {
-  const { data, isLoading, refetch, isFetching } = useGetFinanceOverviewQuery();
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1; // 1-12
+
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+  const [selectedMonth, setSelectedMonth] = useState<number>(currentMonth);
+
+  const { data, isLoading, refetch, isFetching } = useGetFinanceOverviewQuery({
+    year: selectedYear,
+    month: selectedMonth === 0 ? undefined : selectedMonth,
+  });
+
+  const { data: reqStats } = useGetRequisitionStatsQuery(undefined, {
+    pollingInterval: 30000,
+  });
+  const pendingRequisitionsCount = reqStats?.pendingCount ?? 0;
+
+  const [exportTransactions, { isLoading: isExporting }] = useExportFinanceTransactionsMutation();
 
   const [isIncomeOpen, setIsIncomeOpen] = useState(false);
   const [isExpenseOpen, setIsExpenseOpen] = useState(false);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   const [isBillOpen, setIsBillOpen] = useState(false);
+  const [isJournalOpen, setIsJournalOpen] = useState(false);
+  const [selectedIncome, setSelectedIncome] = useState<FinanceTransaction | null>(null);
+  const [selectedExpense, setSelectedExpense] = useState<FinanceTransaction | null>(null);
 
   const summary = data?.summary;
-  const accounts = data?.accounts || [];
-  const recentTransactions = data?.recentTransactions || [];
-  const chartData = data?.revenueVsExpenseTrend || [];
+  const growth = data?.growth;
+  const categoryBreakdown = data?.categoryBreakdown || [];
+  const accounts: FinanceAccount[] = Array.isArray(data?.accounts) ? data.accounts : [];
+  const recentTransactions: FinanceTransaction[] = Array.isArray(data?.recentTransactions)
+    ? data.recentTransactions
+    : [];
+  const chartData = Array.isArray(data?.revenueVsExpenseTrend) ? data.revenueVsExpenseTrend : [];
+
+  const monthLabel = selectedMonth > 0 ? MONTH_NAMES[selectedMonth - 1] : 'All Year';
+
+  const handleExportCsv = async () => {
+    try {
+      const res = await exportTransactions({
+        year: selectedYear,
+        month: selectedMonth === 0 ? undefined : selectedMonth,
+      }).unwrap();
+
+      if (res?.csv) {
+        const blob = new Blob([res.csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', res.filename || `finance_transactions_${selectedYear}_${selectedMonth}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
+    } catch (err: any) {
+      alert(err?.data?.message || 'Failed to export CSV.');
+    }
+  };
 
   return (
     <div className="space-y-6">
       {/* Header & Quick Action Buttons */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-xs">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Finance Overview</h1>
-          <p className="text-xs text-slate-500 font-medium mt-0.5">
-            Monitor revenue, operational expenses, cash balances, receivables and payables
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Finance Overview</h1>
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
+              <Calendar className="w-3 h-3 text-blue-600" />
+              <span>{monthLabel} {selectedYear}</span>
+            </span>
+          </div>
+          <p className="text-xs text-slate-500 font-medium mt-1">
+            Real-time monthly revenue, operating expenses, cash positions, and accounting reconciliation.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Filter Controls & Actions */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Month Dropdown */}
+          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl shadow-2xs">
+            <Calendar className="w-3.5 h-3.5 text-slate-400" />
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Month:</label>
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(Number(e.target.value))}
+              className="bg-transparent text-xs font-bold text-slate-800 focus:outline-hidden cursor-pointer"
+            >
+              <option value={0}>All Year ({selectedYear})</option>
+              {MONTH_NAMES.map((m, idx) => (
+                <option key={idx + 1} value={idx + 1}>
+                  {m} {idx + 1 === currentMonth && selectedYear === currentYear ? '⭐ (Current)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Year Dropdown */}
+          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl shadow-2xs">
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Year:</label>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className="bg-transparent text-xs font-bold text-slate-800 focus:outline-hidden cursor-pointer"
+            >
+              <option value={2026}>2026</option>
+              <option value={2025}>2025</option>
+              <option value={2024}>2024</option>
+            </select>
+          </div>
+
+          {/* Export to CSV / Google Sheets */}
+          <button
+            type="button"
+            disabled={isExporting}
+            onClick={handleExportCsv}
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl border border-slate-200 transition shadow-2xs cursor-pointer disabled:opacity-50"
+            title="Download Google Sheets/Excel compatible CSV"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-600" />
+            <span>{isExporting ? 'Exporting...' : 'Export CSV'}</span>
+          </button>
+
           <button
             type="button"
             onClick={() => refetch()}
             disabled={isFetching}
-            className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition"
+            className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition shadow-2xs cursor-pointer"
             title="Refresh Data"
           >
             <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
           </button>
+
+          <div className="h-6 w-px bg-slate-200 hidden sm:block" />
+
+          {/* Quick Create Buttons */}
           <button
             type="button"
             onClick={() => setIsIncomeOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition"
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
-            New Income
+            <span>Income</span>
           </button>
+
           <button
             type="button"
             onClick={() => setIsExpenseOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-sm transition"
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
-            New Expense
+            <span>Expense</span>
           </button>
+
           <button
             type="button"
             onClick={() => setIsTransferOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl shadow-sm transition"
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
           >
             <ArrowLeftRight className="w-3.5 h-3.5" />
-            Transfer
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsInvoiceOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-sm transition"
-          >
-            <FileText className="w-3.5 h-3.5" />
-            Invoice
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsBillOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-sm transition"
-          >
-            <Receipt className="w-3.5 h-3.5" />
-            Bill
+            <span>Transfer Fund</span>
           </button>
         </div>
       </div>
 
-      {/* 6 Key Performance Indicator (KPI) Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        {/* Total Revenue */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group hover:border-emerald-200 transition">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Revenue</span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
-              <TrendingUp className="w-4 h-4" />
+      {/* Pending Requisitions Alert Banner */}
+      {pendingRequisitionsCount > 0 && (
+        <div className="bg-gradient-to-r from-amber-500/10 via-rose-500/10 to-amber-500/10 border border-amber-300/80 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-700 flex items-center justify-center shrink-0 border border-amber-400/40">
+              <ClipboardCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black uppercase tracking-wider text-amber-900">
+                  Budget Requisitions Pending Approval
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-black bg-rose-500 text-white shadow-xs animate-pulse">
+                  {pendingRequisitionsCount} Pending
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 mt-0.5 font-medium">
+                {pendingRequisitionsCount} requisition{pendingRequisitionsCount > 1 ? 's' : ''} require Finance disbursement review and bank deduction.
+              </p>
             </div>
           </div>
-          <p className="text-xl font-black text-slate-900 mt-2">
-            {isLoading ? '...' : formatMoney(summary?.totalRevenue || 0)}
-          </p>
-          <span className="text-[11px] font-semibold text-emerald-600 mt-1 inline-block">
-            Income & Sales
-          </span>
+          <Link
+            href="/dashboard/finance/requisitions"
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all shadow-sm shrink-0"
+          >
+            <span>Review & Approve</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      )}
+
+      {/* Primary KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Revenue */}
+        <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-emerald-300 transition">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Total Revenue</span>
+            <div className="flex items-center gap-1.5">
+              {growth && renderGrowthBadge(growth.revenueGrowth, true)}
+              <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <TrendingUp className="w-4 h-4" />
+              </div>
+            </div>
+          </div>
+          <p className="text-2xl font-black text-slate-900 mt-2">{formatMoney(summary?.totalRevenue || 0)}</p>
+          <div className="flex items-center justify-between text-xs text-slate-500 mt-1">
+            <span>Online Orders & Delivery</span>
+            <Link href="/dashboard/finance/income" className="font-bold text-emerald-600 hover:underline">
+              View Income →
+            </Link>
+          </div>
         </div>
 
         {/* Total Expenses */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group hover:border-rose-200 transition">
+        <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-rose-300 transition">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Expenses</span>
-            <div className="w-8 h-8 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center">
-              <TrendingDown className="w-4 h-4" />
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Total Expenses</span>
+            <div className="flex items-center gap-1.5">
+              {growth && renderGrowthBadge(growth.expenseGrowth, false)}
+              <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                <TrendingDown className="w-4 h-4" />
+              </div>
             </div>
           </div>
-          <p className="text-xl font-black text-slate-900 mt-2">
-            {isLoading ? '...' : formatMoney(summary?.totalExpenses || 0)}
-          </p>
-          <span className="text-[11px] font-semibold text-rose-600 mt-1 inline-block">
-            COGS & Operations
-          </span>
+          <p className="text-2xl font-black text-slate-900 mt-2">{formatMoney(summary?.totalExpenses || 0)}</p>
+          <div className="flex items-center justify-between text-xs text-slate-500 mt-1">
+            <span>COGS, Payroll & Overheads</span>
+            <Link href="/dashboard/finance/expenses" className="font-bold text-rose-600 hover:underline">
+              View Expenses →
+            </Link>
+          </div>
+        </div>
+
+        {/* Gross Profit */}
+        <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-indigo-300 transition">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Gross Profit</span>
+            <div className="flex items-center gap-1.5">
+              {growth && renderGrowthBadge(growth.grossProfitGrowth, true)}
+              <span className="text-[10px] font-black bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-200">
+                {summary?.grossMarginPercent || 0}% Margin
+              </span>
+            </div>
+          </div>
+          <p className="text-2xl font-black text-indigo-950 mt-2">{formatMoney(summary?.grossProfit || 0)}</p>
+          <div className="flex items-center justify-between text-xs text-slate-500 mt-1">
+            <span>Revenue minus COGS</span>
+            <Link href="/dashboard/finance/reports" className="font-bold text-indigo-600 hover:underline">
+              P&L Report →
+            </Link>
+          </div>
         </div>
 
         {/* Net Profit */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group hover:border-blue-200 transition">
+        <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-blue-300 transition">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Net Profit</span>
-            <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
-              <Scale className="w-4 h-4" />
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Net Profit</span>
+            <div className="flex items-center gap-1.5">
+              {growth && renderGrowthBadge(growth.netProfitGrowth, true)}
+              <span className="text-[10px] font-black bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200">
+                {summary?.netMarginPercent || 0}% Net
+              </span>
             </div>
           </div>
-          <p
-            className={`text-xl font-black mt-2 ${
-              Number(summary?.netProfit || 0) >= 0 ? 'text-blue-600' : 'text-rose-600'
-            }`}
-          >
-            {isLoading ? '...' : formatMoney(summary?.netProfit || 0)}
+          <p className={`text-2xl font-black mt-2 ${(summary?.netProfit || 0) >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
+            {formatMoney(summary?.netProfit || 0)}
           </p>
-          <span className="text-[11px] font-semibold text-slate-500 mt-1 inline-block">
-            Revenue - Expenses
-          </span>
-        </div>
-
-        {/* Receivables */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group hover:border-amber-200 transition">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Receivables</span>
-            <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center">
-              <FileText className="w-4 h-4" />
-            </div>
+          <div className="flex items-center justify-between text-xs text-slate-500 mt-1">
+            <span>Bottom Line Net Profit</span>
+            <span className="text-[11px] font-semibold text-slate-400">For {monthLabel}</span>
           </div>
-          <p className="text-xl font-black text-slate-900 mt-2">
-            {isLoading ? '...' : formatMoney(summary?.totalReceivables || 0)}
-          </p>
-          <span className="text-[11px] font-semibold text-amber-600 mt-1 inline-block">
-            Pending Customer Invoices
-          </span>
-        </div>
-
-        {/* Payables */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group hover:border-purple-200 transition">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Payables</span>
-            <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center">
-              <Receipt className="w-4 h-4" />
-            </div>
-          </div>
-          <p className="text-xl font-black text-slate-900 mt-2">
-            {isLoading ? '...' : formatMoney(summary?.totalPayables || 0)}
-          </p>
-          <span className="text-[11px] font-semibold text-purple-600 mt-1 inline-block">
-            Unpaid Vendor Bills
-          </span>
-        </div>
-
-        {/* Cash & Bank Balances */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group hover:border-teal-200 transition">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Cash/Bank</span>
-            <div className="w-8 h-8 rounded-lg bg-teal-100 text-teal-600 flex items-center justify-center">
-              <Landmark className="w-4 h-4" />
-            </div>
-          </div>
-          <p className="text-xl font-black text-slate-900 mt-2">
-            {isLoading ? '...' : formatMoney(summary?.totalAccountBalance || 0)}
-          </p>
-          <span className="text-[11px] font-semibold text-teal-600 mt-1 inline-block">
-            Across {accounts.length} Active Accounts
-          </span>
         </div>
       </div>
 
-      {/* Main Charts & Accounts Grid */}
+      {/* Operating Expense Breakdown & Cost Centers Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        {/* COGS */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase">
+            <span>COGS</span>
+            <Package className="w-3.5 h-3.5 text-amber-500" />
+          </div>
+          <p className="text-base font-black text-slate-900 mt-1">{formatMoney(summary?.cogs || 0)}</p>
+          <span className="text-[10px] text-slate-500 block mt-0.5">Product Procurement</span>
+        </div>
+
+        {/* Payroll */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase">
+            <span>Payroll</span>
+            <Users className="w-3.5 h-3.5 text-pink-500" />
+          </div>
+          <p className="text-base font-black text-slate-900 mt-1">{formatMoney(summary?.payrollCost || 0)}</p>
+          <Link href="/dashboard/finance/salaries" className="text-[10px] font-bold text-pink-600 hover:underline block mt-0.5">
+            Staff Salaries →
+          </Link>
+        </div>
+
+        {/* Shipping & Courier */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase">
+            <span>Courier</span>
+            <Truck className="w-3.5 h-3.5 text-lime-600" />
+          </div>
+          <p className="text-base font-black text-slate-900 mt-1">{formatMoney(summary?.shippingCost || 0)}</p>
+          <span className="text-[10px] text-slate-500 block mt-0.5">Steadfast & Pathao</span>
+        </div>
+
+        {/* Marketing */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase">
+            <span>Marketing</span>
+            <Megaphone className="w-3.5 h-3.5 text-amber-500" />
+          </div>
+          <p className="text-base font-black text-slate-900 mt-1">{formatMoney(summary?.marketingCost || 0)}</p>
+          <span className="text-[10px] text-slate-500 block mt-0.5">Meta & Google Ads</span>
+        </div>
+
+        {/* Rent & Facilities */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase">
+            <span>Rent</span>
+            <Building className="w-3.5 h-3.5 text-teal-600" />
+          </div>
+          <p className="text-base font-black text-slate-900 mt-1">{formatMoney(summary?.rentCost || 0)}</p>
+          <span className="text-[10px] text-slate-500 block mt-0.5">Shop & Warehouse</span>
+        </div>
+
+        {/* Utilities & Internet */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase">
+            <span>Utilities</span>
+            <Zap className="w-3.5 h-3.5 text-orange-500" />
+          </div>
+          <p className="text-base font-black text-slate-900 mt-1">{formatMoney(summary?.utilitiesCost || 0)}</p>
+          <span className="text-[10px] text-slate-500 block mt-0.5">DESCO, WASA & Net</span>
+        </div>
+      </div>
+
+      {/* Second Row of Balance Sheet Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase">
+            <span>Inventory Value</span>
+            <Layers className="w-3.5 h-3.5 text-cyan-600" />
+          </div>
+          <p className="text-lg font-black text-slate-900 mt-1">{formatMoney(summary?.inventoryCost || 0)}</p>
+          <span className="text-[10px] text-slate-500 block mt-0.5">Stock Asset Valuation</span>
+        </div>
+
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase">
+            <span>Receivables</span>
+            <FileText className="w-3.5 h-3.5 text-blue-600" />
+          </div>
+          <p className="text-lg font-black text-blue-600 mt-1">{formatMoney(summary?.totalReceivables || 0)}</p>
+          <Link href="/dashboard/finance/invoices" className="text-[10px] font-bold text-blue-600 hover:underline block mt-0.5">
+            Unpaid Invoices →
+          </Link>
+        </div>
+
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase">
+            <span>Payables</span>
+            <Receipt className="w-3.5 h-3.5 text-amber-600" />
+          </div>
+          <p className="text-lg font-black text-amber-600 mt-1">{formatMoney(summary?.totalPayables || 0)}</p>
+          <Link href="/dashboard/finance/bills" className="text-[10px] font-bold text-amber-600 hover:underline block mt-0.5">
+            Vendor Bills & Salaries →
+          </Link>
+        </div>
+
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase">
+            <span>Cash & Bank</span>
+            <Landmark className="w-3.5 h-3.5 text-emerald-600" />
+          </div>
+          <p className="text-lg font-black text-emerald-700 mt-1">{formatMoney(summary?.totalAccountBalance || 0)}</p>
+          <Link href="/dashboard/finance/accounts" className="text-[10px] font-bold text-emerald-600 hover:underline block mt-0.5">
+            {accounts.length} Active Accounts →
+          </Link>
+        </div>
+      </div>
+
+      {/* Main Analysis Row: 6-Month Trend & Category Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Revenue vs Expense Chart (2 cols) */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
+        {/* 6-Month Monthly Trend Chart */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-base font-bold text-slate-900">Revenue vs Expense Trend</h3>
-              <p className="text-xs text-slate-500">Monthly financial performance over the last 6 months</p>
+              <h2 className="text-base font-bold text-slate-900">Revenue vs Expense Trend</h2>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                Monthly financial performance, operating expenses, and net margins across 6 months
+              </p>
             </div>
-            <Link
-              href="/dashboard/finance/reports"
-              className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline"
-            >
+            <Link href="/dashboard/finance/reports" className="text-xs font-bold text-blue-600 hover:underline">
               Full Reports →
             </Link>
           </div>
 
-          <div className="h-72 w-full">
-            {chartData.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-slate-400 text-xs">
-                No transaction data available for trend analysis.
-              </div>
-            ) : (
+          <div className="h-[280px] w-full pt-4">
+            {chartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#64748b' }} stroke="#cbd5e1" />
-                  <YAxis tick={{ fontSize: 11, fill: '#64748b' }} stroke="#cbd5e1" />
+                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
+                    </linearGradient>
+                    <linearGradient id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.2} />
+                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis dataKey="month" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis
+                    stroke="#94a3b8"
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(val) => `৳${(val / 1000).toFixed(0)}k`}
+                  />
                   <Tooltip
-                    formatter={(val: any) => [`৳${Number(val || 0).toLocaleString()}`, '']}
+                    formatter={(val: any) => [`৳${Number(val).toLocaleString()}`, '']}
                     contentStyle={{
-                      backgroundColor: '#ffffff',
-                      borderRadius: '12px',
-                      border: '1px solid #e2e8f0',
-                      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                      backgroundColor: '#1e293b',
+                      borderRadius: '16px',
+                      color: '#fff',
+                      border: 'none',
                       fontSize: '12px',
+                      boxShadow: '0 10px 25px -5px rgba(0,0,0,0.3)',
                     }}
                   />
-                  <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
-                  <Bar dataKey="revenue" name="Revenue" fill="#10b981" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="expense" name="Expense" fill="#f43f5e" radius={[4, 4, 0, 0]} />
-                </BarChart>
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                  <Area
+                    type="monotone"
+                    dataKey="revenue"
+                    name="Revenue"
+                    stroke="#10b981"
+                    strokeWidth={2.5}
+                    fillOpacity={1}
+                    fill="url(#revenueGrad)"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="expense"
+                    name="Expenses"
+                    stroke="#ef4444"
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#expenseGrad)"
+                  />
+                </AreaChart>
               </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-xs text-slate-400 font-medium">
+                No transaction data available for trend analysis.
+              </div>
             )}
           </div>
         </div>
 
-        {/* Account Balances Quick Card (1 col) */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-base font-bold text-slate-900">Financial Accounts</h3>
-                <p className="text-xs text-slate-500">Live balances per account</p>
-              </div>
-              <Link
-                href="/dashboard/finance/accounts"
-                className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline"
-              >
-                Manage →
-              </Link>
+        {/* Expense Category Breakdown Widget */}
+        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-bold text-slate-900">Expense Breakdown</h2>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">By cost category for {monthLabel}</p>
             </div>
-
-            {accounts.length === 0 ? (
-              <div className="py-8 text-center bg-slate-50 rounded-xl border border-slate-200">
-                <p className="text-xs text-slate-500">No accounts configured yet.</p>
-                <Link
-                  href="/dashboard/finance/accounts"
-                  className="inline-block mt-2 text-xs font-bold text-blue-600 hover:underline"
-                >
-                  + Add First Account
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
-                {accounts.map((acc) => (
-                  <div
-                    key={acc.id}
-                    className="p-3 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-200 flex items-center justify-between transition"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
-                        {acc.type === 'BANK' && <Building2 className="w-4 h-4" />}
-                        {acc.type === 'CASH' && <Wallet className="w-4 h-4" />}
-                        {acc.type === 'PAYMENT_GATEWAY' && <CreditCard className="w-4 h-4" />}
-                        {acc.type === 'DIGITAL_WALLET' && <Landmark className="w-4 h-4" />}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-slate-900 truncate">{acc.name}</p>
-                        <p className="text-[10px] text-slate-500 truncate">
-                          {acc.bankOrProviderName || acc.type.replace('_', ' ')}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-xs font-bold text-slate-900 font-mono">
-                        ৳{Number(acc.currentBalance).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </p>
-                      {acc.isDefault && (
-                        <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
-                          Default
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <PieChartIcon className="w-4 h-4 text-slate-400" />
           </div>
 
-          <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
-            <span className="font-semibold text-slate-500">Total Liquid Balance:</span>
-            <span className="font-bold text-slate-900 font-mono text-sm">
-              {formatMoney(summary?.totalAccountBalance || 0)}
-            </span>
+          <div className="space-y-3 pt-2">
+            {categoryBreakdown.length > 0 ? (
+              categoryBreakdown.slice(0, 6).map((cat) => (
+                <div key={cat.code} className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
+                      <span className="font-semibold text-slate-800">{cat.name}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold text-slate-900">৳{cat.amount.toLocaleString()}</span>
+                      <span className="text-[10px] text-slate-400 font-medium">({cat.percentage}%)</span>
+                    </div>
+                  </div>
+                  <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${cat.percentage}%`,
+                        backgroundColor: cat.color,
+                      }}
+                    />
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="py-12 text-center text-xs text-slate-400 font-medium">
+                No expense breakdown recorded for this period.
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Recent Transactions Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-          <div>
-            <h3 className="text-base font-bold text-slate-900">Recent Transactions</h3>
-            <p className="text-xs text-slate-500">Latest 10 transactions recorded in the system</p>
+      {/* Bottom Row: Financial Accounts & Recent Transactions */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Financial Accounts Widget */}
+        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-bold text-slate-900">Financial Accounts</h2>
+            <Link href="/dashboard/finance/accounts" className="text-xs font-bold text-blue-600 hover:underline">
+              Manage →
+            </Link>
           </div>
-          <Link
-            href="/dashboard/finance/transactions"
-            className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline"
-          >
-            View All Transactions →
-          </Link>
+
+          <div className="space-y-3">
+            {accounts.length > 0 ? (
+              accounts.map((acc) => {
+                const isCash = acc.type === 'CASH';
+                const isBank = acc.type === 'BANK';
+                const isWallet = acc.type === 'DIGITAL_WALLET';
+
+                return (
+                  <div
+                    key={acc.id}
+                    className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between hover:bg-slate-100/70 transition"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold ${
+                          isCash
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : isBank
+                            ? 'bg-blue-100 text-blue-800'
+                            : isWallet
+                            ? 'bg-pink-100 text-pink-800'
+                            : 'bg-purple-100 text-purple-800'
+                        }`}
+                      >
+                        {isCash ? '💵' : isBank ? '🏦' : isWallet ? '📱' : '💳'}
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-slate-900 block leading-tight">{acc.name}</span>
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          {acc.accountNumber ? `A/C: ${acc.accountNumber}` : acc.bankOrProviderName || acc.type}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xs font-black text-slate-900 block">{formatMoney(acc.currentBalance)}</span>
+                      <span className="text-[10px] text-emerald-600 font-semibold">Active</span>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="py-8 text-center text-xs text-slate-400 font-medium">
+                No accounts configured yet.
+              </div>
+            )}
+          </div>
         </div>
 
-        {recentTransactions.length === 0 ? (
-          <div className="p-12 text-center text-slate-500 text-xs">
-            No transactions found. Record your first income or expense to get started.
+        {/* Recent 10 Transactions Table */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-bold text-slate-900">Recent Transactions</h2>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                Audit trail across Orders, Purchases, Salaries & Expenses
+              </p>
+            </div>
+            <Link href="/dashboard/finance/transactions" className="text-xs font-bold text-blue-600 hover:underline">
+              View All Transactions →
+            </Link>
           </div>
-        ) : (
+
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-600 uppercase">
+            <table className="w-full text-left text-xs text-slate-600">
+              <thead className="bg-slate-50 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
                 <tr>
-                  <th className="px-6 py-3.5">Date</th>
-                  <th className="px-6 py-3.5">Txn #</th>
-                  <th className="px-6 py-3.5">Type</th>
-                  <th className="px-6 py-3.5">Category</th>
-                  <th className="px-6 py-3.5">Description</th>
-                  <th className="px-6 py-3.5">Account</th>
-                  <th className="px-6 py-3.5 text-right">Amount</th>
+                  <th className="px-4 py-3">Date</th>
+                  <th className="px-4 py-3">Description</th>
+                  <th className="px-3 py-3">Source</th>
+                  <th className="px-3 py-3">Category</th>
+                  <th className="px-3 py-3">Recorded By</th>
+                  <th className="px-4 py-3 text-right">Amount</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {recentTransactions.map((t) => {
-                  const isCredit = t.type === 'INCOME' || t.type === 'PAYMENT';
-                  const isTransfer = t.type === 'TRANSFER';
-                  const amt = Number(t.amount || 0);
+                {recentTransactions.length > 0 ? (
+                  recentTransactions.map((t) => {
+                    const isIncome = t.type === 'INCOME';
+                    const creatorName =
+                      t.createdByUser?.fullName || t.createdByUser?.email || 'System Auto';
+                    const creatorId =
+                      t.createdByUser?.id || t.createdByUserId || 'SYS';
 
-                  return (
-                    <tr key={t.id} className="hover:bg-slate-50 transition">
-                      <td className="px-6 py-3.5 text-xs text-slate-600 whitespace-nowrap">
-                        {t.transactionDate}
-                      </td>
-                      <td className="px-6 py-3.5 text-xs font-mono font-bold text-slate-900">
-                        {t.transactionNumber}
-                      </td>
-                      <td className="px-6 py-3.5">
-                        <span
-                          className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
-                            isCredit
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : isTransfer
-                              ? 'bg-slate-100 text-slate-800'
-                              : 'bg-rose-100 text-rose-800'
-                          }`}
-                        >
-                          {isCredit && <ArrowDownLeft className="w-3 h-3" />}
-                          {!isCredit && !isTransfer && <ArrowUpRight className="w-3 h-3" />}
-                          {isTransfer && <ArrowLeftRight className="w-3 h-3" />}
-                          {t.type}
-                        </span>
-                      </td>
-                      <td className="px-6 py-3.5 text-xs text-slate-700">
-                        <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md font-medium">
-                          {t.category?.name || t.categoryCode || '—'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-3.5 text-xs text-slate-600 max-w-xs truncate">
-                        {t.description || t.reference || '—'}
-                      </td>
-                      <td className="px-6 py-3.5 text-xs text-slate-700 font-medium">
-                        {t.account?.name || '—'}
-                      </td>
-                      <td
-                        className={`px-6 py-3.5 text-xs font-mono font-bold text-right ${
-                          isCredit
-                            ? 'text-emerald-600'
-                            : isTransfer
-                            ? 'text-slate-700'
-                            : 'text-rose-600'
-                        }`}
+                    const isClickable = t.type === 'INCOME' || t.type === 'EXPENSE';
+                    const handleRowClick = () => {
+                      if (t.type === 'INCOME') setSelectedIncome(t);
+                      else if (t.type === 'EXPENSE') setSelectedExpense(t);
+                    };
+
+                    return (
+                      <tr
+                        key={t.id}
+                        onClick={isClickable ? handleRowClick : undefined}
+                        className={`transition ${isClickable ? 'hover:bg-slate-50 cursor-pointer group' : 'hover:bg-slate-50/70'}`}
+                        title={isClickable ? 'Click to view details' : undefined}
                       >
-                        {isCredit ? '+' : isTransfer ? '' : '-'}৳{amt.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </td>
-                    </tr>
-                  );
-                })}
+                        <td className="px-4 py-3 font-medium text-slate-500 text-[11px] whitespace-nowrap">
+                          {t.transactionDate}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`font-bold text-slate-900 block truncate max-w-[200px] ${isClickable ? 'group-hover:text-blue-600 transition-colors' : ''}`}>
+                            {t.description}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-mono">{t.transactionNumber}</span>
+                        </td>
+                        <td className="px-3 py-3">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                            {t.sourceType || 'MANUAL'}
+                          </span>
+                        </td>
+                        <td className="px-3 py-3">
+                          <span className="text-xs text-slate-700 font-medium">
+                            {t.category?.name || t.categoryCode || 'General'}
+                          </span>
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[9px] font-black text-slate-600 shrink-0">
+                              {creatorName[0].toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <span className="font-semibold text-slate-900 block truncate text-[11px] max-w-[100px]" title={creatorName}>
+                                {creatorName}
+                              </span>
+                              <span className="text-[9px] text-slate-400 font-mono block">
+                                ID: {creatorId.substring(0, 8)}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-right whitespace-nowrap">
+                          <span className={`font-black text-xs ${isIncome ? 'text-emerald-600' : 'text-slate-900'}`}>
+                            {isIncome ? '+' : '-'}৳{Number(t.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-xs text-slate-400 font-medium">
+                      No recent transactions recorded.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
-        )}
+        </div>
       </div>
 
-      {/* Modals */}
-      <CreateIncomeModal isOpen={isIncomeOpen} onClose={() => setIsIncomeOpen(false)} />
-      <CreateExpenseModal isOpen={isExpenseOpen} onClose={() => setIsExpenseOpen(false)} />
-      <CreateTransferModal isOpen={isTransferOpen} onClose={() => setIsTransferOpen(false)} />
-      <CreateInvoiceModal isOpen={isInvoiceOpen} onClose={() => setIsInvoiceOpen(false)} />
-      <CreateBillModal isOpen={isBillOpen} onClose={() => setIsBillOpen(false)} />
+      {/* Detail Modals */}
+      <IncomeDetailModal
+        isOpen={Boolean(selectedIncome)}
+        onClose={() => setSelectedIncome(null)}
+        income={selectedIncome}
+      />
+
+      <ExpenseDetailModal
+        isOpen={Boolean(selectedExpense)}
+        onClose={() => setSelectedExpense(null)}
+        expense={selectedExpense}
+      />
+
+      {/* Action Modals */}
+      {isIncomeOpen && <CreateIncomeModal isOpen={isIncomeOpen} onClose={() => setIsIncomeOpen(false)} />}
+      {isExpenseOpen && <CreateExpenseModal isOpen={isExpenseOpen} onClose={() => setIsExpenseOpen(false)} />}
+      {isTransferOpen && <CreateTransferModal isOpen={isTransferOpen} onClose={() => setIsTransferOpen(false)} />}
+      {isInvoiceOpen && <CreateInvoiceModal isOpen={isInvoiceOpen} onClose={() => setIsInvoiceOpen(false)} />}
+      {isBillOpen && <CreateBillModal isOpen={isBillOpen} onClose={() => setIsBillOpen(false)} />}
+      {isJournalOpen && <CreateJournalEntryModal isOpen={isJournalOpen} onClose={() => setIsJournalOpen(false)} />}
     </div>
   );
 }

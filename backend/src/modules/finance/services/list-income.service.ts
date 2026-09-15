@@ -24,6 +24,8 @@ export class ListIncomeService {
       .createQueryBuilder('txn')
       .leftJoinAndSelect('txn.account', 'account')
       .leftJoinAndSelect('txn.category', 'category')
+      .leftJoinAndSelect('txn.createdByUser', 'createdByUser')
+      .leftJoinAndSelect('txn.receiptFile', 'receiptFile')
       .where('txn.storeId = :storeId', { storeId })
       .andWhere('txn.type = :type', { type: FinanceTransactionTypeEnum.INCOME });
 
@@ -58,31 +60,31 @@ export class ListIncomeService {
 
     const [items, total] = await qb.skip(skip).take(limit).getManyAndCount();
 
-    // Summary calculation for income streams
-    const allCompletedIncome = await this.transactionRepository.find({
-      where: {
-        storeId,
-        type: FinanceTransactionTypeEnum.INCOME,
-        status: FinanceTransactionStatusEnum.COMPLETED,
-      },
-    });
+    // Optimized DB-level summary calculation for income streams
+    const summaryResult = await this.transactionRepository
+      .createQueryBuilder('txn')
+      .select('COALESCE(SUM(CAST(txn.amount AS NUMERIC)), 0)', 'totalIncome')
+      .addSelect(
+        "COALESCE(SUM(CASE WHEN txn.categoryCode = 'PRODUCT_SALES' THEN CAST(txn.amount AS NUMERIC) ELSE 0 END), 0)",
+        'totalProductSales',
+      )
+      .addSelect(
+        "COALESCE(SUM(CASE WHEN txn.categoryCode = 'SHIPPING_INCOME' THEN CAST(txn.amount AS NUMERIC) ELSE 0 END), 0)",
+        'totalShippingIncome',
+      )
+      .addSelect(
+        "COALESCE(SUM(CASE WHEN txn.categoryCode NOT IN ('PRODUCT_SALES', 'SHIPPING_INCOME') THEN CAST(txn.amount AS NUMERIC) ELSE 0 END), 0)",
+        'totalOtherIncome',
+      )
+      .where('txn.storeId = :storeId', { storeId })
+      .andWhere('txn.type = :type', { type: FinanceTransactionTypeEnum.INCOME })
+      .andWhere('txn.status = :status', { status: FinanceTransactionStatusEnum.COMPLETED })
+      .getRawOne();
 
-    let totalProductSales = 0;
-    let totalShippingIncome = 0;
-    let totalOtherIncome = 0;
-    let totalIncome = 0;
-
-    for (const t of allCompletedIncome) {
-      const amt = Number(t.amount || 0);
-      totalIncome += amt;
-      if (t.categoryCode === 'PRODUCT_SALES') {
-        totalProductSales += amt;
-      } else if (t.categoryCode === 'SHIPPING_INCOME') {
-        totalShippingIncome += amt;
-      } else {
-        totalOtherIncome += amt;
-      }
-    }
+    const totalIncome = Number(summaryResult?.totalIncome || 0);
+    const totalProductSales = Number(summaryResult?.totalProductSales || 0);
+    const totalShippingIncome = Number(summaryResult?.totalShippingIncome || 0);
+    const totalOtherIncome = Number(summaryResult?.totalOtherIncome || 0);
 
     return {
       items,
@@ -91,10 +93,10 @@ export class ListIncomeService {
       limit,
       totalPages: Math.ceil(total / limit),
       summary: {
-        totalIncome,
-        totalProductSales,
-        totalShippingIncome,
-        totalOtherIncome,
+        totalIncome: Math.round(totalIncome * 100) / 100,
+        totalProductSales: Math.round(totalProductSales * 100) / 100,
+        totalShippingIncome: Math.round(totalShippingIncome * 100) / 100,
+        totalOtherIncome: Math.round(totalOtherIncome * 100) / 100,
       },
     };
   }

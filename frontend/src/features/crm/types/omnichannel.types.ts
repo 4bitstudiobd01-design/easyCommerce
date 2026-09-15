@@ -1,14 +1,10 @@
 export type SocialPlatform =
-  | 'telegram'
-  | 'whatsapp'
   | 'facebook'
+  | 'messenger'
   | 'instagram'
-  | 'linkedin'
-  | 'x'
-  | 'shopify'
-  | 'slack'
-  | 'hubspot'
-  | 'custom';
+  | 'tiktok'
+  | 'whatsapp'
+  | 'telegram';
 
 export type CredentialStatus =
   | 'connected'

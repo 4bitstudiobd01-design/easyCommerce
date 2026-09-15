@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module, OnModuleInit } from '@nestjs/common';
+import { DataSource } from 'typeorm';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -17,6 +18,7 @@ import { TenantModule } from '../tenant/tenant.module';
 import { StaffModule } from '../staff/staff.module';
 import { AccountingModule } from '../accounting/accounting.module';
 import { InventoryModule } from '../inventory/inventory.module';
+import { FinanceModule } from '../finance/finance.module';
 
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -78,6 +80,7 @@ import { SeedPurchaseDemoDataService } from './services/seed-purchase-demo-data.
     StaffModule,
     AccountingModule,
     InventoryModule,
+    forwardRef(() => FinanceModule),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -116,6 +119,43 @@ import { SeedPurchaseDemoDataService } from './services/seed-purchase-demo-data.
     JwtAuthGuard,
     PermissionsGuard,
   ],
-  exports: [SeedPurchaseDemoDataService],
+  exports: [SeedPurchaseDemoDataService, TypeOrmModule],
 })
-export class PurchaseModule {}
+export class PurchaseModule implements OnModuleInit {
+  constructor(private readonly dataSource: DataSource) {}
+
+  async onModuleInit() {
+    try {
+      await this.dataSource.query(
+        `ALTER TYPE "public"."pur_purchase_orders_status_enum" ADD VALUE IF NOT EXISTS 'PENDING_APPROVAL'`,
+      );
+      await this.dataSource.query(
+        `ALTER TYPE "public"."pur_purchase_orders_status_enum" ADD VALUE IF NOT EXISTS 'APPROVED'`,
+      );
+      await this.dataSource.query(`
+        DO $$ BEGIN
+          CREATE TYPE "public"."pur_purchase_orders_paymentstatus_enum" AS ENUM('PENDING', 'PAID');
+        EXCEPTION
+          WHEN duplicate_object THEN null;
+        END $$;
+      `);
+      await this.dataSource.query(`
+        ALTER TABLE "pur_purchase_orders"
+        ADD COLUMN IF NOT EXISTS "paymentStatus" "public"."pur_purchase_orders_paymentstatus_enum" NOT NULL DEFAULT 'PENDING';
+      `);
+      await this.dataSource.query(`
+        UPDATE "pur_purchase_orders"
+        SET "paymentStatus" = 'PAID'
+        WHERE "status" IN ('APPROVED', 'SENT', 'PARTIALLY_RECEIVED', 'FULLY_RECEIVED')
+          AND "paymentStatus" = 'PENDING';
+      `);
+      await this.dataSource.query(`
+        UPDATE "pur_purchase_orders"
+        SET "status" = 'SENT'
+        WHERE "status" = 'APPROVED';
+      `);
+    } catch (e) {
+      // Ignored if type or value already exists
+    }
+  }
+}

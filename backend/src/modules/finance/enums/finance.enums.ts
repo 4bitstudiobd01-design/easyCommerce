@@ -1,8 +1,54 @@
 export enum FinanceAccountTypeEnum {
   CASH = 'CASH',
   BANK = 'BANK',
+  CARD = 'CARD',
   PAYMENT_GATEWAY = 'PAYMENT_GATEWAY',
   DIGITAL_WALLET = 'DIGITAL_WALLET',
+}
+
+export enum FinanceAccountClassEnum {
+  ASSET = 'ASSET',
+  LIABILITY = 'LIABILITY',
+  EQUITY = 'EQUITY',
+  REVENUE = 'REVENUE',
+  EXPENSE = 'EXPENSE',
+}
+
+export enum FinanceNormalBalanceEnum {
+  DEBIT = 'DEBIT',
+  CREDIT = 'CREDIT',
+}
+
+export enum FinanceLineTypeEnum {
+  DEBIT = 'DEBIT',
+  CREDIT = 'CREDIT',
+}
+
+export enum FinanceJournalStatusEnum {
+  DRAFT = 'DRAFT',
+  POSTED = 'POSTED',
+  VOID = 'VOID',
+}
+
+export enum FinanceJournalEntryTypeEnum {
+  MANUAL = 'MANUAL',
+  ORDER = 'ORDER',
+  REFUND = 'REFUND',
+  INVOICE = 'INVOICE',
+  BILL = 'BILL',
+  PAYROLL = 'PAYROLL',
+  HR_EXPENSE = 'HR_EXPENSE',
+  TRANSFER = 'TRANSFER',
+  INVENTORY_ADJUSTMENT = 'INVENTORY_ADJUSTMENT',
+  PERIOD_CLOSING = 'PERIOD_CLOSING',
+}
+
+export enum FinancePartyTypeEnum {
+  CUSTOMER = 'CUSTOMER',
+  SUPPLIER = 'SUPPLIER',
+  EMPLOYEE = 'EMPLOYEE',
+  COURIER = 'COURIER',
+  NONE = 'NONE',
 }
 
 export enum FinanceTransactionTypeEnum {
@@ -27,6 +73,7 @@ export enum FinanceCategoryTypeEnum {
 
 export enum FinanceInvoiceStatusEnum {
   DRAFT = 'DRAFT',
+  PENDING = 'PENDING',
   UNPAID = 'UNPAID',
   PARTIALLY_PAID = 'PARTIALLY_PAID',
   PAID = 'PAID',
@@ -36,6 +83,7 @@ export enum FinanceInvoiceStatusEnum {
 
 export enum FinanceBillStatusEnum {
   DRAFT = 'DRAFT',
+  PENDING = 'PENDING',
   UNPAID = 'UNPAID',
   PARTIALLY_PAID = 'PARTIALLY_PAID',
   PAID = 'PAID',
@@ -57,4 +105,19 @@ export enum FinanceSourceTypeEnum {
   PAYROLL = 'PAYROLL',
   TRANSFER = 'TRANSFER',
   ADJUSTMENT = 'ADJUSTMENT',
+  REQUISITION = 'REQUISITION',
+}
+
+export enum FinanceRequisitionStatusEnum {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum FinanceRequisitionPriorityEnum {
+  LOW = 'LOW',
+  NORMAL = 'NORMAL',
+  HIGH = 'HIGH',
+  URGENT = 'URGENT',
 }

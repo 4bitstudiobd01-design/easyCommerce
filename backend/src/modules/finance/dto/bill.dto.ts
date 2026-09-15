@@ -111,3 +111,29 @@ export class RecordBillPaymentDto {
   @IsOptional()
   notes?: string;
 }
+
+export class UpdateFinanceBillStatusDto {
+  @IsEnum(FinanceBillStatusEnum)
+  @IsNotEmpty()
+  status: FinanceBillStatusEnum;
+
+  @IsUUID()
+  @IsOptional()
+  accountId?: string;
+
+  @IsString()
+  @IsOptional()
+  paymentMethod?: string;
+
+  @IsString()
+  @IsOptional()
+  paymentDate?: string;
+
+  @IsString()
+  @IsOptional()
+  reference?: string;
+
+  @IsString()
+  @IsOptional()
+  notes?: string;
+}

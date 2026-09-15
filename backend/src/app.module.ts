@@ -103,9 +103,9 @@ import { APP_FILTER } from '@nestjs/core';
     FileModule,
     OmnichannelModule,
     HrmModule,
+    FinanceModule,
     AccountingModule,
     PurchaseModule,
-    FinanceModule,
   ],
   controllers: [],
   providers: [

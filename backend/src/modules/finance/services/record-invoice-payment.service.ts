@@ -49,9 +49,12 @@ export class RecordInvoicePaymentService {
 
     invoice.paidAmount = String(newPaidAmount);
     invoice.balanceDue = String(newBalanceDue);
+    const today = new Date().toISOString().split('T')[0];
     invoice.status =
       newBalanceDue === 0
         ? FinanceInvoiceStatusEnum.PAID
+        : invoice.dueDate < today
+        ? FinanceInvoiceStatusEnum.OVERDUE
         : FinanceInvoiceStatusEnum.PARTIALLY_PAID;
 
     const updatedInvoice = await this.invoiceRepository.save(invoice);

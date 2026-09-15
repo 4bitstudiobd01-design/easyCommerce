@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Optional } from '@nestjs/common';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { PaymentEntity, PaymentTransactionStatusEnum } from '../entities/payment.entity';
@@ -9,6 +9,8 @@ import { PaymentEventTypeEnum } from '../enums/payment-event-type.enum';
 import { RecordManualPaymentDto, ManualPaymentMethodEnum } from '../dto/record-manual-payment.dto';
 import { RecordPaymentEventService } from './record-payment-event.service';
 import { GetOrderBalanceService } from './get-order-balance.service';
+import { SyncModuleFinanceService } from '../../finance/services/sync-module-finance.service';
+import { StoreEntity } from '../../tenant/entities/store.entity';
 
 /** Manual methods map 1:1 onto PaymentMethodTypeEnum except CASH/OTHER, which the canonical enum has no slot for. */
 function toPaymentMethod(method: ManualPaymentMethodEnum): PaymentMethodTypeEnum {
@@ -39,6 +41,8 @@ export class RecordManualPaymentService {
     private readonly dataSource: DataSource,
     private readonly recordPaymentEventService: RecordPaymentEventService,
     private readonly getOrderBalanceService: GetOrderBalanceService,
+    @Optional()
+    private readonly syncModuleFinanceService?: SyncModuleFinanceService,
   ) {}
 
   async execute(tenantId: string, orderId: string, dto: RecordManualPaymentDto): Promise<PaymentEntity> {
@@ -94,6 +98,31 @@ export class RecordManualPaymentService {
       type: PaymentEventTypeEnum.PAYMENT_SUCCEEDED,
       message: `Manual payment of ৳${dto.amount} recorded (${dto.method})${dto.note ? `: ${dto.note}` : ''}`,
     });
+
+    if (this.syncModuleFinanceService) {
+      try {
+        const store = await this.dataSource
+          .getRepository(StoreEntity)
+          .findOne({ where: { tenantId } });
+        const resolvedStoreId = store?.id || tenantId;
+
+        await this.syncModuleFinanceService.syncOrderPaid({
+          tenantId,
+          storeId: resolvedStoreId,
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          customerName: order.customerName || 'Customer',
+          subtotal: Number(order.subtotal || dto.amount),
+          shippingFee: Number(order.deliveryFee || 0),
+          discount: Number(order.discountAmount || 0),
+          taxAmount: 0,
+          grandTotal: dto.amount,
+          paymentMethod: dto.method,
+        });
+      } catch (err) {
+        console.error('Failed to sync manual order payment to Finance:', err);
+      }
+    }
 
     return payment;
   }

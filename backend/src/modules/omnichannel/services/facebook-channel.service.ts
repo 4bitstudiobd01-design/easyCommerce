@@ -25,11 +25,9 @@ export class FacebookChannelService {
   ) {}
 
   private async getPageAccessToken(tenantId: string): Promise<string> {
-    const cred = await this.credentialsService.findByPlatform(
-      tenantId,
-      'facebook',
-      false,
-    );
+    const cred =
+      (await this.credentialsService.findByPlatform(tenantId, 'messenger', false)) ||
+      (await this.credentialsService.findByPlatform(tenantId, 'facebook', false));
     const token =
       cred?.credentials?.pageAccessToken || cred?.credentials?.accessToken;
     if (!token || !cred?.isActive) {
@@ -56,11 +54,9 @@ export class FacebookChannelService {
 
     let configuredToken = process.env.FB_VERIFY_TOKEN || 'omnichannel_verify_token';
     if (tenantId) {
-      const cred = await this.credentialsService.findByPlatform(
-        tenantId,
-        'facebook',
-        false,
-      );
+      const cred =
+        (await this.credentialsService.findByPlatform(tenantId, 'messenger', false)) ||
+        (await this.credentialsService.findByPlatform(tenantId, 'facebook', false));
       if (cred?.credentials?.verifyToken) {
         configuredToken = cred.credentials.verifyToken;
       }

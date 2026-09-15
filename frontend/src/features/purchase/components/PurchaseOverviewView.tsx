@@ -47,9 +47,11 @@ const PO_STATUS_META: Record<
   PurchaseOrderStatus,
   { label: string; color: string }
 > = {
-  DRAFT: { label: 'Draft', color: '#3B82F6' },
-  SENT: { label: 'Sent', color: '#F97316' },
-  PARTIALLY_RECEIVED: { label: 'Partially Received', color: '#FBBF24' },
+  DRAFT: { label: 'Draft', color: '#64748B' },
+  PENDING_APPROVAL: { label: 'Pending Approval', color: '#F59E0B' },
+  APPROVED: { label: 'Approved', color: '#10B981' },
+  SENT: { label: 'Sent', color: '#3B82F6' },
+  PARTIALLY_RECEIVED: { label: 'Partially Received', color: '#8B5CF6' },
   FULLY_RECEIVED: { label: 'Fully Received', color: '#10B981' },
   CANCELLED: { label: 'Cancelled', color: '#EF4444' },
 };

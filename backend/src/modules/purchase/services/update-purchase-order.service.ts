@@ -11,6 +11,8 @@ import {
 import { PurchaseOrderLineEntity } from '../entities/purchase-order-line.entity';
 import { UpdatePurchaseOrderDto } from '../dto/purchase-order.dto';
 import { fromCents, toCents } from './purchase-money.util';
+import { FinanceRequisitionEntity } from '../../finance/entities/finance-requisition.entity';
+import { FinanceRequisitionStatusEnum } from '../../finance/enums/finance.enums';
 
 /**
  * Edits a purchase order while it is still DRAFT or SENT and nothing has been received.
@@ -46,7 +48,8 @@ export class UpdatePurchaseOrderService {
     }
     if (
       po.status !== PurchaseOrderStatusEnum.DRAFT &&
-      po.status !== PurchaseOrderStatusEnum.SENT
+      po.status !== PurchaseOrderStatusEnum.SENT &&
+      po.status !== PurchaseOrderStatusEnum.PENDING_APPROVAL
     ) {
       throw new BadRequestException(
         'A purchase order cannot be edited once items have been received or it is cancelled.',
@@ -72,10 +75,13 @@ export class UpdatePurchaseOrderService {
     if (dto.expectedDate !== undefined) po.expectedDate = dto.expectedDate;
     if (dto.notes !== undefined) po.notes = dto.notes.trim();
     if (dto.status !== undefined) {
-      po.status =
-        dto.status === 'SENT'
-          ? PurchaseOrderStatusEnum.SENT
-          : PurchaseOrderStatusEnum.DRAFT;
+      if (dto.status === 'SENT') {
+        po.status = PurchaseOrderStatusEnum.SENT;
+      } else if (dto.status === 'PENDING_APPROVAL') {
+        po.status = PurchaseOrderStatusEnum.PENDING_APPROVAL;
+      } else {
+        po.status = PurchaseOrderStatusEnum.DRAFT;
+      }
     }
 
     let newLineRows: Array<Partial<PurchaseOrderLineEntity>> | undefined;
@@ -139,6 +145,66 @@ export class UpdatePurchaseOrderService {
         await lineRepo.save(newLineRows.map((row) => lineRepo.create(row)));
       }
       await poRepo.save(po);
+
+      if (po.status === PurchaseOrderStatusEnum.PENDING_APPROVAL) {
+        const reqRepo = manager.getRepository(FinanceRequisitionEntity);
+        const existing = await reqRepo.findOne({
+          where: { purchaseOrderId: po.id, storeId },
+        });
+
+        const lines = newLineRows || po.lines || [];
+        if (existing) {
+          existing.requestedAmount = po.totalAmount;
+          existing.requestDate = po.orderDate;
+          existing.requiredDate = po.expectedDate;
+          existing.supplierId = po.supplierId;
+          existing.supplierName = po.supplierName;
+          existing.notes = po.notes;
+          existing.status = FinanceRequisitionStatusEnum.PENDING;
+          existing.items = lines.map((l) => ({
+            productId: l.productId,
+            variantId: l.variantId,
+            productName: l.productName,
+            sku: l.sku,
+            quantity: l.quantity,
+            unitCost: Number(l.unitCost),
+            lineTotal: Number(l.lineTotal),
+          }));
+          await reqRepo.save(existing);
+        } else {
+          const year = new Date().getFullYear();
+          const reqCount = await reqRepo.count({ where: { storeId } });
+          const reqNumber = `REQ-${year}-${String(reqCount + 1).padStart(4, '0')}`;
+
+          await reqRepo.save(
+            reqRepo.create({
+              tenantId,
+              storeId,
+              requisitionNumber: reqNumber,
+              title: `PO ${po.poNumber}: Restock from ${po.supplierName}`,
+              category: 'PURCHASE',
+              purchaseOrderId: po.id,
+              poNumber: po.poNumber,
+              supplierId: po.supplierId,
+              supplierName: po.supplierName,
+              requestedAmount: po.totalAmount,
+              requestDate: po.orderDate,
+              requiredDate: po.expectedDate,
+              status: FinanceRequisitionStatusEnum.PENDING,
+              notes: po.notes,
+              items: lines.map((l) => ({
+                productId: l.productId,
+                variantId: l.variantId,
+                productName: l.productName,
+                sku: l.sku,
+                quantity: l.quantity,
+                unitCost: Number(l.unitCost),
+                lineTotal: Number(l.lineTotal),
+              })),
+            }),
+          );
+        }
+      }
 
       return poRepo.findOne({
         where: { id: po.id },

@@ -132,21 +132,21 @@ export class OmnichannelChatService {
       ).length;
 
       const platformLabelMap: Record<string, string> = {
+        facebook: `Facebook Page (ID: ${recipientId})`,
+        messenger: `Messenger (PSID: ${recipientId})`,
+        instagram: `Instagram Direct (@${recipientId})`,
+        tiktok: `TikTok DM (@${recipientId})`,
         whatsapp: `WhatsApp (+${recipientId})`,
         telegram: `Telegram (Chat ID: ${recipientId})`,
-        facebook: `Facebook Messenger (PSID: ${recipientId})`,
-        instagram: `Instagram Direct (@${recipientId})`,
-        x: `X / Twitter DM`,
-        slack: `Slack Channel`,
       };
 
       const tagMap: Record<string, string[]> = {
+        facebook: ['Facebook', 'Meta Page'],
+        messenger: ['Messenger', 'Direct Chat'],
+        instagram: ['Instagram Direct', 'Direct Message'],
+        tiktok: ['TikTok Shop', 'Direct Message'],
         whatsapp: ['WhatsApp Business', 'Inbound'],
         telegram: ['Telegram Bot', 'Live Chat'],
-        facebook: ['Messenger', 'Meta Page'],
-        instagram: ['Instagram Direct', 'Direct Message'],
-        x: ['Twitter/X'],
-        slack: ['Internal'],
       };
 
       const convState = stateMap.get(convId);

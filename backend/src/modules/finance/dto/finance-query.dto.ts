@@ -59,9 +59,9 @@ export class ListTransactionsQueryDto {
 }
 
 export class ListInvoicesQueryDto {
-  @IsEnum(FinanceInvoiceStatusEnum)
+  @IsString()
   @IsOptional()
-  status?: FinanceInvoiceStatusEnum;
+  status?: string;
 
   @IsUUID()
   @IsOptional()
@@ -91,9 +91,9 @@ export class ListInvoicesQueryDto {
 }
 
 export class ListBillsQueryDto {
-  @IsEnum(FinanceBillStatusEnum)
+  @IsString()
   @IsOptional()
-  status?: FinanceBillStatusEnum;
+  status?: string;
 
   @IsString()
   @IsOptional()

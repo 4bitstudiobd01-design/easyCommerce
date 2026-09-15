@@ -9,13 +9,12 @@ import {
 import { credentialsColumnTransformer } from './omnichannel-credential.transformer';
 
 export type OmnichannelPlatformType =
-  | 'telegram'
-  | 'whatsapp'
   | 'facebook'
+  | 'messenger'
   | 'instagram'
-  | 'x'
-  | 'slack'
-  | 'custom';
+  | 'tiktok'
+  | 'whatsapp'
+  | 'telegram';
 
 export type OmnichannelCredentialStatus =
   | 'connected'

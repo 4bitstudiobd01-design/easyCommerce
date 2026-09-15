@@ -68,7 +68,7 @@ export class FinanceBillEntity {
   @Column({
     type: 'enum',
     enum: FinanceBillStatusEnum,
-    default: FinanceBillStatusEnum.UNPAID,
+    default: FinanceBillStatusEnum.PENDING,
   })
   status: FinanceBillStatusEnum;
 

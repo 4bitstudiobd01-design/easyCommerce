@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
@@ -18,6 +18,7 @@ import { RecordSupplierPaymentDto } from '../dto/supplier-payment.dto';
 import { AllocatePurchaseNumberService } from './allocate-purchase-number.service';
 import { PurchasePostingHelper } from './purchase-posting.helper';
 import { fromCents, toCents } from './purchase-money.util';
+import { SyncModuleFinanceService } from '../../finance/services/sync-module-finance.service';
 
 /**
  * Records money paid to a supplier — against a bill or on account — and, unless the store
@@ -40,6 +41,8 @@ export class RecordSupplierPaymentService {
     private readonly allocatePurchaseNumberService: AllocatePurchaseNumberService,
     private readonly postingHelper: PurchasePostingHelper,
     private readonly postJournalEntryService: PostJournalEntryService,
+    @Optional()
+    private readonly syncModuleFinanceService?: SyncModuleFinanceService,
   ) {}
 
   async execute(
@@ -154,6 +157,27 @@ export class RecordSupplierPaymentService {
             ? BillPaymentStatusEnum.PARTIAL
             : BillPaymentStatusEnum.UNPAID;
       await this.billRepository.save(bill);
+    }
+
+    if (this.syncModuleFinanceService) {
+      try {
+        await this.syncModuleFinanceService.syncSupplierPayment({
+          tenantId,
+          storeId,
+          paymentId: payment.id,
+          paymentNumber: payment.paymentNumber,
+          billId: bill?.id,
+          billNumber: bill?.billNumber,
+          supplierId: supplier.id,
+          supplierName: supplier.name,
+          amount: dto.amount,
+          paymentDate: dto.paymentDate,
+          paymentMethod: dto.method,
+          bankAccountId: dto.paidFromAccountId,
+        });
+      } catch (err) {
+        console.error('Failed to sync supplier payment to Finance:', err);
+      }
     }
 
     return payment;

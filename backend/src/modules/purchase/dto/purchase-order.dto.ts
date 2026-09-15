@@ -15,7 +15,10 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { PurchaseOrderStatusEnum } from '../entities/purchase-order.entity';
+import {
+  PurchaseOrderPaymentStatusEnum,
+  PurchaseOrderStatusEnum,
+} from '../entities/purchase-order.entity';
 
 export class PurchaseOrderLineDto {
   @IsUUID()
@@ -46,8 +49,8 @@ export class CreatePurchaseOrderDto {
   expectedDate?: string;
 
   @IsOptional()
-  @IsIn(['DRAFT', 'SENT'])
-  status?: 'DRAFT' | 'SENT';
+  @IsIn(['DRAFT', 'SENT', 'PENDING_APPROVAL', 'APPROVED'])
+  status?: 'DRAFT' | 'SENT' | 'PENDING_APPROVAL' | 'APPROVED';
 
   @IsOptional()
   @IsString()
@@ -75,8 +78,8 @@ export class UpdatePurchaseOrderDto {
   expectedDate?: string;
 
   @IsOptional()
-  @IsIn(['DRAFT', 'SENT'])
-  status?: 'DRAFT' | 'SENT';
+  @IsIn(['DRAFT', 'SENT', 'PENDING_APPROVAL'])
+  status?: 'DRAFT' | 'SENT' | 'PENDING_APPROVAL';
 
   @IsOptional()
   @IsString()
@@ -129,6 +132,10 @@ export class ListPurchaseOrdersQueryDto {
   @IsOptional()
   @IsEnum(PurchaseOrderStatusEnum)
   status?: PurchaseOrderStatusEnum;
+
+  @IsOptional()
+  @IsEnum(PurchaseOrderPaymentStatusEnum)
+  paymentStatus?: PurchaseOrderPaymentStatusEnum;
 
   @IsOptional()
   @IsUUID()

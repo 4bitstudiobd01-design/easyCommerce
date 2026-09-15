@@ -49,14 +49,17 @@ export class RecordBillPaymentService {
 
     bill.paidAmount = String(newPaidAmount);
     bill.balanceDue = String(newBalanceDue);
+    const today = new Date().toISOString().split('T')[0];
     bill.status =
       newBalanceDue === 0
         ? FinanceBillStatusEnum.PAID
+        : bill.dueDate < today
+        ? FinanceBillStatusEnum.OVERDUE
         : FinanceBillStatusEnum.PARTIALLY_PAID;
 
     const updatedBill = await this.billRepository.save(bill);
 
-    // Record outgoing expense transaction
+    // Record outgoing payment transaction (decreases cash/bank)
     await this.createTransactionService.execute(bill.tenantId, storeId, userId, {
       type: FinanceTransactionTypeEnum.EXPENSE,
       amount: dto.amount,

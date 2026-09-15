@@ -11,10 +11,17 @@ import { PurchaseOrderLineEntity } from './purchase-order-line.entity';
 
 export enum PurchaseOrderStatusEnum {
   DRAFT = 'DRAFT',
+  PENDING_APPROVAL = 'PENDING_APPROVAL',
+  APPROVED = 'APPROVED',
   SENT = 'SENT',
   PARTIALLY_RECEIVED = 'PARTIALLY_RECEIVED',
   FULLY_RECEIVED = 'FULLY_RECEIVED',
   CANCELLED = 'CANCELLED',
+}
+
+export enum PurchaseOrderPaymentStatusEnum {
+  PENDING = 'PENDING',
+  PAID = 'PAID',
 }
 
 /**
@@ -61,6 +68,14 @@ export class PurchaseOrderEntity {
   })
   @Index('IDX_pur_purchase_orders_storeId_status')
   status: PurchaseOrderStatusEnum;
+
+  @Column({
+    type: 'enum',
+    enum: PurchaseOrderPaymentStatusEnum,
+    default: PurchaseOrderPaymentStatusEnum.PENDING,
+  })
+  @Index('IDX_pur_purchase_orders_storeId_paymentStatus')
+  paymentStatus: PurchaseOrderPaymentStatusEnum;
 
   @Column({ type: 'numeric', precision: 18, scale: 2, default: 0 })
   subtotal: string;

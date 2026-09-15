@@ -6,61 +6,49 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   ArrowLeftRight,
-  TrendingUp,
-  TrendingDown,
-  FileText,
-  Receipt,
-  Landmark,
+  ClipboardCheck,
+  CheckSquare,
+  Droplets,
   Scale,
   BarChart3,
-  Settings,
+  Target,
 } from 'lucide-react';
+import { useGetRequisitionStatsQuery } from '../api/financeApi';
 
 const FINANCE_TABS = [
   {
     name: 'Overview',
     href: '/dashboard/finance/overview',
+    exact: true,
     matchHref: ['/dashboard/finance/overview', '/dashboard/finance'],
     icon: LayoutDashboard,
   },
   {
-    name: 'Transactions',
-    href: '/dashboard/finance/transactions',
-    matchHref: ['/dashboard/finance/transactions'],
-    icon: ArrowLeftRight,
+    name: 'Budget',
+    href: '/dashboard/finance/budget',
+    matchHref: ['/dashboard/finance/budget'],
+    icon: Target,
   },
   {
-    name: 'Income',
-    href: '/dashboard/finance/income',
-    matchHref: ['/dashboard/finance/income'],
-    icon: TrendingUp,
+    name: 'Requisitions',
+    href: '/dashboard/finance/requisitions',
+    matchHref: ['/dashboard/finance/requisitions'],
+    icon: ClipboardCheck,
   },
   {
-    name: 'Expenses',
-    href: '/dashboard/finance/expenses',
-    matchHref: ['/dashboard/finance/expenses'],
-    icon: TrendingDown,
+    name: 'Approvals',
+    href: '/dashboard/finance/approvals',
+    matchHref: ['/dashboard/finance/approvals'],
+    icon: CheckSquare,
   },
   {
-    name: 'Invoices',
-    href: '/dashboard/finance/invoices',
-    matchHref: ['/dashboard/finance/invoices'],
-    icon: FileText,
+    name: 'Cash Flow',
+    href: '/dashboard/finance/cash-flow',
+    matchHref: ['/dashboard/finance/cash-flow'],
+    icon: Droplets,
   },
   {
-    name: 'Bills',
-    href: '/dashboard/finance/bills',
-    matchHref: ['/dashboard/finance/bills'],
-    icon: Receipt,
-  },
-  {
-    name: 'Accounts',
-    href: '/dashboard/finance/accounts',
-    matchHref: ['/dashboard/finance/accounts'],
-    icon: Landmark,
-  },
-  {
-    name: 'Transfers',
+    name: 'Fund Transfers',
     href: '/dashboard/finance/transfers',
     matchHref: ['/dashboard/finance/transfers'],
     icon: Scale,
@@ -71,16 +59,14 @@ const FINANCE_TABS = [
     matchHref: ['/dashboard/finance/reports'],
     icon: BarChart3,
   },
-  {
-    name: 'Settings',
-    href: '/dashboard/finance/settings',
-    matchHref: ['/dashboard/finance/settings'],
-    icon: Settings,
-  },
 ];
 
 export function FinanceTabsHeader() {
   const pathname = usePathname();
+  const { data: stats } = useGetRequisitionStatsQuery(undefined, {
+    pollingInterval: 30000,
+  });
+  const pendingCount = stats?.pendingCount ?? 0;
 
   return (
     <div className="mb-6">
@@ -92,25 +78,44 @@ export function FinanceTabsHeader() {
         >
           {FINANCE_TABS.map((tab) => {
             const Icon = tab.icon;
-            const isActive = tab.matchHref.includes(pathname);
+            const isActive = tab.exact
+              ? tab.matchHref.some((exactPath) => pathname === exactPath)
+              : tab.matchHref.some((prefix) => pathname === prefix || pathname.startsWith(prefix + '/'));
 
             return (
               <Link
                 key={tab.name}
                 href={tab.href}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 select-none ${
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
                   isActive
                     ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
                 }`}
               >
-                <Icon
-                  className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                    isActive ? 'text-white scale-105' : 'text-slate-500 group-hover:text-slate-700'
-                  }`}
-                  strokeWidth={isActive ? 2.5 : 2}
-                />
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
                 <span>{tab.name}</span>
+                {tab.name === 'Requisitions' && pendingCount > 0 && (
+                  <span
+                    className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-extrabold leading-none ${
+                      isActive
+                        ? 'bg-white text-rose-600'
+                        : 'bg-rose-500 text-white shadow-xs'
+                    } animate-pulse`}
+                  >
+                    {pendingCount}
+                  </span>
+                )}
+                {tab.name === 'Approvals' && pendingCount > 0 && (
+                  <span
+                    className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-extrabold leading-none ${
+                      isActive
+                        ? 'bg-white text-amber-600'
+                        : 'bg-amber-500 text-white shadow-xs'
+                    } animate-pulse`}
+                  >
+                    {pendingCount}
+                  </span>
+                )}
               </Link>
             );
           })}

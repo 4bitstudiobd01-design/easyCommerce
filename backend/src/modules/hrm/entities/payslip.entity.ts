@@ -11,6 +11,18 @@ import {
 import { EmployeeEntity } from './employee.entity';
 import { PayrollRunEntity } from './payroll-run.entity';
 
+export enum SalaryPaymentStatusEnum {
+  UNPAID = 'UNPAID',
+  PAID = 'PAID',
+}
+
+export enum SalaryPaymentMethodEnum {
+  CASH = 'CASH',
+  BANK_TRANSFER = 'BANK_TRANSFER',
+  MOBILE_BANKING = 'MOBILE_BANKING',
+  CHEQUE = 'CHEQUE',
+}
+
 @Entity('hr_payslips')
 @Index('IDX_hr_payslips_payrollRunId_employeeId', ['payrollRunId', 'employeeId'], { unique: true })
 export class PayslipEntity {
@@ -71,6 +83,31 @@ export class PayslipEntity {
 
   @Column({ type: 'decimal', precision: 12, scale: 2 })
   netSalary: string;
+
+  // ─── Payment Disbursement Tracking ──────────────────────────────
+  @Column({ type: 'enum', enum: SalaryPaymentStatusEnum, default: SalaryPaymentStatusEnum.UNPAID })
+  paymentStatus: SalaryPaymentStatusEnum;
+
+  @Column({ type: 'enum', enum: SalaryPaymentMethodEnum, default: SalaryPaymentMethodEnum.CASH, nullable: true })
+  paymentMethod?: SalaryPaymentMethodEnum;
+
+  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
+  paidAmount: string;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  paidAt?: Date;
+
+  @Column({ type: 'uuid', nullable: true })
+  paidByUserId?: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  paymentReference?: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  financeTransactionId?: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  financeAccountId?: string;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;

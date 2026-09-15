@@ -22,6 +22,9 @@ import {
   Download,
   Receipt,
   Trash2,
+  Building2,
+  CreditCard,
+  Smartphone,
 } from 'lucide-react';
 import {
   useGetBillsQuery,
@@ -37,6 +40,7 @@ import {
   type BillPaymentStatus,
 } from '../api/purchaseApi';
 import { useGetAccountsQuery } from '@/features/accounting/api/accountingApi';
+import { useGetAccountsQuery as useGetFinanceAccountsQuery } from '@/features/finance/api/financeApi';
 import {
   LineItemEditor,
   makeEmptyLine,
@@ -44,6 +48,9 @@ import {
   toLineInputs,
   type LineItemDraft,
 } from './LineItemEditor';
+import { SupplierSelectDropdown } from './SupplierSelectDropdown';
+import { CustomDropdown } from './CustomDropdown';
+import { AccountSelectDropdown } from '@/features/finance/components/AccountSelectDropdown';
 
 const STATUS_LABELS: Record<BillPaymentStatus, string> = {
   UNPAID: 'Unpaid',
@@ -133,6 +140,19 @@ export function PurchasesListView() {
   const [billPaymentMethod, setBillPaymentMethod] = useState<
     'CASH' | 'BANK_TRANSFER' | 'CARD' | 'CHEQUE' | 'MOBILE_BANKING'
   >('CASH');
+  const [billPaidFromAccountId, setBillPaidFromAccountId] = useState('');
+
+  const { data: financeAccountsData } = useGetFinanceAccountsQuery();
+  const financeAccounts = financeAccountsData?.items ?? [];
+
+  const billGrandTotal = useMemo(
+    () => billLines.reduce((sum, l) => sum + l.quantity * l.unitCost, 0),
+    [billLines],
+  );
+
+  const selectedBillAccount = useMemo(() => {
+    return financeAccounts.find((a) => a.id === billPaidFromAccountId);
+  }, [financeAccounts, billPaidFromAccountId]);
 
   const resetBillForm = () => {
     setBillSupplierId('');
@@ -142,6 +162,7 @@ export function PurchasesListView() {
     setBillLines([makeEmptyLine()]);
     setBillPaidAmount(0);
     setBillPaymentMethod('CASH');
+    setBillPaidFromAccountId('');
   };
 
   const billCanSave = billSupplierId && lineItemsValid(billLines);
@@ -160,6 +181,7 @@ export function PurchasesListView() {
         dueDate: billDueDate || undefined,
         paidAmount: billPaidAmount > 0 ? billPaidAmount : undefined,
         paymentMethod: billPaidAmount > 0 ? billPaymentMethod : undefined,
+        paidFromAccountId: billPaidAmount > 0 && billPaidFromAccountId ? billPaidFromAccountId : undefined,
         lines: toLineInputs(billLines),
       }).unwrap();
       toast.success(
@@ -169,11 +191,14 @@ export function PurchasesListView() {
       );
       setIsRecordOpen(false);
       resetBillForm();
-    } catch (err) {
-      toast.error(
-        (err as { data?: { message?: string } })?.data?.message ??
-          'Could not record the purchase.',
-      );
+    } catch (err: any) {
+      const msg =
+        (Array.isArray(err?.data?.message)
+          ? err.data.message.join(', ')
+          : err?.data?.message) ||
+        err?.message ||
+        'Could not record the purchase.';
+      toast.error(msg);
     }
   };
 
@@ -183,11 +208,14 @@ export function PurchasesListView() {
     try {
       const res = await deleteBill(b.id).unwrap();
       toast.success(res.message ?? 'Purchase deleted.');
-    } catch (err) {
-      toast.error(
-        (err as { data?: { message?: string } })?.data?.message ??
-          'Could not delete the purchase.',
-      );
+    } catch (err: any) {
+      const msg =
+        (Array.isArray(err?.data?.message)
+          ? err.data.message.join(', ')
+          : err?.data?.message) ||
+        err?.message ||
+        'Could not delete the purchase.';
+      toast.error(msg);
     }
   };
 
@@ -305,46 +333,42 @@ export function PurchasesListView() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 w-full xl:w-auto justify-start xl:justify-end">
-          <div className="relative flex items-center">
-            <label className="text-[10px] uppercase font-bold text-slate-400 absolute -top-2 left-2 px-1 bg-white leading-none">
-              Supplier
-            </label>
-            <select
+          <div className="min-w-[170px]">
+            <CustomDropdown
+              size="sm"
+              searchable
+              searchPlaceholder="Search supplier..."
               value={supplierFilter}
-              onChange={(e) => {
-                setSupplierFilter(e.target.value);
+              onChange={(val) => {
+                setSupplierFilter(val);
                 setCurrentPage(1);
               }}
-              className="text-xs font-semibold bg-white border border-slate-200 rounded-xl pl-3 pr-8 py-2 text-slate-700 outline-none hover:border-slate-300 appearance-none shadow-2xs cursor-pointer min-w-[130px]"
-            >
-              <option value="All Suppliers">All Suppliers</option>
-              {suppliers.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              options={[
+                { value: 'All Suppliers', label: 'All Suppliers' },
+                ...suppliers.map((s) => ({
+                  value: s.id,
+                  label: s.name,
+                  subtitle: s.phone || s.location,
+                })),
+              ]}
+            />
           </div>
 
-          <div className="relative flex items-center">
-            <label className="text-[10px] uppercase font-bold text-slate-400 absolute -top-2 left-2 px-1 bg-white leading-none">
-              Status
-            </label>
-            <select
+          <div className="min-w-[140px]">
+            <CustomDropdown
+              size="sm"
               value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
+              onChange={(val) => {
+                setStatusFilter(val);
                 setCurrentPage(1);
               }}
-              className="text-xs font-semibold bg-white border border-slate-200 rounded-xl pl-3 pr-8 py-2 text-slate-700 outline-none hover:border-slate-300 appearance-none shadow-2xs cursor-pointer min-w-[120px]"
-            >
-              <option>All Status</option>
-              <option>Paid</option>
-              <option>Partial</option>
-              <option>Unpaid</option>
-            </select>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              options={[
+                { value: 'All Status', label: 'All Status' },
+                { value: 'Paid', label: 'Paid', badge: 'Paid', badgeColor: 'bg-emerald-50 text-emerald-700' },
+                { value: 'Partial', label: 'Partial', badge: 'Partial', badgeColor: 'bg-amber-50 text-amber-700' },
+                { value: 'Unpaid', label: 'Unpaid', badge: 'Unpaid', badgeColor: 'bg-slate-100 text-slate-700' },
+              ]}
+            />
           </div>
 
           <button
@@ -548,20 +572,20 @@ export function PurchasesListView() {
           </p>
 
           <div className="flex items-center gap-3">
-            <div className="relative flex items-center">
-              <select
-                value={perPage}
-                onChange={(e) => {
-                  setPerPage(Number(e.target.value));
+            <div className="w-32">
+              <CustomDropdown
+                size="sm"
+                value={String(perPage)}
+                onChange={(val) => {
+                  setPerPage(Number(val));
                   setCurrentPage(1);
                 }}
-                className="text-xs font-semibold bg-white border border-slate-200 rounded-lg pl-3 pr-7 py-1.5 text-slate-700 outline-none hover:border-slate-300 appearance-none shadow-2xs cursor-pointer"
-              >
-                <option value={10}>10 per page</option>
-                <option value={20}>20 per page</option>
-                <option value={50}>50 per page</option>
-              </select>
-              <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                options={[
+                  { value: '10', label: '10 per page' },
+                  { value: '20', label: '20 per page' },
+                  { value: '50', label: '50 per page' },
+                ]}
+              />
             </div>
 
             <div className="flex items-center gap-1">
@@ -591,7 +615,7 @@ export function PurchasesListView() {
 
       {isRecordOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-xl border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col">
+          <div className="bg-white rounded-2xl w-full max-w-4xl shadow-xl border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col">
             <div className="p-5 border-b border-slate-100 flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-slate-900">Record New Purchase</h3>
@@ -612,20 +636,14 @@ export function PurchasesListView() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Select Supplier
+                    Select Supplier <span className="text-rose-500">*</span>
                   </label>
-                  <select
+                  <SupplierSelectDropdown
+                    suppliers={suppliers}
                     value={billSupplierId}
-                    onChange={(e) => setBillSupplierId(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-blue-600 focus:outline-none"
-                  >
-                    <option value="">Choose a supplier</option>
-                    {suppliers.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(id) => setBillSupplierId(id)}
+                    placeholder="Choose a supplier"
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -635,7 +653,7 @@ export function PurchasesListView() {
                     type="date"
                     value={billDate}
                     onChange={(e) => setBillDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-blue-600 focus:outline-none"
+                    className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-1 focus:ring-blue-600 focus:border-blue-600 focus:outline-hidden transition shadow-2xs"
                   />
                 </div>
               </div>
@@ -650,7 +668,7 @@ export function PurchasesListView() {
                     value={billInvoiceNo}
                     onChange={(e) => setBillInvoiceNo(e.target.value)}
                     placeholder="e.g. INV-556"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-blue-600 focus:outline-none"
+                    className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-1 focus:ring-blue-600 focus:border-blue-600 focus:outline-hidden transition shadow-2xs"
                   />
                 </div>
                 <div>
@@ -661,7 +679,7 @@ export function PurchasesListView() {
                     type="date"
                     value={billDueDate}
                     onChange={(e) => setBillDueDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-blue-600 focus:outline-none"
+                    className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-1 focus:ring-blue-600 focus:border-blue-600 focus:outline-hidden transition shadow-2xs"
                   />
                 </div>
               </div>
@@ -686,7 +704,7 @@ export function PurchasesListView() {
                     onChange={(e) =>
                       setBillPaidAmount(Math.max(0, Number(e.target.value) || 0))
                     }
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-blue-600 focus:outline-none"
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 bg-white focus:ring-1 focus:ring-blue-600 focus:border-blue-600 focus:outline-hidden transition shadow-2xs"
                   />
                 </div>
                 {billPaidAmount > 0 && (
@@ -694,22 +712,68 @@ export function PurchasesListView() {
                     <label className="block text-xs font-bold text-slate-700 mb-1">
                       Payment Method
                     </label>
-                    <select
+                    <CustomDropdown
                       value={billPaymentMethod}
-                      onChange={(e) =>
-                        setBillPaymentMethod(e.target.value as typeof billPaymentMethod)
+                      onChange={(val) =>
+                        setBillPaymentMethod(val as typeof billPaymentMethod)
                       }
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-blue-600 focus:outline-none"
-                    >
-                      <option value="CASH">Cash</option>
-                      <option value="BANK_TRANSFER">Bank Transfer</option>
-                      <option value="CARD">Card</option>
-                      <option value="CHEQUE">Cheque</option>
-                      <option value="MOBILE_BANKING">Mobile Banking</option>
-                    </select>
+                      options={[
+                        { value: 'CASH', label: 'Cash', subtitle: 'Cash payment from drawer', icon: <Wallet className="w-3.5 h-3.5 text-blue-600" /> },
+                        { value: 'BANK_TRANSFER', label: 'Bank Transfer', subtitle: 'Bank account wire or EFT', icon: <Building2 className="w-3.5 h-3.5 text-blue-600" /> },
+                        { value: 'CARD', label: 'Debit / Credit Card', subtitle: 'POS or corporate card', icon: <CreditCard className="w-3.5 h-3.5 text-blue-600" /> },
+                        { value: 'CHEQUE', label: 'Cheque', subtitle: 'Issued bank cheque', icon: <Receipt className="w-3.5 h-3.5 text-blue-600" /> },
+                        { value: 'MOBILE_BANKING', label: 'Mobile Banking', subtitle: 'bKash, Nagad, Rocket', icon: <Smartphone className="w-3.5 h-3.5 text-blue-600" /> },
+                      ]}
+                    />
                   </div>
                 )}
               </div>
+
+              {billPaidAmount > 0 && (
+                <div className="bg-slate-50/80 border border-slate-200 rounded-2xl p-4 space-y-3 animate-in fade-in duration-200">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Deduct Expense From Account
+                    </label>
+                    <AccountSelectDropdown
+                      accounts={financeAccounts}
+                      value={billPaidFromAccountId}
+                      onChange={(id) => setBillPaidFromAccountId(id)}
+                      allowUnassigned={false}
+                      placeholder="Select finance paying account..."
+                    />
+                  </div>
+
+                  {selectedBillAccount && (
+                    <div className="bg-white border border-slate-200/80 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+                      <div>
+                        <span className="text-slate-500">Current Balance: </span>
+                        <span className="font-bold text-slate-800 font-mono">
+                          ৳ {Number(selectedBillAccount.currentBalance || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">Paid Now: </span>
+                        <span className="font-bold text-rose-600 font-mono">
+                          - ৳ {billPaidAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">Balance After: </span>
+                        <span
+                          className={`font-bold font-mono ${
+                            Number(selectedBillAccount.currentBalance || 0) - billPaidAmount < 0
+                              ? 'text-rose-600'
+                              : 'text-emerald-600'
+                          }`}
+                        >
+                          ৳ {(Number(selectedBillAccount.currentBalance || 0) - billPaidAmount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-3">
                 <button
@@ -1048,39 +1112,42 @@ function RecordPaymentModal({
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Method
+                Payment Method
               </label>
-              <select
+              <CustomDropdown
                 value={method}
-                onChange={(e) => setMethod(e.target.value as typeof method)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-blue-600 focus:outline-none"
-              >
-                <option value="CASH">Cash</option>
-                <option value="BANK_TRANSFER">Bank Transfer</option>
-                <option value="CARD">Card</option>
-                <option value="CHEQUE">Cheque</option>
-                <option value="MOBILE_BANKING">Mobile Banking</option>
-              </select>
+                onChange={(val) => setMethod(val as typeof method)}
+                options={[
+                  { value: 'CASH', label: 'Cash', subtitle: 'Cash payment from drawer', icon: <Wallet className="w-3.5 h-3.5 text-blue-600" /> },
+                  { value: 'BANK_TRANSFER', label: 'Bank Transfer', subtitle: 'Bank account wire or EFT', icon: <Building2 className="w-3.5 h-3.5 text-blue-600" /> },
+                  { value: 'CARD', label: 'Debit / Credit Card', subtitle: 'Card terminal or POS', icon: <CreditCard className="w-3.5 h-3.5 text-blue-600" /> },
+                  { value: 'CHEQUE', label: 'Cheque', subtitle: 'Bank cheque payment', icon: <Receipt className="w-3.5 h-3.5 text-blue-600" /> },
+                  { value: 'MOBILE_BANKING', label: 'Mobile Banking', subtitle: 'bKash, Nagad, Rocket', icon: <Smartphone className="w-3.5 h-3.5 text-blue-600" /> },
+                ]}
+              />
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Paid From
+                Paid From Account
               </label>
-              <select
+              <CustomDropdown
                 value={paidFromAccountId}
-                onChange={(e) => setPaidFromAccountId(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-blue-600 focus:outline-none"
-              >
-                <option value="">Default (mapped)</option>
-                {assetAccounts.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.code} — {a.name}
-                  </option>
-                ))}
-              </select>
+                onChange={setPaidFromAccountId}
+                placeholder="Default (mapped account)"
+                options={[
+                  { value: '', label: 'Default (mapped account)' },
+                  ...assetAccounts.map((a) => ({
+                    value: a.id,
+                    label: a.name,
+                    subtitle: a.code,
+                    badge: a.code ? a.code : undefined,
+                    badgeColor: 'bg-slate-100 text-slate-700 font-mono',
+                  })),
+                ]}
+              />
             </div>
           </div>
           <div>

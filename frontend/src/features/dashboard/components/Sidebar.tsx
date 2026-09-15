@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { StoreSwitcherDropdown } from '@/features/tenant/components/StoreSwitcherDropdown';
 import { useGetMerchantOrderKpisQuery } from '@/features/order/api/orderApi';
+import { useGetRequisitionStatsQuery } from '@/features/finance/api/financeApi';
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -38,14 +39,15 @@ import {
   Wallet,
   UserCircle2,
   ChevronDown,
-  Home,
-  FileText,
-  BookOpen,
   Landmark,
   TrendingUp,
   TrendingDown,
   Scale,
   ArrowLeftRight,
+  Home,
+  BookOpen,
+  ClipboardCheck,
+  Banknote,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -66,6 +68,11 @@ export const Sidebar = ({
   const { data: orderKpis } = useGetMerchantOrderKpisQuery();
   const pendingOrdersCount = orderKpis?.pendingConfirmation ?? (orderKpis?.statusCounts?.PENDING ?? 0);
 
+  const { data: reqStats } = useGetRequisitionStatsQuery(undefined, {
+    pollingInterval: 30000,
+  });
+  const pendingRequisitionsCount = reqStats?.pendingCount ?? 0;
+
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
@@ -75,8 +82,9 @@ export const Sidebar = ({
     if (path === '/dashboard' && pathname === '/dashboard') return true;
     if (path === '/dashboard/accounting' && pathname === '/dashboard/accounting') return true;
     if (path === '/dashboard/purchase' && pathname === '/dashboard/purchase') return true;
-    if (path === '/dashboard/finance' && pathname.startsWith('/dashboard/finance')) return true;
-    if (path !== '/dashboard' && path !== '/dashboard/accounting' && path !== '/dashboard/purchase' && path !== '/dashboard/finance' && pathname.startsWith(path)) return true;
+    if (path === '/dashboard/finance/overview' && (pathname === '/dashboard/finance' || pathname === '/dashboard/finance/overview')) return true;
+    if (path === '/dashboard/accounts/overview' && (pathname === '/dashboard/accounts' || pathname === '/dashboard/accounts/overview')) return true;
+    if (path !== '/dashboard' && path !== '/dashboard/accounting' && path !== '/dashboard/purchase' && pathname.startsWith(path)) return true;
     return false;
   };
 
@@ -206,7 +214,7 @@ export const Sidebar = ({
         <span className="flex items-center gap-1.5">
           <span>{title}</span>
           {count !== undefined && count > 0 && (
-            <span className="px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-blue-500/20 text-blue-400 border border-blue-500/30 leading-none">
+            <span className="px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-rose-500 text-white leading-none shadow-xs animate-pulse">
               {count}
             </span>
           )}
@@ -828,7 +836,55 @@ export const Sidebar = ({
             </div>
           )}
 
-          {/* 5. ACCOUNTING ACCORDION */}
+          {/* 4. FINANCE (Single Route in Sidebar; all tabs accessible via upper navigation bar) */}
+          {!isDesktopCollapsed && (
+            <div className="px-3 pb-1 pt-4 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              Financials
+            </div>
+          )}
+          <Link 
+            href="/dashboard/finance/overview" 
+            className={navItemClass('/dashboard/finance')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Finance", pendingRequisitionsCount > 0 ? String(pendingRequisitionsCount) : undefined)}
+            onFocus={(e) => handleTooltipEnter(e, "Finance", pendingRequisitionsCount > 0 ? String(pendingRequisitionsCount) : undefined)}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="relative flex items-center gap-2.5">
+              <Landmark className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Finance</span>}
+              {isDesktopCollapsed && pendingRequisitionsCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full ring-2 ring-[#0F172A] animate-pulse" />
+              )}
+            </div>
+            {!isDesktopCollapsed && pendingRequisitionsCount > 0 && (
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-extrabold leading-none ${
+                pathname.startsWith('/dashboard/finance')
+                  ? 'bg-white text-rose-600'
+                  : 'bg-rose-500 text-white animate-pulse'
+              }`}>
+                {pendingRequisitionsCount}
+              </span>
+            )}
+          </Link>
+
+          {/* 4b. ACCOUNTS (Single Route in Sidebar; all tabs accessible via upper navigation bar) */}
+          <Link
+            href="/dashboard/accounts/overview"
+            className={navItemClass('/dashboard/accounts')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Accounts")}
+            onFocus={(e) => handleTooltipEnter(e, "Accounts")}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="flex items-center gap-2.5">
+              <BookOpen className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Accounts</span>}
+            </div>
+          </Link>
+
+          {/* 5. ACCOUNTING ACCORDION (Hidden from active navigation per simplified Finance MVP integration; code preserved for reuse) */}
+          {/*
           <AccordionHeader 
             title="Accounting" 
             groupKey="accounting" 
@@ -900,23 +956,9 @@ export const Sidebar = ({
               />
             </div>
           )}
+          */}
 
-          {/* 6. FINANCE (Single Top-Level Navigation Link) */}
-          <Link
-            href="/dashboard/finance/overview"
-            className={navItemClass('/dashboard/finance')}
-            onMouseEnter={(e) => handleTooltipEnter(e, "Finance")}
-            onFocus={(e) => handleTooltipEnter(e, "Finance")}
-            onMouseLeave={handleTooltipLeave}
-            onBlur={handleTooltipLeave}
-          >
-            <div className="flex items-center gap-2.5">
-              <Landmark className={iconClass} strokeWidth={iconStroke} />
-              {!isDesktopCollapsed && <span>Finance</span>}
-            </div>
-          </Link>
-
-          {/* 7. MARKETING & ANALYTICS ACCORDION */}
+          {/* 6. MARKETING & ANALYTICS ACCORDION */}
           <AccordionHeader 
             title="Marketing & Growth" 
             groupKey="marketing" 

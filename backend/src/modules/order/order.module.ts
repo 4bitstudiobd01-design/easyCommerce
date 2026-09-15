@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -20,6 +20,7 @@ import { CatalogModule } from '../catalog/catalog.module';
 import { InventoryModule } from '../inventory/inventory.module';
 import { SmsModule } from '../sms/sms.module';
 import { CouponModule } from '../coupon/coupon.module';
+import { FinanceModule } from '../finance/finance.module';
 import { CreateOrderService } from './services/create-order.service';
 import { CreateManualOrderService } from './services/create-manual-order.service';
 import { ListMerchantOrdersService } from './services/list-merchant-orders.service';
@@ -74,6 +75,7 @@ import { GenerateOrderNumberService } from './services/generate-order-number.ser
     InventoryModule,
     SmsModule,
     CouponModule,
+    forwardRef(() => FinanceModule),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
