@@ -73,6 +73,22 @@ export class StoreEntity {
   @Column({ type: 'text', nullable: true })
   logo?: string;
 
+  // Social Links & Footer Description
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  facebookUrl?: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  instagramUrl?: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  twitterUrl?: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  youtubeUrl?: string;
+
+  @Column({ type: 'text', nullable: true })
+  footerDescription?: string;
+
   // Branding, Favicon & SEO
   @Column({ type: 'varchar', length: 255, nullable: true })
   favicon?: string;
@@ -83,30 +99,11 @@ export class StoreEntity {
   @Column({ type: 'text', nullable: true })
   metaDescription?: string;
 
-  // Marketing Pixels & Conversions API (CAPI)
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  facebookPixelId?: string;
-
-  @Column({ type: 'text', nullable: true })
-  facebookCapiToken?: string;
-
-  @Column({ type: 'varchar', length: 100, nullable: true })
-  facebookTestEventCode?: string;
-
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  tiktokPixelId?: string;
-
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  googleTagManagerId?: string;
-
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  googleAnalyticsId?: string;
-
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  snapchatPixelId?: string;
-
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  pinterestTagId?: string;
+  // Marketing pixels moved to the `marketing_pixels` table (multi-instance,
+  // per-page rules, encrypted CAPI credentials). The former flat columns
+  // (facebookPixelId / facebookCapiToken / facebookTestEventCode / tiktokPixelId /
+  // googleTagManagerId / googleAnalyticsId / snapchatPixelId / pinterestTagId)
+  // were data-migrated and dropped in DropLegacyStorePixelColumns.
 
   // Visual Theme Styling & Theme System
   @Column({ type: 'varchar', length: 100, default: 'DEFAULT_MODERN' })
@@ -260,6 +257,32 @@ export class StoreEntity {
   @Column({ type: 'int', nullable: true, default: 0 })
   minimumOrderAmount?: number;
 
+  // Flat delivery charges by zone, shown as the two shipping options at checkout.
+  @Column({ type: 'numeric', precision: 10, scale: 2, default: 60 })
+  deliveryChargeInsideDhaka: number;
+
+  @Column({ type: 'numeric', precision: 10, scale: 2, default: 120 })
+  deliveryChargeOutsideDhaka: number;
+
+  /**
+   * Per-field show/required rules for the storefront checkout form. Full Name and
+   * Phone are always shown and required, so they are not configurable here. The
+   * shape is `{ [field]: { show: boolean; required: boolean } }` for the fields
+   * email, address, country, division, district, cityArea, zipCode, orderNote.
+   * Defaults reproduce today's behaviour.
+   */
+  @Column({ type: 'jsonb', default: () => `'${JSON.stringify({
+    email: { show: true, required: false },
+    address: { show: true, required: true },
+    country: { show: true, required: true },
+    division: { show: true, required: true },
+    district: { show: true, required: true },
+    cityArea: { show: true, required: true },
+    zipCode: { show: true, required: false },
+    orderNote: { show: true, required: false },
+  })}'` })
+  checkoutFieldConfig: Record<string, { show: boolean; required: boolean }>;
+
   // --- Customer Settings ---
   @Column({ type: 'boolean', default: true })
   allowCustomerRegistration: boolean;
@@ -289,6 +312,21 @@ export class StoreEntity {
 
   @Column({ type: 'int', default: 8 })
   featuredProductsCount: number;
+
+  @Column({ type: 'boolean', default: true })
+  showNewArrivals: boolean;
+
+  @Column({ type: 'boolean', default: true })
+  showBestSellers: boolean;
+
+  @Column({ type: 'boolean', default: true })
+  showFullCatalog: boolean;
+
+  @Column({ type: 'boolean', default: true })
+  showPromoBanner: boolean;
+
+  @Column({ type: 'boolean', default: true })
+  showWhyChooseUs: boolean;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;

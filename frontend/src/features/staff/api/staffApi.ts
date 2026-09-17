@@ -15,14 +15,39 @@ export type StaffPermissionType =
   | 'coupons:read'
   | 'coupons:write'
   | 'analytics:read'
+  | 'marketing:read'
+  | 'marketing:manage'
   | 'settings:read'
   | 'settings:write'
-  | 'staff:manage';
+  | 'staff:manage'
+  | 'hr:employees:manage'
+  | 'hr:employees:read'
+  | 'hr:attendance:manage'
+  | 'hr:leave:manage'
+  | 'hr:leave:self'
+  | 'hr:shifts:manage'
+  | 'hr:expenses:manage'
+  | 'hr:payroll:manage'
+  | 'hr:notices:manage'
+  | 'finance:read'
+  | 'finance:manage'
+  | 'finance:transactions:manage'
+  | 'finance:invoices:manage'
+  | 'finance:bills:manage'
+  | 'finance:accounts:manage'
+  | 'finance:transfers:manage'
+  | 'finance:reports:read'
+  | 'finance:settings:manage'
+  | 'accounting:read'
+  | 'accounting:manage'
+  | 'accounting:settings:manage'
+  | 'purchases:read';
 
 export interface StaffMember {
   id: string;
   tenantId: string;
   storeId: string;
+  branchId?: string;
   userId?: string;
   name: string;
   email: string;
@@ -41,6 +66,8 @@ export interface InviteStaffRequest {
   phone?: string;
   role: string;
   permissions: StaffPermissionType[];
+  /** Restrict this staff member to a single branch. Omit for store-wide access. */
+  branchId?: string;
 }
 
 export interface UpdateStaffPermissionsRequest {
@@ -48,6 +75,8 @@ export interface UpdateStaffPermissionsRequest {
   role?: string;
   permissions?: StaffPermissionType[];
   status?: 'ACTIVE' | 'PENDING_INVITE' | 'SUSPENDED';
+  /** Restrict this staff member to a single branch. Pass null for store-wide access. */
+  branchId?: string | null;
 }
 
 export interface AcceptStaffInviteRequest {

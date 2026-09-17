@@ -1,20 +1,16 @@
 export type SocialPlatform =
-  | 'telegram'
-  | 'whatsapp'
   | 'facebook'
+  | 'messenger'
   | 'instagram'
-  | 'x'
-  | 'slack'
-  | 'custom';
+  | 'tiktok'
+  | 'whatsapp'
+  | 'telegram';
 
 export type CredentialStatus =
   | 'connected'
   | 'disconnected'
   | 'error'
   | 'pending';
-
-export type AiProviderType = 'gemini' | 'openai';
-export type AiTriggerMode = 'NO_HUMAN_ACTIVE' | 'ALWAYS' | 'OUTSIDE_HOURS';
 
 export interface ChannelCredential {
   id: string;
@@ -60,13 +56,7 @@ export interface ThreadMessage {
   type?: string;
   senderType?: 'customer' | 'agent' | 'ai' | 'system';
   isAiGenerated?: boolean;
-  aiMetadata?: {
-    provider?: string;
-    model?: string;
-    tokensUsed?: number;
-    latencyMs?: number;
-    [key: string]: any;
-  };
+  aiMetadata?: Record<string, any>;
 }
 
 export interface PlatformField {
@@ -86,75 +76,4 @@ export interface PlatformConfig {
   docsUrl: string;
   webhookPath: string;
   fields: PlatformField[];
-}
-
-export interface OmnichannelAiConfig {
-  id?: string;
-  tenantId: string;
-  storeId?: string;
-  isEnabled: boolean;
-  provider: AiProviderType;
-  model: string;
-  apiKeyMasked: string;
-  hasApiKey: boolean;
-  systemPrompt: string;
-  triggerMode: AiTriggerMode;
-  temperature: number;
-  maxTokens: number;
-  businessContext: Record<string, any>;
-  updatedAt?: string;
-}
-
-export interface SaveAiConfigRequest {
-  isEnabled?: boolean;
-  provider?: AiProviderType;
-  model?: string;
-  apiKey?: string;
-  systemPrompt?: string;
-  triggerMode?: AiTriggerMode;
-  temperature?: number;
-  maxTokens?: number;
-  businessContext?: Record<string, any>;
-}
-
-export interface TestAiConnectionRequest {
-  provider?: AiProviderType;
-  model?: string;
-  apiKey?: string;
-}
-
-export interface TestAiConnectionResponse {
-  success: boolean;
-  message: string;
-  latencyMs: number;
-  model: string;
-}
-
-export interface OmnichannelAiLog {
-  id: string;
-  tenantId: string;
-  conversationId: string;
-  platform: SocialPlatform;
-  provider: AiProviderType;
-  model: string;
-  userQuery: string;
-  aiResponse?: string;
-  status: 'SUCCESS' | 'FAILED' | 'SKIPPED_PAUSED' | 'SKIPPED_AGENT_ACTIVE' | 'SKIPPED_DISABLED';
-  tokensUsed: number;
-  latencyMs: number;
-  errorMessage?: string;
-  createdAt: string;
-}
-
-export interface ConversationAiState {
-  id?: string;
-  tenantId: string;
-  conversationId: string;
-  isAiPaused: boolean;
-  pausedReason: string;
-  pausedByUserId?: string;
-  aiPausedAt?: string;
-  lastHumanAgentMessageAt?: string;
-  lastAiMessageAt?: string;
-  totalAiRepliesCount: number;
 }

@@ -6,22 +6,21 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { StoreSwitcherDropdown } from '@/features/tenant/components/StoreSwitcherDropdown';
 import { useGetMerchantOrderKpisQuery } from '@/features/order/api/orderApi';
+import { useGetRequisitionStatsQuery } from '@/features/finance/api/financeApi';
 import {
   LayoutDashboard,
   ShoppingCart,
   Package,
   FolderTree,
   Users,
+  UserCheck,
   Truck,
-  Tag,
   Settings,
   Store as StoreIcon,
   Layers,
-  CreditCard,
   Megaphone,
   BarChart2,
   MonitorSmartphone,
-  FileText,
   ShoppingBag,
   Target,
   Activity,
@@ -30,6 +29,16 @@ import {
   KeyRound,
   PanelLeftClose,
   PanelLeftOpen,
+  Receipt,
+  ChevronDown,
+  Landmark,
+  TrendingUp,
+  TrendingDown,
+  Scale,
+  ArrowLeftRight,
+  BookOpen,
+  ClipboardCheck,
+  Banknote,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -50,6 +59,11 @@ export const Sidebar = ({
   const { data: orderKpis } = useGetMerchantOrderKpisQuery();
   const pendingOrdersCount = orderKpis?.pendingConfirmation ?? (orderKpis?.statusCounts?.PENDING ?? 0);
 
+  const { data: reqStats } = useGetRequisitionStatsQuery(undefined, {
+    pollingInterval: 30000,
+  });
+  const pendingRequisitionsCount = reqStats?.pendingCount ?? 0;
+
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
@@ -57,8 +71,39 @@ export const Sidebar = ({
 
   const isActive = (path: string) => {
     if (path === '/dashboard' && pathname === '/dashboard') return true;
-    if (path !== '/dashboard' && pathname.startsWith(path)) return true;
+    if (path === '/dashboard/purchase' && pathname.startsWith('/dashboard/purchase')) return true;
+    if (path === '/dashboard/finance' && pathname.startsWith('/dashboard/finance')) return true;
+    if (path !== '/dashboard' && path !== '/dashboard/purchase' && path !== '/dashboard/finance' && pathname.startsWith(path)) return true;
     return false;
+  };
+
+  const isRouteInGroup = (prefix: string | string[]) => {
+    if (Array.isArray(prefix)) return prefix.some(p => pathname.startsWith(p));
+    return pathname.startsWith(prefix);
+  };
+
+  // Collapsible Accordion Groups
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
+    ecommerce: true,
+    crm: isRouteInGroup('/dashboard/crm'),
+    marketing: isRouteInGroup(['/dashboard/marketing', '/dashboard/analytics']),
+  });
+
+  // Auto-expand active group when route changes
+  useEffect(() => {
+    if (isRouteInGroup(['/dashboard/orders', '/dashboard/products', '/dashboard/categories', '/dashboard/customers', '/dashboard/inventory', '/dashboard/purchase', '/dashboard/logistics', '/dashboard/abandoned-carts', '/dashboard/themes'])) {
+      setOpenGroups(prev => ({ ...prev, ecommerce: true }));
+    }
+    if (isRouteInGroup('/dashboard/crm')) {
+      setOpenGroups(prev => ({ ...prev, crm: true }));
+    }
+    if (isRouteInGroup(['/dashboard/marketing', '/dashboard/analytics'])) {
+      setOpenGroups(prev => ({ ...prev, marketing: true }));
+    }
+  }, [pathname]);
+
+  const toggleGroup = (groupKey: string) => {
+    setOpenGroups(prev => ({ ...prev, [groupKey]: !prev[groupKey] }));
   };
 
   const [tooltipData, setTooltipData] = useState<{
@@ -92,7 +137,7 @@ export const Sidebar = ({
       ? 'w-11 h-11 justify-center mx-auto' 
       : 'w-full px-3 py-2 justify-between';
     const activeClasses = active
-      ? 'bg-blue-600 text-white font-semibold'
+      ? 'bg-blue-600 text-white font-semibold shadow-sm shadow-blue-600/20'
       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 font-medium';
     return `${baseClasses} ${sizeClasses} ${activeClasses}`;
   };
@@ -100,14 +145,40 @@ export const Sidebar = ({
   const iconClass = isDesktopCollapsed ? "w-5 h-5 shrink-0" : "w-4 h-4 shrink-0";
   const iconStroke = isDesktopCollapsed ? 1.75 : 2;
 
-  const NavGroupHeader = ({ children }: { children: React.ReactNode }) => {
+  const AccordionHeader = ({
+    title,
+    groupKey,
+    isOpen,
+    count,
+  }: {
+    title: string;
+    groupKey: string;
+    isOpen: boolean;
+    count?: number;
+  }) => {
     if (isDesktopCollapsed) {
-      return children === 'Main Menu' ? null : <div className="h-3" />;
+      return <div className="h-px bg-slate-800/80 my-2 mx-3" />;
     }
     return (
-      <div className="px-3 pb-1 pt-5 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-        {children}
-      </div>
+      <button
+        type="button"
+        onClick={() => toggleGroup(groupKey)}
+        className="w-full flex items-center justify-between px-3 py-1.5 mt-3 mb-1 text-[11px] font-bold uppercase tracking-wider text-white hover:text-white rounded-lg hover:bg-slate-800/40 transition-colors group"
+      >
+        <span className="flex items-center gap-1.5">
+          <span>{title}</span>
+          {count !== undefined && count > 0 && (
+            <span className="px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-rose-500 text-white leading-none shadow-xs animate-pulse">
+              {count}
+            </span>
+          )}
+        </span>
+        <ChevronDown
+          className={`w-3.5 h-3.5 text-slate-500 group-hover:text-slate-300 transition-transform duration-200 ${
+            isOpen ? 'rotate-180 text-slate-300' : ''
+          }`}
+        />
+      </button>
     );
   };
 
@@ -161,7 +232,12 @@ export const Sidebar = ({
         {/* Navigation Links */}
         <nav className="flex-1 overflow-y-auto px-3 pb-4 space-y-0.5 text-[13px] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-700/50 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-slate-600/80 overflow-x-hidden">
           
-          <NavGroupHeader>Main Menu</NavGroupHeader>
+          {/* Main Dashboard */}
+          {!isDesktopCollapsed && (
+            <div className="px-3 pb-1 pt-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              Overview
+            </div>
+          )}
           <Link 
             href="/dashboard" 
             className={navItemClass('/dashboard')}
@@ -176,275 +252,418 @@ export const Sidebar = ({
             </div>
           </Link>
 
-          <NavGroupHeader>Sales</NavGroupHeader>
-          <Link 
-            href="/dashboard/orders" 
-            className={navItemClass('/dashboard/orders')}
-            onMouseEnter={(e) => handleTooltipEnter(e, "Orders", pendingOrdersCount > 0 ? String(pendingOrdersCount) : undefined)}
-            onFocus={(e) => handleTooltipEnter(e, "Orders", pendingOrdersCount > 0 ? String(pendingOrdersCount) : undefined)}
+          {/* 1. E-COMMERCE ACCORDION */}
+          <AccordionHeader 
+            title="E-Commerce" 
+            groupKey="ecommerce" 
+            isOpen={openGroups.ecommerce}
+            count={pendingOrdersCount > 0 ? pendingOrdersCount : undefined}
+          />
+          {(isDesktopCollapsed || openGroups.ecommerce) && (
+            <div className="space-y-0.5">
+              <Link 
+                href="/dashboard/orders" 
+                className={navItemClass('/dashboard/orders')}
+                onMouseEnter={(e) => handleTooltipEnter(e, "Orders", pendingOrdersCount > 0 ? String(pendingOrdersCount) : undefined)}
+                onFocus={(e) => handleTooltipEnter(e, "Orders", pendingOrdersCount > 0 ? String(pendingOrdersCount) : undefined)}
+                onMouseLeave={handleTooltipLeave}
+                onBlur={handleTooltipLeave}
+              >
+                <div className="flex items-center gap-2.5">
+                  <ShoppingCart className={iconClass} strokeWidth={iconStroke} />
+                  {!isDesktopCollapsed && <span>Orders</span>}
+                </div>
+                {!isDesktopCollapsed && pendingOrdersCount > 0 && (
+                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold leading-none ${
+                    isActive('/dashboard/orders')
+                      ? 'bg-white text-blue-600 font-extrabold'
+                      : 'bg-blue-600 text-white'
+                  }`}>
+                    {pendingOrdersCount}
+                  </span>
+                )}
+              </Link>
+              <Link 
+                href="/dashboard/products" 
+                className={navItemClass('/dashboard/products')}
+                onMouseEnter={(e) => handleTooltipEnter(e, "Products")}
+                onFocus={(e) => handleTooltipEnter(e, "Products")}
+                onMouseLeave={handleTooltipLeave}
+                onBlur={handleTooltipLeave}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Package className={iconClass} strokeWidth={iconStroke} />
+                  {!isDesktopCollapsed && <span>Products</span>}
+                </div>
+              </Link>
+              <Link 
+                href="/dashboard/categories" 
+                className={navItemClass('/dashboard/categories')}
+                onMouseEnter={(e) => handleTooltipEnter(e, "Categories")}
+                onFocus={(e) => handleTooltipEnter(e, "Categories")}
+                onMouseLeave={handleTooltipLeave}
+                onBlur={handleTooltipLeave}
+              >
+                <div className="flex items-center gap-2.5">
+                  <FolderTree className={iconClass} strokeWidth={iconStroke} />
+                  {!isDesktopCollapsed && <span>Categories</span>}
+                </div>
+              </Link>
+              <Link 
+                href="/dashboard/customers" 
+                className={navItemClass('/dashboard/customers')}
+                onMouseEnter={(e) => handleTooltipEnter(e, "Customers")}
+                onFocus={(e) => handleTooltipEnter(e, "Customers")}
+                onMouseLeave={handleTooltipLeave}
+                onBlur={handleTooltipLeave}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Users className={iconClass} strokeWidth={iconStroke} />
+                  {!isDesktopCollapsed && <span>Customers</span>}
+                </div>
+              </Link>
+              <Link
+                href="/dashboard/inventory"
+                className={navItemClass('/dashboard/inventory')}
+                onMouseEnter={(e) => handleTooltipEnter(e, "Inventory")}
+                onFocus={(e) => handleTooltipEnter(e, "Inventory")}
+                onMouseLeave={handleTooltipLeave}
+                onBlur={handleTooltipLeave}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Layers className={iconClass} strokeWidth={iconStroke} />
+                  {!isDesktopCollapsed && <span>Inventory</span>}
+                </div>
+              </Link>
+              <Link
+                href="/dashboard/purchase"
+                className={navItemClass('/dashboard/purchase')}
+                onMouseEnter={(e) => handleTooltipEnter(e, "Purchase")}
+                onFocus={(e) => handleTooltipEnter(e, "Purchase")}
+                onMouseLeave={handleTooltipLeave}
+                onBlur={handleTooltipLeave}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Receipt className={iconClass} strokeWidth={iconStroke} />
+                  {!isDesktopCollapsed && <span>Purchase</span>}
+                </div>
+              </Link>
+              <Link 
+                href="/dashboard/logistics" 
+                className={navItemClass('/dashboard/logistics')}
+                onMouseEnter={(e) => handleTooltipEnter(e, "Courier")}
+                onFocus={(e) => handleTooltipEnter(e, "Courier")}
+                onMouseLeave={handleTooltipLeave}
+                onBlur={handleTooltipLeave}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Truck className={iconClass} strokeWidth={iconStroke} />
+                  {!isDesktopCollapsed && <span>Courier</span>}
+                </div>
+              </Link>
+              <Link
+                href="/dashboard/abandoned-carts"
+                className={navItemClass('/dashboard/abandoned-carts')}
+                onMouseEnter={(e) => handleTooltipEnter(e, "Abandoned Carts")}
+                onFocus={(e) => handleTooltipEnter(e, "Abandoned Carts")}
+                onMouseLeave={handleTooltipLeave}
+                onBlur={handleTooltipLeave}
+              >
+                <div className="flex items-center gap-2.5">
+                  <ShoppingBag className={iconClass} strokeWidth={iconStroke} />
+                  {!isDesktopCollapsed && <span>Abandoned Carts</span>}
+                </div>
+              </Link>
+              <Link
+                href="/dashboard/themes"
+                className={navItemClass('/dashboard/themes')}
+                onMouseEnter={(e) => handleTooltipEnter(e, "Storefront Themes")}
+                onFocus={(e) => handleTooltipEnter(e, "Storefront Themes")}
+                onMouseLeave={handleTooltipLeave}
+                onBlur={handleTooltipLeave}
+              >
+                <div className="flex items-center gap-2.5">
+                  <MonitorSmartphone className={iconClass} strokeWidth={iconStroke} />
+                  {!isDesktopCollapsed && <span>Storefront Themes</span>}
+                </div>
+              </Link>
+            </div>
+          )}
+
+          {/* 3. CRM & OMNICHANNEL ACCORDION */}
+          <AccordionHeader 
+            title="CRM & Growth" 
+            groupKey="crm" 
+            isOpen={openGroups.crm} 
+          />
+          {(isDesktopCollapsed || openGroups.crm) && (
+            <div className="space-y-0.5">
+              <Link 
+                href="/dashboard/crm/customers" 
+                className={navItemClass('/dashboard/crm/customers')}
+                onMouseEnter={(e) => handleTooltipEnter(e, "Customers 360")}
+                onFocus={(e) => handleTooltipEnter(e, "Customers 360")}
+                onMouseLeave={handleTooltipLeave}
+                onBlur={handleTooltipLeave}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Users className={iconClass} strokeWidth={iconStroke} />
+                  {!isDesktopCollapsed && <span>Customers 360</span>}
+                </div>
+              </Link>
+              <Link 
+                href="/dashboard/crm/leads" 
+                className={navItemClass('/dashboard/crm/leads')}
+                onMouseEnter={(e) => handleTooltipEnter(e, "Leads Pipeline")}
+                onFocus={(e) => handleTooltipEnter(e, "Leads Pipeline")}
+                onMouseLeave={handleTooltipLeave}
+                onBlur={handleTooltipLeave}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Target className={iconClass} strokeWidth={iconStroke} />
+                  {!isDesktopCollapsed && <span>Leads Pipeline</span>}
+                </div>
+              </Link>
+              <Link 
+                href="/dashboard/crm/chat" 
+                className={navItemClass('/dashboard/crm/chat')}
+                onMouseEnter={(e) => handleTooltipEnter(e, "Omnichannel Chat")}
+                onFocus={(e) => handleTooltipEnter(e, "Omnichannel Chat")}
+                onMouseLeave={handleTooltipLeave}
+                onBlur={handleTooltipLeave}
+              >
+                <div className="flex items-center gap-2.5">
+                  <MessageSquare className={iconClass} strokeWidth={iconStroke} />
+                  {!isDesktopCollapsed && <span>Omnichannel Chat</span>}
+                </div>
+              </Link>
+              <Link 
+                href="/dashboard/crm/channels" 
+                className={navItemClass('/dashboard/crm/channels')}
+                onMouseEnter={(e) => handleTooltipEnter(e, "Channel Credentials")}
+                onFocus={(e) => handleTooltipEnter(e, "Channel Credentials")}
+                onMouseLeave={handleTooltipLeave}
+                onBlur={handleTooltipLeave}
+              >
+                <div className="flex items-center gap-2.5">
+                  <KeyRound className={iconClass} strokeWidth={iconStroke} />
+                  {!isDesktopCollapsed && <span>Channel Credentials</span>}
+                </div>
+              </Link>
+              <Link 
+                href="/dashboard/crm/segments" 
+                className={navItemClass('/dashboard/crm/segments')}
+                onMouseEnter={(e) => handleTooltipEnter(e, "Customer Segments")}
+                onFocus={(e) => handleTooltipEnter(e, "Customer Segments")}
+                onMouseLeave={handleTooltipLeave}
+                onBlur={handleTooltipLeave}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Layers className={iconClass} strokeWidth={iconStroke} />
+                  {!isDesktopCollapsed && <span>Customer Segments</span>}
+                </div>
+              </Link>
+              <Link 
+                href="/dashboard/crm/activities" 
+                className={navItemClass('/dashboard/crm/activities')}
+                onMouseEnter={(e) => handleTooltipEnter(e, "Activity Hub")}
+                onFocus={(e) => handleTooltipEnter(e, "Activity Hub")}
+                onMouseLeave={handleTooltipLeave}
+                onBlur={handleTooltipLeave}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Activity className={iconClass} strokeWidth={iconStroke} />
+                  {!isDesktopCollapsed && <span>Activity Hub</span>}
+                </div>
+              </Link>
+              <Link 
+                href="/dashboard/crm/analytics" 
+                className={navItemClass('/dashboard/crm/analytics')}
+                onMouseEnter={(e) => handleTooltipEnter(e, "CRM Analytics")}
+                onFocus={(e) => handleTooltipEnter(e, "CRM Analytics")}
+                onMouseLeave={handleTooltipLeave}
+                onBlur={handleTooltipLeave}
+              >
+                <div className="flex items-center gap-2.5">
+                  <BarChart3 className={iconClass} strokeWidth={iconStroke} />
+                  {!isDesktopCollapsed && <span>CRM Analytics</span>}
+                </div>
+              </Link>
+            </div>
+          )}
+
+          {/* 4. HUMAN RESOURCES (Single Top-Level Navigation Link) */}
+          <Link
+            href="/dashboard/hr/my-leave"
+            className={navItemClass('/dashboard/hr')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Human Resources")}
+            onFocus={(e) => handleTooltipEnter(e, "Human Resources")}
             onMouseLeave={handleTooltipLeave}
             onBlur={handleTooltipLeave}
           >
             <div className="flex items-center gap-2.5">
-              <ShoppingCart className={iconClass} strokeWidth={iconStroke} />
-              {!isDesktopCollapsed && <span>Orders</span>}
+              <UserCheck className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Human Resources</span>}
             </div>
-            {!isDesktopCollapsed && pendingOrdersCount > 0 && (
-              <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold leading-none ${
-                isActive('/dashboard/orders')
-                  ? 'bg-white text-blue-600 font-extrabold'
-                  : 'bg-blue-600 text-white'
+          </Link>
+
+          {/* 5. ACCOUNTING ACCORDION */}
+          {/* <AccordionHeader 
+            title="Accounting" 
+            groupKey="accounting" 
+            isOpen={openGroups.accounting} 
+          />
+          {(isDesktopCollapsed || openGroups.accounting) && (
+            <div className="space-y-0.5">
+              <Link
+                href="/dashboard/accounting"
+                className={navItemClass('/dashboard/accounting')}
+                onMouseEnter={(e) => handleTooltipEnter(e, "Overview")}
+                onFocus={(e) => handleTooltipEnter(e, "Overview")}
+                onMouseLeave={handleTooltipLeave}
+                onBlur={handleTooltipLeave}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Home className={iconClass} strokeWidth={iconStroke} />
+                  {!isDesktopCollapsed && <span>Overview</span>}
+                </div>
+              </Link>
+
+              <SubAccordion
+                title="Transactions"
+                icon={FileText}
+                subKey="transactions"
+                isOpen={openSubGroups.transactions}
+                routes={['/dashboard/accounting/transactions']}
+                items={[
+                  { label: 'Journal Entries', href: '/dashboard/accounting/transactions/journal-entries' },
+                  { label: 'Expenses', href: '/dashboard/accounting/transactions/expenses' },
+                ]}
+              />
+
+              <SubAccordion
+                title="Accounts"
+                icon={BookOpen}
+                subKey="accounts"
+                isOpen={openSubGroups.accounts}
+                routes={['/dashboard/accounting/accounts']}
+                items={[
+                  { label: 'Chart of Accounts', href: '/dashboard/accounting/accounts/chart-of-accounts' },
+                  { label: 'Ledger', href: '/dashboard/accounting/accounts/ledger' },
+                ]}
+              />
+
+              <SubAccordion
+                title="Reports"
+                icon={BarChart3}
+                subKey="reports"
+                isOpen={openSubGroups.reports}
+                routes={['/dashboard/accounting/reports']}
+                items={[
+                  { label: 'Profit & Loss', href: '/dashboard/accounting/reports/profit-loss' },
+                  { label: 'Balance Sheet', href: '/dashboard/accounting/reports/balance-sheet' },
+                ]}
+              />
+
+              <SubAccordion
+                title="Settings"
+                icon={Settings}
+                subKey="accountingSettings"
+                isOpen={openSubGroups.accountingSettings}
+                routes={['/dashboard/accounting/settings']}
+                items={[
+                  { label: 'General', href: '/dashboard/accounting/settings/general' },
+                  { label: 'Account Mapping', href: '/dashboard/accounting/settings/account-mapping' },
+                  { label: 'Numbering', href: '/dashboard/accounting/settings/numbering' },
+                ]}
+              />
+            </div>
+          )} */}
+
+          {/* 6. FINANCIALS (Finance & Accounts) */}
+          <Link 
+            href="/dashboard/finance/overview" 
+            className={navItemClass('/dashboard/finance')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Finance", pendingRequisitionsCount > 0 ? String(pendingRequisitionsCount) : undefined)}
+            onFocus={(e) => handleTooltipEnter(e, "Finance", pendingRequisitionsCount > 0 ? String(pendingRequisitionsCount) : undefined)}
+            onMouseLeave={handleTooltipLeave}
+            onBlur={handleTooltipLeave}
+          >
+            <div className="relative flex items-center gap-2.5">
+              <Landmark className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Finance</span>}
+              {isDesktopCollapsed && pendingRequisitionsCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full ring-2 ring-[#0F172A] animate-pulse" />
+              )}
+            </div>
+            {!isDesktopCollapsed && pendingRequisitionsCount > 0 && (
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-extrabold leading-none ${
+                pathname.startsWith('/dashboard/finance')
+                  ? 'bg-white text-rose-600'
+                  : 'bg-rose-500 text-white animate-pulse'
               }`}>
-                {pendingOrdersCount}
+                {pendingRequisitionsCount}
               </span>
             )}
           </Link>
 
-          <NavGroupHeader>CRM & Growth</NavGroupHeader>
-          <Link 
-            href="/dashboard/crm/customers" 
-            className={navItemClass('/dashboard/crm/customers')}
-            onMouseEnter={(e) => handleTooltipEnter(e, "Customers 360")}
-            onFocus={(e) => handleTooltipEnter(e, "Customers 360")}
-            onMouseLeave={handleTooltipLeave}
-            onBlur={handleTooltipLeave}
-          >
-            <div className="flex items-center gap-2.5">
-              <Users className={iconClass} strokeWidth={iconStroke} />
-              {!isDesktopCollapsed && <span>Customers 360</span>}
-            </div>
-          </Link>
-          <Link 
-            href="/dashboard/crm/leads" 
-            className={navItemClass('/dashboard/crm/leads')}
-            onMouseEnter={(e) => handleTooltipEnter(e, "Leads Pipeline")}
-            onFocus={(e) => handleTooltipEnter(e, "Leads Pipeline")}
-            onMouseLeave={handleTooltipLeave}
-            onBlur={handleTooltipLeave}
-          >
-            <div className="flex items-center gap-2.5">
-              <Target className={iconClass} strokeWidth={iconStroke} />
-              {!isDesktopCollapsed && <span>Leads Pipeline</span>}
-            </div>
-          </Link>
-          <Link 
-            href="/dashboard/crm/chat" 
-            className={navItemClass('/dashboard/crm/chat')}
-            onMouseEnter={(e) => handleTooltipEnter(e, "Omnichannel Chat")}
-            onFocus={(e) => handleTooltipEnter(e, "Omnichannel Chat")}
-            onMouseLeave={handleTooltipLeave}
-            onBlur={handleTooltipLeave}
-          >
-            <div className="flex items-center gap-2.5">
-              <MessageSquare className={iconClass} strokeWidth={iconStroke} />
-              {!isDesktopCollapsed && <span>Omnichannel Chat</span>}
-            </div>
-          </Link>
-          <Link 
-            href="/dashboard/crm/channels" 
-            className={navItemClass('/dashboard/crm/channels')}
-            onMouseEnter={(e) => handleTooltipEnter(e, "Channel Integrations")}
-            onFocus={(e) => handleTooltipEnter(e, "Channel Integrations")}
-            onMouseLeave={handleTooltipLeave}
-            onBlur={handleTooltipLeave}
-          >
-            <div className="flex items-center gap-2.5">
-              <KeyRound className={iconClass} strokeWidth={iconStroke} />
-              {!isDesktopCollapsed && <span>Channel Credentials</span>}
-            </div>
-          </Link>
-          <Link 
-            href="/dashboard/crm/segments" 
-            className={navItemClass('/dashboard/crm/segments')}
-            onMouseEnter={(e) => handleTooltipEnter(e, "Segments")}
-            onFocus={(e) => handleTooltipEnter(e, "Segments")}
-            onMouseLeave={handleTooltipLeave}
-            onBlur={handleTooltipLeave}
-          >
-            <div className="flex items-center gap-2.5">
-              <Layers className={iconClass} strokeWidth={iconStroke} />
-              {!isDesktopCollapsed && <span>Segments</span>}
-            </div>
-          </Link>
-          <Link 
-            href="/dashboard/crm/activities" 
-            className={navItemClass('/dashboard/crm/activities')}
-            onMouseEnter={(e) => handleTooltipEnter(e, "Activity Hub")}
-            onFocus={(e) => handleTooltipEnter(e, "Activity Hub")}
-            onMouseLeave={handleTooltipLeave}
-            onBlur={handleTooltipLeave}
-          >
-            <div className="flex items-center gap-2.5">
-              <Activity className={iconClass} strokeWidth={iconStroke} />
-              {!isDesktopCollapsed && <span>Activity Hub</span>}
-            </div>
-          </Link>
-          <Link 
-            href="/dashboard/crm/analytics" 
-            className={navItemClass('/dashboard/crm/analytics')}
-            onMouseEnter={(e) => handleTooltipEnter(e, "CRM Analytics")}
-            onFocus={(e) => handleTooltipEnter(e, "CRM Analytics")}
-            onMouseLeave={handleTooltipLeave}
-            onBlur={handleTooltipLeave}
-          >
-            <div className="flex items-center gap-2.5">
-              <BarChart3 className={iconClass} strokeWidth={iconStroke} />
-              {!isDesktopCollapsed && <span>CRM Analytics</span>}
-            </div>
-          </Link>
-
-          <NavGroupHeader>Catalog</NavGroupHeader>
-          <Link 
-            href="/dashboard/products" 
-            className={navItemClass('/dashboard/products')}
-            onMouseEnter={(e) => handleTooltipEnter(e, "Products")}
-            onFocus={(e) => handleTooltipEnter(e, "Products")}
-            onMouseLeave={handleTooltipLeave}
-            onBlur={handleTooltipLeave}
-          >
-            <div className="flex items-center gap-2.5">
-              <Package className={iconClass} strokeWidth={iconStroke} />
-              {!isDesktopCollapsed && <span>Products</span>}
-            </div>
-          </Link>
-          <Link 
-            href="/dashboard/categories" 
-            className={navItemClass('/dashboard/categories')}
-            onMouseEnter={(e) => handleTooltipEnter(e, "Categories")}
-            onFocus={(e) => handleTooltipEnter(e, "Categories")}
-            onMouseLeave={handleTooltipLeave}
-            onBlur={handleTooltipLeave}
-          >
-            <div className="flex items-center gap-2.5">
-              <FolderTree className={iconClass} strokeWidth={iconStroke} />
-              {!isDesktopCollapsed && <span>Categories</span>}
-            </div>
-          </Link>
           <Link
-            href="/dashboard/inventory"
-            className={navItemClass('/dashboard/inventory')}
-            onMouseEnter={(e) => handleTooltipEnter(e, "Inventory")}
-            onFocus={(e) => handleTooltipEnter(e, "Inventory")}
+            href="/dashboard/accounts/overview"
+            className={navItemClass('/dashboard/accounts')}
+            onMouseEnter={(e) => handleTooltipEnter(e, "Accounts")}
+            onFocus={(e) => handleTooltipEnter(e, "Accounts")}
             onMouseLeave={handleTooltipLeave}
             onBlur={handleTooltipLeave}
           >
             <div className="flex items-center gap-2.5">
-              <Layers className={iconClass} strokeWidth={iconStroke} />
-              {!isDesktopCollapsed && <span>Inventory</span>}
+              <BookOpen className={iconClass} strokeWidth={iconStroke} />
+              {!isDesktopCollapsed && <span>Accounts</span>}
             </div>
           </Link>
 
-          <NavGroupHeader>Operations</NavGroupHeader>
-          {/* <Link 
-            href="/dashboard/payments" 
-            className={navItemClass('/dashboard/payments')}
-            onMouseEnter={(e) => handleTooltipEnter(e, "Payments")}
-            onFocus={(e) => handleTooltipEnter(e, "Payments")}
-            onMouseLeave={handleTooltipLeave}
-            onBlur={handleTooltipLeave}
-          >
-            <div className="flex items-center gap-2.5">
-              <CreditCard className={iconClass} strokeWidth={iconStroke} />
-              {!isDesktopCollapsed && <span>Payments</span>}
+          {/* 7. MARKETING & ANALYTICS ACCORDION */}
+          <AccordionHeader 
+            title="Marketing" 
+            groupKey="marketing" 
+            isOpen={openGroups.marketing} 
+          />
+          {(isDesktopCollapsed || openGroups.marketing) && (
+            <div className="space-y-0.5">
+              <Link 
+                href="/dashboard/marketing" 
+                className={navItemClass('/dashboard/marketing')}
+                onMouseEnter={(e) => handleTooltipEnter(e, "Marketing Pixels")}
+                onFocus={(e) => handleTooltipEnter(e, "Marketing Pixels")}
+                onMouseLeave={handleTooltipLeave}
+                onBlur={handleTooltipLeave}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Megaphone className={iconClass} strokeWidth={iconStroke} />
+                  {!isDesktopCollapsed && <span>Marketing Pixels</span>}
+                </div>
+              </Link>
+              <Link
+                href="/dashboard/analytics"
+                className={navItemClass('/dashboard/analytics')}
+                onMouseEnter={(e) => handleTooltipEnter(e, "Store Analytics")}
+                onFocus={(e) => handleTooltipEnter(e, "Store Analytics")}
+                onMouseLeave={handleTooltipLeave}
+                onBlur={handleTooltipLeave}
+              >
+                <div className="flex items-center gap-2.5">
+                  <BarChart2 className={iconClass} strokeWidth={iconStroke} />
+                  {!isDesktopCollapsed && <span>Store Analytics</span>}
+                </div>
+              </Link>
             </div>
-          </Link> */}
-          <Link 
-            href="/dashboard/logistics" 
-            className={navItemClass('/dashboard/logistics')}
-            onMouseEnter={(e) => handleTooltipEnter(e, "Courier")}
-            onFocus={(e) => handleTooltipEnter(e, "Courier")}
-            onMouseLeave={handleTooltipLeave}
-            onBlur={handleTooltipLeave}
-          >
-            <div className="flex items-center gap-2.5">
-              <Truck className={iconClass} strokeWidth={iconStroke} />
-              {!isDesktopCollapsed && <span>Courier</span>}
-            </div>
-          </Link>
+          )}
 
-          <NavGroupHeader>Marketing</NavGroupHeader>
-          {/* <Link 
-            href="/dashboard/coupons" 
-            className={navItemClass('/dashboard/coupons')}
-            onMouseEnter={(e) => handleTooltipEnter(e, "Coupons")}
-            onFocus={(e) => handleTooltipEnter(e, "Coupons")}
-            onMouseLeave={handleTooltipLeave}
-            onBlur={handleTooltipLeave}
-          >
-            <div className="flex items-center gap-2.5">
-              <Tag className={iconClass} strokeWidth={iconStroke} />
-              {!isDesktopCollapsed && <span>Coupons</span>}
+          {/* 7. STORE SETTINGS (Always accessible) */}
+          {!isDesktopCollapsed && (
+            <div className="px-3 pb-1 pt-4 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              Configuration
             </div>
-          </Link> */}
-          <Link 
-            href="/dashboard/marketing" 
-            className={navItemClass('/dashboard/marketing')}
-            onMouseEnter={(e) => handleTooltipEnter(e, "Marketing")}
-            onFocus={(e) => handleTooltipEnter(e, "Marketing")}
-            onMouseLeave={handleTooltipLeave}
-            onBlur={handleTooltipLeave}
-          >
-            <div className="flex items-center gap-2.5">
-              <Megaphone className={iconClass} strokeWidth={iconStroke} />
-              {!isDesktopCollapsed && <span>Marketing</span>}
-            </div>
-          </Link>
-          <Link
-            href="/dashboard/abandoned-carts"
-            className={navItemClass('/dashboard/abandoned-carts')}
-            onMouseEnter={(e) => handleTooltipEnter(e, "Abandoned Carts")}
-            onFocus={(e) => handleTooltipEnter(e, "Abandoned Carts")}
-            onMouseLeave={handleTooltipLeave}
-            onBlur={handleTooltipLeave}
-          >
-            <div className="flex items-center gap-2.5">
-              <ShoppingBag className={iconClass} strokeWidth={iconStroke} />
-              {!isDesktopCollapsed && <span>Abandoned Carts</span>}
-            </div>
-          </Link>
-          <Link
-            href="/dashboard/analytics"
-            className={navItemClass('/dashboard/analytics')}
-            onMouseEnter={(e) => handleTooltipEnter(e, "Analytics")}
-            onFocus={(e) => handleTooltipEnter(e, "Analytics")}
-            onMouseLeave={handleTooltipLeave}
-            onBlur={handleTooltipLeave}
-          >
-            <div className="flex items-center gap-2.5">
-              <BarChart2 className={iconClass} strokeWidth={iconStroke} />
-              {!isDesktopCollapsed && <span>Analytics</span>}
-            </div>
-          </Link>
-
-          <NavGroupHeader>Store</NavGroupHeader>
-          <Link 
-            href="/dashboard/themes" 
-            className={navItemClass('/dashboard/themes')}
-            onMouseEnter={(e) => handleTooltipEnter(e, "Storefront")}
-            onFocus={(e) => handleTooltipEnter(e, "Storefront")}
-            onMouseLeave={handleTooltipLeave}
-            onBlur={handleTooltipLeave}
-          >
-            <div className="flex items-center gap-2.5">
-              <MonitorSmartphone className={iconClass} strokeWidth={iconStroke} />
-              {!isDesktopCollapsed && <span>Storefront</span>}
-            </div>
-          </Link>
-          {/* <Link 
-            href="/dashboard/pages" 
-            className={navItemClass('/dashboard/pages')}
-            onMouseEnter={(e) => handleTooltipEnter(e, "Pages")}
-            onFocus={(e) => handleTooltipEnter(e, "Pages")}
-            onMouseLeave={handleTooltipLeave}
-            onBlur={handleTooltipLeave}
-          >
-            <div className="flex items-center gap-2.5">
-              <FileText className={iconClass} strokeWidth={iconStroke} />
-              {!isDesktopCollapsed && <span>Pages</span>}
-            </div>
-          </Link> */}
-
-          <NavGroupHeader>Settings</NavGroupHeader>
+          )}
           <Link 
             href="/dashboard/settings" 
             className={navItemClass('/dashboard/settings')}

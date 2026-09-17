@@ -3,10 +3,16 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useGetAnalyticsOverviewQuery } from '../api/analyticsApi';
+import {
+  useAnalyticsOverviewParams,
+  useAnalyticsShowComparison,
+} from '../context/AnalyticsFiltersContext';
 import { Skeleton } from '@/components/ui/Skeleton';
 
 export function OrdersOverviewChart() {
-  const { data, isLoading } = useGetAnalyticsOverviewQuery();
+  const dateParams = useAnalyticsOverviewParams();
+  const showComparison = useAnalyticsShowComparison();
+  const { data, isLoading } = useGetAnalyticsOverviewQuery(dateParams);
 
   if (isLoading) {
     return (
@@ -22,7 +28,7 @@ export function OrdersOverviewChart() {
   const chartData = current.map((point, i) => ({
     date: point.dayName,
     current: point.ordersCount,
-    previous: previous[i]?.ordersCount ?? null,
+    previous: showComparison ? previous[i]?.ordersCount ?? null : null,
   }));
   const maxCount = Math.max(1, ...chartData.map((d) => Math.max(d.current, d.previous ?? 0)));
   const hasData = chartData.some((d) => d.current > 0);
@@ -38,10 +44,14 @@ export function OrdersOverviewChart() {
           <div className="w-2.5 h-2.5 rounded-full bg-blue-600"></div>
           <span className="text-[11px] font-medium text-slate-600">Orders</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 border-t-2 border-dashed border-blue-400"></div>
-          <span className="text-[11px] font-medium text-slate-600">Previous Period</span>
-        </div>
+        {showComparison && (
+          <div className="flex items-center gap-2">
+            <div className="w-4 border-t-2 border-dashed border-blue-400"></div>
+            <span className="text-[11px] font-medium text-slate-600">
+              {dateParams.compare === 'previousYear' ? 'Previous Year' : 'Previous Period'}
+            </span>
+          </div>
+        )}
       </div>
 
       {!hasData ? (

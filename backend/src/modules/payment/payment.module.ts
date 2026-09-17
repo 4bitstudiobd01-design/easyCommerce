@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -11,6 +11,7 @@ import { TenantModule } from '../tenant/tenant.module';
 import { OrderModule } from '../order/order.module';
 import { StaffModule } from '../staff/staff.module';
 import { SmsModule } from '../sms/sms.module';
+import { FinanceModule } from '../finance/finance.module';
 import { InitiateSslCommerzPaymentService } from './services/initiate-sslcommerz-payment.service';
 import { ValidateSslCommerzPaymentService } from './services/validate-sslcommerz-payment.service';
 import { ListMerchantPaymentsService } from './services/list-merchant-payments.service';
@@ -21,7 +22,6 @@ import { GetPaymentDetailsService } from './services/get-payment-details.service
 import { ListPaymentGatewaysService } from './services/list-payment-gateways.service';
 import { ExportPaymentTransactionsService } from './services/export-payment-transactions.service';
 import { RecordPaymentEventService } from './services/record-payment-event.service';
-import { SeedPaymentDemoDataService } from './services/seed-payment-demo-data.service';
 import { GetOrderBalanceService } from './services/get-order-balance.service';
 import { GetOrderPaymentHistoryService } from './services/get-order-payment-history.service';
 import { RecordManualPaymentService } from './services/record-manual-payment.service';
@@ -50,6 +50,7 @@ import { OrderStatusHistoryEntity } from '../order/entities/order-status-history
     ]),
     TenantModule,
     OrderModule,
+    forwardRef(() => FinanceModule),
     // Supplies GetMyPermissionsService, which PermissionsGuard resolves per request.
     StaffModule,
     SmsModule,
@@ -74,7 +75,6 @@ import { OrderStatusHistoryEntity } from '../order/entities/order-status-history
     ListPaymentGatewaysService,
     ExportPaymentTransactionsService,
     RecordPaymentEventService,
-    SeedPaymentDemoDataService,
     JwtAuthGuard,
     PermissionsGuard,
     CreateRefundService,

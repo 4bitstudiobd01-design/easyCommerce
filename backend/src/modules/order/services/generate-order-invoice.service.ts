@@ -10,9 +10,12 @@ export interface InvoiceData {
   storeName: string;
   storePhone: string;
   storeAddress: string;
+  storeLogo?: string;
+  storeDomain?: string;
   amountPaid: number;
   balanceDue: number;
   generatedAt: string;
+  invoiceFooterNote?: string;
 }
 
 @Injectable()
@@ -63,9 +66,12 @@ export class GenerateOrderInvoiceService {
       storeName: store.name,
       storePhone: store.phone || 'N/A',
       storeAddress: store.address || 'Dhaka, Bangladesh',
+      storeLogo: store.logo || undefined,
+      storeDomain: store.domain || store.slug ? `${store.domain || store.slug + '.easycommerce.com'}` : undefined,
       amountPaid: Math.round(amountPaid * 100) / 100,
       balanceDue: Math.round(balanceDue * 100) / 100,
       generatedAt: new Date().toISOString(),
+      invoiceFooterNote: store.invoiceFooterNote || undefined,
     };
   }
 }

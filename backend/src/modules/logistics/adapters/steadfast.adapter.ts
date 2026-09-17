@@ -12,6 +12,7 @@ import {
   CourierTrackingResult,
 } from './courier.adapter';
 import { ConsignmentStatusEnum, CourierProviderEnum } from '../entities/consignment.entity';
+import { throwCourierError } from './courier-error.util';
 import axios from 'axios';
 
 /** Steadfast delivery states mapped onto the canonical shipment lifecycle. */
@@ -153,11 +154,10 @@ export class SteadfastCourierAdapter implements ICourierAdapter {
       this.logger.error(`Steadfast booking rejected for invoice ${payload.invoice}: ${JSON.stringify(response.data)}`);
       throw new BadGatewayException('Steadfast courier booking failed. Please try again or contact support.');
     } catch (err) {
-      if (err instanceof BadGatewayException) {
-        throw err;
-      }
       this.logger.error(`Steadfast booking request failed for invoice ${payload.invoice}: ${err?.message}`);
-      throw new BadGatewayException('Unable to reach Steadfast courier service. Please try again shortly.');
+      // 4xx (bad recipient data) → BadRequest with Steadfast's own reasons;
+      // network / 5xx → BadGateway with a retry hint.
+      throwCourierError('Steadfast', err);
     }
   }
 

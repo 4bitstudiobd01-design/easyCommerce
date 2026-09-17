@@ -117,7 +117,8 @@ export class StaffController {
   async getMyPermissions(
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') headerStoreId: string,
+    @Headers('x-branch-id') headerBranchId: string,
   ) {
-    return this.getMyPermissionsService.execute(userId, headerStoreId);
+    return this.getMyPermissionsService.execute(userId, headerStoreId, headerBranchId);
   }
 }

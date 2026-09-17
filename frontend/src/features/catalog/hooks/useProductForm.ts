@@ -23,9 +23,29 @@ import {
   ServiceDeliveryType,
   ServiceDurationUnit,
   HomepageSection,
+  VariantOptionMeta,
 } from '@/features/catalog/api/catalogApi';
 import { useGetMyStoreQuery } from '@/features/tenant/api/tenantApi';
 import { toast } from 'sonner';
+
+/**
+ * A variant combination the merchant configured on a brand-new product, held in
+ * form state (not the database) until the product itself is saved. The Cartesian
+ * combinations are computed client-side so a new product no longer has to be
+ * saved just to attach variants.
+ */
+export interface PendingVariant {
+  title: string;
+  combinationKey?: string;
+  sku?: string;
+  price?: number;
+  compareAtPrice?: number;
+  costPrice?: number;
+  isEnabled: boolean;
+  /** Initial stock quantity for this variant, seeded into its inventory row on create. */
+  initialStock?: number;
+  options: VariantOptionMeta[];
+}
 
 /**
  * Owns every field of the product create/edit/duplicate form plus the submit
@@ -82,6 +102,9 @@ export function useProductForm() {
 
   // Inventory & Stock State
   const [hasVariants, setHasVariants] = useState<boolean>(false);
+  // Variant combinations configured on a not-yet-saved product. Sent with the
+  // create payload; ignored in edit mode (there variants live in the DB).
+  const [pendingVariants, setPendingVariants] = useState<PendingVariant[]>([]);
   const [sku, setSku] = useState('');
   const [barcode, setBarcode] = useState('');
   const [trackInventory, setTrackInventory] = useState<boolean>(true);
@@ -93,7 +116,9 @@ export function useProductForm() {
   const [basePrice, setBasePrice] = useState<number | ''>('');
   const [compareAtPrice, setCompareAtPrice] = useState<number | ''>('');
   const [costPrice, setCostPrice] = useState<number | ''>('');
-  const [taxRate, setTaxRate] = useState<number>(15);
+  // Default to 0 so a merchant who never opens the Pricing section does not silently
+  // ship a 15% VAT. This also matches the backend entity/DTO default.
+  const [taxRate, setTaxRate] = useState<number>(0);
   const [isTaxInclusive, setIsTaxInclusive] = useState<boolean>(false);
   const [taxCategory, setTaxCategory] = useState<TaxCategory>('STANDARD_VAT');
 
@@ -176,7 +201,7 @@ export function useProductForm() {
     setBasePrice(sourceProduct.basePrice ?? '');
     setCompareAtPrice(sourceProduct.compareAtPrice ?? '');
     setCostPrice(sourceProduct.costPrice ?? '');
-    setTaxRate(sourceProduct.taxRate ?? 15);
+    setTaxRate(sourceProduct.taxRate ?? 0);
     setIsTaxInclusive(Boolean(sourceProduct.isTaxInclusive));
     setTaxCategory(sourceProduct.taxCategory || 'STANDARD_VAT');
 
@@ -291,6 +316,21 @@ export function useProductForm() {
       return;
     }
 
+    // A product going live must have a real selling price. Variant products price
+    // each variant instead, so they are exempt here — the price lives on the
+    // variants generated in the Variants section. Drafts can be saved without one.
+    if (targetStatus === 'ACTIVE' && !hasVariants && numericBasePrice <= 0) {
+      setErrorMsg('Set a Selling Price greater than 0 before publishing, or Save as Draft instead.');
+      return;
+    }
+
+    // Compare-at is the struck-through original price, so it has to sit above the
+    // selling price — otherwise the storefront shows a "discount" that raises it.
+    if (numericCompareAt > 0 && numericBasePrice > 0 && numericCompareAt <= numericBasePrice) {
+      setErrorMsg('Compare-at price must be higher than the Selling Price.');
+      return;
+    }
+
     if (discountStartsAt && discountEndsAt && new Date(discountEndsAt) <= new Date(discountStartsAt)) {
       setErrorMsg('Discount schedule end date must be after start date.');
       return;
@@ -304,16 +344,18 @@ export function useProductForm() {
         status: targetStatus,
         isVisible,
         slug: customSlug.trim() || undefined,
+        hasVariants,
         sku: sku.trim() || undefined,
         barcode: barcode.trim() || undefined,
         trackInventory,
         allowBackorder,
-        lowStockThreshold,
-        initialStock: initialStock !== '' ? Number(initialStock) : undefined,
+        lowStockThreshold: Number.isFinite(lowStockThreshold) ? lowStockThreshold : 0,
         basePrice: numericBasePrice,
         compareAtPrice: numericCompareAt > 0 ? numericCompareAt : undefined,
         costPrice: numericCostPrice > 0 ? numericCostPrice : undefined,
-        taxRate,
+        // A cleared tax field can leave taxRate as NaN, which the backend rejects
+        // as "not a number". Coerce it back to 0 here.
+        taxRate: Number.isFinite(taxRate) ? taxRate : 0,
         isTaxInclusive,
         taxCategory,
         discountType,
@@ -324,7 +366,18 @@ export function useProductForm() {
         brandId: brandId || undefined,
         collectionIds: selectedCollectionIds.length > 0 ? selectedCollectionIds : undefined,
         homepageSections: homepageSections.length > 0 ? homepageSections : undefined,
-        images: localImages.length > 0 ? localImages : undefined,
+        // initialStock, images and variants only apply when creating. On edit,
+        // stock is managed from the Inventory page, gallery images are attached
+        // live by ProductMediaGallery, and variants live in the DB — the update
+        // DTO does not accept any of them.
+        ...(isEditMode
+          ? {}
+          : {
+              initialStock: initialStock !== '' ? Number(initialStock) : undefined,
+              images: localImages.length > 0 ? localImages : undefined,
+              variants:
+                hasVariants && pendingVariants.length > 0 ? pendingVariants : undefined,
+            }),
         shippingRequired,
         weight: weight !== '' ? Number(weight) : undefined,
         weightUnit,
@@ -374,48 +427,6 @@ export function useProductForm() {
         ? 'Failed to update product. Please review your input and try again.'
         : 'Failed to create product. Please review your input and try again.';
       setErrorMsg(err?.data?.message || fallback);
-    }
-  };
-
-  const ensureProductSaved = async (): Promise<string | null> => {
-    if (!name.trim()) {
-      toast.error('Please enter a Product Name in the General section above.');
-      const nameInput = document.getElementById('product-name');
-      if (nameInput) {
-        nameInput.focus();
-        nameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-      return null;
-    }
-
-    if (editId) {
-      return editId;
-    }
-
-    try {
-      const payload: any = {
-        name: name.trim(),
-        description: description.trim() || undefined,
-        slug: customSlug.trim() || undefined,
-        productType,
-        status: 'DRAFT',
-        hasVariants: true,
-        trackInventory,
-        allowBackorder,
-        sku: sku.trim() || undefined,
-        price: numericBasePrice > 0 ? numericBasePrice : undefined,
-        compareAtPrice: numericCompareAt > 0 ? numericCompareAt : undefined,
-        categoryId: categoryId || undefined,
-        brandId: brandId || undefined,
-      };
-
-      const saved = await createProduct(payload).unwrap();
-      toast.success('Product draft created.');
-      router.replace(`/dashboard/products/create?edit=${saved.id}`);
-      return saved.id;
-    } catch (err: any) {
-      toast.error(err?.data?.message || 'Failed to initialize product.');
-      return null;
     }
   };
 
@@ -469,6 +480,7 @@ export function useProductForm() {
 
     // inventory
     hasVariants, setHasVariants,
+    pendingVariants, setPendingVariants,
     sku, setSku,
     barcode, setBarcode,
     trackInventory, setTrackInventory,
@@ -488,6 +500,7 @@ export function useProductForm() {
     discountStartsAt, setDiscountStartsAt,
     discountEndsAt, setDiscountEndsAt,
     numericBasePrice,
+    numericCompareAt,
     numericCostPrice,
     profitAmount,
     marginPercent,
@@ -517,7 +530,6 @@ export function useProductForm() {
 
     // submit
     handleFormSubmit,
-    ensureProductSaved,
   };
 }
 

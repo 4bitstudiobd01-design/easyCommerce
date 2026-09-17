@@ -14,6 +14,7 @@ import {
   Star,
   AlertTriangle,
   ArrowLeft,
+  ArrowRightLeft,
 } from 'lucide-react';
 import {
   useGetWarehousesQuery,
@@ -86,14 +87,24 @@ export function WarehousesView() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={handleAddClick}
-          className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/20 flex items-center gap-2 transition-all active:scale-95 shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add Warehouse</span>
-        </button>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <Link
+            href="/dashboard/warehouse-transfers/create"
+            className="px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold rounded-xl shadow-sm flex items-center gap-2 transition-all active:scale-95"
+          >
+            <ArrowRightLeft className="w-4 h-4" />
+            <span>Transfer Stock</span>
+          </Link>
+
+          <button
+            type="button"
+            onClick={handleAddClick}
+            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/20 flex items-center gap-2 transition-all active:scale-95"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Warehouse</span>
+          </button>
+        </div>
       </div>
 
       {/* Warehouse Cards */}

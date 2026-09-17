@@ -131,7 +131,7 @@ export class ProductEntity {
   @Column({ type: 'int', default: 0 })
   sortOrder: number;
 
-  /** Which homepage sections (Hero/Featured, New Arrivals, Best Sellers) this product is curated into. */
+  /** Which homepage sections (Hero, Featured, New Arrivals, Best Sellers) this product is curated into. */
   @Column({ type: 'enum', enum: HomepageSection, array: true, default: [] })
   homepageSections: HomepageSection[];
 

@@ -293,6 +293,12 @@ describe('Category Module Security, Cross-Tenant Isolation & Edge Cases (Chunk 9
         };
         return qb;
       }),
+      count: jest.fn().mockImplementation(async (opts) => {
+        if (!opts?.where) return categoriesDb.length;
+        return categoriesDb.filter((c) => {
+          return Object.entries(opts.where).every(([k, v]) => (c as any)[k] === v);
+        }).length;
+      }),
       update: jest.fn().mockImplementation(async (criteria, values) => {
         categoriesDb.forEach((c) => {
           if (Object.entries(criteria).every(([k, v]) => (c as any)[k] === v)) {
@@ -457,13 +463,16 @@ describe('Category Module Security, Cross-Tenant Isolation & Edge Cases (Chunk 9
   });
 
   describe('3. Product Relationship Integrity & Safe Unlinking', () => {
-    it('should safely unlink products when category is deleted', async () => {
+    it('should block deletion when the category still has products assigned', async () => {
       // Products prod-a-1 and prod-a-2 are attached to cat-a-child-2
       expect(productsDb.filter((p) => p.categoryId === 'cat-a-child-2').length).toBe(2);
 
-      await deleteService.execute('cat-a-child-2', storeA);
+      await expect(deleteService.execute('cat-a-child-2', storeA)).rejects.toThrow(
+        BadRequestException,
+      );
 
-      expect(mockDataSource.transaction).toHaveBeenCalled();
+      // Products remain untouched — deletion did not go through
+      expect(productsDb.filter((p) => p.categoryId === 'cat-a-child-2').length).toBe(2);
     });
 
     it('should accurately compute product count for empty vs populated categories', async () => {

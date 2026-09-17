@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CategoryEntity } from '../entities/category.entity';
@@ -22,17 +22,25 @@ export class DeleteCategoryService {
       throw new NotFoundException('Category not found');
     }
 
-    // Safety: set categoryId to null on associated products (do not delete products!)
-    await this.productRepository.update(
-      { categoryId, tenantId },
-      { categoryId: undefined },
-    );
+    const productsCount = await this.productRepository.count({
+      where: { categoryId, tenantId },
+    });
 
-    // Reassign subcategories to root (parentId = null)
-    await this.categoryRepository.update(
-      { parentId: categoryId, tenantId },
-      { parentId: undefined },
-    );
+    if (productsCount > 0) {
+      throw new BadRequestException(
+        `Cannot delete "${category.name}" — it has ${productsCount} product(s) assigned. Move or delete them first.`,
+      );
+    }
+
+    const subcategoriesCount = await this.categoryRepository.count({
+      where: { parentId: categoryId, tenantId },
+    });
+
+    if (subcategoriesCount > 0) {
+      throw new BadRequestException(
+        `Cannot delete "${category.name}" — it has ${subcategoriesCount} subcategory(ies). Move or delete them first.`,
+      );
+    }
 
     await this.categoryRepository.remove(category);
 

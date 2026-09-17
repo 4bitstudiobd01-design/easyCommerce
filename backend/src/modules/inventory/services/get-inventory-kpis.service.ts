@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { InventoryStockEntity } from '../entities/inventory-stock.entity';
 import { InventoryKpiResponseDto } from '../dto/inventory-kpi-response.dto';
+import { ProductStatus } from '../../catalog/enums/product-status.enum';
 
 @Injectable()
 export class GetInventoryKpisService {
@@ -17,6 +18,13 @@ export class GetInventoryKpisService {
       .createQueryBuilder('stock')
       .leftJoin('stock.product', 'product')
       .where('stock.tenantId = :tenantId', { tenantId })
+      // Exclude the product-level placeholder row of a variant product (its stock
+      // lives on the variant rows), so it does not inflate totalItems and add a
+      // phantom out-of-stock count. Matches ListInventoryService.
+      .andWhere('NOT (product.hasVariants = true AND stock.variantId IS NULL)')
+      // Archived products are out of the catalogue and must not be counted here,
+      // matching ListInventoryService.
+      .andWhere('product.status != :archivedStatus', { archivedStatus: ProductStatus.ARCHIVED })
       .select([
         'COUNT(stock.id)::int AS "totalItems"',
         'COALESCE(SUM(stock.quantityOnHand), 0)::int AS "totalUnits"',

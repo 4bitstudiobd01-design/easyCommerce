@@ -99,6 +99,17 @@ export class CreateShipmentDto {
   @Min(0)
   codAmount?: number;
 
+  @ApiPropertyOptional({
+    description:
+      "RedX's delivery_area_id (from GET /logistics/redx/areas). Required for RedX bookings — RedX has no free-text address resolver, so the merchant must pick an area.",
+    example: 12,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  redxDeliveryAreaId?: number;
+
   @ApiPropertyOptional({ example: 'Call before delivery' })
   @IsOptional()
   @IsString()

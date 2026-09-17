@@ -34,7 +34,16 @@ export class FindPublicStoreProductBySlugService {
 
     const product = await this.productRepository.findOne({
       where: { tenantId: store.tenantId, slug: productSlug, isPublished: true, isVisible: true },
-      relations: ['category', 'brand', 'collections', 'images', 'variants'],
+      relations: [
+        'category',
+        'brand',
+        'collections',
+        'images',
+        'variants',
+        'variants.image',
+        'attributeValues',
+        'attributeValues.attribute',
+      ],
     });
 
     if (!product) {

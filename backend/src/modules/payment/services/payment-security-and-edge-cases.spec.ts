@@ -6,7 +6,6 @@ import { GetPaymentDetailsService } from './get-payment-details.service';
 import { RecordPaymentEventService } from './record-payment-event.service';
 import { ExportPaymentTransactionsService } from './export-payment-transactions.service';
 import { ListPaymentTransactionsService } from './list-payment-transactions.service';
-import { SeedPaymentDemoDataService } from './seed-payment-demo-data.service';
 import { PaymentDomainService } from './payment-domain.service';
 import {
   PaymentEntity,
@@ -300,36 +299,6 @@ describe('Payment security and edge cases', () => {
       getMyPermissions.execute.mockResolvedValue({ permissions: [], isOwner: true });
 
       await expect(guard.canActivate(makeContext('owner-1'))).resolves.toBe(true);
-    });
-  });
-
-  describe('Demo seeder safety', () => {
-    it('refuses to seed payment demo data in production', async () => {
-      const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'production';
-
-      const module: TestingModule = await Test.createTestingModule({
-        providers: [
-          SeedPaymentDemoDataService,
-          { provide: getRepositoryToken(PaymentEntity), useValue: {} },
-          { provide: getRepositoryToken(OrderEntity), useValue: {} },
-          { provide: getRepositoryToken(RefundEntity), useValue: {} },
-          { provide: getRepositoryToken(PaymentEventEntity), useValue: {} },
-          { provide: getRepositoryToken(PaymentGatewayEntity), useValue: {} },
-          { provide: 'DataSource', useValue: { transaction: jest.fn() } },
-        ],
-      })
-        .overrideProvider('DataSource')
-        .useValue({ transaction: jest.fn() })
-        .compile()
-        .catch(() => null);
-
-      if (module) {
-        const service = module.get<SeedPaymentDemoDataService>(SeedPaymentDemoDataService);
-        await expect(service.execute('tenant-a')).rejects.toBeInstanceOf(ForbiddenException);
-      }
-
-      process.env.NODE_ENV = originalEnv;
     });
   });
 });

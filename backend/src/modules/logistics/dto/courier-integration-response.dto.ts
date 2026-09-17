@@ -181,17 +181,3 @@ export class CourierConnectionTestResponseDto {
   @ApiProperty({ type: CourierIntegrationDto, description: 'The integration with the test outcome recorded' })
   integration: CourierIntegrationDto;
 }
-
-export class SeedCourierDemoDataResponseDto {
-  @ApiProperty()
-  success: boolean;
-
-  @ApiProperty({ example: 'Seeded 4 courier integrations.' })
-  message: string;
-
-  @ApiProperty()
-  integrationsCreated: number;
-
-  @ApiProperty({ description: 'Providers left untouched because they were already configured' })
-  integrationsSkipped: number;
-}

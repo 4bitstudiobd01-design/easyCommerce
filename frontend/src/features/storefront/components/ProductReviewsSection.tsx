@@ -17,9 +17,13 @@ import { toast } from 'sonner';
 
 interface ProductReviewsSectionProps {
   productId: string;
+  primaryColor?: string;
 }
 
-export function ProductReviewsSection({ productId }: ProductReviewsSectionProps) {
+export function ProductReviewsSection({
+  productId,
+  primaryColor = '#2563eb',
+}: ProductReviewsSectionProps) {
   const { data, isLoading, refetch } = useGetApprovedReviewsQuery(productId);
   const [createReview, { isLoading: isSubmitting }] = useCreateReviewMutation();
 
@@ -84,7 +88,8 @@ export function ProductReviewsSection({ productId }: ProductReviewsSectionProps)
         <button
           type="button"
           onClick={() => setIsModalOpen(true)}
-          className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-2 transition-all active:scale-95 self-start sm:self-auto"
+          className="px-4 py-2.5 text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-2 transition-all hover:brightness-110 active:scale-95 self-start sm:self-auto"
+          style={{ backgroundColor: primaryColor, boxShadow: `0 8px 20px -8px ${primaryColor}66` }}
         >
           <Plus className="w-4 h-4" />
           <span>Write a Review</span>
@@ -108,7 +113,10 @@ export function ProductReviewsSection({ productId }: ProductReviewsSectionProps)
             <div key={rev.id} className="p-4 bg-slate-50/70 border border-slate-200/80 rounded-2xl space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full bg-purple-100 text-purple-700 font-black text-xs flex items-center justify-center">
+                  <div
+                    className="w-7 h-7 rounded-full font-black text-xs flex items-center justify-center"
+                    style={{ backgroundColor: `${primaryColor}1a`, color: primaryColor }}
+                  >
                     {rev.reviewerName[0].toUpperCase()}
                   </div>
                   <span className="font-bold text-slate-900 text-xs">{rev.reviewerName}</span>
@@ -139,7 +147,10 @@ export function ProductReviewsSection({ productId }: ProductReviewsSectionProps)
 
       {/* WRITE A REVIEW MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div
+          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+          style={{ ['--rv-brand' as any]: primaryColor }}
+        >
           <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-md w-full p-6 space-y-6">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div>
@@ -189,7 +200,7 @@ export function ProductReviewsSection({ productId }: ProductReviewsSectionProps)
                   value={reviewerName}
                   onChange={(e) => setReviewerName(e.target.value)}
                   placeholder="e.g. Tanvir Hossain"
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-700"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:[--tw-ring-color:var(--rv-brand)]"
                   required
                 />
               </div>
@@ -201,7 +212,7 @@ export function ProductReviewsSection({ productId }: ProductReviewsSectionProps)
                   value={reviewerEmail}
                   onChange={(e) => setReviewerEmail(e.target.value)}
                   placeholder="e.g. tanvir@example.com"
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-700"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:[--tw-ring-color:var(--rv-brand)]"
                 />
               </div>
 
@@ -212,7 +223,7 @@ export function ProductReviewsSection({ productId }: ProductReviewsSectionProps)
                   onChange={(e) => setComment(e.target.value)}
                   placeholder="Tell us what you liked about this product..."
                   rows={3}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-700"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:[--tw-ring-color:var(--rv-brand)]"
                   required
                 />
               </div>
@@ -229,7 +240,8 @@ export function ProductReviewsSection({ productId }: ProductReviewsSectionProps)
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-6 py-2.5 bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs rounded-xl shadow-lg shadow-purple-700/20 transition-all active:scale-95"
+                  className="px-6 py-2.5 text-white font-bold text-xs rounded-xl shadow-lg transition-all hover:brightness-110 active:scale-95 disabled:opacity-60"
+                  style={{ backgroundColor: primaryColor, boxShadow: `0 10px 24px -10px ${primaryColor}66` }}
                 >
                   {isSubmitting ? 'Submitting...' : 'Submit Review'}
                 </button>

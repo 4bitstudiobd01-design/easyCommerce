@@ -45,7 +45,13 @@ export class CourierCredentialsDto {
   @MaxLength(500)
   clientSecret?: string;
 
-  @ApiPropertyOptional({ description: "Pathao's own merchant store id" })
+  @ApiPropertyOptional({ description: "CarryBee's Client-Context auth header" })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  clientContext?: string;
+
+  @ApiPropertyOptional({ description: "Pathao's / CarryBee's own merchant store id" })
   @IsOptional()
   @IsString()
   @MaxLength(255)

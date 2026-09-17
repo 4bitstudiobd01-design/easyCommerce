@@ -29,8 +29,9 @@ interface OrganizationTabProps {
   form: ProductFormState;
 }
 
-const HOMEPAGE_SECTION_OPTIONS: { value: HomepageSection; label: string }[] = [
-  { value: 'HERO_FEATURED', label: 'Hero / Featured' },
+const HOMEPAGE_SECTION_OPTIONS: { value: HomepageSection; label: string; hint?: string }[] = [
+  { value: 'HERO', label: 'Hero Banner', hint: 'Shown in the top carousel when the store has no banner images' },
+  { value: 'FEATURED', label: 'Featured Products' },
   { value: 'NEW_ARRIVALS', label: 'New Arrivals' },
   { value: 'BEST_SELLERS', label: 'Best Sellers' },
 ];
@@ -196,13 +197,13 @@ export function OrganizationTab({ form }: OrganizationTabProps) {
 
         {/* Category Select */}
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
             Category
           </label>
           <select
             value={categoryId}
             onChange={(e) => setCategoryId(e.target.value)}
-            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+            className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
           >
             <option value="">Uncategorized</option>
             {formatHierarchicalCategoryOptions(categories).map((cat) => (
@@ -216,7 +217,7 @@ export function OrganizationTab({ form }: OrganizationTabProps) {
         {/* Brand Select + Inline Add */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">Brand</label>
+            <label className="block text-xs font-semibold text-slate-700">Brand</label>
             <button
               type="button"
               onClick={() => setShowAddBrand(!showAddBrand)}
@@ -234,7 +235,7 @@ export function OrganizationTab({ form }: OrganizationTabProps) {
                 value={newBrandName}
                 onChange={(e) => setNewBrandName(e.target.value)}
                 placeholder="Brand name..."
-                className="flex-1 px-3 py-1.5 bg-white border rounded-lg text-xs"
+                className="flex-1 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               />
               <button
                 type="button"
@@ -250,7 +251,7 @@ export function OrganizationTab({ form }: OrganizationTabProps) {
           <select
             value={brandId}
             onChange={(e) => setBrandId(e.target.value)}
-            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+            className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
           >
             <option value="">No Brand</option>
             {brands.map((b) => (
@@ -264,7 +265,7 @@ export function OrganizationTab({ form }: OrganizationTabProps) {
         {/* Collections Multi-Select */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">Collections</label>
+            <label className="block text-xs font-semibold text-slate-700">Collections</label>
             <button
               type="button"
               onClick={() => setShowAddCollection(!showAddCollection)}
@@ -282,7 +283,7 @@ export function OrganizationTab({ form }: OrganizationTabProps) {
                 value={newCollectionName}
                 onChange={(e) => setNewCollectionName(e.target.value)}
                 placeholder="Collection name..."
-                className="flex-1 px-3 py-1.5 bg-white border rounded-lg text-xs"
+                className="flex-1 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               />
               <button
                 type="button"
@@ -324,7 +325,7 @@ export function OrganizationTab({ form }: OrganizationTabProps) {
 
         {/* Homepage Placement */}
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
             Homepage Placement
           </label>
           <p className="text-[11px] text-slate-400 mb-2">Choose which homepage sections should feature this product.</p>
@@ -334,7 +335,7 @@ export function OrganizationTab({ form }: OrganizationTabProps) {
               return (
                 <label
                   key={opt.value}
-                  className={`flex items-center gap-2 p-2 border rounded-xl cursor-pointer text-xs transition-all ${
+                  className={`flex items-start gap-2 p-2 border rounded-xl cursor-pointer text-xs transition-all ${
                     isChecked ? 'bg-blue-50/60 border-blue-300 font-bold text-blue-900' : 'bg-slate-50/50 border-slate-200 text-slate-700'
                   }`}
                 >
@@ -342,9 +343,14 @@ export function OrganizationTab({ form }: OrganizationTabProps) {
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => toggleHomepageSection(opt.value)}
-                    className="rounded text-blue-600 focus:ring-blue-500"
+                    className="rounded text-blue-600 focus:ring-blue-500 mt-0.5"
                   />
-                  <span>{opt.label}</span>
+                  <span>
+                    {opt.label}
+                    {opt.hint && (
+                      <span className="block text-[10.5px] font-normal text-slate-400 mt-0.5">{opt.hint}</span>
+                    )}
+                  </span>
                 </label>
               );
             })}
@@ -467,7 +473,7 @@ export function OrganizationTab({ form }: OrganizationTabProps) {
                     placeholder="e.g. Material, Warranty, Origin"
                     value={fieldName}
                     onChange={(e) => setFieldName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
                   />
                 </div>
 
@@ -476,7 +482,7 @@ export function OrganizationTab({ form }: OrganizationTabProps) {
                   <select
                     value={fieldType}
                     onChange={(e) => setFieldType(e.target.value as AttributeType)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 font-medium"
+                    className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
                   >
                     <option value="TEXT">Text (Single Line)</option>
                     <option value="NUMBER">Number (Numeric)</option>
@@ -499,7 +505,7 @@ export function OrganizationTab({ form }: OrganizationTabProps) {
                     placeholder="Cotton&#10;Silk&#10;Linen&#10;Leather"
                     value={fieldOptionsText}
                     onChange={(e) => setFieldOptionsText(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   />
                 </div>
               )}
@@ -513,7 +519,7 @@ export function OrganizationTab({ form }: OrganizationTabProps) {
                   placeholder="e.g. 100% Organic Egyptian Cotton"
                   value={fieldDescription}
                   onChange={(e) => setFieldDescription(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
                 />
               </div>
             </div>

@@ -19,11 +19,11 @@ export class SaveAiConfigDto {
   @ApiPropertyOptional({
     description: 'AI Provider',
     example: 'gemini',
-    enum: ['gemini', 'openai'],
+    enum: ['gemini', 'openai', 'claude', 'deepseek', 'groq'],
   })
   @IsString()
   @IsOptional()
-  @IsIn(['gemini', 'openai'])
+  @IsIn(['gemini', 'openai', 'claude', 'deepseek', 'groq'])
   provider?: AiProviderType;
 
   @ApiPropertyOptional({
@@ -73,17 +73,24 @@ export class SaveAiConfigDto {
   @IsObject()
   @IsOptional()
   businessContext?: Record<string, any>;
+
+  @ApiPropertyOptional({
+    description: 'Per-platform AI enablement map (e.g. { telegram: true, whatsapp: false, instagram: true, facebook: true })',
+  })
+  @IsObject()
+  @IsOptional()
+  enabledPlatforms?: Record<string, boolean>;
 }
 
 export class TestAiConnectionDto {
   @ApiPropertyOptional({
     description: 'AI Provider',
     example: 'gemini',
-    enum: ['gemini', 'openai'],
+    enum: ['gemini', 'openai', 'claude', 'deepseek', 'groq'],
   })
   @IsString()
   @IsOptional()
-  @IsIn(['gemini', 'openai'])
+  @IsIn(['gemini', 'openai', 'claude', 'deepseek', 'groq'])
   provider?: AiProviderType;
 
   @ApiPropertyOptional({

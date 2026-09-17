@@ -2,82 +2,129 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ShopEaseCategory, SHOPEASE_CATEGORIES } from '../data/defaultStorefrontData';
+import { ArrowRight } from 'lucide-react';
 
 export interface ShopEaseCategoryItem {
   id: string;
   name: string;
   slug?: string;
   imageUrl?: string;
-  itemCount?: number;
+  itemCount?: number | string;
 }
 
 interface ShopEaseCategoriesProps {
   categories?: ShopEaseCategoryItem[];
   selectedCategory?: string;
   storeSlug?: string;
+  primaryColor?: string;
   onSelectCategory?: (category: string) => void;
 }
 
-export const ShopEaseCategories = ({
+// Curated chic pastel color themes matching the reference mockup
+const PASTEL_COLOR_PALETTES = [
+  { bg: '#FAF3EA', border: '#F2E7DC', hoverBg: '#F5ECE0' }, // Warm sand / peach
+  { bg: '#FFF3E8', border: '#FBE7D4', hoverBg: '#FEEAD7' }, // Soft cream / melon
+  { bg: '#EBF5F1', border: '#DCEFE8', hoverBg: '#E0EFE9' }, // Light mint / sage
+  { bg: '#FCEEF1', border: '#F8DEE4', hoverBg: '#F7E1E6' }, // Soft blush pink
+  { bg: '#F7EEED', border: '#EFE0DF', hoverBg: '#EEE1DF' }, // Soft warm mauve / taupe
+  { bg: '#EEF4FB', border: '#DCE7F5', hoverBg: '#E2ECF7' }, // Powder sky blue
+  { bg: '#FEF9EC', border: '#FBEECB', hoverBg: '#FDF1D5' }, // Soft butter cream
+  { bg: '#F3EEFA', border: '#E6DCF5', hoverBg: '#E8DEF3' }, // Soft lavender
+];
+
+export const ShopEaseCategories: React.FC<ShopEaseCategoriesProps> = ({
   categories = [],
   selectedCategory = 'ALL',
   storeSlug = 'main',
+  primaryColor = '#E05353',
   onSelectCategory,
-}: ShopEaseCategoriesProps) => {
+}) => {
   if (!categories || categories.length === 0) {
     return null;
   }
+
   return (
-    <section id="categories" className="py-14 bg-white border-b border-slate-100">
+    <section id="categories" className="py-10 sm:py-14 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* SECTION TITLE */}
-        <div className="text-center mb-10 space-y-2.5">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-blue-700 text-[11px] font-black uppercase tracking-wider shadow-2xs">
-            <span>✨ Collections</span>
+        {/* SECTION HEADER: Title on left, "View All Categories ->" on right */}
+        <div className="flex items-center justify-between mb-6 sm:mb-8">
+          <div>
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 tracking-tight">
+              Shop by Category
+            </h2>
           </div>
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
-            Browse By Category
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-xl mx-auto">
-            Explore curated categories carefully organized for smooth and effortless shopping.
-          </p>
+
+          <Link
+            href={`/store/${storeSlug}/categories`}
+            className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold transition-all duration-200 group cursor-pointer hover:gap-2"
+            style={{ color: primaryColor || '#E05353' }}
+          >
+            <span>View All Categories</span>
+            <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+          </Link>
         </div>
 
-        {/* CATEGORIES GRID */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-5">
-          {categories.map((cat) => {
+        {/* CATEGORIES GRID: Horizontal pastel cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4.5">
+          {categories.map((cat, index) => {
             const isSelected = selectedCategory === cat.name;
+            const palette = PASTEL_COLOR_PALETTES[index % PASTEL_COLOR_PALETTES.length];
+
+            const itemCountDisplay =
+              cat.itemCount !== undefined && cat.itemCount !== null && Number(cat.itemCount) > 0
+                ? `${cat.itemCount}+ Items`
+                : '100+ Items';
+
             return (
-              <Link
-                key={cat.id}
-                href={`/store/${storeSlug}/shop?category=${encodeURIComponent(cat.name)}`}
+              <div
+                key={cat.id || cat.name}
                 onClick={() => onSelectCategory?.(cat.name)}
-                className={`bg-white rounded-3xl p-4 sm:p-5 flex flex-col items-center justify-center text-center border transition-all duration-300 cursor-pointer group active:scale-95 select-none shadow-[0_2px_10px_rgba(0,0,0,0.02)] ${
+                className={`group relative rounded-2xl sm:rounded-3xl p-3 sm:p-4 flex items-center justify-between gap-2.5 transition-all duration-300 cursor-pointer overflow-hidden border ${
                   isSelected
-                    ? 'border-blue-600 ring-4 ring-blue-500/10 shadow-lg bg-blue-50/30'
-                    : 'border-slate-100 hover:border-blue-300/80 hover:shadow-xl hover:-translate-y-1'
+                    ? 'ring-2 shadow-md -translate-y-0.5'
+                    : 'hover:shadow-md hover:-translate-y-1'
                 }`}
+                style={{
+                  backgroundColor: palette.bg,
+                  borderColor: isSelected ? primaryColor || '#E05353' : palette.border,
+                  ...(isSelected ? { ringColor: primaryColor || '#E05353' } : {}),
+                }}
               >
-                {/* CATEGORY ICON / IMAGE */}
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-b from-slate-50 to-slate-100/50 flex items-center justify-center p-2.5 mb-3 group-hover:bg-blue-50/50 transition-colors overflow-hidden border border-slate-100">
+                {/* Left: Category Image */}
+                <div className="w-16 h-20 sm:w-20 sm:h-24 shrink-0 flex items-center justify-center">
                   <img
-                    src={cat.imageUrl || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200&auto=format&fit=crop&q=80'}
+                    src={
+                      cat.imageUrl ||
+                      'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300&auto=format&fit=crop&q=80'
+                    }
                     alt={cat.name}
-                    className="w-full h-full object-contain transform group-hover:scale-110 transition-transform duration-500"
+                    className="w-full h-full object-contain drop-shadow-xs transition-transform duration-500 group-hover:scale-105 group-hover:-rotate-1"
                     loading="lazy"
                   />
                 </div>
 
-                {/* CATEGORY NAME */}
-                <span
-                  className={`text-xs font-black transition-colors line-clamp-1 ${
-                    isSelected ? 'text-blue-600' : 'text-slate-800 group-hover:text-blue-600'
-                  }`}
-                >
-                  {cat.name}
-                </span>
-              </Link>
+                {/* Right: Category Details */}
+                <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5 pr-1">
+                  <div>
+                    <h3 className="text-xs sm:text-sm font-black text-slate-900 tracking-tight leading-snug line-clamp-2 transition-colors duration-200 group-hover:text-slate-950">
+                      {cat.name}
+                    </h3>
+                    <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-0.5 line-clamp-1">
+                      {itemCountDisplay}
+                    </p>
+                  </div>
+
+                  {/* Arrow Indicator */}
+                  <div className="mt-2 sm:mt-3 flex items-center">
+                    <span
+                      className="inline-flex items-center justify-center transition-all duration-300 group-hover:translate-x-1"
+                      style={{ color: isSelected ? primaryColor || '#E05353' : '#1e293b' }}
+                    >
+                      <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.2]" />
+                    </span>
+                  </div>
+                </div>
+              </div>
             );
           })}
         </div>

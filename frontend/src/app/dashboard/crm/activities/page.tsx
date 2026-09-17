@@ -8,7 +8,7 @@ import { useGetCrmActivitiesQuery } from '@/features/crm/api/crmApi';
 import { CrmActivity } from '@/features/crm/types/crm.types';
 
 export default function CrmActivitiesPage() {
-  const { data: activities = [] } = useGetCrmActivitiesQuery();
+  const { data: activities = [], refetch } = useGetCrmActivitiesQuery();
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
 
   return (
@@ -27,11 +27,15 @@ export default function CrmActivitiesPage() {
         onOpenLogModal={() => setIsLogModalOpen(true)}
       />
 
-      {/* Log Activity Modal */}
+      {/* Log Activity Modal — the mutation already invalidates the CrmActivity tag,
+          so this feed and ActivityTimelineFeed's own query refetch automatically;
+          we still force an explicit refetch here for immediate feedback. */}
       <LogActivityModal
         isOpen={isLogModalOpen}
         onClose={() => setIsLogModalOpen(false)}
-        onActivityLogged={() => {}}
+        onActivityLogged={() => {
+          refetch();
+        }}
       />
     </div>
   );

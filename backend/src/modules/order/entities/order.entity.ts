@@ -136,6 +136,15 @@ export class OrderEntity {
   @Column({ type: 'uuid', nullable: true })
   sessionId?: string;
 
+  /**
+   * Weak reference to a Branch (tenant/branch module) — no FK constraint, per
+   * the module boundary rule. Null means the order is not attributed to a
+   * physical outlet (e.g. a storefront/online order); set only by
+   * admin/manual/POS-style order creation when a branch is selected.
+   */
+  @Column({ type: 'uuid', nullable: true })
+  branchId?: string;
+
   @Column({ type: 'uuid' })
   tenantId: string;
 

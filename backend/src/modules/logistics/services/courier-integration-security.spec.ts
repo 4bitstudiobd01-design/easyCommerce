@@ -46,7 +46,6 @@ const buildRegistry = (): CourierProviderRegistry => {
     makeAdapter(CourierProviderEnum.PATHAO, 'Pathao'),
     makeAdapter(CourierProviderEnum.PAPERFLY, 'Paperfly'),
     makeAdapter(CourierProviderEnum.REDX, 'RedX'),
-    makeAdapter(CourierProviderEnum.PARCELDEX, 'Parceldex'),
     makeAdapter(CourierProviderEnum.CARRYBEE, 'Carrybee'),
   );
 };
@@ -177,8 +176,8 @@ describe('Courier integration security and tenant isolation', () => {
     it('lists every supported provider, including ones never connected', async () => {
       const result = await service.execute(TENANT_A);
 
-      expect(result.couriers).toHaveLength(4);
-      expect(result.summary.totalCouriers.count).toBe(4);
+      expect(result.couriers).toHaveLength(5);
+      expect(result.summary.totalCouriers.count).toBe(5);
       // Nothing connected yet — and no invented trend percentages.
       expect(result.summary.connected.count).toBe(0);
       expect(result.summary.connected.change).toBeNull();

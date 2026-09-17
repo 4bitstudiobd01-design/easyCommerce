@@ -80,7 +80,18 @@ export const ThemeLivePreviewModal: React.FC<ThemeLivePreviewModalProps> = ({
       case 'MINIMAL_DARK':
         return <MinimalDarkTheme {...props} />;
       default:
-        return <DefaultStorefrontTheme {...props} primaryColor={store?.primaryColor} logo={store?.logo} />;
+        return (
+          <DefaultStorefrontTheme
+            {...props}
+            primaryColor={store?.primaryColor}
+            logo={store?.logo}
+            facebookUrl={store?.facebookUrl}
+            instagramUrl={store?.instagramUrl}
+            twitterUrl={store?.twitterUrl}
+            youtubeUrl={store?.youtubeUrl}
+            footerDescription={store?.footerDescription}
+          />
+        );
     }
   };
 

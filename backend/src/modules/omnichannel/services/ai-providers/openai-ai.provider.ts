@@ -12,7 +12,19 @@ export class OpenAiProvider implements IAiProvider {
   private readonly logger = new Logger(OpenAiProvider.name);
   readonly providerName = 'openai' as const;
 
-  async generateReply(params: GenerateReplyParams): Promise<GenerateReplyResult> {
+  private getEndpoint(providerType: string = 'openai'): string {
+    if (providerType === 'deepseek') {
+      return 'https://api.deepseek.com/chat/completions';
+    }
+    if (providerType === 'groq') {
+      return 'https://api.groq.com/openai/v1/chat/completions';
+    }
+    return 'https://api.openai.com/v1/chat/completions';
+  }
+
+  async generateReply(
+    params: GenerateReplyParams & { providerType?: 'openai' | 'deepseek' | 'groq' },
+  ): Promise<GenerateReplyResult> {
     const {
       apiKey,
       model = 'gpt-4o-mini',
@@ -22,15 +34,16 @@ export class OpenAiProvider implements IAiProvider {
       temperature = 0.7,
       maxTokens = 500,
       businessContext = {},
+      providerType = 'openai',
     } = params;
 
     if (!apiKey) {
-      throw new BadRequestException('OpenAI API Key is missing or invalid.');
+      throw new BadRequestException(`${providerType.toUpperCase()} API Key is missing or invalid.`);
     }
 
     const startTime = Date.now();
     const cleanModel = model.trim() || 'gpt-4o-mini';
-    const endpoint = 'https://api.openai.com/v1/chat/completions';
+    const endpoint = this.getEndpoint(providerType);
 
     // 1. Compile System Prompt + Business Context
     let contextualSystemPrompt = systemPrompt;
@@ -82,7 +95,7 @@ export class OpenAiProvider implements IAiProvider {
         tokensUsed,
         latencyMs,
         model: cleanModel,
-        provider: 'openai',
+        provider: providerType,
         rawResponse: data,
       };
     } catch (error: any) {
@@ -90,25 +103,29 @@ export class OpenAiProvider implements IAiProvider {
       const errorMsg =
         error.response?.data?.error?.message ||
         error.message ||
-        'Unknown error during OpenAI API call';
+        `Unknown error during ${providerType} API call`;
 
-      this.logger.error(`OpenAI generateReply failed (${latencyMs}ms): ${errorMsg}`);
-      throw new Error(`OpenAI API Error: ${errorMsg}`);
+      this.logger.error(`${providerType} generateReply failed (${latencyMs}ms): ${errorMsg}`);
+      throw new Error(`${providerType.toUpperCase()} API Error: ${errorMsg}`);
     }
   }
 
-  async testConnection(apiKey: string, model = 'gpt-4o-mini'): Promise<TestConnectionResult> {
+  async testConnection(
+    apiKey: string,
+    model = 'gpt-4o-mini',
+    providerType: 'openai' | 'deepseek' | 'groq' = 'openai',
+  ): Promise<TestConnectionResult> {
     if (!apiKey || !apiKey.trim()) {
       return {
         success: false,
-        message: 'Please provide a valid OpenAI API key.',
+        message: `Please provide a valid ${providerType.toUpperCase()} API key.`,
         latencyMs: 0,
         model,
       };
     }
 
     const cleanModel = model.trim() || 'gpt-4o-mini';
-    const endpoint = 'https://api.openai.com/v1/chat/completions';
+    const endpoint = this.getEndpoint(providerType);
     const startTime = Date.now();
 
     try {
@@ -139,7 +156,7 @@ export class OpenAiProvider implements IAiProvider {
 
       return {
         success: true,
-        message: `OpenAI connected successfully (${cleanModel}) in ${latencyMs}ms. Response: "${reply.trim()}"`,
+        message: `${providerType.toUpperCase()} connected successfully (${cleanModel}) in ${latencyMs}ms. Response: "${reply.trim()}"`,
         latencyMs,
         model: cleanModel,
       };
@@ -152,7 +169,7 @@ export class OpenAiProvider implements IAiProvider {
 
       return {
         success: false,
-        message: `OpenAI verification failed (${latencyMs}ms): ${errorMsg}`,
+        message: `${providerType.toUpperCase()} verification failed (${latencyMs}ms): ${errorMsg}`,
         latencyMs,
         model: cleanModel,
       };

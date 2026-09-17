@@ -132,21 +132,21 @@ export class OmnichannelChatService {
       ).length;
 
       const platformLabelMap: Record<string, string> = {
+        facebook: `Facebook Page (ID: ${recipientId})`,
+        messenger: `Messenger (PSID: ${recipientId})`,
+        instagram: `Instagram Direct (@${recipientId})`,
+        tiktok: `TikTok DM (@${recipientId})`,
         whatsapp: `WhatsApp (+${recipientId})`,
         telegram: `Telegram (Chat ID: ${recipientId})`,
-        facebook: `Facebook Messenger (PSID: ${recipientId})`,
-        instagram: `Instagram Direct (@${recipientId})`,
-        x: `X / Twitter DM`,
-        slack: `Slack Channel`,
       };
 
       const tagMap: Record<string, string[]> = {
+        facebook: ['Facebook', 'Meta Page'],
+        messenger: ['Messenger', 'Direct Chat'],
+        instagram: ['Instagram Direct', 'Direct Message'],
+        tiktok: ['TikTok Shop', 'Direct Message'],
         whatsapp: ['WhatsApp Business', 'Inbound'],
         telegram: ['Telegram Bot', 'Live Chat'],
-        facebook: ['Messenger', 'Meta Page'],
-        instagram: ['Instagram Direct', 'Direct Message'],
-        x: ['Twitter/X'],
-        slack: ['Internal'],
       };
 
       const convState = stateMap.get(convId);
@@ -293,5 +293,28 @@ export class OmnichannelChatService {
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
     return date.toLocaleDateString('en-BD', { day: 'numeric', month: 'short' });
+  }
+
+  /**
+   * Sync existing past conversations from external platform (Facebook Messenger, Instagram Direct, etc.)
+   */
+  async syncPlatformConversations(
+    tenantId: string,
+    platform: string,
+    storeId?: string,
+  ): Promise<{ success: boolean; message: string; count?: number }> {
+    if (platform === 'facebook') {
+      const res = await this.facebookService.syncPreviousConversations(tenantId, storeId);
+      return {
+        success: true,
+        message: res.message,
+        count: res.syncedConversations,
+      };
+    }
+    return {
+      success: true,
+      message: `Sync completed for ${platform}.`,
+      count: 0,
+    };
   }
 }

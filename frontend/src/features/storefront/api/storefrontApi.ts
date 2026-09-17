@@ -12,6 +12,14 @@ export interface PublicStoreProductResponse {
   product: Product;
 }
 
+export interface PublicStoreCategory {
+  id: string;
+  name: string;
+  slug: string;
+  image?: string;
+  icon?: string;
+}
+
 const API_ROOT = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1')
   .replace(/\/+$/, '')
   .replace(/\/catalog\/public$/, '');
@@ -33,7 +41,17 @@ export const storefrontApi = createApi({
       providesTags: (result, error, arg) => [{ type: 'PublicStorefront', id: arg.productSlug }],
       transformResponse: (response: { data: PublicStoreProductResponse }) => response.data,
     }),
+    getPublicStoreCategories: builder.query<PublicStoreCategory[], { slug: string; limit?: number }>({
+      query: ({ slug, limit }) =>
+        `/store/${slug}/categories${limit !== undefined ? `?limit=${limit}` : ''}`,
+      providesTags: ['PublicStorefront'],
+      transformResponse: (response: { data: PublicStoreCategory[] }) => response.data || [],
+    }),
   }),
 });
 
-export const { useGetPublicStoreProductsQuery, useGetPublicStoreProductBySlugQuery } = storefrontApi;
+export const {
+  useGetPublicStoreProductsQuery,
+  useGetPublicStoreProductBySlugQuery,
+  useGetPublicStoreCategoriesQuery,
+} = storefrontApi;

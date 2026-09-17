@@ -80,6 +80,22 @@ export const authSlice = createSlice({
         document.cookie = `bitcommerce_token=${action.payload.token}; path=/; max-age=604800; SameSite=Lax`;
       }
     },
+    rehydrateAuth: (state) => {
+      if (typeof window !== 'undefined') {
+        try {
+          const token = localStorage.getItem('bitcommerce_token');
+          const refreshToken = localStorage.getItem('bitcommerce_refresh_token');
+          const userStr = localStorage.getItem('bitcommerce_user');
+          const user = userStr ? JSON.parse(userStr) : null;
+          if (token && user) {
+            state.token = token;
+            state.refreshToken = refreshToken;
+            state.user = user;
+            state.isAuthenticated = true;
+          }
+        } catch (e) {}
+      }
+    },
     logout: (state) => {
       state.user = null;
       state.token = null;
@@ -95,5 +111,5 @@ export const authSlice = createSlice({
   },
 });
 
-export const { setCredentials, setTokens, logout } = authSlice.actions;
+export const { setCredentials, setTokens, rehydrateAuth, logout } = authSlice.actions;
 export default authSlice.reducer;

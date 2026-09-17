@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { NotificationDispatcherService } from './notification-dispatcher.service';
+import { NotificationTypeEnum } from '../entities/push-notification.entity';
 
 export interface TriggerOrderSmsPayload {
+  orderId?: string;
   orderNumber: string;
   customerPhone: string;
   customerName: string;
@@ -57,6 +59,11 @@ export class TriggerOrderStatusSmsService {
         break;
     }
 
+    const notificationType =
+      payload.orderStatus === 'PENDING' || payload.orderStatus === 'CONFIRMED'
+        ? NotificationTypeEnum.ORDER_PLACED
+        : NotificationTypeEnum.ORDER_STATUS_CHANGED;
+
     await this.notificationDispatcherService.dispatch({
       tenantId: payload.tenantId,
       recipientPhone: payload.customerPhone,
@@ -64,6 +71,11 @@ export class TriggerOrderStatusSmsService {
       smsMessage,
       emailSubject,
       emailBody,
+      notificationType,
+      pushTitle: emailSubject,
+      pushMessage: smsMessage,
+      referenceType: payload.orderId ? 'ORDER' : undefined,
+      referenceId: payload.orderId,
     });
   }
 }

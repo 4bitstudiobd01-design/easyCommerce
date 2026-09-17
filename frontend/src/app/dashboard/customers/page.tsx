@@ -22,7 +22,7 @@ import { ImportCustomersModal } from '@/features/customer/components/ImportCusto
 import { CustomerAnalyticsView } from '@/features/customer/components/CustomerAnalyticsView';
 import { CustomerSegmentsView } from '@/features/customer/components/CustomerSegmentsView';
 
-import { Plus, Download, Upload, ChevronLeft, ChevronRight, UserX, UserCheck, ShieldAlert, ShieldCheck, X, Loader2, Users, BarChart3, Layers, Filter } from 'lucide-react';
+import { Plus, Download, Upload, ChevronLeft, ChevronRight, UserX, UserCheck, ShieldAlert, ShieldCheck, X, Loader2, Filter } from 'lucide-react';
 import { useDebounce } from '@/hooks/useDebounce';
 import { toast } from 'sonner';
 
@@ -231,12 +231,10 @@ export default function CustomersPage() {
       {/* 1. PAGE HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 mb-1">
-            <span>Dashboard</span>
-            <span>&gt;</span>
-            <span className="text-slate-700">Customers</span>
-          </div>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Customers</h1>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Manage your customer base, track activity and build stronger relationships.
+          </p>
         </div>
 
         <div className="flex items-center gap-2.5 self-start sm:self-auto">
@@ -268,43 +266,54 @@ export default function CustomersPage() {
       </div>
 
       {/* 2. VIEW SWITCHER NAVIGATION TABS */}
-      <div className="bg-white rounded-2xl p-1.5 border border-slate-200/80 shadow-2xs inline-flex items-center gap-1">
-        <button
-          onClick={() => updateUrlParams({ view: null })}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-            activeView === 'directory'
-              ? 'bg-blue-600 text-white shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-          }`}
-        >
-          <Users className="w-3.5 h-3.5" />
-          Customer Directory
-        </button>
+      <nav aria-label="Customer sections" className="border-b border-slate-200">
+        <ul className="flex items-center gap-1 overflow-x-auto">
+          <li>
+            <button
+              type="button"
+              aria-current={activeView === 'directory' ? 'page' : undefined}
+              onClick={() => updateUrlParams({ view: null })}
+              className={`px-4 py-2.5 text-xs font-bold whitespace-nowrap border-b-2 -mb-px transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-t ${
+                activeView === 'directory'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Customer Directory
+            </button>
+          </li>
 
-        <button
-          onClick={() => updateUrlParams({ view: 'analytics' })}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-            activeView === 'analytics'
-              ? 'bg-blue-600 text-white shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-          }`}
-        >
-          <BarChart3 className="w-3.5 h-3.5" />
-          Analytics & Reports
-        </button>
+          <li>
+            <button
+              type="button"
+              aria-current={activeView === 'analytics' ? 'page' : undefined}
+              onClick={() => updateUrlParams({ view: 'analytics' })}
+              className={`px-4 py-2.5 text-xs font-bold whitespace-nowrap border-b-2 -mb-px transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-t ${
+                activeView === 'analytics'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Analytics & Reports
+            </button>
+          </li>
 
-        <button
-          onClick={() => updateUrlParams({ view: 'segments' })}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-            activeView === 'segments'
-              ? 'bg-blue-600 text-white shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-          }`}
-        >
-          <Layers className="w-3.5 h-3.5" />
-          Segments & Groups
-        </button>
-      </div>
+          <li>
+            <button
+              type="button"
+              aria-current={activeView === 'segments' ? 'page' : undefined}
+              onClick={() => updateUrlParams({ view: 'segments' })}
+              className={`px-4 py-2.5 text-xs font-bold whitespace-nowrap border-b-2 -mb-px transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-t ${
+                activeView === 'segments'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Segments & Groups
+            </button>
+          </li>
+        </ul>
+      </nav>
 
       {/* ACTIVE SEGMENT FILTER BANNER */}
       {segmentIdParam && activeView === 'directory' && (

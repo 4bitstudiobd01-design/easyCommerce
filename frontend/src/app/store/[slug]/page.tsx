@@ -5,11 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { useGetPublicStoreProductsQuery } from '@/features/storefront/api/storefrontApi';
 import { StorefrontNavbar } from '@/features/storefront/components/StorefrontNavbar';
 import { ProductCard } from '@/features/storefront/components/ProductCard';
-import { ProductDetailModal } from '@/features/storefront/components/ProductDetailModal';
 import { CartDrawer } from '@/features/storefront/components/CartDrawer';
-import { StorefrontPixelTracker } from '@/features/storefront/components/StorefrontPixelTracker';
 import { recordStorefrontVisit } from '@/features/storefront/utils/attribution';
-import { NewsletterSignupWidget } from '@/features/email-marketing/components/NewsletterSignupWidget';
 import { JsonLdScript } from '@/features/seo/components/JsonLdScript';
 import { useGetStoreSeoQuery } from '@/features/seo/api/seoApi';
 import { toggleCartDrawer, addToCart } from '@/features/storefront/slices/cartSlice';
@@ -40,9 +37,13 @@ export default function StorefrontPage() {
 
   const cartItems = useSelector((state: RootState) => state.cart.items);
 
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  const openProduct = (p: Product) => {
+    const productSlug = (p as any).slug || p.id;
+    router.push(`/store/${slug}/product/${productSlug}`);
+  };
 
   useEffect(() => {
     if (!slug) return;
@@ -127,20 +128,14 @@ export default function StorefrontPage() {
     return (
       <>
         {storeSeo?.jsonLdSchema && <JsonLdScript schema={storeSeo.jsonLdSchema} id="storefront-jsonld" />}
-        <StorefrontPixelTracker
-          facebookPixelId={(store as any).facebookPixelId}
-          tiktokPixelId={(store as any).tiktokPixelId}
-          googleTagManagerId={(store as any).googleTagManagerId}
-        />
-        <CartDrawer />
-        <ProductDetailModal product={selectedProduct} storeSlug={slug} onClose={() => setSelectedProduct(null)} />
+        <CartDrawer primaryColor={primaryColor} />
         <LuxuryFashionTheme
           storeName={store.name}
           slug={store.slug}
           category={store.category}
           products={filteredProducts}
           categories={categories}
-          onSelectProduct={(p) => setSelectedProduct(p)}
+          onSelectProduct={openProduct}
           onAddToCart={handleThemeAddToCart}
         />
       </>
@@ -151,20 +146,14 @@ export default function StorefrontPage() {
     return (
       <>
         {storeSeo?.jsonLdSchema && <JsonLdScript schema={storeSeo.jsonLdSchema} id="storefront-jsonld" />}
-        <StorefrontPixelTracker
-          facebookPixelId={(store as any).facebookPixelId}
-          tiktokPixelId={(store as any).tiktokPixelId}
-          googleTagManagerId={(store as any).googleTagManagerId}
-        />
-        <CartDrawer />
-        <ProductDetailModal product={selectedProduct} storeSlug={slug} onClose={() => setSelectedProduct(null)} />
+        <CartDrawer primaryColor={primaryColor} />
         <TechHubTheme
           storeName={store.name}
           slug={store.slug}
           category={store.category}
           products={filteredProducts}
           categories={categories}
-          onSelectProduct={(p) => setSelectedProduct(p)}
+          onSelectProduct={openProduct}
           onAddToCart={handleThemeAddToCart}
         />
       </>
@@ -175,20 +164,14 @@ export default function StorefrontPage() {
     return (
       <>
         {storeSeo?.jsonLdSchema && <JsonLdScript schema={storeSeo.jsonLdSchema} id="storefront-jsonld" />}
-        <StorefrontPixelTracker
-          facebookPixelId={(store as any).facebookPixelId}
-          tiktokPixelId={(store as any).tiktokPixelId}
-          googleTagManagerId={(store as any).googleTagManagerId}
-        />
-        <CartDrawer />
-        <ProductDetailModal product={selectedProduct} storeSlug={slug} onClose={() => setSelectedProduct(null)} />
+        <CartDrawer primaryColor={primaryColor} />
         <OrganicGroceryTheme
           storeName={store.name}
           slug={store.slug}
           category={store.category}
           products={filteredProducts}
           categories={categories}
-          onSelectProduct={(p) => setSelectedProduct(p)}
+          onSelectProduct={openProduct}
           onAddToCart={handleThemeAddToCart}
         />
       </>
@@ -199,20 +182,14 @@ export default function StorefrontPage() {
     return (
       <>
         {storeSeo?.jsonLdSchema && <JsonLdScript schema={storeSeo.jsonLdSchema} id="storefront-jsonld" />}
-        <StorefrontPixelTracker
-          facebookPixelId={(store as any).facebookPixelId}
-          tiktokPixelId={(store as any).tiktokPixelId}
-          googleTagManagerId={(store as any).googleTagManagerId}
-        />
-        <CartDrawer />
-        <ProductDetailModal product={selectedProduct} storeSlug={slug} onClose={() => setSelectedProduct(null)} />
+        <CartDrawer primaryColor={primaryColor} />
         <MinimalDarkTheme
           storeName={store.name}
           slug={store.slug}
           category={store.category}
           products={filteredProducts}
           categories={categories}
-          onSelectProduct={(p) => setSelectedProduct(p)}
+          onSelectProduct={openProduct}
           onAddToCart={handleThemeAddToCart}
         />
       </>
@@ -225,12 +202,7 @@ export default function StorefrontPage() {
       {storeSeo?.jsonLdSchema && (
         <JsonLdScript schema={storeSeo.jsonLdSchema} id="storefront-jsonld" />
       )}
-      <StorefrontPixelTracker
-        facebookPixelId={(store as any).facebookPixelId}
-        tiktokPixelId={(store as any).tiktokPixelId}
-        googleTagManagerId={(store as any).googleTagManagerId}
-      />
-      <CartDrawer />
+      <CartDrawer primaryColor={primaryColor} />
       <DefaultStorefrontTheme
         storeName={store.name}
         slug={store.slug}
@@ -241,10 +213,23 @@ export default function StorefrontPage() {
         primaryColor={primaryColor}
         fontFamily={store.fontFamily}
         heroBanners={store.heroBanners}
+        facebookUrl={store.facebookUrl}
+        instagramUrl={store.instagramUrl}
+        twitterUrl={store.twitterUrl}
+        youtubeUrl={store.youtubeUrl}
+        footerDescription={store.footerDescription}
         products={filteredProducts}
         categories={categories}
-        onSelectProduct={(p) => router.push(`/store/${slug}/product/${p.slug}`)}
+        onSelectProduct={openProduct}
         onAddToCart={handleThemeAddToCart}
+        showHeroSection={(store as any).showHeroSection}
+        showCategoriesSection={(store as any).showCategoriesSection}
+        showFeaturedProducts={(store as any).showFeaturedProducts}
+        showNewArrivals={(store as any).showNewArrivals}
+        showBestSellers={(store as any).showBestSellers}
+        showFullCatalog={(store as any).showFullCatalog}
+        showPromoBanner={(store as any).showPromoBanner}
+        showWhyChooseUs={(store as any).showWhyChooseUs}
       />
     </>
   );

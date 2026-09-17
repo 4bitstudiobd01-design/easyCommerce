@@ -4,8 +4,8 @@ import { BadRequestException } from '@nestjs/common';
 import { CreateProductService } from './create-product.service';
 import { ProductEntity } from '../entities/product.entity';
 import { CategoryEntity } from '../entities/category.entity';
-import { ProductVariantEntity } from '../entities/product-variant.entity';
 import { ProductImageEntity } from '../entities/product-image.entity';
+import { ProductVariantEntity } from '../entities/product-variant.entity';
 import { CollectionEntity } from '../entities/collection.entity';
 import { InventoryStockEntity } from '../../inventory/entities/inventory-stock.entity';
 import { InventoryMovementEntity } from '../../inventory/entities/inventory-movement.entity';
@@ -17,8 +17,8 @@ import { ProductStatus } from '../enums/product-status.enum';
 describe('CreateProductService', () => {
   let service: CreateProductService;
   let productRepo: any;
-  let variantRepo: any;
   let imageRepo: any;
+  let variantRepo: any;
   let stockRepo: any;
   let movementRepo: any;
   let warehouseRepo: any;
@@ -40,14 +40,14 @@ describe('CreateProductService', () => {
       })),
     };
 
-    variantRepo = {
-      create: jest.fn().mockImplementation((dto) => ({ id: 'var-1', ...dto })),
-      save: jest.fn().mockImplementation((entity) => Promise.resolve(entity)),
-    };
-
     imageRepo = {
       create: jest.fn().mockImplementation((dto) => ({ id: 'img-1', ...dto })),
       save: jest.fn().mockImplementation((entity) => Promise.resolve(entity)),
+    };
+
+    variantRepo = {
+      create: jest.fn().mockImplementation((dto) => ({ id: 'var-1', ...dto })),
+      save: jest.fn().mockImplementation((entity) => Promise.resolve({ id: 'var-1', ...entity })),
     };
 
     stockRepo = {
@@ -87,12 +87,12 @@ describe('CreateProductService', () => {
           },
         },
         {
-          provide: getRepositoryToken(ProductVariantEntity),
-          useValue: variantRepo,
-        },
-        {
           provide: getRepositoryToken(ProductImageEntity),
           useValue: imageRepo,
+        },
+        {
+          provide: getRepositoryToken(ProductVariantEntity),
+          useValue: variantRepo,
         },
         {
           provide: getRepositoryToken(CollectionEntity),
@@ -143,6 +143,7 @@ describe('CreateProductService', () => {
       name: 'E-Book PDF',
       productType: ProductType.DIGITAL,
       status: ProductStatus.ACTIVE,
+      basePrice: 499,
     };
 
     await service.execute(mockTenantId, dto);
@@ -155,6 +156,134 @@ describe('CreateProductService', () => {
         isPublished: true,
         tenantId: mockTenantId,
       }),
+    );
+  });
+
+  it('should reject publishing a non-variant product without a selling price', async () => {
+    await expect(
+      service.execute(mockTenantId, { name: 'No Price Product', status: ProductStatus.ACTIVE }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('should reject a compare-at price that is not above the selling price', async () => {
+    await expect(
+      service.execute(mockTenantId, { name: 'Bad Compare', basePrice: 1000, compareAtPrice: 900 }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('should accept a compare-at price above the selling price', async () => {
+    await expect(
+      service.execute(mockTenantId, { name: 'Good Compare', basePrice: 1000, compareAtPrice: 1500 }),
+    ).resolves.toBeDefined();
+  });
+
+  it('should allow publishing a variant product without a product-level price', async () => {
+    const dto = {
+      name: 'T-Shirt',
+      status: ProductStatus.ACTIVE,
+      hasVariants: true,
+    };
+
+    await service.execute(mockTenantId, dto);
+
+    expect(productRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'T-Shirt', hasVariants: true, status: ProductStatus.ACTIVE }),
+    );
+  });
+
+  it('should not create any product variant on plain product creation', async () => {
+    await service.execute(mockTenantId, { name: 'Plain Product', basePrice: 100 });
+
+    expect(productRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ hasVariants: false }),
+    );
+    expect(variantRepo.save).not.toHaveBeenCalled();
+  });
+
+  it('should create the supplied variant rows (and their stock) when hasVariants is set', async () => {
+    await service.execute(mockTenantId, {
+      name: 'T-Shirt',
+      hasVariants: true,
+      variants: [
+        {
+          title: 'Black / L',
+          combinationKey: 'color:black|size:l',
+          price: 1200,
+          isEnabled: true,
+          options: [
+            { attributeId: 'a1', attributeName: 'Color', optionId: 'o1', optionLabel: 'Black', value: 'black' },
+            { attributeId: 'a2', attributeName: 'Size', optionId: 'o2', optionLabel: 'L', value: 'l' },
+          ],
+        },
+        {
+          title: 'Black / M',
+          combinationKey: 'color:black|size:m',
+          price: 1200,
+          isEnabled: true,
+          options: [
+            { attributeId: 'a1', attributeName: 'Color', optionId: 'o1', optionLabel: 'Black', value: 'black' },
+            { attributeId: 'a2', attributeName: 'Size', optionId: 'o3', optionLabel: 'M', value: 'm' },
+          ],
+        },
+      ],
+    } as any);
+
+    expect(variantRepo.save).toHaveBeenCalledTimes(2);
+    expect(variantRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Black / L', price: 1200, combinationKey: 'color:black|size:l' }),
+    );
+  });
+
+  it('seeds each variant stock row from its own initialStock and skips the single form field', async () => {
+    await service.execute(mockTenantId, {
+      name: 'T-Shirt',
+      hasVariants: true,
+      // The single "Initial Stock Quantity" field is ignored for variant products.
+      initialStock: 999,
+      variants: [
+        {
+          title: 'Black / L',
+          combinationKey: 'color:black|size:l',
+          price: 1200,
+          isEnabled: true,
+          initialStock: 30,
+          options: [
+            { attributeId: 'a1', attributeName: 'Color', optionId: 'o1', optionLabel: 'Black', value: 'black' },
+            { attributeId: 'a2', attributeName: 'Size', optionId: 'o2', optionLabel: 'L', value: 'l' },
+          ],
+        },
+        {
+          title: 'Black / M',
+          combinationKey: 'color:black|size:m',
+          price: 1200,
+          isEnabled: true,
+          initialStock: 0,
+          options: [
+            { attributeId: 'a1', attributeName: 'Color', optionId: 'o1', optionLabel: 'Black', value: 'black' },
+            { attributeId: 'a2', attributeName: 'Size', optionId: 'o3', optionLabel: 'M', value: 'm' },
+          ],
+        },
+      ],
+    } as any);
+
+    // Product-level stock row (first create call) is opened at 0 for a variant product.
+    expect(stockRepo.create.mock.calls[0][0]).toEqual(
+      expect.objectContaining({ productId: 'prod-1', quantityOnHand: 0 }),
+    );
+    expect(stockRepo.create.mock.calls[0][0].variantId).toBeUndefined();
+    // Each variant's stock row carries that variant's own quantity.
+    expect(stockRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ variantId: 'var-1', quantityOnHand: 30 }),
+    );
+    expect(stockRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ variantId: 'var-1', quantityOnHand: 0 }),
+    );
+    // Only the variant with stock > 0 records an INITIAL_STOCK movement.
+    expect(movementRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ variantId: 'var-1', quantity: 30 }),
+    );
+    expect(movementRepo.create).not.toHaveBeenCalledWith(
+      expect.objectContaining({ quantity: 999 }),
     );
   });
 

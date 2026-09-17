@@ -8,12 +8,14 @@ import {
   useGetProductReviewsQuery,
   useGetProductAnalyticsSummaryQuery,
   useBulkUpdateProductStatusMutation,
+  useUpdateProductMutation,
   ProductStatus,
 } from '@/features/catalog/api/catalogApi';
 import { useGetMyStoreQuery } from '@/features/tenant/api/tenantApi';
 import { ProductSeoConfig } from '@/features/catalog/components/ProductSeoConfig';
 import { ProductRelatedManager } from '@/features/catalog/components/ProductRelatedManager';
 import { ProductAnalyticsView } from '@/features/catalog/components/ProductAnalyticsView';
+import { ProductVariantMatrix } from '@/features/catalog/components/ProductVariantMatrix';
 import { ProductVariantInventoryView } from '@/features/inventory/components/ProductVariantInventoryView';
 import {
   ArrowLeft,
@@ -56,6 +58,7 @@ export default function ProductDetailsPage() {
     { skip: !productId },
   );
   const [bulkUpdateStatus] = useBulkUpdateProductStatusMutation();
+  const [updateProduct] = useUpdateProductMutation();
 
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [activeImage, setActiveImage] = useState(0);
@@ -137,6 +140,16 @@ export default function ProductDetailsPage() {
       }
     } catch (err: any) {
       toast.error(err?.data?.message || 'Failed to update product status');
+    }
+  };
+
+  // The Variants tab hosts the same ProductVariantMatrix as the edit form, so the
+  // enable/disable switch there has to persist to the product just like the form does.
+  const handleToggleHasVariants = async (next: boolean) => {
+    try {
+      await updateProduct({ id: product.id, hasVariants: next }).unwrap();
+    } catch (err: any) {
+      toast.error(err?.data?.message || 'Failed to update variant setting');
     }
   };
 
@@ -524,22 +537,22 @@ export default function ProductDetailsPage() {
                 {summaryRow('Total Orders', analytics?.ordersCount?.value ?? 0)}
                 {summaryRow('Units Sold', analytics?.unitsSold?.value ?? 0)}
                 {summaryRow('Average Order Value', money(analytics?.averageOrderValue?.value ?? 0))}
-                {/* Placeholder only. Storefront view tracking does not exist yet, so this
-                    rate cannot be derived from real data — it is labelled Demo so nobody
-                    mistakes it for a measured figure. Replace once view tracking lands. */}
+                {/* Conversion rate needs storefront view counts, which are not tracked
+                    yet. Show a dash rather than a made-up number so the row stays in
+                    place for when view tracking lands. */}
                 {summaryRow(
                   'Conversion Rate',
                   <span className="inline-flex items-center gap-1.5">
-                    <span className="text-slate-400">2.45%</span>
+                    <span className="text-slate-400">—</span>
                     <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 text-[9px] font-bold rounded uppercase tracking-wide border border-slate-200">
-                      Demo
+                      Not tracked yet
                     </span>
                   </span>,
                 )}
               </div>
               <p className="text-[10px] text-slate-400 mt-2">
-                Sales figures cover the last 90 days of orders. Conversion rate is placeholder
-                data until storefront view tracking is available.
+                Sales figures cover the last 90 days of orders. Conversion rate becomes
+                available once storefront view tracking is added.
               </p>
               <button
                 type="button"
@@ -554,37 +567,14 @@ export default function ProductDetailsPage() {
         )}
 
         {activeTab === 'variants' && (
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
-            <h3 className="text-sm font-extrabold text-slate-900">
-              Product Variants ({product.variants?.length || 0})
-            </h3>
-            {product.variants && product.variants.length > 0 ? (
-              <div className="border border-slate-200 rounded-xl overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                    <tr>
-                      <th className="px-4 py-2.5">Variant</th>
-                      <th className="px-4 py-2.5">SKU</th>
-                      <th className="px-4 py-2.5 text-right">Price</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {product.variants.map((v) => (
-                      <tr key={v.id}>
-                        <td className="px-4 py-2.5 font-semibold text-slate-900">{v.title}</td>
-                        <td className="px-4 py-2.5 font-mono text-slate-500">{v.sku || '—'}</td>
-                        <td className="px-4 py-2.5 text-right font-semibold text-slate-900">
-                          {money(Number(v.price ?? basePrice))}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p className="text-xs text-slate-500">This product does not have variant options.</p>
-            )}
-          </div>
+          <ProductVariantMatrix
+            productId={product.id}
+            hasVariants={Boolean(product.hasVariants)}
+            onHasVariantsChange={handleToggleHasVariants}
+            existingVariants={product.variants || []}
+            basePrice={basePrice}
+            currencySymbol={currencySymbol}
+          />
         )}
 
         {activeTab === 'inventory' && (

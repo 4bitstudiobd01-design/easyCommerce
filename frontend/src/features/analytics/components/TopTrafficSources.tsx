@@ -3,6 +3,7 @@
 import React from 'react';
 import { Radar } from 'lucide-react';
 import { useGetTrafficSourcesQuery } from '../api/analyticsApi';
+import { useAnalyticsDateParams } from '../context/AnalyticsFiltersContext';
 import { Skeleton } from '@/components/ui/Skeleton';
 
 const CHANNEL_LABELS: Record<string, string> = {
@@ -16,7 +17,8 @@ const CHANNEL_LABELS: Record<string, string> = {
 };
 
 export function TopTrafficSources() {
-  const { data, isLoading } = useGetTrafficSourcesQuery();
+  const dateParams = useAnalyticsDateParams();
+  const { data, isLoading } = useGetTrafficSourcesQuery(dateParams);
 
   if (isLoading) {
     return (

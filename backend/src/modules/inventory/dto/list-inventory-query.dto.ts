@@ -52,6 +52,11 @@ export class ListInventoryQueryDto {
   @IsString()
   warehouseId?: string;
 
+  @ApiPropertyOptional({ description: 'Filter by Branch ID — shows the branch\'s own stock instead of a warehouse\'s' })
+  @IsOptional()
+  @IsString()
+  branchId?: string;
+
   @ApiPropertyOptional({ enum: InventorySortField, default: InventorySortField.UPDATED_AT })
   @IsOptional()
   @IsString()
