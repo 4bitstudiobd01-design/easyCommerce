@@ -36,11 +36,9 @@ import {
   TrendingDown,
   Scale,
   ArrowLeftRight,
-  Home,
   BookOpen,
   ClipboardCheck,
   Banknote,
-  FileText,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -73,10 +71,9 @@ export const Sidebar = ({
 
   const isActive = (path: string) => {
     if (path === '/dashboard' && pathname === '/dashboard') return true;
-    if (path === '/dashboard/accounting' && pathname === '/dashboard/accounting') return true;
     if (path === '/dashboard/purchase' && pathname.startsWith('/dashboard/purchase')) return true;
     if (path === '/dashboard/finance' && pathname.startsWith('/dashboard/finance')) return true;
-    if (path !== '/dashboard' && path !== '/dashboard/accounting' && path !== '/dashboard/purchase' && path !== '/dashboard/finance' && pathname.startsWith(path)) return true;
+    if (path !== '/dashboard' && path !== '/dashboard/purchase' && path !== '/dashboard/finance' && pathname.startsWith(path)) return true;
     return false;
   };
 
@@ -89,20 +86,8 @@ export const Sidebar = ({
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     ecommerce: true,
     crm: isRouteInGroup('/dashboard/crm'),
-    accounting: isRouteInGroup('/dashboard/accounting'),
     marketing: isRouteInGroup(['/dashboard/marketing', '/dashboard/analytics']),
   });
-
-  const [openSubGroups, setOpenSubGroups] = useState<Record<string, boolean>>({
-    transactions: isRouteInGroup('/dashboard/accounting/transactions'),
-    accounts: isRouteInGroup('/dashboard/accounting/accounts'),
-    reports: isRouteInGroup('/dashboard/accounting/reports'),
-    accountingSettings: isRouteInGroup('/dashboard/accounting/settings'),
-  });
-
-  const toggleSubGroup = (subKey: string) => {
-    setOpenSubGroups(prev => ({ ...prev, [subKey]: !prev[subKey] }));
-  };
 
   // Auto-expand active group when route changes
   useEffect(() => {
@@ -111,21 +96,6 @@ export const Sidebar = ({
     }
     if (isRouteInGroup('/dashboard/crm')) {
       setOpenGroups(prev => ({ ...prev, crm: true }));
-    }
-    if (isRouteInGroup('/dashboard/accounting')) {
-      setOpenGroups(prev => ({ ...prev, accounting: true }));
-    }
-    if (isRouteInGroup('/dashboard/accounting/transactions')) {
-      setOpenSubGroups(prev => ({ ...prev, transactions: true }));
-    }
-    if (isRouteInGroup('/dashboard/accounting/accounts')) {
-      setOpenSubGroups(prev => ({ ...prev, accounts: true }));
-    }
-    if (isRouteInGroup('/dashboard/accounting/reports')) {
-      setOpenSubGroups(prev => ({ ...prev, reports: true }));
-    }
-    if (isRouteInGroup('/dashboard/accounting/settings')) {
-      setOpenSubGroups(prev => ({ ...prev, accountingSettings: true }));
     }
     if (isRouteInGroup(['/dashboard/marketing', '/dashboard/analytics'])) {
       setOpenGroups(prev => ({ ...prev, marketing: true }));
@@ -209,100 +179,6 @@ export const Sidebar = ({
           }`}
         />
       </button>
-    );
-  };
-
-  const subNavItemClass = (path: string) => {
-    const active = isActive(path);
-    const baseClasses = `flex items-center gap-2 px-3 py-1.5 transition-colors group rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 text-[12.5px]`;
-    const activeClasses = active
-      ? 'bg-blue-600 text-white font-semibold shadow-sm shadow-blue-600/20'
-      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 font-medium';
-    return `${baseClasses} ${activeClasses}`;
-  };
-
-  const SubAccordion = ({
-    title,
-    icon: SubIcon,
-    subKey,
-    isOpen,
-    routes,
-    items,
-  }: {
-    title: string;
-    icon: React.ElementType;
-    subKey: string;
-    isOpen: boolean;
-    routes: string[];
-    items: { label: string; href: string }[];
-  }) => {
-    const isGroupActive = routes.some(r => pathname.startsWith(r));
-
-    if (isDesktopCollapsed) {
-      return (
-        <Link
-          href={items[0]?.href || '/dashboard/accounting'}
-          className={navItemClass(items[0]?.href || '')}
-          onMouseEnter={(e) => handleTooltipEnter(e, title)}
-          onFocus={(e) => handleTooltipEnter(e, title)}
-          onMouseLeave={handleTooltipLeave}
-          onBlur={handleTooltipLeave}
-        >
-          <div className="flex items-center gap-2.5">
-            <SubIcon className={iconClass} strokeWidth={iconStroke} />
-          </div>
-        </Link>
-      );
-    }
-
-    return (
-      <div className="space-y-0.5">
-        <button
-          type="button"
-          onClick={() => toggleSubGroup(subKey)}
-          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[13px] transition-colors ${
-            isGroupActive
-              ? 'text-white font-semibold'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 font-medium'
-          }`}
-        >
-          <div className="flex items-center gap-2.5">
-            <SubIcon className={iconClass} strokeWidth={iconStroke} />
-            <span>{title}</span>
-          </div>
-          <ChevronDown
-            className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
-              isOpen ? 'rotate-180 text-white' : ''
-            }`}
-          />
-        </button>
-
-        {isOpen && (
-          <div className="pl-6 pr-1 space-y-0.5 mt-0.5">
-            {items.map((item) => {
-              const active = isActive(item.href);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={subNavItemClass(item.href)}
-                  onMouseEnter={(e) => handleTooltipEnter(e, `${title}: ${item.label}`)}
-                  onFocus={(e) => handleTooltipEnter(e, `${title}: ${item.label}`)}
-                  onMouseLeave={handleTooltipLeave}
-                  onBlur={handleTooltipLeave}
-                >
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                      active ? 'bg-white shadow-sm' : 'bg-slate-500'
-                    }`}
-                  />
-                  <span className="truncate">{item.label}</span>
-                </Link>
-              );
-            })}
-          </div>
-        )}
-      </div>
     );
   };
 
@@ -515,7 +391,7 @@ export const Sidebar = ({
           )}
 
           {/* 3. CRM & OMNICHANNEL ACCORDION */}
-          {/* <AccordionHeader 
+          <AccordionHeader 
             title="CRM & Growth" 
             groupKey="crm" 
             isOpen={openGroups.crm} 
@@ -614,7 +490,7 @@ export const Sidebar = ({
                 </div>
               </Link>
             </div>
-          )} */}
+          )}
 
           {/* 4. HUMAN RESOURCES (Single Top-Level Navigation Link) */}
           <Link
@@ -705,11 +581,6 @@ export const Sidebar = ({
           )} */}
 
           {/* 6. FINANCIALS (Finance & Accounts) */}
-          {!isDesktopCollapsed && (
-            <div className="px-3 pb-1 pt-4 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-              Financials
-            </div>
-          )}
           <Link 
             href="/dashboard/finance/overview" 
             className={navItemClass('/dashboard/finance')}

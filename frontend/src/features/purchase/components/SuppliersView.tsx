@@ -30,6 +30,7 @@ import {
   type SupplierStatus,
 } from '../api/purchaseApi';
 import { PurchaseTabsHeader, type PurchaseTabKey } from './PurchaseTabsHeader';
+import { CustomDropdown } from './CustomDropdown';
 
 
 const SORT_MAP: Record<string, 'name_asc' | 'name_desc' | 'purchases_desc' | 'due_desc'> = {
