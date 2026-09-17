@@ -97,6 +97,7 @@ import { ListStoreActivitiesService } from './services/list-store-activities.ser
     ExportCustomersService,
     ImportCustomersService,
     GetCustomerAnalyticsService,
+    ManageCustomerSegmentService,
     FraudCheckService,
     ListLeadsService,
     CreateLeadService,

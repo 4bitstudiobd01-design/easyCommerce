@@ -89,10 +89,14 @@ export class NotificationModule implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     try {
-      await Promise.all([
+      const cleanPromise = Promise.all([
         this.notificationQueue.clean(0, 500, 'completed'),
         this.notificationQueue.clean(0, 500, 'failed'),
       ]);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Redis connection timeout (2s)')), 2000),
+      );
+      await Promise.race([cleanPromise, timeoutPromise]);
       this.logger.log('Notification queue cleaned on startup');
     } catch (err: any) {
       this.logger.warn(`Queue cleanup on startup skipped: ${err?.message}`);
