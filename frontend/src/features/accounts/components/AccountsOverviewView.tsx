@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React from 'react';
 import {
@@ -31,9 +31,9 @@ export function AccountsOverviewView() {
     return `৳${amount.toLocaleString('en-BD', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
-  const invoices = (invoicesData as any)?.invoices ?? (invoicesData as any)?.data ?? [];
-  const bills = (billsData as any)?.bills ?? (billsData as any)?.data ?? [];
-  const transactions = (txData as any)?.transactions ?? (txData as any)?.data ?? [];
+  const invoices = (invoicesData as any)?.items ?? (invoicesData as any)?.invoices ?? (invoicesData as any)?.data ?? [];
+  const bills = (billsData as any)?.items ?? (billsData as any)?.bills ?? (billsData as any)?.data ?? [];
+  const transactions = (txData as any)?.items ?? (txData as any)?.transactions ?? (txData as any)?.data ?? [];
 
   const outstandingInvoices = invoices.filter((inv: any) =>
     ['SENT', 'UNPAID', 'PARTIALLY_PAID', 'OVERDUE'].includes(inv.status),
@@ -250,9 +250,8 @@ export function AccountsOverviewView() {
             { label: 'Record Bill', href: '/dashboard/accounts/bills', icon: Receipt, color: 'text-amber-600 bg-amber-50' },
             { label: 'Journal Entry', href: '/dashboard/accounts/journal-entries', icon: BookOpen, color: 'text-purple-600 bg-purple-50' },
             { label: 'General Ledger', href: '/dashboard/accounts/general-ledger', icon: BarChart3, color: 'text-slate-600 bg-slate-50' },
+            { label: 'Bank & Accounts', href: '/dashboard/accounts/bank-accounts', icon: Landmark, color: 'text-sky-600 bg-sky-50' },
             { label: 'Bank Reconciliation', href: '/dashboard/accounts/bank-reconciliation', icon: RefreshCw, color: 'text-indigo-600 bg-indigo-50' },
-            { label: 'AR Aging', href: '/dashboard/accounts/receivables', icon: TrendingUp, color: 'text-teal-600 bg-teal-50' },
-            { label: 'AP Aging', href: '/dashboard/accounts/payables', icon: TrendingDown, color: 'text-rose-600 bg-rose-50' },
           ].map(({ label, href, icon: Icon, color }) => (
             <a
               key={label}

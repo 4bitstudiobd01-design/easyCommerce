@@ -70,7 +70,7 @@ export function AccountStatementModal({ isOpen, onClose, accountId }: Props) {
       title={account ? `${account.name} Statement` : 'Account Statement'}
       subtitle={account?.bankOrProviderName || account?.type}
       icon={<Landmark className="w-5 h-5" />}
-      size="xl"
+      size="5xl"
     >
       <div className="p-6 space-y-6">
         {isLoading ? (
@@ -81,30 +81,43 @@ export function AccountStatementModal({ isOpen, onClose, accountId }: Props) {
         ) : (
           <>
             {/* Account Summary Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
-                <p className="text-xs font-semibold text-slate-500 uppercase">Starting Balance</p>
-                <p className="text-lg font-bold text-slate-900 mt-1">
-                  ৳{Number(summary?.startingBalance || 0).toLocaleString()}
-                </p>
-              </div>
-              <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl">
-                <p className="text-xs font-semibold text-emerald-700 uppercase">Total Inflows</p>
-                <p className="text-lg font-bold text-emerald-700 mt-1">
-                  +৳{Number(summary?.totalInflow || 0).toLocaleString()}
-                </p>
-              </div>
-              <div className="p-4 bg-rose-50 border border-rose-100 rounded-xl">
-                <p className="text-xs font-semibold text-rose-700 uppercase">Total Outflows</p>
-                <p className="text-lg font-bold text-rose-700 mt-1">
-                  -৳{Number(summary?.totalOutflow || 0).toLocaleString()}
-                </p>
-              </div>
-              <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
-                <p className="text-xs font-semibold text-blue-700 uppercase">Current Balance</p>
-                <p className="text-lg font-bold text-blue-700 mt-1">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="p-4 bg-blue-50/70 border border-blue-100 rounded-2xl">
+                <p className="text-[10px] font-bold text-blue-800 uppercase tracking-wider">বর্তমান ব্যালেন্স (Current)</p>
+                <p className="text-xl font-black text-blue-900 font-mono mt-1">
                   ৳{Number(summary?.currentBalance || 0).toLocaleString()}
                 </p>
+                <span className="text-[10px] text-blue-600 font-medium block mt-0.5">Live Available Balance</span>
+              </div>
+
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">গত মাসে ছিল (Last Month)</p>
+                <p className="text-xl font-black text-slate-700 font-mono mt-1">
+                  ৳{Number(summary?.lastMonthBalance !== undefined ? summary.lastMonthBalance : summary?.startingBalance || 0).toLocaleString()}
+                </p>
+                <span className="text-[10px] text-slate-400 font-medium block mt-0.5">Closing Balance</span>
+              </div>
+
+              <div className="p-4 bg-emerald-50/80 border border-emerald-200/80 rounded-2xl">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-extrabold text-emerald-800 uppercase tracking-wider">এই মাসে Credit (+ In)</p>
+                  <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-600" />
+                </div>
+                <p className="text-xl font-black text-emerald-700 font-mono mt-1">
+                  +৳{Number(summary?.thisMonthCredit !== undefined ? summary.thisMonthCredit : summary?.totalInflow || 0).toLocaleString()}
+                </p>
+                <span className="text-[10px] text-emerald-600 font-medium block mt-0.5">This Month Inflows</span>
+              </div>
+
+              <div className="p-4 bg-rose-50/80 border border-rose-200/80 rounded-2xl">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-extrabold text-rose-800 uppercase tracking-wider">এই মাসে Debit (- Out)</p>
+                  <ArrowUpRight className="w-3.5 h-3.5 text-rose-600" />
+                </div>
+                <p className="text-xl font-black text-rose-700 font-mono mt-1">
+                  -৳{Number(summary?.thisMonthDebit !== undefined ? summary.thisMonthDebit : summary?.totalOutflow || 0).toLocaleString()}
+                </p>
+                <span className="text-[10px] text-rose-600 font-medium block mt-0.5">This Month Deductions</span>
               </div>
             </div>
 

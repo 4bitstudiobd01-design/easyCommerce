@@ -9,7 +9,7 @@ export default function OmnichannelChatPage() {
     <div className="space-y-6">
       <CrmNavigationHeader
         title="Omnichannel Live Chat & Inbox"
-        subtitle="Real-time multi-platform customer conversations across WhatsApp, Telegram, Facebook Messenger, and Instagram."
+        subtitle="Real-time multi-platform customer conversations across WhatsApp, Telegram, Facebook & Messenger, and Instagram."
       />
       <OmnichannelChatInterface />
     </div>

@@ -118,6 +118,32 @@ export const omnichannelApi = createApi({
       transformResponse: (response: any) => extractData(response),
     }),
 
+    getTikTokOAuthUrl: builder.query<{ success: boolean; url: string; state: string }, { clientKey?: string; clientSecret?: string } | void>({
+      query: (params) => ({
+        url: '/credentials/tiktok/oauth/url',
+        params: params || {},
+      }),
+      transformResponse: (response: any) => extractData(response),
+    }),
+
+    initiateTikTokOAuth: builder.mutation<{ success: boolean; url: string; state: string }, { clientKey?: string; clientSecret?: string } | void>({
+      query: (body) => ({
+        url: '/credentials/tiktok/oauth/url',
+        method: 'POST',
+        body: body || {},
+      }),
+      transformResponse: (response: any) => extractData(response),
+    }),
+
+    disconnectTikTok: builder.mutation<{ success: boolean; message: string }, void>({
+      query: () => ({
+        url: '/credentials/tiktok/disconnect',
+        method: 'POST',
+      }),
+      invalidatesTags: ['OmnichannelCredential'],
+      transformResponse: (response: any) => extractData(response),
+    }),
+
     // ─── Chat & Conversation Endpoints ─────────────────────────────────────
     getConversations: builder.query<ConversationThread[], { platform?: string; search?: string } | void>({
       query: (params) => ({
@@ -292,6 +318,10 @@ export const {
   useTestChannelConnectionMutation,
   useToggleChannelActiveMutation,
   useDeleteChannelCredentialsMutation,
+  useGetTikTokOAuthUrlQuery,
+  useLazyGetTikTokOAuthUrlQuery,
+  useInitiateTikTokOAuthMutation,
+  useDisconnectTikTokMutation,
   useGetConversationsQuery,
   useGetConversationMessagesQuery,
   useSendChannelMessageMutation,

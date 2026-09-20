@@ -427,6 +427,62 @@ export interface CategoryExpenseBreakdownItem {
   percentage: number;
 }
 
+export interface AccountMonthlyBreakdownItem {
+  accountId: string;
+  accountName: string;
+  accountType: string;
+  accountNumber?: string;
+  bankOrProviderName?: string;
+  currentBalance: number;
+  thisMonthDebit: number;
+  thisMonthCredit: number;
+  thisMonthNet: number;
+  lastMonthDebit: number;
+  lastMonthCredit: number;
+  lastMonthNet: number;
+  lastMonthBalance: number;
+  txnCount: number;
+}
+
+export interface FinanceCardDrilldownAccount {
+  accountId: string;
+  accountName: string;
+  accountType: string;
+  accountNumber?: string;
+  bankOrProviderName?: string;
+  thisMonthDebit: number;
+  thisMonthCredit: number;
+  thisMonthAmount: number;
+  lastMonthAmount: number;
+  lastMonthDebit: number;
+  lastMonthCredit: number;
+  currentBalance?: number;
+  lastMonthBalance?: number;
+}
+
+export interface FinanceCardDrilldownTxn {
+  id: string;
+  transactionNumber: string;
+  transactionDate: string;
+  description: string;
+  amount: number;
+  accountName: string;
+  type: string;
+  isDebit: boolean;
+}
+
+export interface FinanceCardDrilldown {
+  cardKey: string;
+  title: string;
+  subtitle: string;
+  thisMonthTotal: number;
+  lastMonthTotal: number;
+  growth: number;
+  isRevenueType: boolean;
+  byAccount: FinanceCardDrilldownAccount[];
+  recentTxns: FinanceCardDrilldownTxn[];
+}
+
 export interface FinanceOverview {
   summary: {
     totalRevenue: number;
@@ -472,6 +528,8 @@ export interface FinanceOverview {
     expense: number;
     profit: number;
   }>;
+  accountMonthlyBreakdown?: AccountMonthlyBreakdownItem[];
+  cardBreakdowns?: Record<string, FinanceCardDrilldown>;
 }
 
 export interface AccountsResponse {

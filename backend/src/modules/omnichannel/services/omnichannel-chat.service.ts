@@ -15,6 +15,7 @@ import { TelegramChannelService } from './telegram-channel.service';
 import { WhatsAppChannelService } from './whatsapp-channel.service';
 import { FacebookChannelService } from './facebook-channel.service';
 import { InstagramChannelService } from './instagram-channel.service';
+import { TikTokChannelService } from './tiktok-channel.service';
 import { OmnichannelAiAutoReplyService } from './omnichannel-ai-auto-reply.service';
 import { CustomerEntity } from '../../customer/entities/customer.entity';
 
@@ -32,6 +33,7 @@ export interface UnifiedConversationItem {
   tags: string[];
   status: 'all' | 'unread' | 'resolved';
   customerId?: string;
+  externalUserId?: string;
   isAiPaused?: boolean;
   pausedReason?: string;
 }
@@ -66,6 +68,7 @@ export class OmnichannelChatService {
     private readonly whatsappService: WhatsAppChannelService,
     private readonly facebookService: FacebookChannelService,
     private readonly instagramService: InstagramChannelService,
+    private readonly tiktokService: TikTokChannelService,
     @Inject(forwardRef(() => OmnichannelAiAutoReplyService))
     private readonly aiAutoReplyService: OmnichannelAiAutoReplyService,
   ) {}
@@ -110,10 +113,18 @@ export class OmnichannelChatService {
       const latestMsg = msgList[0];
       const customerMsg = msgList.find((m) => m.direction === 'INBOUND') || latestMsg;
 
-      const recipientId =
-        latestMsg.direction === 'INBOUND'
-          ? latestMsg.senderId
-          : latestMsg.recipientId || latestMsg.senderId;
+      const customerInbound = msgList.find((m) => m.direction === 'INBOUND');
+      const rawExternalId =
+        customerInbound?.senderId ||
+        customerInbound?.rawMetadata?.sender?.id ||
+        customerInbound?.rawMetadata?.externalUserId ||
+        customerInbound?.rawMetadata?.messagingScopedUserId ||
+        (latestMsg.direction === 'INBOUND' ? latestMsg.senderId : latestMsg.recipientId) ||
+        convId.replace(/^(ig-|fb-|wa-|tg-|tt-)/, '');
+
+      // Clean external recipient ID stripped of internal platform prefixes
+      const cleanExternalId = String(rawExternalId || '').replace(/^(ig-|fb-|wa-|tg-|tt-)/, '').trim();
+      const recipientId = cleanExternalId;
 
       const customerName = customerMsg.senderName || 'Omnichannel User';
 
@@ -160,6 +171,7 @@ export class OmnichannelChatService {
         platform: latestMsg.platform,
         platformDetail: platformLabelMap[latestMsg.platform] || `${latestMsg.platform} - ${recipientId}`,
         recipientId,
+        externalUserId: cleanExternalId,
         lastMessage: latestMsg.text,
         timestamp: this.formatTimeAgo(latestMsg.createdAt),
         unreadCount,
@@ -221,21 +233,26 @@ export class OmnichannelChatService {
     recipientId: string,
     text: string,
     storeId?: string,
+    conversationId?: string,
   ): Promise<any> {
     if (!platform || !recipientId || !text) {
       throw new BadRequestException('platform, recipientId, and text are required');
     }
 
-    // Determine conversation ID based on platform convention
-    let convId = `${platform}-${recipientId}`;
-    if (platform === 'whatsapp') {
-      convId = `wa-${recipientId}`;
-    } else if (platform === 'telegram') {
-      convId = `tg-${recipientId}`;
-    } else if (platform === 'facebook') {
-      convId = `fb-${recipientId}`;
-    } else if (platform === 'instagram') {
-      convId = `ig-${recipientId}`;
+    // Determine conversation ID based on platform convention or explicit param
+    let convId = conversationId || `${platform}-${recipientId}`;
+    if (!conversationId) {
+      if (platform === 'whatsapp') {
+        convId = `wa-${recipientId}`;
+      } else if (platform === 'telegram') {
+        convId = `tg-${recipientId}`;
+      } else if (platform === 'facebook') {
+        convId = `fb-${recipientId}`;
+      } else if (platform === 'instagram') {
+        convId = `ig-${recipientId}`;
+      } else if (platform === 'tiktok') {
+        convId = `tt-${recipientId}`;
+      }
     }
 
     // Automatically pause AI auto-reply for this conversation (human agent takeover)
@@ -253,7 +270,9 @@ export class OmnichannelChatService {
       case 'facebook':
         return this.facebookService.sendMessage(tenantId, recipientId, text, storeId);
       case 'instagram':
-        return this.instagramService.sendMessage(tenantId, recipientId, text, storeId);
+        return this.instagramService.sendMessage(tenantId, recipientId, text, storeId, convId);
+      case 'tiktok':
+        return this.tiktokService.sendMessage(tenantId, recipientId, text, storeId);
       default: {
         // Generic fallback for custom/other platforms: save to DB directly
         const record = this.messageRepo.create({
@@ -305,6 +324,13 @@ export class OmnichannelChatService {
   ): Promise<{ success: boolean; message: string; count?: number }> {
     if (platform === 'facebook') {
       const res = await this.facebookService.syncPreviousConversations(tenantId, storeId);
+      return {
+        success: true,
+        message: res.message,
+        count: res.syncedConversations,
+      };
+    } else if (platform === 'instagram') {
+      const res = await this.instagramService.syncPreviousConversations(tenantId, storeId);
       return {
         success: true,
         message: res.message,

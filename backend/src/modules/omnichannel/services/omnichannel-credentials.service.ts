@@ -16,16 +16,29 @@ const SENSITIVE_KEYS = [
   'token',
   'secret',
   'password',
-  'key',
   'accessToken',
   'botToken',
   'apiSecret',
   'pageAccessToken',
   'verifyToken',
   'adminAccessToken',
+  'clientSecret',
+  'appSecret',
+];
+
+// These keys are NOT masked even though they might contain words like 'key'
+const NON_SENSITIVE_KEYS = [
+  'clientKey',
+  'apiKey', // shown partially — API keys are often needed visible
+  'openId',
+  'accountId',
+  'pageId',
+  'phoneNumberId',
 ];
 
 function isSensitiveKey(key: string): boolean {
+  // First check explicit non-sensitive list
+  if (NON_SENSITIVE_KEYS.some((s) => s.toLowerCase() === key.toLowerCase())) return false;
   const lower = key.toLowerCase();
   return SENSITIVE_KEYS.some((s) => lower.includes(s.toLowerCase()));
 }
@@ -532,12 +545,12 @@ export class OmnichannelCredentialsService {
         }
 
         case 'tiktok': {
-          const clientKey = credsToTest.clientKey || credsToTest.appId;
+          const clientKey = credsToTest.clientKey || credsToTest.appId || process.env.TIKTOK_CLIENT_KEY;
           const accessToken = credsToTest.accessToken;
           if (!clientKey && !accessToken) {
             return {
               success: false,
-              message: 'TikTok Client Key or Access Token is required.',
+              message: 'TikTok is not connected yet. Click "Connect TikTok Account" to authorize.',
             };
           }
 

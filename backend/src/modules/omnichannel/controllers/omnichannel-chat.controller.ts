@@ -94,6 +94,7 @@ export class OmnichannelChatController {
       dto.recipientId,
       dto.text,
       ctx.storeId,
+      dto.conversationId,
     );
     return { success: true, data };
   }

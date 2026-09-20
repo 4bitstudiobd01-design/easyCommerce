@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React from 'react';
 import Link from 'next/link';
@@ -8,14 +8,13 @@ import {
   ArrowLeftRight,
   FileText,
   Receipt,
-  TrendingUp,
-  TrendingDown,
   Banknote,
   Scale,
   BookOpen,
   BookMarked,
   BarChart3,
   RefreshCw,
+  Landmark,
 } from 'lucide-react';
 
 const ACCOUNTS_TABS = [
@@ -25,6 +24,12 @@ const ACCOUNTS_TABS = [
     matchHref: ['/dashboard/accounts/overview', '/dashboard/accounts'],
     icon: LayoutDashboard,
     exact: true,
+  },
+  {
+    name: 'Bank & Accounts',
+    href: '/dashboard/accounts/bank-accounts',
+    matchHref: ['/dashboard/accounts/bank-accounts', '/dashboard/accounts/accounts'],
+    icon: Landmark,
   },
   {
     name: 'Transactions',
@@ -43,18 +48,6 @@ const ACCOUNTS_TABS = [
     href: '/dashboard/accounts/bills',
     matchHref: ['/dashboard/accounts/bills'],
     icon: Receipt,
-  },
-  {
-    name: 'Receivables',
-    href: '/dashboard/accounts/receivables',
-    matchHref: ['/dashboard/accounts/receivables'],
-    icon: TrendingUp,
-  },
-  {
-    name: 'Payables',
-    href: '/dashboard/accounts/payables',
-    matchHref: ['/dashboard/accounts/payables'],
-    icon: TrendingDown,
   },
   {
     name: 'Payroll',

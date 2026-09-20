@@ -15,6 +15,7 @@ import { TelegramChannelService } from './services/telegram-channel.service';
 import { WhatsAppChannelService } from './services/whatsapp-channel.service';
 import { FacebookChannelService } from './services/facebook-channel.service';
 import { InstagramChannelService } from './services/instagram-channel.service';
+import { TikTokChannelService } from './services/tiktok-channel.service';
 import { OmnichannelChatService } from './services/omnichannel-chat.service';
 import { OmnichannelAiCryptoService } from './services/omnichannel-ai-crypto.service';
 import { GeminiAiProvider } from './services/ai-providers/gemini-ai.provider';
@@ -74,6 +75,7 @@ import { OmnichannelAiToolsService } from './services/omnichannel-ai-tools.servi
     WhatsAppChannelService,
     FacebookChannelService,
     InstagramChannelService,
+    TikTokChannelService,
     OmnichannelChatService,
     OmnichannelAiCryptoService,
     GeminiAiProvider,
@@ -90,6 +92,7 @@ import { OmnichannelAiToolsService } from './services/omnichannel-ai-tools.servi
     WhatsAppChannelService,
     FacebookChannelService,
     InstagramChannelService,
+    TikTokChannelService,
     OmnichannelChatService,
     OmnichannelAiAutoReplyService,
     OmnichannelAiConfigService,

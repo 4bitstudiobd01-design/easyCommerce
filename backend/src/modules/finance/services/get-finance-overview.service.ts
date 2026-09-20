@@ -121,6 +121,8 @@ export class GetFinanceOverviewService {
     const periodTxns = await this.transactionRepository
       .createQueryBuilder('txn')
       .leftJoinAndSelect('txn.category', 'category')
+      .leftJoinAndSelect('txn.account', 'account')
+      .leftJoinAndSelect('txn.toAccount', 'toAccount')
       .where('txn.storeId = :storeId', { storeId })
       .andWhere('txn.status = :status', { status: FinanceTransactionStatusEnum.COMPLETED })
       .andWhere('txn.transactionDate >= :start', { start: currentPeriodStart })
@@ -219,6 +221,9 @@ export class GetFinanceOverviewService {
     // 4. Previous Period Metrics for Growth % calculation
     const prevTxns = await this.transactionRepository
       .createQueryBuilder('txn')
+      .leftJoinAndSelect('txn.category', 'category')
+      .leftJoinAndSelect('txn.account', 'account')
+      .leftJoinAndSelect('txn.toAccount', 'toAccount')
       .where('txn.storeId = :storeId', { storeId })
       .andWhere('txn.status = :status', { status: FinanceTransactionStatusEnum.COMPLETED })
       .andWhere('txn.transactionDate >= :start', { start: prevPeriodStart })
@@ -394,6 +399,304 @@ export class GetFinanceOverviewService {
       profit: Math.round((m.revenue - m.expense) * 100) / 100,
     }));
 
+    // 12. Account-Level Monthly Breakdown (This Month Debit/Credit vs Last Month)
+    const accountMonthlyBreakdown = accounts.map((acc) => {
+      let thisMonthDebit = 0;
+      let thisMonthCredit = 0;
+      let lastMonthDebit = 0;
+      let lastMonthCredit = 0;
+      let thisMonthTxnCount = 0;
+
+      for (const t of periodTxns) {
+        const amt = Number(t.amount || 0);
+        if (t.accountId === acc.id) {
+          thisMonthTxnCount++;
+          if (t.type === FinanceTransactionTypeEnum.INCOME) {
+            thisMonthCredit += amt;
+          } else if (
+            t.type === FinanceTransactionTypeEnum.EXPENSE ||
+            t.type === FinanceTransactionTypeEnum.PAYMENT ||
+            t.type === FinanceTransactionTypeEnum.REFUND
+          ) {
+            thisMonthDebit += amt;
+          } else if (t.type === FinanceTransactionTypeEnum.TRANSFER) {
+            thisMonthDebit += amt;
+          }
+        } else if (t.toAccountId === acc.id && t.type === FinanceTransactionTypeEnum.TRANSFER) {
+          thisMonthTxnCount++;
+          thisMonthCredit += amt;
+        }
+      }
+
+      for (const t of prevTxns) {
+        const amt = Number(t.amount || 0);
+        if (t.accountId === acc.id) {
+          if (t.type === FinanceTransactionTypeEnum.INCOME) {
+            lastMonthCredit += amt;
+          } else if (
+            t.type === FinanceTransactionTypeEnum.EXPENSE ||
+            t.type === FinanceTransactionTypeEnum.PAYMENT ||
+            t.type === FinanceTransactionTypeEnum.REFUND
+          ) {
+            lastMonthDebit += amt;
+          } else if (t.type === FinanceTransactionTypeEnum.TRANSFER) {
+            lastMonthDebit += amt;
+          }
+        } else if (t.toAccountId === acc.id && t.type === FinanceTransactionTypeEnum.TRANSFER) {
+          lastMonthCredit += amt;
+        }
+      }
+
+      const curBal = Number(acc.currentBalance || 0);
+      const lastMonthBalance = Math.max(0, Math.round((curBal - (thisMonthCredit - thisMonthDebit)) * 100) / 100);
+
+      return {
+        accountId: acc.id,
+        accountName: acc.name,
+        accountType: acc.type,
+        accountNumber: acc.accountNumber,
+        bankOrProviderName: acc.bankOrProviderName,
+        currentBalance: curBal,
+        thisMonthDebit: Math.round(thisMonthDebit * 100) / 100,
+        thisMonthCredit: Math.round(thisMonthCredit * 100) / 100,
+        thisMonthNet: Math.round((thisMonthCredit - thisMonthDebit) * 100) / 100,
+        lastMonthDebit: Math.round(lastMonthDebit * 100) / 100,
+        lastMonthCredit: Math.round(lastMonthCredit * 100) / 100,
+        lastMonthNet: Math.round((lastMonthCredit - lastMonthDebit) * 100) / 100,
+        lastMonthBalance,
+        txnCount: thisMonthTxnCount,
+      };
+    });
+
+    // 13. Card-Level Breakdown Drilldown Generator
+    const buildCardDrilldown = (
+      cardKey: string,
+      title: string,
+      subtitle: string,
+      filterFn: (t: FinanceTransactionEntity) => boolean,
+      isRevenueType: boolean = false,
+      totalOverride?: number,
+      lastMonthOverride?: number,
+    ) => {
+      const curTxns = periodTxns.filter(filterFn);
+      const prTxns = prevTxns.filter(filterFn);
+
+      const thisMonthTotal = totalOverride !== undefined ? totalOverride : curTxns.reduce((s, t) => s + Number(t.amount || 0), 0);
+      const lastMonthTotal = lastMonthOverride !== undefined ? lastMonthOverride : prTxns.reduce((s, t) => s + Number(t.amount || 0), 0);
+
+      const byAccount = accounts
+        .map((acc) => {
+          const curAccTxns = curTxns.filter((t) => t.accountId === acc.id || t.toAccountId === acc.id);
+          const prevAccTxns = prTxns.filter((t) => t.accountId === acc.id || t.toAccountId === acc.id);
+
+          let thisDebit = 0;
+          let thisCredit = 0;
+          for (const t of curAccTxns) {
+            const amt = Number(t.amount || 0);
+            if (t.type === FinanceTransactionTypeEnum.INCOME || (t.type === FinanceTransactionTypeEnum.TRANSFER && t.toAccountId === acc.id)) {
+              thisCredit += amt;
+            } else {
+              thisDebit += amt;
+            }
+          }
+
+          let prevDebit = 0;
+          let prevCredit = 0;
+          for (const t of prevAccTxns) {
+            const amt = Number(t.amount || 0);
+            if (t.type === FinanceTransactionTypeEnum.INCOME || (t.type === FinanceTransactionTypeEnum.TRANSFER && t.toAccountId === acc.id)) {
+              prevCredit += amt;
+            } else {
+              prevDebit += amt;
+            }
+          }
+
+          const thisAmount = isRevenueType ? thisCredit : thisDebit;
+          const prevAmount = isRevenueType ? prevCredit : prevDebit;
+
+          return {
+            accountId: acc.id,
+            accountName: acc.name,
+            accountType: acc.type,
+            accountNumber: acc.accountNumber,
+            bankOrProviderName: acc.bankOrProviderName,
+            thisMonthDebit: Math.round(thisDebit * 100) / 100,
+            thisMonthCredit: Math.round(thisCredit * 100) / 100,
+            thisMonthAmount: Math.round(thisAmount * 100) / 100,
+            lastMonthAmount: Math.round(prevAmount * 100) / 100,
+            lastMonthDebit: Math.round(prevDebit * 100) / 100,
+            lastMonthCredit: Math.round(prevCredit * 100) / 100,
+          };
+        })
+        .filter((a) => a.thisMonthAmount > 0 || a.lastMonthAmount > 0);
+
+      const recentTxns = curTxns.slice(0, 20).map((t) => ({
+        id: t.id,
+        transactionNumber: t.transactionNumber,
+        transactionDate: t.transactionDate,
+        description: t.description || t.reference || title,
+        amount: Number(t.amount || 0),
+        accountName: t.account?.name || 'General Account',
+        type: t.type,
+        isDebit: t.type !== FinanceTransactionTypeEnum.INCOME,
+      }));
+
+      return {
+        cardKey,
+        title,
+        subtitle,
+        thisMonthTotal: Math.round(thisMonthTotal * 100) / 100,
+        lastMonthTotal: Math.round(lastMonthTotal * 100) / 100,
+        growth: calcGrowth(thisMonthTotal, lastMonthTotal),
+        isRevenueType,
+        byAccount,
+        recentTxns,
+      };
+    };
+
+    const cardBreakdowns: Record<string, any> = {
+      REVENUE: buildCardDrilldown(
+        'REVENUE',
+        'Total Revenue',
+        'Income received into bank accounts & digital wallets',
+        (t) => t.type === FinanceTransactionTypeEnum.INCOME,
+        true,
+        totalRevenue,
+        prevRevenue,
+      ),
+      EXPENSES: buildCardDrilldown(
+        'EXPENSES',
+        'Total Expenses',
+        'Operating costs, payroll & vendor disbursements deducted from accounts',
+        (t) => t.type === FinanceTransactionTypeEnum.EXPENSE || t.type === FinanceTransactionTypeEnum.PAYMENT,
+        false,
+        totalExpenses,
+        prevExpense,
+      ),
+      GROSS_PROFIT: buildCardDrilldown(
+        'GROSS_PROFIT',
+        'Gross Profit',
+        'Revenue minus Cost of Goods Sold across accounts',
+        (t) => t.type === FinanceTransactionTypeEnum.INCOME || ['COGS', '5010', 'PRODUCT_COST'].includes((t.categoryCode || '').toUpperCase()),
+        true,
+        grossProfit,
+        prevGrossProfit,
+      ),
+      NET_PROFIT: buildCardDrilldown(
+        'NET_PROFIT',
+        'Net Profit (Bottom Line)',
+        'Net cash earnings after all operating deductions',
+        (t) => true,
+        true,
+        netProfit,
+        prevNetProfit,
+      ),
+      COGS: buildCardDrilldown(
+        'COGS',
+        'COGS (Procurement)',
+        'Product purchase and vendor bill payments',
+        (t) => ['COGS', '5010', 'PRODUCT_COST'].includes((t.categoryCode || '').toUpperCase()),
+        false,
+        totalCogs,
+        prevCogs,
+      ),
+      PAYROLL: buildCardDrilldown(
+        'PAYROLL',
+        'Payroll & Staff Salaries',
+        'Disbursements paid to employees from accounts',
+        (t) => ['SALARY', 'PAYROLL', '6010'].includes((t.categoryCode || '').toUpperCase()),
+        false,
+        payrollCost,
+        0,
+      ),
+      COURIER: buildCardDrilldown(
+        'COURIER',
+        'Courier & Delivery Charges',
+        'Logistics fees paid to Steadfast, Pathao & RedX',
+        (t) => ['SHIPPING', 'COURIER'].includes((t.categoryCode || '').toUpperCase()),
+        false,
+        shippingCost,
+        0,
+      ),
+      MARKETING: buildCardDrilldown(
+        'MARKETING',
+        'Marketing & Meta Ads',
+        'Ad spend paid via credit card or digital gateways',
+        (t) => ['MARKETING', 'ADS', '6030'].includes((t.categoryCode || '').toUpperCase()),
+        false,
+        marketingCost,
+        0,
+      ),
+      RENT: buildCardDrilldown(
+        'RENT',
+        'Rent & Facilities',
+        'Office & warehouse lease payments from bank/cash',
+        (t) => ['RENT', '6040'].includes((t.categoryCode || '').toUpperCase()),
+        false,
+        rentCost,
+        0,
+      ),
+      UTILITIES: buildCardDrilldown(
+        'UTILITIES',
+        'Utilities & Internet',
+        'Electricity, water & broadband bills paid',
+        (t) => ['UTILITIES', '6050'].includes((t.categoryCode || '').toUpperCase()),
+        false,
+        utilitiesCost,
+        0,
+      ),
+      CASH_BANK: {
+        cardKey: 'CASH_BANK',
+        title: 'Cash & Bank Accounts',
+        subtitle: 'Liquidity, monthly debits/credits & last month balances across all accounts',
+        thisMonthTotal: totalAccountBalance,
+        lastMonthTotal: accountMonthlyBreakdown.reduce((s, a) => s + a.lastMonthBalance, 0),
+        isRevenueType: true,
+        byAccount: accountMonthlyBreakdown.map((a) => ({
+          ...a,
+          thisMonthAmount: a.currentBalance,
+          lastMonthAmount: a.lastMonthBalance,
+        })),
+        recentTxns: periodTxns.slice(0, 20).map((t) => ({
+          id: t.id,
+          transactionNumber: t.transactionNumber,
+          transactionDate: t.transactionDate,
+          description: t.description || t.reference || 'Account transaction',
+          amount: Number(t.amount || 0),
+          accountName: t.account?.name || 'General Account',
+          type: t.type,
+          isDebit: t.type !== FinanceTransactionTypeEnum.INCOME,
+        })),
+      },
+      INVENTORY: {
+        cardKey: 'INVENTORY',
+        title: 'Inventory Valuation',
+        subtitle: 'Current physical inventory asset value in warehouse',
+        thisMonthTotal: inventoryValuation,
+        lastMonthTotal: inventoryValuation,
+        byAccount: [],
+        recentTxns: [],
+      },
+      RECEIVABLES: {
+        cardKey: 'RECEIVABLES',
+        title: 'Accounts Receivable',
+        subtitle: 'Outstanding customer invoices pending collection',
+        thisMonthTotal: totalReceivables,
+        lastMonthTotal: 0,
+        byAccount: [],
+        recentTxns: [],
+      },
+      PAYABLES: {
+        cardKey: 'PAYABLES',
+        title: 'Accounts Payable',
+        subtitle: 'Pending vendor bills and unpaid salaries',
+        thisMonthTotal: totalPayables,
+        lastMonthTotal: 0,
+        byAccount: [],
+        recentTxns: [],
+      },
+    };
+
     return {
       summary: {
         totalRevenue: Math.round(totalRevenue * 100) / 100,
@@ -428,6 +731,8 @@ export class GetFinanceOverviewService {
       accounts,
       recentTransactions,
       revenueVsExpenseTrend,
+      accountMonthlyBreakdown,
+      cardBreakdowns,
     };
   }
 }

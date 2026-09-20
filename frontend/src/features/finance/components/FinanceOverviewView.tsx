@@ -63,6 +63,7 @@ import { CreateBillModal } from './CreateBillModal';
 import { CreateJournalEntryModal } from './CreateJournalEntryModal';
 import { IncomeDetailModal } from './IncomeDetailModal';
 import { ExpenseDetailModal } from './ExpenseDetailModal';
+import { FinanceCardDetailModal } from './FinanceCardDetailModal';
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -119,6 +120,8 @@ export function FinanceOverviewView() {
   const [isJournalOpen, setIsJournalOpen] = useState(false);
   const [selectedIncome, setSelectedIncome] = useState<FinanceTransaction | null>(null);
   const [selectedExpense, setSelectedExpense] = useState<FinanceTransaction | null>(null);
+  const [selectedDrilldownCardKey, setSelectedDrilldownCardKey] = useState<string | null>(null);
+  const [selectedDrilldownAccountId, setSelectedDrilldownAccountId] = useState<string | null>(null);
 
   const summary = data?.summary;
   const growth = data?.growth;
@@ -128,6 +131,13 @@ export function FinanceOverviewView() {
     ? data.recentTransactions
     : [];
   const chartData = Array.isArray(data?.revenueVsExpenseTrend) ? data.revenueVsExpenseTrend : [];
+  const cardBreakdowns = data?.cardBreakdowns;
+  const accountMonthlyBreakdown = data?.accountMonthlyBreakdown || [];
+
+  const handleCardClick = (key: string, accountId?: string | null) => {
+    setSelectedDrilldownCardKey(key);
+    setSelectedDrilldownAccountId(accountId || null);
+  };
 
   const monthLabel = selectedMonth > 0 ? MONTH_NAMES[selectedMonth - 1] : 'All Year';
 
@@ -293,49 +303,76 @@ export function FinanceOverviewView() {
       {/* Primary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Revenue */}
-        <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-emerald-300 transition">
+        <div
+          onClick={() => handleCardClick('REVENUE')}
+          className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-emerald-400 hover:shadow-md hover:scale-[1.01] transition-all cursor-pointer"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Total Revenue</span>
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 group-hover:text-slate-600 transition-colors">
+              Total Revenue
+            </span>
             <div className="flex items-center gap-1.5">
               {growth && renderGrowthBadge(growth.revenueGrowth, true)}
-              <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition">
                 <TrendingUp className="w-4 h-4" />
               </div>
             </div>
           </div>
           <p className="text-2xl font-black text-slate-900 mt-2">{formatMoney(summary?.totalRevenue || 0)}</p>
           <div className="flex items-center justify-between text-xs text-slate-500 mt-1">
-            <span>Online Orders & Delivery</span>
-            <Link href="/dashboard/finance/income" className="font-bold text-emerald-600 hover:underline">
+            <span className="text-[11px] font-semibold text-emerald-600 flex items-center gap-0.5">
+              Account Audit ↗
+            </span>
+            <Link
+              href="/dashboard/finance/income"
+              onClick={(e) => e.stopPropagation()}
+              className="font-bold text-emerald-600 hover:underline"
+            >
               View Income →
             </Link>
           </div>
         </div>
 
         {/* Total Expenses */}
-        <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-rose-300 transition">
+        <div
+          onClick={() => handleCardClick('EXPENSES')}
+          className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-rose-400 hover:shadow-md hover:scale-[1.01] transition-all cursor-pointer"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Total Expenses</span>
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 group-hover:text-slate-600 transition-colors">
+              Total Expenses
+            </span>
             <div className="flex items-center gap-1.5">
               {growth && renderGrowthBadge(growth.expenseGrowth, false)}
-              <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center group-hover:bg-rose-600 group-hover:text-white transition">
                 <TrendingDown className="w-4 h-4" />
               </div>
             </div>
           </div>
           <p className="text-2xl font-black text-slate-900 mt-2">{formatMoney(summary?.totalExpenses || 0)}</p>
           <div className="flex items-center justify-between text-xs text-slate-500 mt-1">
-            <span>COGS, Payroll & Overheads</span>
-            <Link href="/dashboard/finance/expenses" className="font-bold text-rose-600 hover:underline">
+            <span className="text-[11px] font-semibold text-rose-600 flex items-center gap-0.5">
+              Account Audit ↗
+            </span>
+            <Link
+              href="/dashboard/finance/expenses"
+              onClick={(e) => e.stopPropagation()}
+              className="font-bold text-rose-600 hover:underline"
+            >
               View Expenses →
             </Link>
           </div>
         </div>
 
         {/* Gross Profit */}
-        <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-indigo-300 transition">
+        <div
+          onClick={() => handleCardClick('GROSS_PROFIT')}
+          className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-indigo-400 hover:shadow-md hover:scale-[1.01] transition-all cursor-pointer"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Gross Profit</span>
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 group-hover:text-slate-600 transition-colors">
+              Gross Profit
+            </span>
             <div className="flex items-center gap-1.5">
               {growth && renderGrowthBadge(growth.grossProfitGrowth, true)}
               <span className="text-[10px] font-black bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-200">
@@ -345,17 +382,28 @@ export function FinanceOverviewView() {
           </div>
           <p className="text-2xl font-black text-indigo-950 mt-2">{formatMoney(summary?.grossProfit || 0)}</p>
           <div className="flex items-center justify-between text-xs text-slate-500 mt-1">
-            <span>Revenue minus COGS</span>
-            <Link href="/dashboard/finance/reports" className="font-bold text-indigo-600 hover:underline">
+            <span className="text-[11px] font-semibold text-indigo-600 flex items-center gap-0.5">
+              Account Audit ↗
+            </span>
+            <Link
+              href="/dashboard/finance/reports"
+              onClick={(e) => e.stopPropagation()}
+              className="font-bold text-indigo-600 hover:underline"
+            >
               P&L Report →
             </Link>
           </div>
         </div>
 
         {/* Net Profit */}
-        <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-blue-300 transition">
+        <div
+          onClick={() => handleCardClick('NET_PROFIT')}
+          className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-blue-400 hover:shadow-md hover:scale-[1.01] transition-all cursor-pointer"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Net Profit</span>
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 group-hover:text-slate-600 transition-colors">
+              Net Profit
+            </span>
             <div className="flex items-center gap-1.5">
               {growth && renderGrowthBadge(growth.netProfitGrowth, true)}
               <span className="text-[10px] font-black bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200">
@@ -367,7 +415,9 @@ export function FinanceOverviewView() {
             {formatMoney(summary?.netProfit || 0)}
           </p>
           <div className="flex items-center justify-between text-xs text-slate-500 mt-1">
-            <span>Bottom Line Net Profit</span>
+            <span className="text-[11px] font-semibold text-blue-600 flex items-center gap-0.5">
+              Account Audit ↗
+            </span>
             <span className="text-[11px] font-semibold text-slate-400">For {monthLabel}</span>
           </div>
         </div>
@@ -376,110 +426,186 @@ export function FinanceOverviewView() {
       {/* Operating Expense Breakdown & Cost Centers Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {/* COGS */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+        <div
+          onClick={() => handleCardClick('COGS')}
+          className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs hover:border-amber-400 hover:shadow-md hover:scale-[1.02] transition-all cursor-pointer group"
+        >
           <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase">
             <span>COGS</span>
             <Package className="w-3.5 h-3.5 text-amber-500" />
           </div>
           <p className="text-base font-black text-slate-900 mt-1">{formatMoney(summary?.cogs || 0)}</p>
-          <span className="text-[10px] text-slate-500 block mt-0.5">Product Procurement</span>
+          <div className="flex items-center justify-between mt-0.5">
+            <span className="text-[10px] text-slate-500 block">Procurement</span>
+            <span className="text-[9px] font-bold text-amber-600 opacity-0 group-hover:opacity-100 transition-opacity">Audit ↗</span>
+          </div>
         </div>
 
         {/* Payroll */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+        <div
+          onClick={() => handleCardClick('PAYROLL')}
+          className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs hover:border-pink-400 hover:shadow-md hover:scale-[1.02] transition-all cursor-pointer group"
+        >
           <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase">
             <span>Payroll</span>
             <Users className="w-3.5 h-3.5 text-pink-500" />
           </div>
           <p className="text-base font-black text-slate-900 mt-1">{formatMoney(summary?.payrollCost || 0)}</p>
-          <Link href="/dashboard/finance/salaries" className="text-[10px] font-bold text-pink-600 hover:underline block mt-0.5">
-            Staff Salaries →
-          </Link>
+          <div className="flex items-center justify-between mt-0.5">
+            <Link
+              href="/dashboard/finance/salaries"
+              onClick={(e) => e.stopPropagation()}
+              className="text-[10px] font-bold text-pink-600 hover:underline block"
+            >
+              Staff Salaries →
+            </Link>
+            <span className="text-[9px] font-bold text-pink-600 opacity-0 group-hover:opacity-100 transition-opacity">Audit ↗</span>
+          </div>
         </div>
 
         {/* Shipping & Courier */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+        <div
+          onClick={() => handleCardClick('COURIER')}
+          className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs hover:border-lime-500 hover:shadow-md hover:scale-[1.02] transition-all cursor-pointer group"
+        >
           <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase">
             <span>Courier</span>
             <Truck className="w-3.5 h-3.5 text-lime-600" />
           </div>
           <p className="text-base font-black text-slate-900 mt-1">{formatMoney(summary?.shippingCost || 0)}</p>
-          <span className="text-[10px] text-slate-500 block mt-0.5">Steadfast & Pathao</span>
+          <div className="flex items-center justify-between mt-0.5">
+            <span className="text-[10px] text-slate-500 block">Steadfast & Pathao</span>
+            <span className="text-[9px] font-bold text-lime-600 opacity-0 group-hover:opacity-100 transition-opacity">Audit ↗</span>
+          </div>
         </div>
 
         {/* Marketing */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+        <div
+          onClick={() => handleCardClick('MARKETING')}
+          className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs hover:border-amber-400 hover:shadow-md hover:scale-[1.02] transition-all cursor-pointer group"
+        >
           <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase">
             <span>Marketing</span>
             <Megaphone className="w-3.5 h-3.5 text-amber-500" />
           </div>
           <p className="text-base font-black text-slate-900 mt-1">{formatMoney(summary?.marketingCost || 0)}</p>
-          <span className="text-[10px] text-slate-500 block mt-0.5">Meta & Google Ads</span>
+          <div className="flex items-center justify-between mt-0.5">
+            <span className="text-[10px] text-slate-500 block">Meta & Google Ads</span>
+            <span className="text-[9px] font-bold text-amber-600 opacity-0 group-hover:opacity-100 transition-opacity">Audit ↗</span>
+          </div>
         </div>
 
         {/* Rent & Facilities */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+        <div
+          onClick={() => handleCardClick('RENT')}
+          className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs hover:border-teal-400 hover:shadow-md hover:scale-[1.02] transition-all cursor-pointer group"
+        >
           <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase">
             <span>Rent</span>
             <Building className="w-3.5 h-3.5 text-teal-600" />
           </div>
           <p className="text-base font-black text-slate-900 mt-1">{formatMoney(summary?.rentCost || 0)}</p>
-          <span className="text-[10px] text-slate-500 block mt-0.5">Shop & Warehouse</span>
+          <div className="flex items-center justify-between mt-0.5">
+            <span className="text-[10px] text-slate-500 block">Shop & Warehouse</span>
+            <span className="text-[9px] font-bold text-teal-600 opacity-0 group-hover:opacity-100 transition-opacity">Audit ↗</span>
+          </div>
         </div>
 
         {/* Utilities & Internet */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+        <div
+          onClick={() => handleCardClick('UTILITIES')}
+          className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs hover:border-orange-400 hover:shadow-md hover:scale-[1.02] transition-all cursor-pointer group"
+        >
           <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase">
             <span>Utilities</span>
             <Zap className="w-3.5 h-3.5 text-orange-500" />
           </div>
           <p className="text-base font-black text-slate-900 mt-1">{formatMoney(summary?.utilitiesCost || 0)}</p>
-          <span className="text-[10px] text-slate-500 block mt-0.5">DESCO, WASA & Net</span>
+          <div className="flex items-center justify-between mt-0.5">
+            <span className="text-[10px] text-slate-500 block">DESCO & Net</span>
+            <span className="text-[9px] font-bold text-orange-600 opacity-0 group-hover:opacity-100 transition-opacity">Audit ↗</span>
+          </div>
         </div>
       </div>
 
       {/* Second Row of Balance Sheet Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+        <div
+          onClick={() => handleCardClick('INVENTORY')}
+          className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs hover:border-cyan-400 hover:shadow-md hover:scale-[1.02] transition-all cursor-pointer group"
+        >
           <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase">
             <span>Inventory Value</span>
             <Layers className="w-3.5 h-3.5 text-cyan-600" />
           </div>
           <p className="text-lg font-black text-slate-900 mt-1">{formatMoney(summary?.inventoryCost || 0)}</p>
-          <span className="text-[10px] text-slate-500 block mt-0.5">Stock Asset Valuation</span>
+          <div className="flex items-center justify-between mt-0.5">
+            <span className="text-[10px] text-slate-500 block">Stock Asset Valuation</span>
+            <span className="text-[9px] font-bold text-cyan-600 opacity-0 group-hover:opacity-100 transition-opacity">Audit ↗</span>
+          </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+        <div
+          onClick={() => handleCardClick('RECEIVABLES')}
+          className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs hover:border-blue-400 hover:shadow-md hover:scale-[1.02] transition-all cursor-pointer group"
+        >
           <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase">
             <span>Receivables</span>
             <FileText className="w-3.5 h-3.5 text-blue-600" />
           </div>
           <p className="text-lg font-black text-blue-600 mt-1">{formatMoney(summary?.totalReceivables || 0)}</p>
-          <Link href="/dashboard/finance/invoices" className="text-[10px] font-bold text-blue-600 hover:underline block mt-0.5">
-            Unpaid Invoices →
-          </Link>
+          <div className="flex items-center justify-between mt-0.5">
+            <Link
+              href="/dashboard/finance/invoices"
+              onClick={(e) => e.stopPropagation()}
+              className="text-[10px] font-bold text-blue-600 hover:underline block"
+            >
+              Unpaid Invoices →
+            </Link>
+            <span className="text-[9px] font-bold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">Audit ↗</span>
+          </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+        <div
+          onClick={() => handleCardClick('PAYABLES')}
+          className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs hover:border-amber-400 hover:shadow-md hover:scale-[1.02] transition-all cursor-pointer group"
+        >
           <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase">
             <span>Payables</span>
             <Receipt className="w-3.5 h-3.5 text-amber-600" />
           </div>
           <p className="text-lg font-black text-amber-600 mt-1">{formatMoney(summary?.totalPayables || 0)}</p>
-          <Link href="/dashboard/finance/bills" className="text-[10px] font-bold text-amber-600 hover:underline block mt-0.5">
-            Vendor Bills & Salaries →
-          </Link>
+          <div className="flex items-center justify-between mt-0.5">
+            <Link
+              href="/dashboard/finance/bills"
+              onClick={(e) => e.stopPropagation()}
+              className="text-[10px] font-bold text-amber-600 hover:underline block"
+            >
+              Vendor Bills →
+            </Link>
+            <span className="text-[9px] font-bold text-amber-600 opacity-0 group-hover:opacity-100 transition-opacity">Audit ↗</span>
+          </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+        <div
+          onClick={() => handleCardClick('CASH_BANK')}
+          className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs hover:border-emerald-400 hover:shadow-md hover:scale-[1.02] transition-all cursor-pointer group"
+        >
           <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase">
             <span>Cash & Bank</span>
             <Landmark className="w-3.5 h-3.5 text-emerald-600" />
           </div>
           <p className="text-lg font-black text-emerald-700 mt-1">{formatMoney(summary?.totalAccountBalance || 0)}</p>
-          <Link href="/dashboard/finance/accounts" className="text-[10px] font-bold text-emerald-600 hover:underline block mt-0.5">
-            {accounts.length} Active Accounts →
-          </Link>
+          <div className="flex items-center justify-between mt-0.5">
+            <Link
+              href="/dashboard/finance/accounts"
+              onClick={(e) => e.stopPropagation()}
+              className="text-[10px] font-bold text-emerald-600 hover:underline block"
+            >
+              {accounts.length} Active Accounts →
+            </Link>
+            <span className="text-[9px] font-bold text-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity">Audit ↗</span>
+          </div>
         </div>
       </div>
 
@@ -627,7 +753,9 @@ export function FinanceOverviewView() {
                 return (
                   <div
                     key={acc.id}
-                    className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between hover:bg-slate-100/70 transition"
+                    onClick={() => handleCardClick('ACCOUNTS', acc.id)}
+                    className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between hover:bg-blue-50/70 hover:border-blue-200 cursor-pointer transition group"
+                    title="Click to view this account's debit, credit & last month comparison"
                   >
                     <div className="flex items-center gap-3">
                       <div
@@ -644,7 +772,9 @@ export function FinanceOverviewView() {
                         {isCash ? '💵' : isBank ? '🏦' : isWallet ? '📱' : '💳'}
                       </div>
                       <div>
-                        <span className="text-xs font-bold text-slate-900 block leading-tight">{acc.name}</span>
+                        <span className="text-xs font-bold text-slate-900 block leading-tight group-hover:text-blue-600 transition-colors">
+                          {acc.name}
+                        </span>
                         <span className="text-[10px] text-slate-400 font-medium">
                           {acc.accountNumber ? `A/C: ${acc.accountNumber}` : acc.bankOrProviderName || acc.type}
                         </span>
@@ -652,7 +782,7 @@ export function FinanceOverviewView() {
                     </div>
                     <div className="text-right">
                       <span className="text-xs font-black text-slate-900 block">{formatMoney(acc.currentBalance)}</span>
-                      <span className="text-[10px] text-emerald-600 font-semibold">Active</span>
+                      <span className="text-[10px] text-blue-600 font-semibold group-hover:underline">Audit ↗</span>
                     </div>
                   </div>
                 );
@@ -779,6 +909,21 @@ export function FinanceOverviewView() {
         isOpen={Boolean(selectedExpense)}
         onClose={() => setSelectedExpense(null)}
         expense={selectedExpense}
+      />
+
+      {/* Finance Card Drilldown Modal */}
+      <FinanceCardDetailModal
+        isOpen={Boolean(selectedDrilldownCardKey)}
+        onClose={() => {
+          setSelectedDrilldownCardKey(null);
+          setSelectedDrilldownAccountId(null);
+        }}
+        cardKey={selectedDrilldownCardKey}
+        cardData={selectedDrilldownCardKey && cardBreakdowns ? cardBreakdowns[selectedDrilldownCardKey] : undefined}
+        allAccountsBreakdown={accountMonthlyBreakdown}
+        selectedMonth={selectedMonth}
+        selectedYear={selectedYear}
+        selectedAccountId={selectedDrilldownAccountId}
       />
 
       {/* Action Modals */}

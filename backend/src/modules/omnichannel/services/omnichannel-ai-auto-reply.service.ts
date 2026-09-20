@@ -24,6 +24,7 @@ import { TelegramChannelService } from './telegram-channel.service';
 import { WhatsAppChannelService } from './whatsapp-channel.service';
 import { FacebookChannelService } from './facebook-channel.service';
 import { InstagramChannelService } from './instagram-channel.service';
+import { TikTokChannelService } from './tiktok-channel.service';
 
 import { OmnichannelAiRagService } from './omnichannel-ai-rag.service';
 import { OmnichannelAiToolsService } from './omnichannel-ai-tools.service';
@@ -67,6 +68,8 @@ export class OmnichannelAiAutoReplyService {
     private readonly facebookService: FacebookChannelService,
     @Inject(forwardRef(() => InstagramChannelService))
     private readonly instagramService: InstagramChannelService,
+    @Inject(forwardRef(() => TikTokChannelService))
+    private readonly tiktokService: TikTokChannelService,
   ) {}
 
   /**
@@ -651,6 +654,10 @@ export class OmnichannelAiAutoReplyService {
         await this.instagramService.sendMessage(tenantId, recipientId, text, storeId);
       } else if (platform === 'facebook') {
         await this.facebookService.sendMessage(tenantId, recipientId, text, storeId, {
+          skipDbSave: true,
+        });
+      } else if (platform === 'tiktok') {
+        await this.tiktokService.sendMessage(tenantId, recipientId, text, storeId, {
           skipDbSave: true,
         });
       }
