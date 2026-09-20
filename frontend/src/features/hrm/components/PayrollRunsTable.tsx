@@ -1,16 +1,37 @@
 'use client';
 
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import { FileSpreadsheet, Plus, RefreshCw, Eye, Sparkles, CheckCircle, AlertCircle } from 'lucide-react';
 import { TableRowSkeleton } from '@/components/ui/Skeleton';
-import { PayrollRunStatus, useGetPayrollRunsQuery, useSeedPayrollDemoDataMutation } from '../api/hrmApi';
+import {
+  PayrollRun,
+  PayrollRunStatus,
+  useGetPayrollRunsQuery,
+  useSeedPayrollDemoDataMutation,
+  useFinalizePayrollRunMutation,
+  useMarkPayrollRunPaidMutation,
+} from '../api/hrmApi';
 import { GeneratePayrollRunModal } from './GeneratePayrollRunModal';
 import { PayrollRunDetailModal } from './PayrollRunDetailModal';
 
 const STATUS_BADGE: Record<PayrollRunStatus, string> = {
-  DRAFT: 'bg-amber-100 text-amber-800',
+  REVIEW: 'bg-amber-100 text-amber-800',
   FINALIZED: 'bg-sky-100 text-sky-800',
-  PAID: 'bg-emerald-100 text-emerald-800',
+  REIMBURSED: 'bg-emerald-100 text-emerald-800',
+};
+
+const STATUS_LABEL: Record<PayrollRunStatus, string> = {
+  REVIEW: 'Review',
+  FINALIZED: 'Finalized',
+  REIMBURSED: 'Reimbursed',
+};
+
+/** The only forward transitions a payroll run can take — never backwards. */
+const NEXT_STATUS_OPTIONS: Record<PayrollRunStatus, PayrollRunStatus[]> = {
+  REVIEW: ['REVIEW', 'FINALIZED'],
+  FINALIZED: ['FINALIZED', 'REIMBURSED'],
+  REIMBURSED: ['REIMBURSED'],
 };
 
 const MONTHS = [
@@ -20,6 +41,43 @@ const MONTHS = [
 
 function formatAmount(amount: string) {
   return `BDT ${Number(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function PayrollRunStatusDropdown({ run }: { run: PayrollRun }) {
+  const [finalizeRun, { isLoading: isFinalizing }] = useFinalizePayrollRunMutation();
+  const [markReimbursed, { isLoading: isMarkingReimbursed }] = useMarkPayrollRunPaidMutation();
+  const isBusy = isFinalizing || isMarkingReimbursed;
+
+  const handleChange = async (next: PayrollRunStatus) => {
+    if (next === run.status) return;
+    try {
+      if (next === 'FINALIZED') {
+        await finalizeRun(run.id).unwrap();
+        toast.success('Payroll run finalized.');
+      } else if (next === 'REIMBURSED') {
+        await markReimbursed(run.id).unwrap();
+        toast.success('Payroll run marked as reimbursed.');
+      }
+    } catch (err: any) {
+      toast.error(err?.data?.message || 'Failed to update payroll run status.');
+    }
+  };
+
+  return (
+    <select
+      value={run.status}
+      disabled={isBusy || NEXT_STATUS_OPTIONS[run.status].length <= 1}
+      onClick={(e) => e.stopPropagation()}
+      onChange={(e) => handleChange(e.target.value as PayrollRunStatus)}
+      className={`appearance-none cursor-pointer px-2.5 py-1 rounded-full text-[11px] font-semibold border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-70 ${STATUS_BADGE[run.status]}`}
+    >
+      {NEXT_STATUS_OPTIONS[run.status].map((s) => (
+        <option key={s} value={s}>
+          {STATUS_LABEL[s]}
+        </option>
+      ))}
+    </select>
+  );
 }
 
 export function PayrollRunsTable() {
@@ -83,7 +141,7 @@ export function PayrollRunsTable() {
                 {runs.length}
               </span>
             </h2>
-            <p className="text-xs text-slate-500 mt-0.5">Generate, finalize, and mark monthly payroll as paid</p>
+            <p className="text-xs text-slate-500 mt-0.5">Generate, finalize, and mark monthly payroll as reimbursed</p>
           </div>
         </div>
         <div className="flex items-center flex-wrap gap-3">
@@ -158,9 +216,7 @@ export function PayrollRunsTable() {
                     <td className="px-6 py-4 font-mono text-slate-700">{formatAmount(run.totalGrossAmount)}</td>
                     <td className="px-6 py-4 font-mono font-bold text-emerald-700">{formatAmount(run.totalNetAmount)}</td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${STATUS_BADGE[run.status]}`}>
-                        {run.status}
-                      </span>
+                      <PayrollRunStatusDropdown run={run} />
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button

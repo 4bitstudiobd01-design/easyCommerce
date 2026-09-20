@@ -17,8 +17,8 @@ export class DeletePayrollRunService {
       throw new NotFoundException('Payroll run not found.');
     }
 
-    if (run.status !== PayrollRunStatusEnum.DRAFT) {
-      throw new BadRequestException('Only a draft payroll run can be deleted.');
+    if (run.status !== PayrollRunStatusEnum.REVIEW) {
+      throw new BadRequestException('Only a payroll run still under review can be deleted.');
     }
 
     await this.payrollRunRepository.remove(run);

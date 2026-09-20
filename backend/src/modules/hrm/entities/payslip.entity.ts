@@ -81,6 +81,26 @@ export class PayslipEntity {
   @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
   otherDeductions: string;
 
+  /** Snapshot of the attendance/leave-based deduction computed at generation time from
+   *  that month's LATE/ABSENT attendance and approved UNPAID leave — see
+   *  ComputeAttendanceDeductionService. Never recomputed after the fact. */
+  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
+  attendanceDeduction: string;
+
+  @Column({ type: 'decimal', precision: 6, scale: 2, default: 0 })
+  attendanceDeductionDays: string;
+
+  @Column({ type: 'jsonb', nullable: true })
+  attendanceDeductionBreakdown?: {
+    lateArrivalsCount: number;
+    lateDeductionDays: number;
+    unpaidLeaveDays: number;
+    absentDays: number;
+    totalDeductionDays: number;
+    perDayRate: number;
+    amount: number;
+  } | null;
+
   @Column({ type: 'decimal', precision: 12, scale: 2 })
   netSalary: string;
 

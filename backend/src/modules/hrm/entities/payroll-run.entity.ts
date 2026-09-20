@@ -8,9 +8,9 @@ import {
 } from 'typeorm';
 
 export enum PayrollRunStatusEnum {
-  DRAFT = 'DRAFT',
+  REVIEW = 'REVIEW',
   FINALIZED = 'FINALIZED',
-  PAID = 'PAID',
+  REIMBURSED = 'REIMBURSED',
 }
 
 export enum PayrollPaymentStatusEnum {
@@ -38,7 +38,7 @@ export class PayrollRunEntity {
   @Column({ type: 'int' })
   year: number;
 
-  @Column({ type: 'enum', enum: PayrollRunStatusEnum, default: PayrollRunStatusEnum.DRAFT })
+  @Column({ type: 'enum', enum: PayrollRunStatusEnum, default: PayrollRunStatusEnum.REVIEW })
   status: PayrollRunStatusEnum;
 
   @Column({ type: 'enum', enum: PayrollPaymentStatusEnum, default: PayrollPaymentStatusEnum.UNPAID })
@@ -71,7 +71,7 @@ export class PayrollRunEntity {
   approvedByUserId?: string;
 
   @Column({ type: 'timestamptz', nullable: true })
-  paidAt?: Date;
+  reimbursedAt?: Date;
 
   @Column({ type: 'uuid', nullable: true })
   createdByUserId?: string;

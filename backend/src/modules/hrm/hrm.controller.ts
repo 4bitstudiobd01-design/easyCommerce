@@ -90,6 +90,9 @@ import { DeletePayrollRunService } from './services/delete-payroll-run.service';
 import { SeedPayrollDemoDataService } from './services/seed-payroll-demo-data.service';
 import { SetSalaryStructureDto, GeneratePayrollRunDto, ListPayrollRunsQueryDto } from './dto/payroll.dto';
 import { SeedPayrollDemoDataResponseDto } from './dto/seed-payroll-demo-data-response.dto';
+import { GetAttendanceDeductionPolicyService } from './services/get-attendance-deduction-policy.service';
+import { UpdateAttendanceDeductionPolicyService } from './services/update-attendance-deduction-policy.service';
+import { UpdateAttendanceDeductionPolicyDto } from './dto/attendance-deduction-policy.dto';
 import { GetTaxSlabsService } from './services/get-tax-slabs.service';
 import { SetTaxSlabsService } from './services/set-tax-slabs.service';
 import { EstimateTaxService } from './services/estimate-tax.service';
@@ -103,6 +106,28 @@ import { GetHrOverviewReportService } from './services/get-hr-overview-report.se
 import { GetMyEmployeeService } from './services/get-my-employee.service';
 import { InviteEmployeeSelfServiceService } from './services/invite-employee-self-service.service';
 import { CreateMyLeaveRequestDto } from './dto/self-service.dto';
+import { CreateJobPostingService } from './services/create-job-posting.service';
+import { ListJobPostingsService } from './services/list-job-postings.service';
+import { UpdateJobPostingService } from './services/update-job-posting.service';
+import { CreateCandidateService } from './services/create-candidate.service';
+import { ListCandidatesService } from './services/list-candidates.service';
+import { UpdateCandidateStageService } from './services/update-candidate-stage.service';
+import { DeleteCandidateService } from './services/delete-candidate.service';
+import { ScheduleInterviewService } from './services/schedule-interview.service';
+import { ListInterviewsService } from './services/list-interviews.service';
+import { UpdateInterviewService } from './services/update-interview.service';
+import { GetRecruitmentStatsService } from './services/get-recruitment-stats.service';
+import {
+  CreateJobPostingDto,
+  UpdateJobPostingDto,
+  CreateCandidateDto,
+  UpdateCandidateStageDto,
+  ScheduleInterviewDto,
+  UpdateInterviewDto,
+  ListJobPostingsQueryDto,
+  ListCandidatesQueryDto,
+  ListInterviewsQueryDto,
+} from './dto/recruitment.dto';
 
 @ApiTags('HR — Employees & Departments')
 @Controller('hr')
@@ -158,6 +183,8 @@ export class HrmController {
     private readonly markPayrollRunPaidService: MarkPayrollRunPaidService,
     private readonly deletePayrollRunService: DeletePayrollRunService,
     private readonly seedPayrollDemoDataService: SeedPayrollDemoDataService,
+    private readonly getAttendanceDeductionPolicyService: GetAttendanceDeductionPolicyService,
+    private readonly updateAttendanceDeductionPolicyService: UpdateAttendanceDeductionPolicyService,
     private readonly getTaxSlabsService: GetTaxSlabsService,
     private readonly setTaxSlabsService: SetTaxSlabsService,
     private readonly estimateTaxService: EstimateTaxService,
@@ -168,6 +195,17 @@ export class HrmController {
     private readonly getHrOverviewReportService: GetHrOverviewReportService,
     private readonly getMyEmployeeService: GetMyEmployeeService,
     private readonly inviteEmployeeSelfServiceService: InviteEmployeeSelfServiceService,
+    private readonly createJobPostingService: CreateJobPostingService,
+    private readonly listJobPostingsService: ListJobPostingsService,
+    private readonly updateJobPostingService: UpdateJobPostingService,
+    private readonly createCandidateService: CreateCandidateService,
+    private readonly listCandidatesService: ListCandidatesService,
+    private readonly updateCandidateStageService: UpdateCandidateStageService,
+    private readonly deleteCandidateService: DeleteCandidateService,
+    private readonly scheduleInterviewService: ScheduleInterviewService,
+    private readonly listInterviewsService: ListInterviewsService,
+    private readonly updateInterviewService: UpdateInterviewService,
+    private readonly getRecruitmentStatsService: GetRecruitmentStatsService,
   ) {}
 
   private async getStoreContext(userId: string, storeIdHeader?: string) {
@@ -896,6 +934,32 @@ export class HrmController {
     return this.seedPayrollDemoDataService.execute(store.tenantId, store.id, userId);
   }
 
+  @Get('payroll/attendance-deduction-policy')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:payroll:manage')
+  @ApiOperation({ summary: "Get this store's attendance/leave-based salary deduction policy (lazily created with defaults)" })
+  @ApiResponse({ status: 200, description: 'Attendance deduction policy' })
+  async getAttendanceDeductionPolicy(@CurrentUser('sub') userId: string, @Headers('x-store-id') headerStoreId: string) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.getAttendanceDeductionPolicyService.execute(store.tenantId, store.id);
+  }
+
+  @Put('payroll/attendance-deduction-policy')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:payroll:manage')
+  @ApiOperation({ summary: "Update this store's attendance/leave-based salary deduction policy" })
+  @ApiResponse({ status: 200, description: 'Attendance deduction policy updated' })
+  async updateAttendanceDeductionPolicy(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Body() dto: UpdateAttendanceDeductionPolicyDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.updateAttendanceDeductionPolicyService.execute(store.tenantId, store.id, dto);
+  }
+
   @Post('payroll/runs')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiBearerAuth()
@@ -1097,6 +1161,172 @@ export class HrmController {
     return { success: true, message: 'Notice deleted successfully.' };
   }
 
+  // ─── Recruitment ────────────────────────────────────────────────
+
+  @Post('recruitment/job-postings')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:recruitment:manage')
+  @ApiOperation({ summary: 'Create a job posting' })
+  @ApiResponse({ status: 201, description: 'Job posting created' })
+  async createJobPosting(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Body() dto: CreateJobPostingDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.createJobPostingService.execute(store.tenantId, store.id, dto);
+  }
+
+  @Get('recruitment/job-postings')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:recruitment:manage')
+  @ApiOperation({ summary: 'List job postings for the active store' })
+  @ApiResponse({ status: 200, description: 'List of job postings' })
+  async listJobPostings(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Query() query: ListJobPostingsQueryDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.listJobPostingsService.execute(store.id, query);
+  }
+
+  @Patch('recruitment/job-postings/:id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:recruitment:manage')
+  @ApiOperation({ summary: 'Update a job posting (status, details, or close it)' })
+  @ApiResponse({ status: 200, description: 'Job posting updated' })
+  async updateJobPosting(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') jobPostingId: string,
+    @Body() dto: UpdateJobPostingDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.updateJobPostingService.execute(store.id, jobPostingId, dto);
+  }
+
+  @Post('recruitment/candidates')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:recruitment:manage')
+  @ApiOperation({ summary: 'Add a candidate to a job posting pipeline' })
+  @ApiResponse({ status: 201, description: 'Candidate created' })
+  async createCandidate(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Body() dto: CreateCandidateDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.createCandidateService.execute(store.tenantId, store.id, dto);
+  }
+
+  @Get('recruitment/candidates')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:recruitment:manage')
+  @ApiOperation({ summary: 'List candidates, optionally filtered by job posting or stage' })
+  @ApiResponse({ status: 200, description: 'List of candidates' })
+  async listCandidates(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Query() query: ListCandidatesQueryDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.listCandidatesService.execute(store.id, query);
+  }
+
+  @Patch('recruitment/candidates/:id/stage')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:recruitment:manage')
+  @ApiOperation({ summary: 'Move a candidate to a new pipeline stage' })
+  @ApiResponse({ status: 200, description: 'Candidate stage updated' })
+  async updateCandidateStage(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') candidateId: string,
+    @Body() dto: UpdateCandidateStageDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.updateCandidateStageService.execute(store.id, candidateId, dto);
+  }
+
+  @Delete('recruitment/candidates/:id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:recruitment:manage')
+  @ApiOperation({ summary: 'Remove a candidate' })
+  @ApiResponse({ status: 200, description: 'Candidate deleted' })
+  async deleteCandidate(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') candidateId: string,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.deleteCandidateService.execute(store.id, candidateId);
+  }
+
+  @Post('recruitment/interviews')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:recruitment:manage')
+  @ApiOperation({ summary: 'Schedule an interview for a candidate' })
+  @ApiResponse({ status: 201, description: 'Interview scheduled' })
+  async scheduleInterview(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Body() dto: ScheduleInterviewDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.scheduleInterviewService.execute(store.tenantId, store.id, dto);
+  }
+
+  @Get('recruitment/interviews')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:recruitment:manage')
+  @ApiOperation({ summary: 'List interviews, optionally only upcoming scheduled ones' })
+  @ApiResponse({ status: 200, description: 'List of interviews' })
+  async listInterviews(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Query() query: ListInterviewsQueryDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.listInterviewsService.execute(store.id, query);
+  }
+
+  @Patch('recruitment/interviews/:id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:recruitment:manage')
+  @ApiOperation({ summary: 'Update, reschedule, cancel, or add feedback to an interview' })
+  @ApiResponse({ status: 200, description: 'Interview updated' })
+  async updateInterview(
+    @CurrentUser('sub') userId: string,
+    @Headers('x-store-id') headerStoreId: string,
+    @Param('id') interviewId: string,
+    @Body() dto: UpdateInterviewDto,
+  ) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.updateInterviewService.execute(store.id, interviewId, dto);
+  }
+
+  @Get('recruitment/stats')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
+  @RequirePermissions('hr:recruitment:manage')
+  @ApiOperation({ summary: 'Recruitment funnel stats: applicants, hires, avg days-to-hire, stage breakdown' })
+  @ApiResponse({ status: 200, description: 'Recruitment stats' })
+  async getRecruitmentStats(@CurrentUser('sub') userId: string, @Headers('x-store-id') headerStoreId: string) {
+    const store = await this.getStoreContext(userId, headerStoreId);
+    return this.getRecruitmentStatsService.execute(store.id);
+  }
+
   // ─── Reports ────────────────────────────────────────────────────
 
   @Get('reports/overview')
@@ -1109,6 +1339,7 @@ export class HrmController {
     'hr:leave:manage',
     'hr:payroll:manage',
     'hr:expenses:manage',
+    'hr:recruitment:manage',
   )
   @ApiOperation({ summary: 'HR overview: headcount, today\'s attendance, leave, payroll, and expense summaries' })
   @ApiResponse({ status: 200, description: 'HR overview report' })

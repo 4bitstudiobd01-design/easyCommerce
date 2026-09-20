@@ -24,6 +24,15 @@ export class CreateEmployeeService {
       }
     }
 
+    if (dto.reportsToEmployeeId) {
+      const manager = await this.employeeRepository.findOne({
+        where: { id: dto.reportsToEmployeeId, storeId },
+      });
+      if (!manager) {
+        throw new BadRequestException('Selected manager was not found for this store.');
+      }
+    }
+
     const employeeCode = await this.generateEmployeeCode(storeId);
 
     return this.employeeRepository.save(
@@ -43,6 +52,27 @@ export class CreateEmployeeService {
         address: dto.address,
         emergencyContactName: dto.emergencyContactName,
         emergencyContactPhone: dto.emergencyContactPhone,
+        emergencyContactRelation: dto.emergencyContactRelation,
+        secondaryEmergencyContactName: dto.secondaryEmergencyContactName,
+        secondaryEmergencyContactPhone: dto.secondaryEmergencyContactPhone,
+        secondaryEmergencyContactRelation: dto.secondaryEmergencyContactRelation,
+        reportsToEmployeeId: dto.reportsToEmployeeId,
+        nationalId: dto.nationalId,
+        passportNumber: dto.passportNumber,
+        passportExpiryDate: dto.passportExpiryDate,
+        nationality: dto.nationality,
+        religion: dto.religion,
+        maritalStatus: dto.maritalStatus,
+        spouseName: dto.spouseName,
+        spouseEmployed: dto.spouseEmployed,
+        numberOfChildren: dto.numberOfChildren,
+        bankName: dto.bankName,
+        bankAccountNumber: dto.bankAccountNumber,
+        bankBranchName: dto.bankBranchName,
+        bankRoutingNumber: dto.bankRoutingNumber,
+        bio: dto.bio,
+        education: dto.education,
+        experience: dto.experience,
       }),
     );
   }

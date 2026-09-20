@@ -16,7 +16,11 @@ import { SalaryStructureEntity } from './entities/salary-structure.entity';
 import { PayrollRunEntity } from './entities/payroll-run.entity';
 import { PayslipEntity } from './entities/payslip.entity';
 import { TaxSlabEntity } from './entities/tax-slab.entity';
+import { AttendanceDeductionPolicyEntity } from './entities/attendance-deduction-policy.entity';
 import { NoticeEntity } from './entities/notice.entity';
+import { JobPostingEntity } from './entities/job-posting.entity';
+import { CandidateEntity } from './entities/candidate.entity';
+import { InterviewEntity } from './entities/interview.entity';
 import { UserEntity } from '../user/entities/user.entity';
 import { TenantModule } from '../tenant/tenant.module';
 import { StaffModule } from '../staff/staff.module';
@@ -75,6 +79,9 @@ import { SeedPayrollDemoDataService } from './services/seed-payroll-demo-data.se
 import { GetTaxSlabsService } from './services/get-tax-slabs.service';
 import { SetTaxSlabsService } from './services/set-tax-slabs.service';
 import { ComputeTaxService } from './services/compute-tax.service';
+import { GetAttendanceDeductionPolicyService } from './services/get-attendance-deduction-policy.service';
+import { UpdateAttendanceDeductionPolicyService } from './services/update-attendance-deduction-policy.service';
+import { ComputeAttendanceDeductionService } from './services/compute-attendance-deduction.service';
 import { EstimateTaxService } from './services/estimate-tax.service';
 import { CreateNoticeService } from './services/create-notice.service';
 import { ListNoticesService } from './services/list-notices.service';
@@ -83,6 +90,17 @@ import { DeleteNoticeService } from './services/delete-notice.service';
 import { GetHrOverviewReportService } from './services/get-hr-overview-report.service';
 import { GetMyEmployeeService } from './services/get-my-employee.service';
 import { InviteEmployeeSelfServiceService } from './services/invite-employee-self-service.service';
+import { CreateJobPostingService } from './services/create-job-posting.service';
+import { ListJobPostingsService } from './services/list-job-postings.service';
+import { UpdateJobPostingService } from './services/update-job-posting.service';
+import { CreateCandidateService } from './services/create-candidate.service';
+import { ListCandidatesService } from './services/list-candidates.service';
+import { UpdateCandidateStageService } from './services/update-candidate-stage.service';
+import { DeleteCandidateService } from './services/delete-candidate.service';
+import { ScheduleInterviewService } from './services/schedule-interview.service';
+import { ListInterviewsService } from './services/list-interviews.service';
+import { UpdateInterviewService } from './services/update-interview.service';
+import { GetRecruitmentStatsService } from './services/get-recruitment-stats.service';
 
 @Module({
   imports: [
@@ -100,7 +118,11 @@ import { InviteEmployeeSelfServiceService } from './services/invite-employee-sel
       PayrollRunEntity,
       PayslipEntity,
       TaxSlabEntity,
+      AttendanceDeductionPolicyEntity,
       NoticeEntity,
+      JobPostingEntity,
+      CandidateEntity,
+      InterviewEntity,
       UserEntity,
     ]),
     TenantModule,
@@ -172,6 +194,9 @@ import { InviteEmployeeSelfServiceService } from './services/invite-employee-sel
     SetTaxSlabsService,
     ComputeTaxService,
     EstimateTaxService,
+    GetAttendanceDeductionPolicyService,
+    UpdateAttendanceDeductionPolicyService,
+    ComputeAttendanceDeductionService,
     CreateNoticeService,
     ListNoticesService,
     UpdateNoticeService,
@@ -179,6 +204,17 @@ import { InviteEmployeeSelfServiceService } from './services/invite-employee-sel
     GetHrOverviewReportService,
     GetMyEmployeeService,
     InviteEmployeeSelfServiceService,
+    CreateJobPostingService,
+    ListJobPostingsService,
+    UpdateJobPostingService,
+    CreateCandidateService,
+    ListCandidatesService,
+    UpdateCandidateStageService,
+    DeleteCandidateService,
+    ScheduleInterviewService,
+    ListInterviewsService,
+    UpdateInterviewService,
+    GetRecruitmentStatsService,
     JwtAuthGuard,
     PermissionsGuard,
   ],

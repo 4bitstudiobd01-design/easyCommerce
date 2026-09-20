@@ -124,7 +124,7 @@ export class DisburseSalaryPaymentService {
       throw new NotFoundException('Associated payroll run not found.');
     }
 
-    if (payslip.payrollRun.status === PayrollRunStatusEnum.DRAFT) {
+    if (payslip.payrollRun.status === PayrollRunStatusEnum.REVIEW) {
       throw new BadRequestException(
         'Cannot disburse payment for a draft payroll. Please approve the payroll run first.',
       );
@@ -172,7 +172,7 @@ export class DisburseSalaryPaymentService {
       throw new NotFoundException('Payroll run not found.');
     }
 
-    if (run.status === PayrollRunStatusEnum.DRAFT) {
+    if (run.status === PayrollRunStatusEnum.REVIEW) {
       throw new BadRequestException(
         'Cannot disburse payment for a draft payroll. Please approve the payroll run first.',
       );
@@ -358,7 +358,7 @@ export class DisburseSalaryPaymentService {
 
         if (paidCount === allSlipsInRun.length && allSlipsInRun.length > 0) {
           run.paymentStatus = PayrollPaymentStatusEnum.PAID;
-          run.paidAt = timestampNow;
+          run.reimbursedAt = timestampNow;
         } else if (paidCount > 0) {
           run.paymentStatus = PayrollPaymentStatusEnum.PARTIALLY_PAID;
         } else {

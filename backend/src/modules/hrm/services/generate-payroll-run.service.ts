@@ -7,6 +7,7 @@ import { EmployeeEntity, EmploymentStatusEnum } from '../entities/employee.entit
 import { SalaryStructureEntity } from '../entities/salary-structure.entity';
 import { TaxSlabEntity } from '../entities/tax-slab.entity';
 import { ComputeTaxService } from './compute-tax.service';
+import { ComputeAttendanceDeductionService } from './compute-attendance-deduction.service';
 import { GeneratePayrollRunDto } from '../dto/payroll.dto';
 
 @Injectable()
@@ -23,6 +24,7 @@ export class GeneratePayrollRunService {
     @InjectRepository(TaxSlabEntity)
     private readonly taxSlabRepository: Repository<TaxSlabEntity>,
     private readonly computeTaxService: ComputeTaxService,
+    private readonly computeAttendanceDeductionService: ComputeAttendanceDeductionService,
   ) {}
 
   /**
@@ -33,6 +35,11 @@ export class GeneratePayrollRunService {
    * Tax is computed from the store's own configured tax slabs (Settings > Tax) for the
    * run's fiscal year, if any are set — this module never assumes or hardcodes a rate.
    * If no slabs are configured, tax stays 0, matching the pre-tax-module behavior.
+   *
+   * Deductions also include an attendance/leave-based amount from that month's LATE
+   * arrivals (every N = 1 deducted day, per the store's ComputeAttendanceDeductionService
+   * policy), approved UNPAID leave days, and unmarked ABSENT days — snapshotted onto the
+   * payslip at generation time and never silently recomputed afterward.
    */
   async execute(tenantId: string, storeId: string, createdByUserId: string, dto: GeneratePayrollRunDto): Promise<PayrollRunEntity> {
     const existing = await this.payrollRunRepository.findOne({ where: { storeId, month: dto.month, year: dto.year } });
@@ -54,7 +61,7 @@ export class GeneratePayrollRunService {
         storeId,
         month: dto.month,
         year: dto.year,
-        status: PayrollRunStatusEnum.DRAFT,
+        status: PayrollRunStatusEnum.REVIEW,
         createdByUserId,
       }),
     );
@@ -80,7 +87,15 @@ export class GeneratePayrollRunService {
 
       const gross = basic + hra + medical + conveyance + other;
       const monthlyTax = taxSlabs.length > 0 ? this.computeTaxService.computeAnnualTax(taxSlabs, gross * 12).monthlyTax : 0;
-      const deductions = providentFund + monthlyTax;
+      const attendanceDeduction = await this.computeAttendanceDeductionService.execute(
+        tenantId,
+        storeId,
+        employee.id,
+        dto.month,
+        dto.year,
+        gross,
+      );
+      const deductions = providentFund + monthlyTax + attendanceDeduction.amount;
       const net = gross - deductions;
 
       await this.payslipRepository.save(
@@ -98,6 +113,9 @@ export class GeneratePayrollRunService {
           providentFundDeduction: providentFund.toFixed(2),
           taxDeduction: monthlyTax.toFixed(2),
           otherDeductions: '0.00',
+          attendanceDeduction: attendanceDeduction.amount.toFixed(2),
+          attendanceDeductionDays: attendanceDeduction.totalDeductionDays.toFixed(2),
+          attendanceDeductionBreakdown: attendanceDeduction,
           netSalary: net.toFixed(2),
         }),
       );

@@ -494,7 +494,7 @@ export const Sidebar = ({
 
           {/* 4. HUMAN RESOURCES (Single Top-Level Navigation Link) */}
           <Link
-            href="/dashboard/hr/my-leave"
+            href="/dashboard/hr/dashboard"
             className={navItemClass('/dashboard/hr')}
             onMouseEnter={(e) => handleTooltipEnter(e, "Human Resources")}
             onFocus={(e) => handleTooltipEnter(e, "Human Resources")}

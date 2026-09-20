@@ -83,6 +83,7 @@ const PERMISSION_GROUPS: {
       { key: 'hr:expenses:manage', label: 'Manage Expenses', desc: 'খরচ রেকর্ড ম্যানেজমেন্ট' },
       { key: 'hr:payroll:manage', label: 'Manage Payroll', desc: 'পে-রোল ও ট্যাক্স প্রসেসিং' },
       { key: 'hr:notices:manage', label: 'Manage Notice Board', desc: 'নোটিশ পোস্টিং' },
+      { key: 'hr:recruitment:manage', label: 'Manage Recruitment', desc: 'জব পোস্টিং, ক্যান্ডিডেট ও ইন্টারভিউ ম্যানেজমেন্ট' },
     ],
   },
 ];

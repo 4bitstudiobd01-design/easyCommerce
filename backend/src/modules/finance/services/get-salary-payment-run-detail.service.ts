@@ -108,7 +108,7 @@ export class GetSalaryPaymentRunDetailService {
       unpaidEmployeesCount: unpaidCount,
       finalizedAt: run.finalizedAt,
       approvedByUserId: run.approvedByUserId,
-      paidAt: run.paidAt,
+      paidAt: run.reimbursedAt,
       createdAt: run.createdAt,
     };
 

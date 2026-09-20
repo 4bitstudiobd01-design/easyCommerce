@@ -476,8 +476,8 @@ async function seed() {
     // ─── 11. Payroll Runs & Payslips ─────────────────────────────────
     const now = new Date();
     const runPeriods = [
-      { monthsAgo: 1, status: PayrollRunStatusEnum.PAID },
-      { monthsAgo: 0, status: PayrollRunStatusEnum.DRAFT },
+      { monthsAgo: 1, status: PayrollRunStatusEnum.REIMBURSED },
+      { monthsAgo: 0, status: PayrollRunStatusEnum.REVIEW },
     ];
     for (const period of runPeriods) {
       const runDate = new Date(now.getFullYear(), now.getMonth() - period.monthsAgo, 1);
@@ -491,7 +491,7 @@ async function seed() {
       const structureByEmployeeId = new Map(structures.map((s) => [s.employeeId, s]));
 
       run = await payrollRunRepo.save(
-        payrollRunRepo.create({ tenantId, storeId, month, year: runYear, status: PayrollRunStatusEnum.DRAFT, createdByUserId: merchant?.id }),
+        payrollRunRepo.create({ tenantId, storeId, month, year: runYear, status: PayrollRunStatusEnum.REVIEW, createdByUserId: merchant?.id }),
       );
 
       let totalGross = 0;
@@ -543,9 +543,9 @@ async function seed() {
       run.totalNetAmount = totalNet.toFixed(2);
       run.skippedEmployeeCount = skippedCount;
       run.status = period.status;
-      if (period.status === PayrollRunStatusEnum.PAID) {
+      if (period.status === PayrollRunStatusEnum.REIMBURSED) {
         run.finalizedAt = daysAgo(20);
-        run.paidAt = daysAgo(18);
+        run.reimbursedAt = daysAgo(18);
       }
       await payrollRunRepo.save(run);
     }
