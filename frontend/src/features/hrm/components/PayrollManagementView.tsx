@@ -4,11 +4,13 @@ import React, { useState } from 'react';
 import { PayrollRunsTable } from './PayrollRunsTable';
 import { SalaryStructuresTable } from './SalaryStructuresTable';
 import { TaxSlabsTable } from './TaxSlabsTable';
+import { AttendanceDeductionPolicyView } from './AttendanceDeductionPolicyView';
 
 const TABS = [
   { key: 'runs', label: 'Payroll Runs' },
   { key: 'structures', label: 'Salary Structures' },
   { key: 'tax', label: 'Tax Slabs' },
+  { key: 'deductions', label: 'Salary Deductions' },
 ] as const;
 
 type TabKey = (typeof TABS)[number]['key'];
@@ -41,6 +43,7 @@ export function PayrollManagementView() {
       {activeTab === 'runs' && <PayrollRunsTable />}
       {activeTab === 'structures' && <SalaryStructuresTable />}
       {activeTab === 'tax' && <TaxSlabsTable />}
+      {activeTab === 'deductions' && <AttendanceDeductionPolicyView />}
     </div>
   );
 }

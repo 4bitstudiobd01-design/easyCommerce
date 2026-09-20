@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  UserCircle2,
+  LayoutDashboard,
   UserCog,
   Building2,
   CalendarCheck,
@@ -15,10 +15,11 @@ import {
   Wallet,
   Megaphone,
   BarChart3,
+  Briefcase,
 } from 'lucide-react';
 
 const HR_TABS = [
-  { name: 'My Leave (ESS)', href: '/dashboard/hr/my-leave', icon: UserCircle2 },
+  { name: 'Dashboard', href: '/dashboard/hr/dashboard', icon: LayoutDashboard },
   { name: 'Employees', href: '/dashboard/hr/employees', icon: UserCog },
   { name: 'Departments', href: '/dashboard/hr/departments', icon: Building2 },
   { name: 'Attendance', href: '/dashboard/hr/attendance', icon: CalendarCheck },
@@ -28,6 +29,7 @@ const HR_TABS = [
   { name: 'Employee Expenses', href: '/dashboard/hr/expenses', icon: Receipt },
   { name: 'Payroll', href: '/dashboard/hr/payroll', icon: Wallet },
   { name: 'Notice Board', href: '/dashboard/hr/notices', icon: Megaphone },
+  { name: 'Recruitment', href: '/dashboard/hr/recruitment', icon: Briefcase },
   { name: 'HR Reports', href: '/dashboard/hr/reports', icon: BarChart3 },
 ];
 

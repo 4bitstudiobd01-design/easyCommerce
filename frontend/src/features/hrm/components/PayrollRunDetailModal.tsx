@@ -29,7 +29,7 @@ const MONTHS = [
 export function PayrollRunDetailModal({ runId, onClose }: PayrollRunDetailModalProps) {
   const { data, isLoading, refetch } = useGetPayrollRunQuery(runId ?? '', { skip: !runId });
   const [finalizeRun, { isLoading: isFinalizing }] = useFinalizePayrollRunMutation();
-  const [markPaid, { isLoading: isMarkingPaid }] = useMarkPayrollRunPaidMutation();
+  const [markPaid, { isLoading: isMarkingReimbursed }] = useMarkPayrollRunPaidMutation();
   const [deleteRun, { isLoading: isDeleting }] = useDeletePayrollRunMutation();
 
   const run = data?.run;
@@ -46,14 +46,14 @@ export function PayrollRunDetailModal({ runId, onClose }: PayrollRunDetailModalP
     }
   };
 
-  const handleMarkPaid = async () => {
+  const handleMarkReimbursed = async () => {
     if (!runId) return;
     try {
       await markPaid(runId).unwrap();
-      toast.success('Payroll run marked as paid.');
+      toast.success('Payroll run marked as reimbursed.');
       refetch();
     } catch (err: any) {
-      toast.error(err?.data?.message || 'Failed to mark payroll run as paid.');
+      toast.error(err?.data?.message || 'Failed to mark payroll run as reimbursed.');
     }
   };
 
@@ -83,7 +83,7 @@ export function PayrollRunDetailModal({ runId, onClose }: PayrollRunDetailModalP
           >
             Close
           </button>
-          {run?.status === 'DRAFT' && (
+          {run?.status === 'REVIEW' && (
             <>
               <button
                 onClick={handleDelete}
@@ -101,7 +101,16 @@ export function PayrollRunDetailModal({ runId, onClose }: PayrollRunDetailModalP
               </button>
             </>
           )}
-          {run?.status !== 'DRAFT' && (
+          {run?.status === 'FINALIZED' && (
+            <button
+              onClick={handleMarkReimbursed}
+              disabled={isMarkingReimbursed}
+              className="flex items-center gap-1.5 px-5 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition disabled:opacity-50 shadow-md shadow-emerald-600/20 cursor-pointer"
+            >
+              <CheckCircle2 className="w-4 h-4" /> {isMarkingReimbursed ? 'Marking Reimbursed...' : 'Mark Reimbursed'}
+            </button>
+          )}
+          {run?.status !== 'REVIEW' && (
             <Link
               href="/dashboard/finance/salaries"
               onClick={onClose}
@@ -119,7 +128,7 @@ export function PayrollRunDetailModal({ runId, onClose }: PayrollRunDetailModalP
           <div className="text-center text-slate-400 py-10">Loading...</div>
         ) : (
           <>
-            {run.status === 'DRAFT' && (
+            {run.status === 'REVIEW' && (
               <div className="p-3.5 bg-blue-50/80 border border-blue-200/80 rounded-2xl flex items-start gap-3 text-xs text-blue-900 font-medium leading-relaxed">
                 <CheckCircle className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
                 <div>
@@ -129,11 +138,15 @@ export function PayrollRunDetailModal({ runId, onClose }: PayrollRunDetailModalP
               </div>
             )}
 
-            {run.status !== 'DRAFT' && (
+            {run.status !== 'REVIEW' && (
               <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between gap-3 text-xs text-emerald-900 font-medium">
                 <div className="flex items-center gap-2.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Approved &bull; Synchronized with Finance module for cash disbursement tracking.</span>
+                  <span>
+                    {run.status === 'REIMBURSED'
+                      ? 'Reimbursed • Settled with Finance module.'
+                      : 'Approved • Synchronized with Finance module for cash disbursement tracking.'}
+                  </span>
                 </div>
                 <Link
                   href="/dashboard/finance/salaries"
@@ -175,7 +188,9 @@ export function PayrollRunDetailModal({ runId, onClose }: PayrollRunDetailModalP
                       <th className="px-4 py-3">Employee</th>
                       <th className="px-4 py-3">Basic</th>
                       <th className="px-4 py-3">Gross</th>
-                      <th className="px-4 py-3">Deductions</th>
+                      <th className="px-4 py-3">Provident Fund</th>
+                      <th className="px-4 py-3">Tax</th>
+                      <th className="px-4 py-3">Attendance / Leave</th>
                       <th className="px-4 py-3">Net</th>
                       <th className="px-4 py-3 text-center">Status</th>
                     </tr>
@@ -192,7 +207,31 @@ export function PayrollRunDetailModal({ runId, onClose }: PayrollRunDetailModalP
                           <td className="px-4 py-3 font-mono text-slate-600">{formatAmount(slip.basicSalary)}</td>
                           <td className="px-4 py-3 font-mono text-slate-800 font-bold">{formatAmount(slip.grossSalary)}</td>
                           <td className="px-4 py-3 font-mono text-rose-600">
-                            {formatAmount((Number(slip.providentFundDeduction) + Number(slip.taxDeduction) + Number(slip.otherDeductions)).toFixed(2))}
+                            {formatAmount(slip.providentFundDeduction)}
+                            {slip.otherDeductions && Number(slip.otherDeductions) > 0 && (
+                              <div className="text-[10px] font-semibold text-slate-400 mt-0.5">
+                                +{formatAmount(slip.otherDeductions)} other
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 font-mono text-rose-600">{formatAmount(slip.taxDeduction)}</td>
+                          <td className="px-4 py-3 font-mono text-rose-600">
+                            {Number(slip.attendanceDeductionDays) > 0 ? (
+                              <div
+                                title={
+                                  slip.attendanceDeductionBreakdown
+                                    ? `${slip.attendanceDeductionBreakdown.lateArrivalsCount} late arrival(s) → ${slip.attendanceDeductionBreakdown.lateDeductionDays} day(s), ${slip.attendanceDeductionBreakdown.unpaidLeaveDays} unpaid leave day(s), ${slip.attendanceDeductionBreakdown.absentDays} unmarked absent day(s) @ ${formatAmount(slip.attendanceDeductionBreakdown.perDayRate.toFixed(2))}/day`
+                                    : undefined
+                                }
+                              >
+                                {formatAmount(slip.attendanceDeduction)}
+                                <div className="text-[10px] font-semibold text-amber-600 mt-0.5">
+                                  −{Number(slip.attendanceDeductionDays).toFixed(1)} day(s)
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-slate-300">—</span>
+                            )}
                           </td>
                           <td className="px-4 py-3 font-mono text-emerald-700 font-bold">{formatAmount(slip.netSalary)}</td>
                           <td className="px-4 py-3 text-center">

@@ -16,6 +16,8 @@ import {
   KeyRound,
   Copy,
   Check,
+  LayoutGrid,
+  List as ListIcon,
 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { TableRowSkeleton } from '@/components/ui/Skeleton';
@@ -28,19 +30,17 @@ import {
   useInviteEmployeeSelfServiceMutation,
 } from '../api/hrmApi';
 import { EmployeeFormModal } from './EmployeeFormModal';
-
-const STATUS_BADGE: Record<EmploymentStatus, string> = {
-  ACTIVE: 'bg-emerald-100 text-emerald-800',
-  ON_LEAVE: 'bg-amber-100 text-amber-800',
-  SUSPENDED: 'bg-orange-100 text-orange-800',
-  TERMINATED: 'bg-rose-100 text-rose-800',
-};
+import { EmployeeCard } from './EmployeeCard';
+import { EmployeeDetailDrawer } from './EmployeeDetailDrawer';
+import { EmploymentStatusDropdown } from './EmploymentStatusDropdown';
 
 export function EmployeeManagementTable() {
   const [search, setSearch] = useState('');
   const [departmentId, setDepartmentId] = useState('');
   const [status, setStatus] = useState<EmploymentStatus | ''>('');
   const [page, setPage] = useState(1);
+  const [view, setView] = useState<'list' | 'grid'>('list');
+  const [detailEmployee, setDetailEmployee] = useState<Employee | null>(null);
 
   const { data: departments = [] } = useGetDepartmentsQuery();
   const { data, isLoading, isFetching, refetch } = useGetEmployeesQuery({
@@ -112,6 +112,26 @@ export function EmployeeManagementTable() {
         </div>
 
         <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200">
+            <button
+              onClick={() => setView('list')}
+              className={`p-1.5 rounded-lg transition ${
+                view === 'list' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'
+              }`}
+              title="List view"
+            >
+              <ListIcon className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setView('grid')}
+              className={`p-1.5 rounded-lg transition ${
+                view === 'grid' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'
+              }`}
+              title="Grid view"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+          </div>
           <button
             onClick={() => refetch()}
             className="p-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition"
@@ -176,116 +196,142 @@ export function EmployeeManagementTable() {
         </select>
       </div>
 
-      {/* Employee Table */}
+      {/* Employee List / Grid */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
-                <th className="px-6 py-4">Employee</th>
-                <th className="px-6 py-4">Department</th>
-                <th className="px-6 py-4">Designation</th>
-                <th className="px-6 py-4">Type</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4">Joined</th>
-                <th className="px-6 py-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-sm">
-              {isLoading ? (
-                <>
-                  <TableRowSkeleton columns={7} />
-                  <TableRowSkeleton columns={7} />
-                  <TableRowSkeleton columns={7} />
-                </>
-              ) : employees.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-slate-400">
-                    <Users className="w-10 h-10 mx-auto mb-2 text-slate-300" />
-                    <p className="font-semibold text-slate-700">No employees found.</p>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Click "Add Employee" to start building your team roster.
-                    </p>
-                  </td>
+        {view === 'list' ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
+                  <th className="px-6 py-4">Employee</th>
+                  <th className="px-6 py-4">Department</th>
+                  <th className="px-6 py-4">Designation</th>
+                  <th className="px-6 py-4">Type</th>
+                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4">Joined</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
-              ) : (
-                employees.map((emp) => (
-                  <tr key={emp.id} className="hover:bg-slate-50/60 transition">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 bg-slate-900 text-white font-extrabold text-sm rounded-full flex items-center justify-center uppercase shrink-0 shadow-sm">
-                          {emp.fullName.charAt(0)}
-                        </div>
-                        <div>
-                          <div className="font-bold text-slate-900 leading-tight">{emp.fullName}</div>
-                          <div className="text-xs text-slate-500 font-mono mt-0.5">{emp.employeeCode}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-slate-600">
-                      {emp.department?.name || <span className="text-slate-300">Unassigned</span>}
-                    </td>
-                    <td className="px-6 py-4 text-slate-600">
-                      {emp.designation || <span className="text-slate-300">—</span>}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-                        <Briefcase className="w-3.5 h-3.5 text-slate-500" />
-                        {emp.employmentType.replace('_', ' ')}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${STATUS_BADGE[emp.employmentStatus]}`}
-                      >
-                        {emp.employmentStatus.replace('_', ' ')}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-xs text-slate-500">
-                      {new Date(emp.dateOfJoining).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 text-right space-x-1.5">
-                      <button
-                        onClick={() => setFormState({ open: true, employee: emp })}
-                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                        title="Edit employee"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      {emp.employmentStatus !== 'TERMINATED' && !emp.linkedUserId && emp.email && (
-                        <button
-                          onClick={() => handleInviteSelfService(emp)}
-                          disabled={isInviting}
-                          className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition disabled:opacity-50"
-                          title="Invite to self-service"
-                        >
-                          <KeyRound className="w-4 h-4" />
-                        </button>
-                      )}
-                      {emp.linkedUserId && (
-                        <span
-                          className="inline-flex items-center p-2 text-emerald-500"
-                          title="Self-service login linked"
-                        >
-                          <KeyRound className="w-4 h-4" />
-                        </span>
-                      )}
-                      {emp.employmentStatus !== 'TERMINATED' && (
-                        <button
-                          onClick={() => setTerminatingEmployee(emp)}
-                          className="p-2 rounded-xl text-rose-600 hover:bg-rose-50 transition"
-                          title="Terminate employee"
-                        >
-                          <UserX className="w-4 h-4" />
-                        </button>
-                      )}
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-sm">
+                {isLoading ? (
+                  <>
+                    <TableRowSkeleton columns={7} />
+                    <TableRowSkeleton columns={7} />
+                    <TableRowSkeleton columns={7} />
+                  </>
+                ) : employees.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-12 text-center text-slate-400">
+                      <Users className="w-10 h-10 mx-auto mb-2 text-slate-300" />
+                      <p className="font-semibold text-slate-700">No employees found.</p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Click "Add Employee" to start building your team roster.
+                      </p>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : (
+                  employees.map((emp) => (
+                    <tr
+                      key={emp.id}
+                      onClick={() => setDetailEmployee(emp)}
+                      className="hover:bg-slate-50/60 transition cursor-pointer"
+                    >
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 bg-slate-900 text-white font-extrabold text-sm rounded-full flex items-center justify-center uppercase shrink-0 shadow-sm">
+                            {emp.fullName.charAt(0)}
+                          </div>
+                          <div>
+                            <div className="font-bold text-slate-900 leading-tight">{emp.fullName}</div>
+                            <div className="text-xs text-slate-500 font-mono mt-0.5">{emp.employeeCode}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-slate-600">
+                        {emp.department?.name || <span className="text-slate-300">Unassigned</span>}
+                      </td>
+                      <td className="px-6 py-4 text-slate-600">
+                        {emp.designation || <span className="text-slate-300">—</span>}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                          <Briefcase className="w-3.5 h-3.5 text-slate-500" />
+                          {emp.employmentType.replace('_', ' ')}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <EmploymentStatusDropdown employee={emp} onRequestTerminate={setTerminatingEmployee} />
+                      </td>
+                      <td className="px-6 py-4 text-xs text-slate-500">
+                        {new Date(emp.dateOfJoining).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 text-right space-x-1.5" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => setFormState({ open: true, employee: emp })}
+                          className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                          title="Edit employee"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        {emp.employmentStatus !== 'TERMINATED' && !emp.linkedUserId && emp.email && (
+                          <button
+                            onClick={() => handleInviteSelfService(emp)}
+                            disabled={isInviting}
+                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition disabled:opacity-50"
+                            title="Invite to self-service"
+                          >
+                            <KeyRound className="w-4 h-4" />
+                          </button>
+                        )}
+                        {emp.linkedUserId && (
+                          <span
+                            className="inline-flex items-center p-2 text-emerald-500"
+                            title="Self-service login linked"
+                          >
+                            <KeyRound className="w-4 h-4" />
+                          </span>
+                        )}
+                        {emp.employmentStatus !== 'TERMINATED' && (
+                          <button
+                            onClick={() => setTerminatingEmployee(emp)}
+                            className="p-2 rounded-xl text-rose-600 hover:bg-rose-50 transition"
+                            title="Terminate employee"
+                          >
+                            <UserX className="w-4 h-4" />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="p-6">
+            {isLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="h-40 rounded-2xl bg-slate-100 animate-pulse" />
+                ))}
+              </div>
+            ) : employees.length === 0 ? (
+              <div className="px-6 py-12 text-center text-slate-400">
+                <Users className="w-10 h-10 mx-auto mb-2 text-slate-300" />
+                <p className="font-semibold text-slate-700">No employees found.</p>
+                <p className="text-xs text-slate-500 mt-1">
+                  Click "Add Employee" to start building your team roster.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {employees.map((emp) => (
+                  <EmployeeCard key={emp.id} employee={emp} onView={setDetailEmployee} onRequestTerminate={setTerminatingEmployee} />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Pagination */}
         {total > 0 && (
@@ -318,6 +364,17 @@ export function EmployeeManagementTable() {
         isOpen={formState.open}
         employee={formState.employee}
         onClose={() => setFormState({ open: false, employee: null })}
+      />
+
+      <EmployeeDetailDrawer
+        isOpen={!!detailEmployee}
+        employee={detailEmployee}
+        onClose={() => setDetailEmployee(null)}
+        onOpenEdit={(emp) => {
+          setDetailEmployee(null);
+          setFormState({ open: true, employee: emp });
+        }}
+        onRequestTerminate={setTerminatingEmployee}
       />
 
       {/* Terminate Confirmation */}

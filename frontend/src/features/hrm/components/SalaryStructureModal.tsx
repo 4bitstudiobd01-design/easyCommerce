@@ -4,13 +4,20 @@ import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Modal } from '@/components/ui/Modal';
 import { Wallet } from 'lucide-react';
-import { Employee, SalaryStructure, useSetSalaryStructureMutation } from '../api/hrmApi';
+import { Employee, SalaryStructure, useSetSalaryStructureMutation, useLazyEstimateTaxQuery } from '../api/hrmApi';
 
 interface SalaryStructureModalProps {
   isOpen: boolean;
   employee: Employee | null;
   salaryStructure: SalaryStructure | null;
   onClose: () => void;
+}
+
+function currentFiscalYear() {
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const startYear = month >= 7 ? now.getFullYear() : now.getFullYear() - 1;
+  return `${startYear}-${startYear + 1}`;
 }
 
 export function SalaryStructureModal({ isOpen, employee, salaryStructure, onClose }: SalaryStructureModalProps) {
@@ -22,6 +29,7 @@ export function SalaryStructureModal({ isOpen, employee, salaryStructure, onClos
   const [providentFundDeduction, setProvidentFundDeduction] = useState('');
 
   const [setSalaryStructure, { isLoading: isSaving }] = useSetSalaryStructureMutation();
+  const [triggerEstimate, { data: taxEstimate }] = useLazyEstimateTaxQuery();
 
   useEffect(() => {
     if (isOpen) {
@@ -40,7 +48,15 @@ export function SalaryStructureModal({ isOpen, employee, salaryStructure, onClos
     (Number(medicalAllowance) || 0) +
     (Number(conveyanceAllowance) || 0) +
     (Number(otherAllowance) || 0);
-  const net = gross - (Number(providentFundDeduction) || 0);
+
+  useEffect(() => {
+    if (isOpen && gross > 0) {
+      triggerEstimate({ fiscalYear: currentFiscalYear(), annualIncome: (gross * 12).toFixed(2) });
+    }
+  }, [isOpen, gross, triggerEstimate]);
+
+  const estimatedMonthlyTax = gross > 0 ? taxEstimate?.monthlyTax ?? 0 : 0;
+  const net = gross - (Number(providentFundDeduction) || 0) - estimatedMonthlyTax;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,7 +91,7 @@ export function SalaryStructureModal({ isOpen, employee, salaryStructure, onClos
       onClose={onClose}
       title={`Salary Structure — ${employee?.fullName ?? ''}`}
       icon={<Wallet className="w-5 h-5" />}
-      size="lg"
+      size="2xl"
       footer={
         <>
           <button
@@ -97,7 +113,7 @@ export function SalaryStructureModal({ isOpen, employee, salaryStructure, onClos
       }
     >
       <form id="salary-structure-form" onSubmit={handleSubmit} className="p-6 space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1.5">Basic Salary (BDT)</label>
             <input type="number" min="0" step="0.01" value={basicSalary} onChange={(e) => setBasicSalary(e.target.value)} className={fieldClass} placeholder="0.00" />
@@ -124,10 +140,14 @@ export function SalaryStructureModal({ isOpen, employee, salaryStructure, onClos
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+        <div className="grid grid-cols-3 gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
           <div>
             <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Gross Salary</div>
             <div className="text-lg font-extrabold text-slate-900 font-mono">BDT {gross.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+          </div>
+          <div>
+            <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Est. Monthly Tax</div>
+            <div className="text-lg font-extrabold text-rose-600 font-mono">BDT {estimatedMonthlyTax.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
           </div>
           <div>
             <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Net Salary</div>
@@ -135,7 +155,8 @@ export function SalaryStructureModal({ isOpen, employee, salaryStructure, onClos
           </div>
         </div>
         <p className="text-[10.5px] text-slate-400">
-          Tax is not deducted here — Bangladesh tax calculation is handled separately once that module is available.
+          Estimated using this store&apos;s current tax slabs — actual tax, plus any attendance/leave-based deductions,
+          are calculated when payroll is generated.
         </p>
       </form>
     </Modal>

@@ -198,7 +198,7 @@ export class GetFinanceOverviewService {
     const approvedPayrollRuns = await this.payrollRunRepository.find({
       where: {
         storeId,
-        status: In([PayrollRunStatusEnum.FINALIZED, PayrollRunStatusEnum.PAID]),
+        status: In([PayrollRunStatusEnum.FINALIZED, PayrollRunStatusEnum.REIMBURSED]),
       },
       order: { year: 'DESC', month: 'DESC' },
     });

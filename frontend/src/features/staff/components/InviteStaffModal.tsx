@@ -138,6 +138,7 @@ const PERMISSION_GROUPS: {
       { key: 'hr:expenses:manage', label: 'Manage Expenses', desc: 'ব্যবসায়িক খরচ রেকর্ড ও ট্র্যাক' },
       { key: 'hr:payroll:manage', label: 'Manage Payroll', desc: 'পে-রোল প্রসেসিং ও ট্যাক্স হিসাব' },
       { key: 'hr:notices:manage', label: 'Manage Notice Board', desc: 'এমপ্লয়িদের জন্য নোটিশ পোস্ট করতে পারবে' },
+      { key: 'hr:recruitment:manage', label: 'Manage Recruitment', desc: 'জব পোস্টিং, ক্যান্ডিডেট ও ইন্টারভিউ ম্যানেজ করতে পারবে' },
     ],
   },
 ];

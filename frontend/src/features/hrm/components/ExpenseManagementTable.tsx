@@ -7,10 +7,8 @@ import {
   ReceiptText,
   Plus,
   RefreshCw,
-  Check,
   X,
   Trash2,
-  Banknote,
   Paperclip,
   ChevronLeft,
   ChevronRight,
@@ -93,6 +91,13 @@ export function ExpenseManagementTable() {
     } catch (err: any) {
       toast.error(err?.data?.message || 'Failed to mark as reimbursed.');
     }
+  };
+
+  const handleStatusChange = (expense: Expense, next: ExpenseStatus) => {
+    if (next === expense.status) return;
+    if (next === 'APPROVED') handleApprove(expense.id);
+    else if (next === 'REJECTED') setRejecting(expense);
+    else if (next === 'REIMBURSED') handleReimburse(expense.id);
   };
 
   const handleDeleteConfirm = async () => {
@@ -221,9 +226,29 @@ export function ExpenseManagementTable() {
                     <td className="px-6 py-4 text-xs text-slate-600">{new Date(expense.expenseDate).toLocaleDateString()}</td>
                     <td className="px-6 py-4 font-bold text-slate-800 font-mono">{formatAmount(expense.amount, expense.currency)}</td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${STATUS_BADGE[expense.status]}`}>
-                        {expense.status}
-                      </span>
+                      <select
+                        value={expense.status}
+                        disabled={(expense.status !== 'PENDING' && expense.status !== 'APPROVED') || isReviewing}
+                        onChange={(e) => handleStatusChange(expense, e.target.value as ExpenseStatus)}
+                        className={`appearance-none cursor-pointer px-2.5 py-1 rounded-full text-[11px] font-semibold border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-80 ${STATUS_BADGE[expense.status]}`}
+                      >
+                        {expense.status === 'PENDING' && (
+                          <>
+                            <option value="PENDING">Pending</option>
+                            <option value="APPROVED">Approved</option>
+                            <option value="REJECTED">Rejected</option>
+                          </>
+                        )}
+                        {expense.status === 'APPROVED' && (
+                          <>
+                            <option value="APPROVED">Approved</option>
+                            <option value="REIMBURSED">Reimbursed</option>
+                          </>
+                        )}
+                        {(expense.status === 'REJECTED' || expense.status === 'REIMBURSED') && (
+                          <option value={expense.status}>{expense.status}</option>
+                        )}
+                      </select>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-1.5">
@@ -237,38 +262,12 @@ export function ExpenseManagementTable() {
                           </button>
                         )}
                         {expense.status === 'PENDING' && (
-                          <>
-                            <button
-                              onClick={() => handleApprove(expense.id)}
-                              disabled={isReviewing}
-                              className="p-2 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition disabled:opacity-50"
-                              title="Approve"
-                            >
-                              <Check className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => setRejecting(expense)}
-                              className="p-2 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 transition"
-                              title="Reject"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => setDeleting(expense)}
-                              className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
-                              title="Delete"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </>
-                        )}
-                        {expense.status === 'APPROVED' && (
                           <button
-                            onClick={() => handleReimburse(expense.id)}
-                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-[11px] font-bold transition"
-                            title="Mark as reimbursed"
+                            onClick={() => setDeleting(expense)}
+                            className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+                            title="Delete"
                           >
-                            <Banknote className="w-3.5 h-3.5" /> Reimburse
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         )}
                       </div>

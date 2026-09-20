@@ -42,6 +42,7 @@ export class GetLeaveBalanceService {
       [LeaveTypeEnum.EARNED]: 0,
       [LeaveTypeEnum.CASUAL]: 0,
       [LeaveTypeEnum.SICK]: 0,
+      [LeaveTypeEnum.UNPAID]: 0,
     };
 
     for (const request of approvedRequests) {
@@ -54,9 +55,14 @@ export class GetLeaveBalanceService {
       [LeaveTypeEnum.EARNED]: policy.earnedDaysPerYear,
       [LeaveTypeEnum.CASUAL]: policy.casualDaysPerYear,
       [LeaveTypeEnum.SICK]: policy.sickDaysPerYear,
+      [LeaveTypeEnum.UNPAID]: 0,
     };
 
-    return (Object.values(LeaveTypeEnum) as LeaveTypeEnum[]).map((leaveType) => ({
+    // UNPAID has no annual quota — it's approved case-by-case, not tracked against a
+    // balance — so it's excluded from this list rather than shown as a false "over limit".
+    const quotaTrackedTypes = [LeaveTypeEnum.EARNED, LeaveTypeEnum.CASUAL, LeaveTypeEnum.SICK];
+
+    return quotaTrackedTypes.map((leaveType) => ({
       leaveType,
       allocated: allocatedByType[leaveType],
       used: usedByType[leaveType],
