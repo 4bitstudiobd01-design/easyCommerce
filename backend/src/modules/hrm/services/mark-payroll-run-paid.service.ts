@@ -24,11 +24,11 @@ export class MarkPayrollRunPaidService {
     }
 
     if (run.status !== PayrollRunStatusEnum.FINALIZED) {
-      throw new BadRequestException('Only a finalized payroll run can be marked as paid.');
+      throw new BadRequestException('Only a finalized payroll run can be marked as reimbursed.');
     }
 
-    run.status = PayrollRunStatusEnum.PAID;
-    run.paidAt = new Date();
+    run.status = PayrollRunStatusEnum.REIMBURSED;
+    run.reimbursedAt = new Date();
 
     const saved = await this.payrollRunRepository.save(run);
 

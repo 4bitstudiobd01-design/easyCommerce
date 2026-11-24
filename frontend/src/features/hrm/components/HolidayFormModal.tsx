@@ -9,10 +9,11 @@ import { Holiday, useCreateHolidayMutation, useUpdateHolidayMutation } from '../
 interface HolidayFormModalProps {
   isOpen: boolean;
   holiday: Holiday | null;
+  initialDate?: string;
   onClose: () => void;
 }
 
-export function HolidayFormModal({ isOpen, holiday, onClose }: HolidayFormModalProps) {
+export function HolidayFormModal({ isOpen, holiday, initialDate, onClose }: HolidayFormModalProps) {
   const [name, setName] = useState('');
   const [date, setDate] = useState('');
 
@@ -23,9 +24,9 @@ export function HolidayFormModal({ isOpen, holiday, onClose }: HolidayFormModalP
   useEffect(() => {
     if (isOpen) {
       setName(holiday?.name ?? '');
-      setDate(holiday?.date?.slice(0, 10) ?? '');
+      setDate(holiday?.date?.slice(0, 10) ?? initialDate ?? '');
     }
-  }, [isOpen, holiday]);
+  }, [isOpen, holiday, initialDate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -283,15 +283,19 @@ export class InstagramChannelService {
               msg.attachments?.length > 0
                 ? msg.attachments[0].type || 'attachment'
                 : 'text',
-            rawMetadata: event,
+            rawMetadata: {
+              ...event,
+              externalUserId: senderId,
+              messagingScopedUserId: senderId,
+            },
           });
 
           await this.messageRepo.save(record);
           this.logger.log(
-            `[Instagram INBOUND] From ${senderName} (${senderId}): "${record.text}"`,
+            `[Instagram INBOUND] From ${senderName} (IGSID: ${senderId}): "${record.text}"`,
           );
 
-          // Trigger AI Auto-Reply (non-blocking)
+          // Trigger AI Auto-Reply (non-blocking) — pass external sender.id as recipientId
           this.aiAutoReplyService
             .handleInboundMessage({
               tenantId,
@@ -301,7 +305,7 @@ export class InstagramChannelService {
               senderId,
               senderName,
               text: record.text,
-              recipientId: instagramAccountId,
+              recipientId: senderId,
             })
             .catch((err) =>
               this.logger.error(
@@ -374,11 +378,12 @@ export class InstagramChannelService {
    */
   async sendMessage(
     tenantId: string,
-    recipientId: string,
+    rawRecipientId: string,
     text: string,
     storeId?: string,
+    conversationId?: string,
   ): Promise<any> {
-    if (!recipientId || !text) {
+    if (!rawRecipientId || !text) {
       throw new BadRequestException('recipientId and text are required');
     }
 
@@ -386,8 +391,71 @@ export class InstagramChannelService {
     const cleanToken = accessToken.replace(/\s+/g, '').trim();
     const isIgToken = cleanToken.startsWith('IG');
 
+    // ── 1. Resolve External Instagram Scoped User ID (IGSID) ────────────────
+    let cleanRecipient = String(rawRecipientId || '').trim();
+    let isCommentReply = false;
+    let commentId: string | null = null;
+
+    // Check if this is a comment thread (e.g. ig-comment-123456)
+    if (cleanRecipient.startsWith('ig-comment-') || (conversationId && conversationId.startsWith('ig-comment-'))) {
+      isCommentReply = true;
+      const targetConv = conversationId?.startsWith('ig-comment-') ? conversationId : cleanRecipient;
+      commentId = targetConv.replace(/^ig-comment-/, '').trim();
+    }
+
+    // Strip internal 'ig-' prefix if present (e.g. 'ig-178414...' -> '178414...')
+    if (cleanRecipient.startsWith('ig-')) {
+      cleanRecipient = cleanRecipient.replace(/^ig-/, '').trim();
+    }
+
+    // If cleanRecipient is not a numeric string or is an internal UUID,
+    // trace the incoming message from messageRepo to locate the correct external Instagram sender.id (IGSID)
+    if (!/^\d+$/.test(cleanRecipient)) {
+      const matchedInbound = await this.messageRepo.findOne({
+        where: [
+          { tenantId, platform: 'instagram', conversationId: conversationId || rawRecipientId, direction: 'INBOUND' },
+          { tenantId, platform: 'instagram', conversationId: `ig-${cleanRecipient}`, direction: 'INBOUND' },
+          { tenantId, platform: 'instagram', senderId: cleanRecipient, direction: 'INBOUND' },
+        ],
+        order: { createdAt: 'DESC' },
+      });
+
+      if (matchedInbound) {
+        if (matchedInbound.conversationId?.startsWith('ig-comment-') || matchedInbound.rawMetadata?.value?.id) {
+          isCommentReply = true;
+          commentId = String(matchedInbound.rawMetadata?.value?.id || matchedInbound.conversationId.replace('ig-comment-', '')).trim();
+        }
+
+        const externalId =
+          matchedInbound.rawMetadata?.sender?.id ||
+          matchedInbound.rawMetadata?.externalUserId ||
+          matchedInbound.rawMetadata?.messagingScopedUserId ||
+          matchedInbound.rawMetadata?.igsid ||
+          matchedInbound.senderId;
+
+        if (externalId && /^\d+$/.test(String(externalId).trim())) {
+          cleanRecipient = String(externalId).trim();
+        }
+      }
+    }
+
+    // Construct recipient payload according to Meta Graph API spec
+    let recipientPayload: Record<string, any>;
+    if (isCommentReply && commentId && /^\d+$/.test(commentId)) {
+      recipientPayload = { comment_id: commentId };
+    } else {
+      // Ensure we have a valid numeric ID string for Instagram DM
+      if (!/^\d+$/.test(cleanRecipient)) {
+        this.logger.error(`[Instagram] Invalid recipient ID: "${rawRecipientId}" (resolved: "${cleanRecipient}")`);
+        throw new BadRequestException(
+          `Invalid Instagram recipient ID: "${rawRecipientId}". Instagram messaging requires a valid numeric user ID (IGSID).`,
+        );
+      }
+      recipientPayload = { id: cleanRecipient };
+    }
+
     const payload = {
-      recipient: { id: recipientId },
+      recipient: recipientPayload,
       message: { text },
     };
 
@@ -396,7 +464,7 @@ export class InstagramChannelService {
       Authorization: `Bearer ${cleanToken}`,
     };
 
-    const requestsToTry: { url: string; headers?: Record<string, string> }[] = isIgToken
+    const requestsToTry: { url: string; headers: Record<string, string> }[] = isIgToken
       ? [
           {
             url: `https://graph.instagram.com/v21.0/me/messages`,
@@ -407,21 +475,25 @@ export class InstagramChannelService {
             headers: authHeaders,
           },
           {
-            url: `https://graph.instagram.com/v21.0/me/messages?access_token=${encodeURIComponent(cleanToken)}`,
-            headers: { 'Content-Type': 'application/json' },
+            url: `https://graph.instagram.com/v21.0/${instagramAccountId}/messages`,
+            headers: authHeaders,
           },
           {
-            url: `https://graph.instagram.com/v21.0/${instagramAccountId}/messages?access_token=${encodeURIComponent(cleanToken)}`,
-            headers: { 'Content-Type': 'application/json' },
+            url: `${GRAPH_BASE}/${instagramAccountId}/messages`,
+            headers: authHeaders,
           },
         ]
       : [
           {
-            url: `${GRAPH_BASE}/${instagramAccountId}/messages?access_token=${encodeURIComponent(cleanToken)}`,
-            headers: { 'Content-Type': 'application/json' },
+            url: `${GRAPH_BASE}/${instagramAccountId}/messages`,
+            headers: authHeaders,
           },
           {
             url: `https://graph.instagram.com/v21.0/me/messages`,
+            headers: authHeaders,
+          },
+          {
+            url: `${GRAPH_BASE}/me/messages`,
             headers: authHeaders,
           },
         ];
@@ -437,7 +509,11 @@ export class InstagramChannelService {
           body: JSON.stringify(payload),
         });
         const resJson = await res.json();
-        this.logger.log(`[Instagram Send] url=${req.url} status=${res.status} body=${JSON.stringify(resJson).slice(0, 200)}`);
+
+        // Safe logging without access tokens or app secrets
+        const safeUrl = req.url.replace(/access_token=[^&]+/g, 'access_token=[REDACTED]');
+        this.logger.log(`[Instagram Send] url=${safeUrl} status=${res.status} success=${Boolean(res.ok && !resJson.error)}`);
+
         if (res.ok && !resJson.error) {
           data = resJson;
           sendSuccess = true;
@@ -446,41 +522,167 @@ export class InstagramChannelService {
           data = resJson;
         }
       } catch (e: any) {
-        this.logger.warn(`Failed sending IG message to ${req.url}: ${e.message}`);
+        const safeUrl = req.url.replace(/access_token=[^&]+/g, 'access_token=[REDACTED]');
+        this.logger.warn(`Failed sending IG message to ${safeUrl}: ${e.message}`);
       }
     }
 
     if (!sendSuccess || !data) {
+      const safeDataStr = JSON.stringify(data).replace(/(access_token|appsecret_proof|secret)=[^"&,\s]+/gi, '$1=[REDACTED]');
       this.logger.error(
-        `Instagram send message error: ${JSON.stringify(data)}`,
+        `Instagram send message error: ${safeDataStr}`,
       );
       throw new BadRequestException(
         data?.error?.message || 'Failed to send Instagram Direct message',
       );
     }
 
-    // Persist outbound message record
+    const internalConvId = conversationId || (isCommentReply && commentId ? `ig-comment-${commentId}` : `ig-${cleanRecipient}`);
+
+    // Persist outbound message record with external user ID stored separately from internal conversation ID
     const outbound = this.messageRepo.create({
       tenantId,
       storeId,
       platform: 'instagram',
-      conversationId: `ig-${recipientId}`,
+      conversationId: internalConvId,
       externalMessageId: `ig-out-${data.message_id || Date.now()}`,
       senderId: instagramAccountId,
       senderName: 'Merchant Agent',
-      recipientId,
+      recipientId: cleanRecipient,
       text,
       direction: 'OUTBOUND',
       status: 'DELIVERED',
       type: 'text',
-      rawMetadata: data,
+      rawMetadata: {
+        ...data,
+        externalUserId: cleanRecipient,
+        recipientPayload,
+      },
     });
     await this.messageRepo.save(outbound);
 
     return {
       success: true,
       message: 'Message delivered to Instagram user',
+      recipientId: cleanRecipient,
       result: data,
     };
   }
+
+  /**
+   * Syncs existing past conversations and historical messages from Instagram into CRM.
+   */
+  async syncPreviousConversations(
+    tenantId: string,
+    storeId?: string,
+  ): Promise<{ success: boolean; syncedConversations: number; syncedMessages: number; message: string }> {
+    try {
+      const { accessToken, instagramAccountId } = await this.getCredentials(tenantId);
+      this.logger.log(`Syncing past Instagram conversations for tenant ${tenantId} (IG Account ID: ${instagramAccountId})...`);
+
+      const isIgToken = accessToken.startsWith('IG');
+      let rawConversations: any[] = [];
+
+      if (isIgToken) {
+        const url = `https://graph.instagram.com/v21.0/me/conversations?fields=id,updated_time,participants,messages{id,message,created_time,from,to}&limit=50`;
+        const res = await fetch(url, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const data = await res.json();
+        if (data.data && Array.isArray(data.data)) {
+          rawConversations = data.data;
+        } else if (data.error) {
+          this.logger.warn(`graph.instagram.com conversations error: ${JSON.stringify(data.error)}`);
+        }
+      } else {
+        const urls = [
+          `${GRAPH_BASE}/${instagramAccountId}/conversations?platform=instagram&fields=id,updated_time,participants,messages{id,message,created_time,from,to}&limit=50&access_token=${encodeURIComponent(accessToken)}`,
+          `${GRAPH_BASE}/me/conversations?platform=instagram&fields=id,updated_time,participants,messages{id,message,created_time,from,to}&limit=50&access_token=${encodeURIComponent(accessToken)}`,
+        ];
+
+        for (const u of urls) {
+          try {
+            const res = await fetch(u);
+            const data = await res.json();
+            if (data.data && Array.isArray(data.data)) {
+              rawConversations = data.data;
+              break;
+            } else if (data.error) {
+              const safeErr = JSON.stringify(data.error).replace(/(access_token|secret)=[^"&,\s]+/gi, '$1=[REDACTED]');
+              this.logger.warn(`Instagram conversations fetch error: ${safeErr}`);
+            }
+          } catch (e: any) {
+            const safeU = u.replace(/access_token=[^&]+/g, 'access_token=[REDACTED]');
+            this.logger.warn(`Fetch error for ${safeU}: ${e.message}`);
+          }
+        }
+      }
+
+      let syncedMessages = 0;
+      let syncedConversations = 0;
+
+      for (const conv of rawConversations) {
+        const participants = conv.participants?.data || [];
+        const customer = participants.find((p: any) => String(p.id) !== instagramAccountId && String(p.id) !== 'me') || participants[0];
+        if (!customer) continue;
+
+        const customerId = String(customer.id);
+        const customerName = customer.username ? `@${customer.username}` : (customer.name || `Instagram User (${customerId})`);
+        const conversationId = `ig-${customerId}`;
+        const messages = conv.messages?.data || [];
+
+        let hasNew = false;
+
+        for (const m of messages) {
+          const isOutbound = String(m.from?.id) === instagramAccountId;
+          const externalId = `ig-msg-${m.id}`;
+
+          const existing = await this.messageRepo.findOne({
+            where: { tenantId, platform: 'instagram', externalMessageId: externalId },
+          });
+
+          if (!existing) {
+            const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(isOutbound ? 'Merchant' : customerName.replace(/^@/, ''))}&background=${isOutbound ? '0D9488' : 'E1306C'}&color=fff&bold=true&size=128&rounded=true`;
+
+            const record = this.messageRepo.create({
+              tenantId,
+              storeId,
+              platform: 'instagram',
+              conversationId,
+              externalMessageId: externalId,
+              senderId: isOutbound ? instagramAccountId : customerId,
+              senderName: isOutbound ? 'Merchant Agent' : (m.from?.username ? `@${m.from.username}` : customerName),
+              senderAvatar: avatar,
+              recipientId: isOutbound ? customerId : instagramAccountId,
+              text: m.message || '[Attachment / Media]',
+              direction: isOutbound ? 'OUTBOUND' : 'INBOUND',
+              status: 'DELIVERED',
+              type: 'text',
+              rawMetadata: m,
+              createdAt: m.created_time ? new Date(m.created_time) : new Date(),
+            });
+
+            await this.messageRepo.save(record);
+            syncedMessages++;
+            hasNew = true;
+          }
+        }
+
+        if (hasNew) syncedConversations++;
+      }
+
+      this.logger.log(`Instagram past conversation sync complete: ${syncedConversations} convs, ${syncedMessages} msgs.`);
+
+      return {
+        success: true,
+        syncedConversations,
+        syncedMessages,
+        message: `Successfully synced ${syncedConversations} conversations and ${syncedMessages} messages from Instagram Direct.`,
+      };
+    } catch (err: any) {
+      this.logger.error(`Failed to sync past Instagram conversations: ${err.message}`);
+      throw new BadRequestException(err.message || 'Failed to sync Instagram conversations.');
+    }
+  }
 }
+

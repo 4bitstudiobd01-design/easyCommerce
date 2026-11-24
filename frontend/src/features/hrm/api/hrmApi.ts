@@ -4,6 +4,23 @@ import { createBaseQueryWithReauth } from '@/store/baseQueryWithReauth';
 export type EmploymentType = 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'INTERN';
 export type EmploymentStatus = 'ACTIVE' | 'ON_LEAVE' | 'SUSPENDED' | 'TERMINATED';
 export type EmployeeGender = 'MALE' | 'FEMALE' | 'OTHER';
+export type MaritalStatus = 'SINGLE' | 'MARRIED' | 'DIVORCED' | 'WIDOWED';
+
+export interface EducationEntry {
+  institution: string;
+  degree: string;
+  fieldOfStudy?: string;
+  startYear?: number;
+  endYear?: number;
+}
+
+export interface ExperienceEntry {
+  company: string;
+  title: string;
+  startDate?: string;
+  endDate?: string;
+  description?: string;
+}
 
 export interface Department {
   id: string;
@@ -36,6 +53,28 @@ export interface Employee {
   address?: string;
   emergencyContactName?: string;
   emergencyContactPhone?: string;
+  emergencyContactRelation?: string;
+  secondaryEmergencyContactName?: string;
+  secondaryEmergencyContactPhone?: string;
+  secondaryEmergencyContactRelation?: string;
+  reportsToEmployeeId?: string;
+  reportsTo?: Pick<Employee, 'id' | 'fullName' | 'designation' | 'employeeCode'>;
+  nationalId?: string;
+  passportNumber?: string;
+  passportExpiryDate?: string;
+  nationality?: string;
+  religion?: string;
+  maritalStatus?: MaritalStatus;
+  spouseName?: string;
+  spouseEmployed?: boolean;
+  numberOfChildren?: number;
+  bankName?: string;
+  bankAccountNumber?: string;
+  bankBranchName?: string;
+  bankRoutingNumber?: string;
+  bio?: string;
+  education?: EducationEntry[];
+  experience?: ExperienceEntry[];
   avatarUrl?: string;
   createdAt: string;
   updatedAt: string;
@@ -73,16 +112,39 @@ export interface CreateEmployeeRequest {
   address?: string;
   emergencyContactName?: string;
   emergencyContactPhone?: string;
+  emergencyContactRelation?: string;
+  secondaryEmergencyContactName?: string;
+  secondaryEmergencyContactPhone?: string;
+  secondaryEmergencyContactRelation?: string;
+  reportsToEmployeeId?: string;
+  nationalId?: string;
+  passportNumber?: string;
+  passportExpiryDate?: string;
+  nationality?: string;
+  religion?: string;
+  maritalStatus?: MaritalStatus;
+  spouseName?: string;
+  spouseEmployed?: boolean;
+  numberOfChildren?: number;
+  bankName?: string;
+  bankAccountNumber?: string;
+  bankBranchName?: string;
+  bankRoutingNumber?: string;
+  bio?: string;
+  education?: EducationEntry[];
+  experience?: ExperienceEntry[];
 }
 
-export interface UpdateEmployeeRequest extends Omit<Partial<CreateEmployeeRequest>, 'departmentId'> {
+export interface UpdateEmployeeRequest
+  extends Omit<Partial<CreateEmployeeRequest>, 'departmentId' | 'reportsToEmployeeId'> {
   id: string;
   employmentStatus?: EmploymentStatus;
   departmentId?: string | null;
+  reportsToEmployeeId?: string | null;
 }
 
 export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'HALF_DAY' | 'ON_LEAVE';
-export type LeaveType = 'EARNED' | 'CASUAL' | 'SICK';
+export type LeaveType = 'EARNED' | 'CASUAL' | 'SICK' | 'UNPAID';
 export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
 
 export interface Attendance {
@@ -372,7 +434,7 @@ export interface SetSalaryStructureRequest {
   providentFundDeduction?: string;
 }
 
-export type PayrollRunStatus = 'DRAFT' | 'FINALIZED' | 'PAID';
+export type PayrollRunStatus = 'REVIEW' | 'FINALIZED' | 'REIMBURSED';
 
 export interface PayrollRun {
   id: string;
@@ -386,7 +448,7 @@ export interface PayrollRun {
   totalNetAmount: string;
   skippedEmployeeCount: number;
   finalizedAt?: string;
-  paidAt?: string;
+  reimbursedAt?: string;
   createdByUserId?: string;
   createdAt: string;
   updatedAt: string;
@@ -408,6 +470,17 @@ export interface Payslip {
   providentFundDeduction: string;
   taxDeduction: string;
   otherDeductions: string;
+  attendanceDeduction: string;
+  attendanceDeductionDays: string;
+  attendanceDeductionBreakdown?: {
+    lateArrivalsCount: number;
+    lateDeductionDays: number;
+    unpaidLeaveDays: number;
+    absentDays: number;
+    totalDeductionDays: number;
+    perDayRate: number;
+    amount: number;
+  } | null;
   netSalary: string;
   createdAt: string;
   updatedAt: string;
@@ -421,6 +494,21 @@ export interface PayrollRunDetail {
 export interface GeneratePayrollRunRequest {
   month: number;
   year: number;
+}
+
+export interface AttendanceDeductionPolicy {
+  id: string;
+  tenantId: string;
+  storeId: string;
+  lateArrivalsPerDeductedDay: number;
+  deductUnmarkedAbsences: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateAttendanceDeductionPolicyRequest {
+  lateArrivalsPerDeductedDay?: number;
+  deductUnmarkedAbsences?: boolean;
 }
 
 export interface TaxSlab {
@@ -506,21 +594,149 @@ export interface UpdateNoticeRequest {
   expiresAt?: string | null;
 }
 
+export type JobPostingStatus = 'OPEN' | 'ON_HOLD' | 'CLOSED';
+export type CandidateStage = 'APPLIED' | 'SCREENING' | 'INTERVIEW' | 'OFFER' | 'HIRED' | 'REJECTED';
+export type InterviewStatus = 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
+
+export interface JobPosting {
+  id: string;
+  tenantId: string;
+  storeId: string;
+  title: string;
+  departmentId?: string;
+  department?: Department;
+  employmentType?: EmploymentType;
+  location?: string;
+  openings: number;
+  status: JobPostingStatus;
+  description?: string;
+  postedAt: string;
+  closedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Candidate {
+  id: string;
+  tenantId: string;
+  storeId: string;
+  jobPostingId: string;
+  jobPosting?: JobPosting;
+  fullName: string;
+  email?: string;
+  phone?: string;
+  source?: string;
+  stage: CandidateStage;
+  notes?: string;
+  appliedAt: string;
+  hiredAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Interview {
+  id: string;
+  tenantId: string;
+  storeId: string;
+  candidateId: string;
+  candidate?: Candidate;
+  scheduledAt: string;
+  durationMinutes: number;
+  interviewerNames?: string;
+  meetingLink?: string;
+  status: InterviewStatus;
+  feedback?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RecruitmentStats {
+  totalApplicants: number;
+  hired: number;
+  avgDaysToHire: number | null;
+  byStage: Record<CandidateStage, number>;
+}
+
+export interface CreateJobPostingRequest {
+  title: string;
+  departmentId?: string;
+  employmentType?: EmploymentType;
+  location?: string;
+  openings?: number;
+  description?: string;
+}
+
+export interface UpdateJobPostingRequest extends Partial<Omit<CreateJobPostingRequest, 'departmentId'>> {
+  id: string;
+  departmentId?: string | null;
+  status?: JobPostingStatus;
+}
+
+export interface CreateCandidateRequest {
+  jobPostingId: string;
+  fullName: string;
+  email?: string;
+  phone?: string;
+  source?: string;
+  notes?: string;
+}
+
+export interface UpdateCandidateStageRequest {
+  id: string;
+  stage: CandidateStage;
+  notes?: string;
+}
+
+export interface ScheduleInterviewRequest {
+  candidateId: string;
+  scheduledAt: string;
+  durationMinutes?: number;
+  interviewerNames?: string;
+  meetingLink?: string;
+}
+
+export interface UpdateInterviewRequest {
+  id: string;
+  scheduledAt?: string;
+  durationMinutes?: number;
+  interviewerNames?: string;
+  meetingLink?: string;
+  status?: InterviewStatus;
+  feedback?: string;
+}
+
 export interface HrOverviewReport {
   headcount: {
     total: number;
     byDepartment: Array<{ departmentName: string; count: number }>;
     byEmploymentType: Record<EmploymentType, number>;
   };
+  newJoinersLast30Days: number;
   attendanceToday: Record<AttendanceStatus | 'NOT_MARKED', number>;
+  lateArrivalsToday: Array<{
+    employeeId: string;
+    fullName: string;
+    departmentName: string | null;
+    checkInAt: string | null;
+  }>;
+  attendanceTrend7Days: Array<{ date: string; present: number; late: number; absent: number }>;
   leave: {
     pendingRequests: number;
     approvedThisMonth: number;
     approvedDaysThisYearByType: Record<LeaveType, number>;
   };
+  pendingLeaveRequests: Array<{
+    id: string;
+    employeeName: string;
+    leaveType: LeaveType;
+    startDate: string;
+    endDate: string;
+    totalDays: number;
+  }>;
   payroll: {
     latestRun: { month: number; year: number; status: PayrollRunStatus; totalNetAmount: string } | null;
     runsThisYear: number;
+    trend: Array<{ month: number; year: number; grossAmount: string; netAmount: string; deductions: string }>;
   };
   expenses: {
     pendingCount: number;
@@ -528,6 +744,13 @@ export interface HrOverviewReport {
     approvedNotReimbursedAmount: string;
     reimbursedThisMonthAmount: string;
   };
+  recruitment: RecruitmentStats;
+  upcomingInterviews: Array<{
+    candidateName: string;
+    jobTitle: string;
+    scheduledAt: string;
+    interviewerNames: string | null;
+  }>;
 }
 
 export interface ListEmployeesParams {
@@ -546,7 +769,7 @@ export const hrmApi = createApi({
   baseQuery: createBaseQueryWithReauth(
     process.env.NEXT_PUBLIC_API_URL?.replace('/orders', '') || 'http://localhost:5001/api/v1',
   ),
-  tagTypes: ['Department', 'Employee', 'Attendance', 'Holiday', 'LeavePolicy', 'LeaveRequest', 'LeaveBalance', 'Shift', 'Roster', 'Expense', 'SalaryStructure', 'PayrollRun', 'TaxSlab', 'Notice', 'MyEmployee', 'MyLeaveRequest', 'MyLeaveBalance'],
+  tagTypes: ['Department', 'Employee', 'Attendance', 'Holiday', 'LeavePolicy', 'LeaveRequest', 'LeaveBalance', 'Shift', 'Roster', 'Expense', 'SalaryStructure', 'PayrollRun', 'TaxSlab', 'AttendanceDeductionPolicy', 'Notice', 'MyEmployee', 'MyLeaveRequest', 'MyLeaveBalance', 'JobPosting', 'Candidate', 'Interview', 'HrOverview'],
   endpoints: (builder) => ({
     getDepartments: builder.query<Department[], void>({
       query: () => '/hr/departments',
@@ -671,7 +894,7 @@ export const hrmApi = createApi({
     }),
     reviewLeaveRequest: builder.mutation<LeaveRequest, ReviewLeaveRequestRequest>({
       query: ({ id, ...body }) => ({ url: `/hr/leave-requests/${id}/review`, method: 'PATCH', body }),
-      invalidatesTags: ['LeaveRequest', 'LeaveBalance'],
+      invalidatesTags: ['LeaveRequest', 'LeaveBalance', 'HrOverview'],
       transformResponse: unwrap<LeaveRequest>,
     }),
     cancelLeaveRequest: builder.mutation<LeaveRequest, string>({
@@ -843,6 +1066,17 @@ export const hrmApi = createApi({
       transformResponse: unwrap<SeedPayrollDemoDataResponse>,
     }),
 
+    getAttendanceDeductionPolicy: builder.query<AttendanceDeductionPolicy, void>({
+      query: () => '/hr/payroll/attendance-deduction-policy',
+      providesTags: ['AttendanceDeductionPolicy'],
+      transformResponse: unwrap<AttendanceDeductionPolicy>,
+    }),
+    updateAttendanceDeductionPolicy: builder.mutation<AttendanceDeductionPolicy, UpdateAttendanceDeductionPolicyRequest>({
+      query: (body) => ({ url: '/hr/payroll/attendance-deduction-policy', method: 'PUT', body }),
+      invalidatesTags: ['AttendanceDeductionPolicy'],
+      transformResponse: unwrap<AttendanceDeductionPolicy>,
+    }),
+
     getTaxSlabs: builder.query<TaxSlab[], { fiscalYear: string }>({
       query: (params) => ({ url: '/hr/tax/slabs', params }),
       providesTags: ['TaxSlab'],
@@ -881,7 +1115,67 @@ export const hrmApi = createApi({
 
     getHrOverviewReport: builder.query<HrOverviewReport, void>({
       query: () => '/hr/reports/overview',
+      providesTags: ['HrOverview'],
       transformResponse: unwrap<HrOverviewReport>,
+    }),
+
+    getJobPostings: builder.query<JobPosting[], { status?: JobPostingStatus } | void>({
+      query: (params) => ({ url: '/hr/recruitment/job-postings', params: params || undefined }),
+      providesTags: ['JobPosting'],
+      transformResponse: unwrap<JobPosting[]>,
+    }),
+    createJobPosting: builder.mutation<JobPosting, CreateJobPostingRequest>({
+      query: (body) => ({ url: '/hr/recruitment/job-postings', method: 'POST', body }),
+      invalidatesTags: ['JobPosting'],
+      transformResponse: unwrap<JobPosting>,
+    }),
+    updateJobPosting: builder.mutation<JobPosting, UpdateJobPostingRequest>({
+      query: ({ id, ...body }) => ({ url: `/hr/recruitment/job-postings/${id}`, method: 'PATCH', body }),
+      invalidatesTags: ['JobPosting'],
+      transformResponse: unwrap<JobPosting>,
+    }),
+
+    getCandidates: builder.query<Candidate[], { jobPostingId?: string; stage?: CandidateStage } | void>({
+      query: (params) => ({ url: '/hr/recruitment/candidates', params: params || undefined }),
+      providesTags: ['Candidate'],
+      transformResponse: unwrap<Candidate[]>,
+    }),
+    createCandidate: builder.mutation<Candidate, CreateCandidateRequest>({
+      query: (body) => ({ url: '/hr/recruitment/candidates', method: 'POST', body }),
+      invalidatesTags: ['Candidate', 'HrOverview'],
+      transformResponse: unwrap<Candidate>,
+    }),
+    updateCandidateStage: builder.mutation<Candidate, UpdateCandidateStageRequest>({
+      query: ({ id, ...body }) => ({ url: `/hr/recruitment/candidates/${id}/stage`, method: 'PATCH', body }),
+      invalidatesTags: ['Candidate', 'HrOverview'],
+      transformResponse: unwrap<Candidate>,
+    }),
+    deleteCandidate: builder.mutation<{ success: boolean }, string>({
+      query: (id) => ({ url: `/hr/recruitment/candidates/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['Candidate', 'HrOverview'],
+      transformResponse: unwrap<{ success: boolean }>,
+    }),
+
+    getInterviews: builder.query<Interview[], { upcoming?: boolean; limit?: number } | void>({
+      query: (params) => ({ url: '/hr/recruitment/interviews', params: params || undefined }),
+      providesTags: ['Interview'],
+      transformResponse: unwrap<Interview[]>,
+    }),
+    scheduleInterview: builder.mutation<Interview, ScheduleInterviewRequest>({
+      query: (body) => ({ url: '/hr/recruitment/interviews', method: 'POST', body }),
+      invalidatesTags: ['Interview', 'HrOverview'],
+      transformResponse: unwrap<Interview>,
+    }),
+    updateInterview: builder.mutation<Interview, UpdateInterviewRequest>({
+      query: ({ id, ...body }) => ({ url: `/hr/recruitment/interviews/${id}`, method: 'PATCH', body }),
+      invalidatesTags: ['Interview', 'HrOverview'],
+      transformResponse: unwrap<Interview>,
+    }),
+
+    getRecruitmentStats: builder.query<RecruitmentStats, void>({
+      query: () => '/hr/recruitment/stats',
+      providesTags: ['JobPosting', 'Candidate'],
+      transformResponse: unwrap<RecruitmentStats>,
     }),
   }),
 });
@@ -941,6 +1235,8 @@ export const {
   useMarkPayrollRunPaidMutation,
   useDeletePayrollRunMutation,
   useSeedPayrollDemoDataMutation,
+  useGetAttendanceDeductionPolicyQuery,
+  useUpdateAttendanceDeductionPolicyMutation,
   useGetTaxSlabsQuery,
   useSetTaxSlabsMutation,
   useLazyEstimateTaxQuery,
@@ -949,6 +1245,17 @@ export const {
   useUpdateNoticeMutation,
   useDeleteNoticeMutation,
   useGetHrOverviewReportQuery,
+  useGetJobPostingsQuery,
+  useCreateJobPostingMutation,
+  useUpdateJobPostingMutation,
+  useGetCandidatesQuery,
+  useCreateCandidateMutation,
+  useUpdateCandidateStageMutation,
+  useDeleteCandidateMutation,
+  useGetInterviewsQuery,
+  useScheduleInterviewMutation,
+  useUpdateInterviewMutation,
+  useGetRecruitmentStatsQuery,
 } = hrmApi;
 
 /** Streams the authenticated document endpoint and opens it in a new tab. RTK Query's

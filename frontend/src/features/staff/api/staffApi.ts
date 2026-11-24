@@ -29,6 +29,7 @@ export type StaffPermissionType =
   | 'hr:expenses:manage'
   | 'hr:payroll:manage'
   | 'hr:notices:manage'
+  | 'hr:recruitment:manage'
   | 'finance:read'
   | 'finance:manage'
   | 'finance:transactions:manage'

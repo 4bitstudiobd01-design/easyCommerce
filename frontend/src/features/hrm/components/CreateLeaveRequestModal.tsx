@@ -17,7 +17,7 @@ interface CreateLeaveRequestModalProps {
   onClose: () => void;
 }
 
-const LEAVE_TYPES: LeaveType[] = ['EARNED', 'CASUAL', 'SICK'];
+const LEAVE_TYPES: LeaveType[] = ['EARNED', 'CASUAL', 'SICK', 'UNPAID'];
 
 function inclusiveDayCount(start: string, end: string) {
   if (!start || !end) return 0;

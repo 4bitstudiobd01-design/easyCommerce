@@ -27,8 +27,8 @@ export class FinalizePayrollRunService {
       throw new NotFoundException('Payroll run not found.');
     }
 
-    if (run.status !== PayrollRunStatusEnum.DRAFT) {
-      throw new BadRequestException('Only a draft payroll run can be approved / finalized.');
+    if (run.status !== PayrollRunStatusEnum.REVIEW) {
+      throw new BadRequestException('Only a payroll run under review can be approved / finalized.');
     }
 
     run.status = PayrollRunStatusEnum.FINALIZED;

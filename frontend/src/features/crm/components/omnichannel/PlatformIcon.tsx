@@ -12,41 +12,69 @@ interface PlatformIconProps {
   platform: OmnichannelPlatform | string;
   className?: string;
   size?: number;
+  variant?: 'svg' | 'image';
 }
 
 export function PlatformIcon({
   platform,
   className = '',
   size = 20,
+  variant = 'svg',
 }: PlatformIconProps) {
   const norm = (platform || '').toLowerCase();
 
-  // Facebook
+  // If raster image variant is explicitly requested
+  if (variant === 'image') {
+    const imageMap: Record<string, string> = {
+      facebook: '/images/omnichannel/facebook.jpg',
+      fb: '/images/omnichannel/facebook.jpg',
+      tiktok: '/images/omnichannel/tiktok.jpg',
+      whatsapp: '/images/omnichannel/whatsapp.jpg',
+      wa: '/images/omnichannel/whatsapp.jpg',
+      telegram: '/images/omnichannel/telegram.jpg',
+      tg: '/images/omnichannel/telegram.jpg',
+    };
+
+    if (imageMap[norm]) {
+      return (
+        <img
+          src={imageMap[norm]}
+          alt={platform}
+          width={size}
+          height={size}
+          className={`shrink-0 object-contain rounded-lg ${className}`}
+          style={{ width: size, height: size }}
+        />
+      );
+    }
+  }
+
+  // 1. Facebook: Official cobalt blue squircle with clean white bold 'f'
   if (norm === 'facebook' || norm === 'fb') {
     return (
       <svg
         width={size}
         height={size}
-        viewBox="0 0 24 24"
+        viewBox="0 0 48 48"
         fill="none"
         className={`shrink-0 ${className}`}
       >
-        <rect width="24" height="24" rx="6" fill="#1877F2" />
+        <rect width="48" height="48" rx="11" fill="#1877F2" />
         <path
-          d="M16.5 12.05h-2.55v8.95h-3.7V12.05H8.2V8.91h2.05V6.63C10.25 4.6 11.49 3 14.15 3c1.13 0 2.11.08 2.39.12v2.77h-1.64c-.98 0-1.25.47-1.25 1.23v1.79h3.08l-.23 3.14z"
+          d="M29.5 24h-4.6v16h-6.6V24H15.1v-5.6h3.2v-3.7c0-4.3 2.6-6.7 6.5-6.7 1.9 0 3.5.1 4 .2v4.6h-2.7c-2.1 0-2.5 1-2.5 2.5v3.1h5.1l-.7 5.6z"
           fill="#FFFFFF"
         />
       </svg>
     );
   }
 
-  // Messenger
+  // 2. Messenger: Official Meta Messenger gradient with speech bubble & lightning
   if (norm === 'messenger' || norm === 'fb-messenger') {
     return (
       <svg
         width={size}
         height={size}
-        viewBox="0 0 24 24"
+        viewBox="0 0 48 48"
         fill="none"
         className={`shrink-0 ${className}`}
       >
@@ -57,22 +85,22 @@ export function PlatformIcon({
             <stop offset="100%" stopColor="#9B3FE4" />
           </linearGradient>
         </defs>
-        <rect width="24" height="24" rx="6" fill="url(#msg-grad)" />
+        <rect width="48" height="48" rx="11" fill="url(#msg-grad)" />
         <path
-          d="M12 4C7.58 4 4 7.24 4 11.23c0 2.28 1.17 4.32 3 5.66v2.85l2.74-1.51c.71.2 1.47.3 2.26.3 4.42 0 8-3.24 8-7.23S16.42 4 12 4zm.8 9.77l-2.05-2.18-4 2.18 4.4-4.68 2.05 2.18 4-2.18-4.4 4.68z"
+          d="M24 9C15.7 9 9 15.1 9 22.6c0 4.3 2.2 8.1 5.6 10.6v5.3l5.1-2.8c1.3.4 2.8.6 4.3.6 8.3 0 15-6.1 15-13.6S32.3 9 24 9zm1.5 18.3l-3.8-4.1-7.5 4.1 8.2-8.8 3.8 4.1 7.5-4.1-8.2 8.8z"
           fill="#FFFFFF"
         />
       </svg>
     );
   }
 
-  // Instagram
+  // 3. Instagram: Official radial camera badge
   if (norm === 'instagram' || norm === 'ig') {
     return (
       <svg
         width={size}
         height={size}
-        viewBox="0 0 24 24"
+        viewBox="0 0 48 48"
         fill="none"
         className={`shrink-0 ${className}`}
       >
@@ -91,73 +119,95 @@ export function PlatformIcon({
             <stop offset="90%" stopColor="#285AEB" />
           </radialGradient>
         </defs>
-        <rect width="24" height="24" rx="6" fill="url(#ig-radial)" />
+        <rect width="48" height="48" rx="11" fill="url(#ig-radial)" />
         <rect
-          x="4.5"
-          y="4.5"
-          width="15"
-          height="15"
-          rx="4.5"
+          x="11"
+          y="11"
+          width="26"
+          height="26"
+          rx="7.5"
           stroke="#FFFFFF"
-          strokeWidth="1.8"
+          strokeWidth="3.2"
         />
-        <circle cx="12" cy="12" r="3.6" stroke="#FFFFFF" strokeWidth="1.8" />
-        <circle cx="16.2" cy="7.8" r="1.1" fill="#FFFFFF" />
+        <circle cx="24" cy="24" r="6.2" stroke="#FFFFFF" strokeWidth="3.2" />
+        <circle cx="31.8" cy="16.2" r="1.8" fill="#FFFFFF" />
       </svg>
     );
   }
 
-  // TikTok
+  // 4. TikTok: Signature black squircle with cyan & magenta chromatic 3D offset note
   if (norm === 'tiktok') {
     return (
       <svg
         width={size}
         height={size}
-        viewBox="0 0 24 24"
+        viewBox="0 0 48 48"
         fill="none"
         className={`shrink-0 ${className}`}
       >
-        <rect width="24" height="24" rx="6" fill="#010101" />
-        <path
-          d="M16.8 8.2a4.4 4.4 0 0 1-2.9-2V4h-2.6v11.2a2.3 2.3 0 1 1-2.3-2.3c.4 0 .7.1 1 .28V10.7A4.8 4.8 0 0 0 6.5 15a4.8 4.8 0 0 0 4.8 4.8c2.6 0 4.8-2.1 4.8-4.8V9.6a6.5 6.5 0 0 0 3.4.9V8a4.5 4.5 0 0 1-2.7-.8z"
-          fill="#FFFFFF"
-        />
+        <rect width="48" height="48" rx="11" fill="#000000" />
+        <g transform="translate(1.5, 1.5)">
+          {/* Electric Cyan offset shadow */}
+          <path
+            d="M30.4 14.9a8.4 8.4 0 0 1-5.2-3.6V8h-4.8v20.4a4.5 4.5 0 1 1-4.5-4.5c.7 0 1.3.1 1.9.4v-5a9.2 9.2 0 0 0-1.9-.2 9.2 9.2 0 1 0 9.2 9.2V18.4a13 13 0 0 0 6.7-1.8v-4.9a8.3 8.3 0 0 1-1.4 3.2z"
+            fill="#00F2FE"
+            transform="translate(-1.2, -1.2)"
+          />
+          {/* Vivid Magenta offset shadow */}
+          <path
+            d="M30.4 14.9a8.4 8.4 0 0 1-5.2-3.6V8h-4.8v20.4a4.5 4.5 0 1 1-4.5-4.5c.7 0 1.3.1 1.9.4v-5a9.2 9.2 0 0 0-1.9-.2 9.2 9.2 0 1 0 9.2 9.2V18.4a13 13 0 0 0 6.7-1.8v-4.9a8.3 8.3 0 0 1-1.4 3.2z"
+            fill="#FE2C55"
+            transform="translate(1.2, 1.2)"
+          />
+          {/* Pure White core note */}
+          <path
+            d="M30.4 14.9a8.4 8.4 0 0 1-5.2-3.6V8h-4.8v20.4a4.5 4.5 0 1 1-4.5-4.5c.7 0 1.3.1 1.9.4v-5a9.2 9.2 0 0 0-1.9-.2 9.2 9.2 0 1 0 9.2 9.2V18.4a13 13 0 0 0 6.7-1.8v-4.9a8.3 8.3 0 0 1-1.4 3.2z"
+            fill="#FFFFFF"
+          />
+        </g>
       </svg>
     );
   }
 
-  // WhatsApp
+  // 5. WhatsApp: Official speech bubble badge with handset
   if (norm === 'whatsapp' || norm === 'wa') {
     return (
       <svg
         width={size}
         height={size}
-        viewBox="0 0 24 24"
+        viewBox="0 0 48 48"
         fill="none"
         className={`shrink-0 ${className}`}
       >
-        <rect width="24" height="24" rx="6" fill="#25D366" />
+        {/* Vibrant green speech bubble ring */}
         <path
-          d="M12 4a7.9 7.9 0 0 0-6.85 11.85L4 20l4.3-1.13A7.9 7.9 0 1 0 12 4zm4.61 11.23c-.19.54-1.12 1.05-1.55 1.09-.4.04-.92.05-1.48-.13-.34-.11-.78-.26-1.34-.51-2.38-1.03-3.93-3.46-4.05-3.62-.12-.16-.97-1.3-.97-2.47 0-1.17.62-1.74.84-1.98.22-.24.48-.3.64-.3.16 0 .32 0 .46.01.15.01.35-.06.55.42.2.49.69 1.68.75 1.8.06.12.1.26.02.42-.08.16-.12.26-.24.4-.12.14-.25.31-.36.42-.12.12-.24.25-.1.5.14.24.62 1.03 1.34 1.67.92.82 1.7 1.07 1.94 1.19.24.12.38.1.52-.06.14-.16.6-.7.76-.94.16-.24.32-.2.54-.12.22.08 1.4.66 1.64.78.24.12.4.18.46.28.06.1.06.58-.13 1.12z"
-          fill="#FFFFFF"
+          d="M24 6C14.06 6 6 14.06 6 24c0 3.47 1 6.73 2.72 9.49L6 42l8.78-2.3C17.44 41.05 20.62 42 24 42c9.94 0 18-8.06 18-18S33.94 6 24 6z"
+          fill="#25D366"
+        />
+        {/* Crisp white inner circle */}
+        <circle cx="24" cy="24" r="14.8" fill="#FFFFFF" />
+        {/* Tilted green telephone handset */}
+        <path
+          d="M31.8 28.8c-.4-.2-2.3-1.1-2.7-1.3-.4-.1-.6-.2-.9.2-.3.4-1 1.3-1.2 1.5-.2.3-.5.3-.9.1-.4-.2-1.6-.6-3.1-1.9-1.2-1-1.9-2.3-2.2-2.7-.2-.4 0-.6.2-.8.2-.2.4-.5.6-.7.2-.2.3-.4.4-.6.1-.3.1-.5 0-.7-.1-.2-.9-2.1-1.2-2.9-.3-.8-.7-.7-.9-.7h-.8c-.3 0-.7.1-1.1.5-.4.4-1.4 1.4-1.4 3.3s1.4 3.8 1.6 4.1c.2.3 2.8 4.2 6.7 5.9 1 .4 1.7.6 2.3.8 1 .3 1.8.3 2.5.2.8-.1 2.3-.9 2.7-1.9.3-.9.3-1.7.2-1.9-.1-.2-.4-.3-.8-.5z"
+          fill="#25D366"
         />
       </svg>
     );
   }
 
-  // Telegram
+  // 6. Telegram: Signature sky blue circle with white 3D paper airplane
   if (norm === 'telegram' || norm === 'tg') {
     return (
       <svg
         width={size}
         height={size}
-        viewBox="0 0 24 24"
+        viewBox="0 0 48 48"
         fill="none"
         className={`shrink-0 ${className}`}
       >
-        <rect width="24" height="24" rx="6" fill="#229ED9" />
+        <circle cx="24" cy="24" r="23" fill="#24A1DE" />
         <path
-          d="M18.2 6.8 5.7 11.6c-.85.34-.84.82-.16 1.03l3.2 1 7.42-4.68c.35-.21.67-.1.4.14l-6.01 5.43-.22 3.32c.32 0 .47-.15.65-.33l1.57-1.52 3.26 2.41c.6.33 1.03.16 1.18-.55l2.14-10.08c.22-.88-.34-1.28-.93-.97z"
+          d="M35.6 13.9L10.9 23.4c-1.68.67-1.66 1.62-.3 2.04l6.33 1.97 14.67-9.25c.69-.42 1.33-.2.8.27l-11.89 10.73.45 6.57c.64 0 .92-.29 1.28-.64l3.08-2.99 6.44 4.76c1.19.65 2.04.32 2.34-1.08l4.22-19.9c.43-1.75-.66-2.53-1.82-1.94z"
           fill="#FFFFFF"
         />
       </svg>

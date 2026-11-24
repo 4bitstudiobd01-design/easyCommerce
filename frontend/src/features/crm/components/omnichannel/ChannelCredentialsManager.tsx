@@ -13,6 +13,9 @@ import {
   useTestChannelConnectionMutation,
   useToggleChannelActiveMutation,
   useDeleteChannelCredentialsMutation,
+  useLazyGetTikTokOAuthUrlQuery,
+  useInitiateTikTokOAuthMutation,
+  useDisconnectTikTokMutation,
   useGetAiConfigQuery,
   useSaveAiConfigMutation,
   useTestAiConnectionMutation,
@@ -49,45 +52,12 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-export const PLATFORM_CONFIGS: Record<SocialPlatform, PlatformConfig> = {
+export const PLATFORM_CONFIGS: Record<string, PlatformConfig> = {
   facebook: {
     platform: 'facebook',
-    name: 'Facebook Page',
-    description: 'Meta Page integration for page posts, wall comments, and brand inquiries.',
+    name: 'Facebook & Messenger',
+    description: 'Meta Page & Messenger integration for automated 1-on-1 customer chat, page posts, and brand inquiries.',
     color: '#1877F2',
-    docsUrl: 'https://developers.facebook.com/docs/pages',
-    webhookPath: '/api/v1/webhooks/facebook',
-    fields: [
-      {
-        key: 'pageId',
-        label: 'Facebook Page ID',
-        type: 'text',
-        placeholder: 'e.g. 102938475610293',
-        required: true,
-        helperText: 'Found on your Facebook Page > About section',
-      },
-      {
-        key: 'pageAccessToken',
-        label: 'Page Access Token (Permanent)',
-        type: 'password',
-        placeholder: 'EAABsb...',
-        required: true,
-        helperText: 'Requires pages_show_list, pages_read_engagement permissions',
-      },
-      {
-        key: 'verifyToken',
-        label: 'Webhook Verify Token',
-        type: 'text',
-        placeholder: 'omnichannel_verify_token',
-        required: false,
-      },
-    ],
-  },
-  messenger: {
-    platform: 'messenger',
-    name: 'Facebook Messenger',
-    description: 'Direct Meta Messenger chat for automated 1-on-1 customer conversations and replies.',
-    color: '#0084FF',
     docsUrl: 'https://developers.facebook.com/docs/messenger-platform',
     webhookPath: '/api/v1/webhooks/facebook',
     fields: [
@@ -105,7 +75,7 @@ export const PLATFORM_CONFIGS: Record<SocialPlatform, PlatformConfig> = {
         type: 'password',
         placeholder: 'EAABsb...',
         required: true,
-        helperText: 'Requires pages_messaging permission',
+        helperText: 'Requires pages_messaging, pages_show_list, pages_read_engagement permissions',
       },
       {
         key: 'verifyToken',
@@ -152,40 +122,26 @@ export const PLATFORM_CONFIGS: Record<SocialPlatform, PlatformConfig> = {
   tiktok: {
     platform: 'tiktok',
     name: 'TikTok Business',
-    description: 'TikTok Direct Messages and TikTok Shop customer inquiry integration.',
+    description: 'TikTok Direct Messages and TikTok Shop customer inquiry integration via OAuth & Webhooks.',
     color: '#010101',
-    docsUrl: 'https://business-api.tiktok.com/portal/docs',
+    docsUrl: 'https://developers.tiktok.com/',
     webhookPath: '/api/v1/webhooks/tiktok',
     fields: [
       {
         key: 'clientKey',
         label: 'TikTok Client Key / App ID',
         type: 'text',
-        placeholder: 'e.g. aw9abcdefg123456',
+        placeholder: 'e.g. aw2fy0vrwewd2f33',
         required: true,
-        helperText: 'Found in TikTok Developer Portal under App Details',
+        helperText: 'From TikTok for Developers (aw...) or TikTok Business portal',
       },
       {
         key: 'clientSecret',
-        label: 'TikTok Client Secret',
+        label: 'TikTok Client Secret / App Secret',
         type: 'password',
-        placeholder: 'tiktok-app-secret',
+        placeholder: 'Enter TikTok App Secret',
         required: true,
-      },
-      {
-        key: 'accessToken',
-        label: 'TikTok Access Token',
-        type: 'password',
-        placeholder: 'act.example...',
-        required: true,
-        helperText: 'OAuth Access Token with direct messaging scope',
-      },
-      {
-        key: 'verifyToken',
-        label: 'Webhook Verify Token',
-        type: 'text',
-        placeholder: 'tiktok_verify_token',
-        required: false,
+        helperText: 'Found under App Details / App Secrets in Developer Portal',
       },
     ],
   },
@@ -338,6 +294,8 @@ export const ChannelCredentialsManager: React.FC = () => {
   const [testConnection] = useTestChannelConnectionMutation();
   const [toggleActive] = useToggleChannelActiveMutation();
   const [deleteCredentials] = useDeleteChannelCredentialsMutation();
+  const [initiateTikTokOAuth, { isLoading: isFetchingTikTokOAuth }] = useInitiateTikTokOAuthMutation();
+  const [disconnectTikTok, { isLoading: isDisconnectingTikTok }] = useDisconnectTikTokMutation();
 
   // AI Configuration Hooks & State
   const { data: aiConfig, isLoading: isLoadingAi, refetch: refetchAi } = useGetAiConfigQuery();
@@ -576,8 +534,8 @@ export const ChannelCredentialsManager: React.FC = () => {
       case 'tiktok': {
         return [
           { label: 'Account Handle', value: cred.accountHandle || (c.accountHandle ? `@${c.accountHandle}` : 'TikTok Business Account'), isHighlight: true },
-          { label: 'Client Key / App ID', value: c.clientKey || c.appId },
-          { label: 'Sync Engine', value: 'TikTok Open API' },
+          { label: 'Integration', value: 'TikTok Business Messaging' },
+          { label: 'Sync Engine', value: 'OAuth 2.0 & Webhooks' },
         ].filter((x): x is { label: string; value: string; isHighlight?: boolean } => Boolean(x.value));
       }
       default: {
@@ -587,6 +545,76 @@ export const ChannelCredentialsManager: React.FC = () => {
           { label: 'Sync Engine', value: 'Inbound REST Webhook' },
         ].filter((x): x is { label: string; value: string; isHighlight?: boolean } => Boolean(x.value));
       }
+    }
+  };
+
+  // Check URL query parameters for TikTok OAuth redirect feedback
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const urlParams = new URLSearchParams(window.location.search);
+    const connected = urlParams.get('connected');
+    const error = urlParams.get('error');
+    const handle = urlParams.get('handle');
+
+    if (connected === 'tiktok') {
+      toast.success(
+        handle
+          ? `🎉 TikTok Business Account (${decodeURIComponent(handle)}) connected successfully!`
+          : '🎉 TikTok Business Account connected successfully!',
+      );
+      refetch();
+      window.history.replaceState({}, '', window.location.pathname);
+    } else if (error && error.startsWith('tiktok_')) {
+      const cleanError = decodeURIComponent(error.replace('tiktok_', ''));
+      toast.error(`TikTok Connection Error: ${cleanError}`);
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [refetch]);
+
+  const handleConnectTikTok = async (overrideCreds?: { clientKey?: string; clientSecret?: string }) => {
+    try {
+      const tiktokCred = getCredentialForPlatform('tiktok');
+      const clientKey =
+        overrideCreds?.clientKey ||
+        formData?.clientKey ||
+        tiktokCred?.credentials?.clientKey;
+      const clientSecret =
+        overrideCreds?.clientSecret ||
+        formData?.clientSecret ||
+        tiktokCred?.credentials?.clientSecret;
+
+      if (!clientKey || !clientSecret) {
+        // Open modal and guide merchant to input their developer credentials
+        openConfigModal('tiktok');
+        toast.info('Please enter your TikTok App ID / Client Key and App Secret, then click "Connect with TikTok OAuth".');
+        return;
+      }
+
+      const toastId = toast.loading('Connecting to TikTok Business OAuth...');
+      const res = await initiateTikTokOAuth({
+        clientKey: String(clientKey).trim(),
+        clientSecret: String(clientSecret).trim(),
+      }).unwrap();
+
+      if (res?.url) {
+        toast.dismiss(toastId);
+        window.location.href = res.url;
+      } else {
+        toast.error('Failed to retrieve TikTok OAuth authorization URL.', { id: toastId });
+      }
+    } catch (err: any) {
+      toast.error(err?.data?.message || err?.message || 'Failed to initiate TikTok OAuth connection.');
+    }
+  };
+
+  const handleDisconnectTikTok = async () => {
+    if (!confirm('Are you sure you want to disconnect your TikTok Business account?')) return;
+    try {
+      await disconnectTikTok().unwrap();
+      toast.success('TikTok Business account disconnected successfully.');
+      refetch();
+    } catch (err: any) {
+      toast.error(err?.data?.message || err?.message || 'Failed to disconnect TikTok account.');
     }
   };
 
@@ -869,7 +897,7 @@ export const ChannelCredentialsManager: React.FC = () => {
                         AUTO-REPLY CHANNELS:
                       </span>
                       <div className="flex items-center gap-1 flex-wrap">
-                        {['facebook', 'messenger', 'instagram', 'tiktok', 'whatsapp', 'telegram'].map((p) => {
+                        {['facebook', 'instagram', 'tiktok', 'whatsapp', 'telegram'].map((p) => {
                           const isOn = aiConfig?.enabledPlatforms?.[p] !== false;
                           return (
                             <span
@@ -1078,36 +1106,109 @@ export const ChannelCredentialsManager: React.FC = () => {
 
               {/* Action Buttons */}
               <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => openConfigModal(platform)}
-                    className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <Settings className="w-3.5 h-3.5 text-slate-400" />
-                    <span>{isConfigured ? 'Configure' : 'Setup Channel'}</span>
-                  </button>
+                {platform === 'tiktok' ? (
+                  !isConnected ? (
+                    <div className="flex items-center gap-2 w-full">
+                      <button
+                        type="button"
+                        onClick={() => handleConnectTikTok()}
+                        disabled={isFetchingTikTokOAuth}
+                        className="flex-1 py-2.5 px-3 bg-black hover:bg-neutral-800 text-white rounded-xl text-xs font-black transition-all shadow-md shadow-black/20 flex items-center justify-center gap-2 cursor-pointer border border-neutral-700 active:scale-95 disabled:opacity-50"
+                      >
+                        <PlatformIcon platform="tiktok" size={16} />
+                        <span>{isFetchingTikTokOAuth ? 'Connecting...' : isConfigured ? 'Connect TikTok Account' : 'Setup & Connect'}</span>
+                        <ExternalLink className="w-3.5 h-3.5 text-neutral-400" />
+                      </button>
 
-                  {isConfigured && (
-                    <button
-                      onClick={() => handleTestConnection(platform)}
-                      disabled={isTesting}
-                      title="Test live API credentials against channel servers"
-                      className="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold transition-all disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <Zap className={`w-3.5 h-3.5 text-blue-600 ${isTesting ? 'animate-spin' : ''}`} />
-                      <span>{isTesting ? 'Testing...' : 'Test'}</span>
-                    </button>
-                  )}
-                </div>
+                      <button
+                        type="button"
+                        onClick={() => openConfigModal('tiktok')}
+                        className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center cursor-pointer"
+                        title="Configure TikTok Credentials"
+                      >
+                        <Settings className="w-4 h-4 text-slate-600" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => openConfigModal('tiktok')}
+                          className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Settings className="w-3.5 h-3.5 text-slate-400" />
+                          <span>Configure</span>
+                        </button>
 
-                {isConfigured && (
-                  <button
-                    onClick={() => handleDelete(platform)}
-                    title="Remove credentials"
-                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                        <button
+                          type="button"
+                          onClick={() => handleTestConnection('tiktok')}
+                          disabled={isTesting}
+                          title="Test live TikTok API connection"
+                          className="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold transition-all disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Zap className={`w-3.5 h-3.5 text-blue-600 ${isTesting ? 'animate-spin' : ''}`} />
+                          <span>{isTesting ? 'Testing...' : 'Test'}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleConnectTikTok()}
+                          disabled={isFetchingTikTokOAuth}
+                          title="Reconnect TikTok OAuth"
+                          className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <RefreshCw className={`w-3.5 h-3.5 text-slate-600 ${isFetchingTikTokOAuth ? 'animate-spin' : ''}`} />
+                          <span>Reconnect</span>
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleDisconnectTikTok}
+                        disabled={isDisconnectingTikTok}
+                        title="Disconnect TikTok account"
+                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => openConfigModal(platform)}
+                        className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Settings className="w-3.5 h-3.5 text-slate-400" />
+                        <span>{isConfigured ? 'Configure' : 'Setup Channel'}</span>
+                      </button>
+
+                      {isConfigured && (
+                        <button
+                          onClick={() => handleTestConnection(platform)}
+                          disabled={isTesting}
+                          title="Test live API credentials against channel servers"
+                          className="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold transition-all disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Zap className={`w-3.5 h-3.5 text-blue-600 ${isTesting ? 'animate-spin' : ''}`} />
+                          <span>{isTesting ? 'Testing...' : 'Test'}</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {isConfigured && (
+                      <button
+                        onClick={() => handleDelete(platform)}
+                        title="Remove credentials"
+                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -1388,13 +1489,13 @@ export const ChannelCredentialsManager: React.FC = () => {
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {/* Facebook */}
+                  {/* Facebook & Messenger */}
                   <div className="p-3 bg-white border border-slate-200 rounded-2xl flex items-center justify-between shadow-2xs">
                     <div className="flex items-center gap-2.5">
                       <PlatformIcon platform="facebook" size={20} />
                       <div>
-                        <span className="font-bold text-slate-900 block">Facebook Page</span>
-                        <span className="text-[10px] text-slate-400">Posts & Comments</span>
+                        <span className="font-bold text-slate-900 block">Facebook & Messenger</span>
+                        <span className="text-[10px] text-slate-400">Page Posts & Messenger Chat</span>
                       </div>
                     </div>
                     <button
@@ -1409,30 +1510,6 @@ export const ChannelCredentialsManager: React.FC = () => {
                       }`}
                     >
                       {aiEnabledPlatforms.facebook !== false ? 'AI Active' : 'Off'}
-                    </button>
-                  </div>
-
-                  {/* Messenger */}
-                  <div className="p-3 bg-white border border-slate-200 rounded-2xl flex items-center justify-between shadow-2xs">
-                    <div className="flex items-center gap-2.5">
-                      <PlatformIcon platform="messenger" size={20} />
-                      <div>
-                        <span className="font-bold text-slate-900 block">Facebook Messenger</span>
-                        <span className="text-[10px] text-slate-400">Direct Chat</span>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setAiEnabledPlatforms((prev) => ({ ...prev, messenger: !prev.messenger }))
-                      }
-                      className={`px-3 py-1 rounded-lg font-bold text-[11px] transition-colors cursor-pointer ${
-                        aiEnabledPlatforms.messenger !== false
-                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                          : 'bg-slate-100 text-slate-500 border border-slate-200'
-                      }`}
-                    >
-                      {aiEnabledPlatforms.messenger !== false ? 'AI Active' : 'Off'}
                     </button>
                   </div>
 
@@ -1752,7 +1829,30 @@ export const ChannelCredentialsManager: React.FC = () => {
             {/* Modal Form */}
             <form onSubmit={handleSave}>
               <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-                {/* Form Fields */}
+                {activeModalPlatform === 'tiktok' && (
+                  <div className="p-3.5 bg-neutral-900 text-white rounded-2xl flex items-center justify-between gap-3 shadow-sm">
+                    <div className="flex items-center gap-2.5">
+                      <PlatformIcon platform="tiktok" size={24} />
+                      <div>
+                        <h4 className="font-extrabold text-xs">TikTok App Credentials</h4>
+                        <p className="text-[11px] text-neutral-300">
+                          Enter your App ID & Secret, then click &quot;Connect with TikTok OAuth&quot; below.
+                        </p>
+                      </div>
+                    </div>
+                    <a
+                      href="https://business-api.tiktok.com/portal/docs"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-2.5 py-1 bg-white/10 hover:bg-white/20 rounded-lg text-[10px] font-bold flex items-center gap-1 shrink-0 text-white"
+                    >
+                      <span>Docs</span>
+                      <ExternalLink className="w-2.5 h-2.5" />
+                    </a>
+                  </div>
+                )}
+
+                {/* Form Fields for all platforms */}
                 {PLATFORM_CONFIGS[activeModalPlatform].fields.map((field) => {
                   const isPass = field.type === 'password';
                   const isVisible = showTokens[field.key];
@@ -1779,6 +1879,7 @@ export const ChannelCredentialsManager: React.FC = () => {
                           onChange={(e) => handleInputChange(field.key, e.target.value)}
                           placeholder={field.placeholder}
                           required={field.required}
+                          autoComplete="new-password"
                           className="w-full p-2.5 pr-10 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-mono placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/30"
                         />
 
@@ -1795,6 +1896,53 @@ export const ChannelCredentialsManager: React.FC = () => {
                     </div>
                   );
                 })}
+
+                {/* TikTok OAuth Redirect URI Box */}
+                {activeModalPlatform === 'tiktok' && (
+                  <div className="pt-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                        <ExternalLink className="w-3.5 h-3.5 text-blue-600" />
+                        <span>TikTok OAuth Redirect URI (Callback URL)</span>
+                      </label>
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                        Required in TikTok App
+                      </span>
+                    </div>
+                    <div className="p-3 bg-blue-50/70 border border-blue-200/90 rounded-xl flex items-center justify-between text-xs">
+                      <span className="font-mono text-blue-900 truncate text-[11px] font-bold">
+                        {typeof window !== 'undefined'
+                          ? `${window.location.origin.replace(':3000', ':5001')}/api/v1/omnichannel/credentials/tiktok/oauth/callback`
+                          : 'http://localhost:5001/api/v1/omnichannel/credentials/tiktok/oauth/callback'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleCopy(
+                            `${typeof window !== 'undefined' ? window.location.origin.replace(':3000', ':5001') : 'http://localhost:5001'}/api/v1/omnichannel/credentials/tiktok/oauth/callback`,
+                            'modal-oauth-redirect'
+                          )
+                        }
+                        className="ml-2 px-3 py-1 bg-white hover:bg-blue-50 border border-blue-200 rounded-lg text-blue-700 font-bold text-[11px] flex items-center gap-1 shrink-0 transition-colors cursor-pointer"
+                      >
+                        {copiedKey === 'modal-oauth-redirect' ? (
+                          <>
+                            <Check className="w-3 h-3 text-emerald-600" />
+                            <span className="text-emerald-700">Copied</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3 text-blue-600" />
+                            <span>Copy</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      ⚠️ Paste this exact Callback URL into your TikTok Developer Portal under <strong>App Details &gt; Redirect URI</strong>.
+                    </p>
+                  </div>
+                )}
 
                 {/* Webhook Endpoint Box */}
                 <div className="pt-2">
@@ -1831,7 +1979,9 @@ export const ChannelCredentialsManager: React.FC = () => {
                     </button>
                   </div>
                   <p className="text-[10px] text-slate-400 mt-1">
-                    Paste this callback URL into your Meta App or Telegram BotFather webhook settings.
+                    {activeModalPlatform === 'tiktok'
+                      ? 'Configure this Webhook Callback URL in your TikTok Developer App settings under Webhooks.'
+                      : 'Paste this callback URL into your Meta App or Telegram BotFather webhook settings.'}
                   </p>
                 </div>
 
@@ -1879,17 +2029,40 @@ export const ChannelCredentialsManager: React.FC = () => {
                     onClick={closeConfigModal}
                     className="px-4 py-2 text-slate-600 hover:text-slate-800 text-xs font-bold rounded-xl cursor-pointer"
                   >
-                    Cancel
+                    Close
                   </button>
 
-                  <button
-                    type="submit"
-                    disabled={isSaving}
-                    className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-600/25 transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                    <span>{isSaving ? 'Saving...' : 'Save & Connect'}</span>
-                  </button>
+                  {activeModalPlatform === 'tiktok' ? (
+                    <>
+                      <button
+                        type="submit"
+                        disabled={isSaving}
+                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>{isSaving ? 'Saving...' : 'Save Keys'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleConnectTikTok(formData)}
+                        disabled={isFetchingTikTokOAuth}
+                        className="px-5 py-2 bg-black hover:bg-neutral-800 text-white rounded-xl text-xs font-black shadow-md shadow-black/25 transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer active:scale-95"
+                      >
+                        <PlatformIcon platform="tiktok" size={14} />
+                        <span>{isFetchingTikTokOAuth ? 'Connecting...' : 'Connect with TikTok OAuth'}</span>
+                        <ExternalLink className="w-3 h-3 text-neutral-400" />
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={isSaving}
+                      className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-600/25 transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>{isSaving ? 'Saving...' : 'Save & Connect'}</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </form>

@@ -74,8 +74,7 @@ const QUICK_REPLIES = [
 
 const PLATFORM_FILTERS: { value: string; label: string }[] = [
   { value: 'all', label: 'All Channels' },
-  { value: 'facebook', label: 'Facebook' },
-  { value: 'messenger', label: 'Messenger' },
+  { value: 'facebook', label: 'Facebook & Messenger' },
   { value: 'instagram', label: 'Instagram' },
   { value: 'tiktok', label: 'TikTok' },
   { value: 'whatsapp', label: 'WhatsApp' },
@@ -159,15 +158,17 @@ export const OmnichannelChatInterface: React.FC = () => {
 
   const [syncChannelConversations, { isLoading: isSyncingConversations }] = useSyncChannelConversationsMutation();
 
-  const handleSyncFacebookChats = async () => {
-    const toastId = toast.loading('Syncing historical Facebook Messenger chats from Meta Graph API...');
+  const handleSyncChats = async (overridePlatform?: string) => {
+    const target = overridePlatform || (selectedPlatform === 'instagram' ? 'instagram' : 'facebook');
+    const label = target === 'instagram' ? 'Instagram Direct' : 'Facebook Messenger';
+    const toastId = toast.loading(`Syncing historical ${label} chats from Meta Graph API...`);
     try {
-      const res = await syncChannelConversations('facebook').unwrap();
+      const res = await syncChannelConversations(target).unwrap();
       refetchConversations();
       if (activeConversationId) refetchMessages();
-      toast.success(res?.message || 'Facebook conversations synced successfully!', { id: toastId });
+      toast.success(res?.message || `${label} conversations synced successfully!`, { id: toastId });
     } catch (err: any) {
-      toast.error(err?.data?.message || err?.message || 'Failed to sync Facebook conversations.', { id: toastId });
+      toast.error(err?.data?.message || err?.message || `Failed to sync ${label} conversations.`, { id: toastId });
     }
   };
 
@@ -631,16 +632,36 @@ export const OmnichannelChatInterface: React.FC = () => {
             <Settings className="w-3 h-3 text-slate-400 ml-0.5" />
           </button>
 
-          {/* Sync Facebook Conversations */}
-          <button
-            onClick={handleSyncFacebookChats}
-            disabled={isSyncingConversations}
-            title="Import historical customer conversations from Facebook Page"
-            className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs rounded-xl border border-blue-200 shadow-2xs flex items-center gap-1.5 transition-colors shrink-0 disabled:opacity-50 cursor-pointer"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 text-blue-600 ${isSyncingConversations ? 'animate-spin' : ''}`} />
-            <span>{isSyncingConversations ? 'Syncing...' : 'Sync Facebook'}</span>
-          </button>
+          {/* Sync Meta / Facebook / Instagram Conversations */}
+          {(selectedPlatform === 'all' || selectedPlatform === 'facebook' || selectedPlatform === 'instagram') && (
+            <button
+              onClick={() => handleSyncChats(selectedPlatform === 'instagram' ? 'instagram' : 'facebook')}
+              disabled={isSyncingConversations}
+              title={
+                selectedPlatform === 'instagram'
+                  ? 'Import historical customer conversations from Instagram Direct'
+                  : 'Import historical customer conversations from Facebook Page'
+              }
+              className={`px-3 py-1.5 font-bold text-xs rounded-xl border shadow-2xs flex items-center gap-1.5 transition-colors shrink-0 disabled:opacity-50 cursor-pointer ${
+                selectedPlatform === 'instagram'
+                  ? 'bg-pink-50 hover:bg-pink-100 text-pink-700 border-pink-200'
+                  : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200'
+              }`}
+            >
+              <RefreshCw
+                className={`w-3.5 h-3.5 ${
+                  selectedPlatform === 'instagram' ? 'text-pink-600' : 'text-blue-600'
+                } ${isSyncingConversations ? 'animate-spin' : ''}`}
+              />
+              <span>
+                {isSyncingConversations
+                  ? 'Syncing...'
+                  : selectedPlatform === 'instagram'
+                  ? 'Sync Instagram'
+                  : 'Sync Facebook'}
+              </span>
+            </button>
+          )}
 
           <button
             onClick={() => setIsDirectTelegramOpen(true)}
@@ -696,12 +717,18 @@ export const OmnichannelChatInterface: React.FC = () => {
                   Messages received via Telegram bot, WhatsApp, or Facebook Messenger will appear here live.
                 </p>
                 <button
-                  onClick={handleSyncFacebookChats}
+                  onClick={() => handleSyncChats(selectedPlatform === 'instagram' ? 'instagram' : 'facebook')}
                   disabled={isSyncingConversations}
-                  className="mt-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
+                  className={`mt-2 px-3 py-1.5 text-white rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-xs cursor-pointer ${
+                    selectedPlatform === 'instagram'
+                      ? 'bg-pink-600 hover:bg-pink-700'
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
                 >
                   <RefreshCw className={`w-3 h-3 ${isSyncingConversations ? 'animate-spin' : ''}`} />
-                  <span>Sync Facebook Chats</span>
+                  <span>
+                    {selectedPlatform === 'instagram' ? 'Sync Instagram Chats' : 'Sync Facebook Chats'}
+                  </span>
                 </button>
               </div>
             ) : (
@@ -1340,13 +1367,13 @@ export const OmnichannelChatInterface: React.FC = () => {
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {/* Facebook */}
+                  {/* Facebook & Messenger */}
                   <div className="p-3 bg-white border border-slate-200 rounded-2xl flex items-center justify-between shadow-2xs">
                     <div className="flex items-center gap-2.5">
                       <PlatformIcon platform="facebook" size={20} />
                       <div>
-                        <span className="font-bold text-slate-900 block">Facebook Page</span>
-                        <span className="text-[10px] text-slate-400">Posts & Comments</span>
+                        <span className="font-bold text-slate-900 block">Facebook & Messenger</span>
+                        <span className="text-[10px] text-slate-400">Page Posts & Messenger Chat</span>
                       </div>
                     </div>
                     <button
@@ -1359,28 +1386,6 @@ export const OmnichannelChatInterface: React.FC = () => {
                       }`}
                     >
                       {aiEnabledPlatforms.facebook !== false ? 'AI Active' : 'Off'}
-                    </button>
-                  </div>
-
-                  {/* Messenger */}
-                  <div className="p-3 bg-white border border-slate-200 rounded-2xl flex items-center justify-between shadow-2xs">
-                    <div className="flex items-center gap-2.5">
-                      <PlatformIcon platform="messenger" size={20} />
-                      <div>
-                        <span className="font-bold text-slate-900 block">Facebook Messenger</span>
-                        <span className="text-[10px] text-slate-400">Direct Chat</span>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleTogglePlatformAi('messenger')}
-                      className={`px-3 py-1 rounded-lg font-bold text-[11px] transition-colors cursor-pointer ${
-                        aiEnabledPlatforms.messenger !== false
-                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                          : 'bg-slate-100 text-slate-500 border border-slate-200'
-                      }`}
-                    >
-                      {aiEnabledPlatforms.messenger !== false ? 'AI Active' : 'Off'}
                     </button>
                   </div>
 

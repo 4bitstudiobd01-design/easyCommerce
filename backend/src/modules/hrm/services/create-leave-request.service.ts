@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EmployeeEntity } from '../entities/employee.entity';
-import { LeaveRequestEntity } from '../entities/leave-request.entity';
+import { LeaveRequestEntity, LeaveTypeEnum } from '../entities/leave-request.entity';
 import { CreateLeaveRequestDto } from '../dto/leave-request.dto';
 import { GetLeaveBalanceService } from './get-leave-balance.service';
 
@@ -37,12 +37,16 @@ export class CreateLeaveRequestService {
 
     const totalDays = Math.round((end.getTime() - start.getTime()) / MS_PER_DAY) + 1;
 
-    const balance = await this.getLeaveBalanceService.execute(tenantId, storeId, dto.employeeId, start.getFullYear());
-    const line = balance.find((b) => b.leaveType === dto.leaveType)!;
-    if (totalDays > line.remaining) {
-      throw new BadRequestException(
-        `This request needs ${totalDays} ${dto.leaveType.toLowerCase()} leave day(s), but only ${line.remaining} remain for ${start.getFullYear()}.`,
-      );
+    // UNPAID leave has no annual quota to check against — GetLeaveBalanceService
+    // only tracks EARNED/CASUAL/SICK, so skip the balance lookup entirely for it.
+    if (dto.leaveType !== LeaveTypeEnum.UNPAID) {
+      const balance = await this.getLeaveBalanceService.execute(tenantId, storeId, dto.employeeId, start.getFullYear());
+      const line = balance.find((b) => b.leaveType === dto.leaveType)!;
+      if (totalDays > line.remaining) {
+        throw new BadRequestException(
+          `This request needs ${totalDays} ${dto.leaveType.toLowerCase()} leave day(s), but only ${line.remaining} remain for ${start.getFullYear()}.`,
+        );
+      }
     }
 
     return this.leaveRequestRepository.save(

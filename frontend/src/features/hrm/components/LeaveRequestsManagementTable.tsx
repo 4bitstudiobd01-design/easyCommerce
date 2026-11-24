@@ -7,9 +7,7 @@ import {
   CalendarPlus,
   Settings,
   RefreshCw,
-  Check,
   X,
-  Ban,
   Paperclip,
   ChevronLeft,
   ChevronRight,
@@ -38,6 +36,7 @@ const TYPE_BADGE: Record<string, string> = {
   EARNED: 'bg-indigo-50 text-indigo-700 border-indigo-200',
   CASUAL: 'bg-sky-50 text-sky-700 border-sky-200',
   SICK: 'bg-rose-50 text-rose-700 border-rose-200',
+  UNPAID: 'bg-slate-100 text-slate-700 border-slate-200',
 };
 
 export function LeaveRequestsManagementTable() {
@@ -67,6 +66,13 @@ export function LeaveRequestsManagementTable() {
     } catch (err: any) {
       toast.error(err?.data?.message || 'Failed to approve leave request.');
     }
+  };
+
+  const handleStatusChange = (request: LeaveRequest, next: LeaveStatus) => {
+    if (next === request.status) return;
+    if (next === 'APPROVED') handleApprove(request.id);
+    else if (next === 'REJECTED') setRejecting(request);
+    else if (next === 'CANCELLED') handleCancel(request.id);
   };
 
   const handleRejectConfirm = async () => {
@@ -214,9 +220,23 @@ export function LeaveRequestsManagementTable() {
                     </td>
                     <td className="px-6 py-4 font-bold text-slate-800">{request.totalDays}</td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${STATUS_BADGE[request.status]}`}>
-                        {request.status}
-                      </span>
+                      <select
+                        value={request.status}
+                        disabled={request.status !== 'PENDING' || isReviewing}
+                        onChange={(e) => handleStatusChange(request, e.target.value as LeaveStatus)}
+                        className={`appearance-none cursor-pointer px-2.5 py-1 rounded-full text-[11px] font-semibold border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-80 ${STATUS_BADGE[request.status]}`}
+                      >
+                        {request.status === 'PENDING' ? (
+                          <>
+                            <option value="PENDING">Pending</option>
+                            <option value="APPROVED">Approved</option>
+                            <option value="REJECTED">Rejected</option>
+                            <option value="CANCELLED">Cancelled</option>
+                          </>
+                        ) : (
+                          <option value={request.status}>{request.status}</option>
+                        )}
+                      </select>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-1.5">
@@ -228,32 +248,6 @@ export function LeaveRequestsManagementTable() {
                           >
                             <Paperclip className="w-4 h-4" />
                           </button>
-                        )}
-                        {request.status === 'PENDING' && (
-                          <>
-                            <button
-                              onClick={() => handleApprove(request.id)}
-                              disabled={isReviewing}
-                              className="p-2 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition disabled:opacity-50"
-                              title="Approve"
-                            >
-                              <Check className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => setRejecting(request)}
-                              className="p-2 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 transition"
-                              title="Reject"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleCancel(request.id)}
-                              className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
-                              title="Cancel"
-                            >
-                              <Ban className="w-4 h-4" />
-                            </button>
-                          </>
                         )}
                       </div>
                     </td>

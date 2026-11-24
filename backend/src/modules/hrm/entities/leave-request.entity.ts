@@ -14,6 +14,7 @@ export enum LeaveTypeEnum {
   EARNED = 'EARNED',
   CASUAL = 'CASUAL',
   SICK = 'SICK',
+  UNPAID = 'UNPAID',
 }
 
 export enum LeaveStatusEnum {

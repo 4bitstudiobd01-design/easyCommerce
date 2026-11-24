@@ -17,7 +17,7 @@ export class GetSalaryPaymentSummaryService {
   async execute(storeId: string, query?: QuerySalaryPaymentSummaryDto): Promise<SalaryPaymentSummaryResponseDto> {
     const where: any = {
       storeId,
-      status: In([PayrollRunStatusEnum.FINALIZED, PayrollRunStatusEnum.PAID]),
+      status: In([PayrollRunStatusEnum.FINALIZED, PayrollRunStatusEnum.REIMBURSED]),
     };
 
     if (query?.year) {

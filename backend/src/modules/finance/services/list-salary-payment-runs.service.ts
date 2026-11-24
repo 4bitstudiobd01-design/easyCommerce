@@ -41,7 +41,7 @@ export class ListSalaryPaymentRunsService {
   async execute(storeId: string, query: ListSalaryPaymentRunsQueryDto): Promise<SalaryPaymentRunItem[]> {
     const where: any = {
       storeId,
-      status: In([PayrollRunStatusEnum.FINALIZED, PayrollRunStatusEnum.PAID]),
+      status: In([PayrollRunStatusEnum.FINALIZED, PayrollRunStatusEnum.REIMBURSED]),
     };
 
     if (query.year) {
@@ -122,7 +122,7 @@ export class ListSalaryPaymentRunsService {
         unpaidEmployeesCount: unpaidCount,
         finalizedAt: run.finalizedAt,
         approvedByUserId: run.approvedByUserId,
-        paidAt: run.paidAt,
+        paidAt: run.reimbursedAt,
         createdAt: run.createdAt,
       });
     }

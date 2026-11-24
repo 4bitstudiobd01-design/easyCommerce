@@ -202,19 +202,19 @@ const DEMO_RUNS = [
   {
     month: 6,
     year: 2026,
-    status: PayrollRunStatusEnum.PAID,
+    status: PayrollRunStatusEnum.REIMBURSED,
     paymentStatus: PayrollPaymentStatusEnum.PAID,
     finalizedAt: new Date('2026-06-30T16:00:00.000Z'),
-    paidAt: new Date('2026-07-02T10:30:00.000Z'),
+    reimbursedAt: new Date('2026-07-02T10:30:00.000Z'),
     paidEmployeesFraction: 1, // all paid
   },
   {
     month: 7,
     year: 2026,
-    status: PayrollRunStatusEnum.PAID,
+    status: PayrollRunStatusEnum.REIMBURSED,
     paymentStatus: PayrollPaymentStatusEnum.PAID,
     finalizedAt: new Date('2026-07-31T16:00:00.000Z'),
-    paidAt: new Date('2026-08-02T11:15:00.000Z'),
+    reimbursedAt: new Date('2026-08-02T11:15:00.000Z'),
     paidEmployeesFraction: 1, // all paid
   },
   {
@@ -223,16 +223,16 @@ const DEMO_RUNS = [
     status: PayrollRunStatusEnum.FINALIZED,
     paymentStatus: PayrollPaymentStatusEnum.PARTIALLY_PAID,
     finalizedAt: new Date('2026-08-31T17:00:00.000Z'),
-    paidAt: undefined,
+    reimbursedAt: undefined,
     paidEmployeesFraction: 0.625, // 5 of 8 paid
   },
   {
     month: 9,
     year: 2026,
-    status: PayrollRunStatusEnum.DRAFT,
+    status: PayrollRunStatusEnum.REVIEW,
     paymentStatus: PayrollPaymentStatusEnum.UNPAID,
     finalizedAt: undefined,
-    paidAt: undefined,
+    reimbursedAt: undefined,
     paidEmployeesFraction: 0, // none paid
   },
 ];
@@ -396,7 +396,7 @@ export class SeedPayrollDemoDataService {
             status: runDef.status,
             paymentStatus: runDef.paymentStatus,
             finalizedAt: runDef.finalizedAt,
-            paidAt: runDef.paidAt,
+            reimbursedAt: runDef.reimbursedAt,
             createdByUserId: userId,
             approvedByUserId: runDef.finalizedAt ? userId : undefined,
             totalGrossAmount: '0.00',
@@ -445,12 +445,12 @@ export class SeedPayrollDemoDataService {
             const deductions = providentFund + monthlyTax;
             const net = gross - deductions;
 
-            const isThisEmployeePaid = empIndex < numEmployeesToMarkPaid && runDef.status !== PayrollRunStatusEnum.DRAFT;
+            const isThisEmployeePaid = empIndex < numEmployeesToMarkPaid && runDef.status !== PayrollRunStatusEnum.REVIEW;
             empIndex++;
 
             const paymentStatus = isThisEmployeePaid ? SalaryPaymentStatusEnum.PAID : SalaryPaymentStatusEnum.UNPAID;
             const paidAmount = isThisEmployeePaid ? net.toFixed(2) : '0.00';
-            const paidAt = isThisEmployeePaid ? runDef.paidAt || new Date('2026-08-31T18:00:00Z') : undefined;
+            const paidAt = isThisEmployeePaid ? runDef.reimbursedAt || new Date('2026-08-31T18:00:00Z') : undefined;
             const paymentMethod = isThisEmployeePaid ? SalaryPaymentMethodEnum.CASH : undefined;
             const paymentReference = isThisEmployeePaid ? `VOUCHER-${employee.employeeCode}-${runDef.year}${String(runDef.month).padStart(2, '0')}` : undefined;
 

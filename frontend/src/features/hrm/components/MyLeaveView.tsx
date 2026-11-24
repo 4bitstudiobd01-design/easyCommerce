@@ -24,6 +24,7 @@ const TYPE_BADGE: Record<string, string> = {
   EARNED: 'bg-indigo-50 text-indigo-700 border-indigo-200',
   CASUAL: 'bg-sky-50 text-sky-700 border-sky-200',
   SICK: 'bg-rose-50 text-rose-700 border-rose-200',
+  UNPAID: 'bg-slate-100 text-slate-700 border-slate-200',
 };
 
 export function MyLeaveView() {

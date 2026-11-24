@@ -29,6 +29,18 @@ export class UpdateEmployeeService {
       }
     }
 
+    if (dto.reportsToEmployeeId) {
+      if (dto.reportsToEmployeeId === employeeId) {
+        throw new BadRequestException('An employee cannot report to themselves.');
+      }
+      const manager = await this.employeeRepository.findOne({
+        where: { id: dto.reportsToEmployeeId, storeId },
+      });
+      if (!manager) {
+        throw new BadRequestException('Selected manager was not found for this store.');
+      }
+    }
+
     Object.assign(employee, dto);
     return this.employeeRepository.save(employee);
   }

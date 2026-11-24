@@ -246,15 +246,26 @@ export function AttendanceManagementTable() {
                         {employee.department?.name || <span className="text-slate-300">Unassigned</span>}
                       </td>
                       <td className="px-6 py-4">
-                        {meta ? (
-                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${meta.badge}`}>
-                            {meta.label}
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-500">
-                            NOT MARKED
-                          </span>
-                        )}
+                        <select
+                          value={attendance?.status ?? ''}
+                          onChange={(e) => {
+                            if (e.target.value) handleMarkStatus(employee.id, e.target.value as AttendanceStatus);
+                          }}
+                          className={`appearance-none cursor-pointer px-2.5 py-1 rounded-full text-[11px] font-semibold border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                            meta ? meta.badge : 'bg-slate-100 text-slate-500'
+                          }`}
+                        >
+                          {!attendance?.status && (
+                            <option value="" disabled>
+                              NOT MARKED
+                            </option>
+                          )}
+                          {MARK_OPTIONS.map((status) => (
+                            <option key={status} value={status}>
+                              {STATUS_META[status].label}
+                            </option>
+                          ))}
+                        </select>
                       </td>
                       <td className="px-6 py-4 text-xs text-slate-500 font-mono">
                         {formatTime(attendance?.checkInAt) || <span className="text-slate-300">—</span>}
@@ -284,21 +295,6 @@ export function AttendanceManagementTable() {
                               <LogOut className="w-3.5 h-3.5" /> Out
                             </button>
                           )}
-                          <select
-                            value=""
-                            onChange={(e) => {
-                              if (e.target.value) handleMarkStatus(employee.id, e.target.value as AttendanceStatus);
-                            }}
-                            className="text-[11px] font-semibold text-slate-600 border border-slate-200 rounded-lg h-7 px-1.5 bg-white focus:outline-none focus:border-blue-600"
-                            title="Mark as..."
-                          >
-                            <option value="">Mark as...</option>
-                            {MARK_OPTIONS.map((status) => (
-                              <option key={status} value={status}>
-                                {STATUS_META[status].label}
-                              </option>
-                            ))}
-                          </select>
                         </div>
                       </td>
                     </tr>

@@ -13,7 +13,7 @@ export class GetEmployeeService {
   async execute(storeId: string, employeeId: string): Promise<EmployeeEntity> {
     const employee = await this.employeeRepository.findOne({
       where: { id: employeeId, storeId },
-      relations: ['department'],
+      relations: ['department', 'reportsTo'],
     });
     if (!employee) {
       throw new NotFoundException('Employee not found.');

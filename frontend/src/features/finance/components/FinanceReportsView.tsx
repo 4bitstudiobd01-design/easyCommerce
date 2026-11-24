@@ -22,14 +22,11 @@ import {
 import {
   useGetProfitLossReportQuery,
   useGetCashFlowReportQuery,
-  useGetReceivablesReportQuery,
-  useGetPayablesReportQuery,
   useGetTrialBalanceReportQuery,
   useGetBalanceSheetReportQuery,
-  useGetTaxVatReportQuery,
 } from '../api/financeApi';
 
-type ReportTab = 'PL' | 'BALANCE_SHEET' | 'TRIAL_BALANCE' | 'CASH_FLOW' | 'RECEIVABLES' | 'PAYABLES' | 'TAX_VAT';
+type ReportTab = 'PL' | 'BALANCE_SHEET' | 'TRIAL_BALANCE' | 'CASH_FLOW';
 
 function formatMoney(amount: number | string) {
   const val = Number(amount || 0);
@@ -69,9 +66,6 @@ export function FinanceReportsView() {
   const { data: bsData, isLoading: bsLoading } = useGetBalanceSheetReportQuery(queryParams, { skip: activeTab !== 'BALANCE_SHEET' });
   const { data: tbData, isLoading: tbLoading } = useGetTrialBalanceReportQuery(queryParams, { skip: activeTab !== 'TRIAL_BALANCE' });
   const { data: cfData, isLoading: cfLoading } = useGetCashFlowReportQuery(queryParams, { skip: activeTab !== 'CASH_FLOW' });
-  const { data: taxData, isLoading: taxLoading } = useGetTaxVatReportQuery(queryParams, { skip: activeTab !== 'TAX_VAT' });
-  const { data: receivablesData, isLoading: recLoading } = useGetReceivablesReportQuery(undefined, { skip: activeTab !== 'RECEIVABLES' });
-  const { data: payablesData, isLoading: payLoading } = useGetPayablesReportQuery(undefined, { skip: activeTab !== 'PAYABLES' });
 
   const handlePrint = () => {
     window.print();
@@ -89,39 +83,37 @@ export function FinanceReportsView() {
         </div>
 
         <div className="flex items-center gap-3">
-          {activeTab !== 'RECEIVABLES' && activeTab !== 'PAYABLES' && (
-            <div className="flex items-center gap-2">
-              <select
-                value={period}
-                onChange={(e) => setPeriod(e.target.value)}
-                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white"
-              >
-                <option value="this_month">This Month</option>
-                <option value="last_month">Last Month</option>
-                <option value="this_quarter">This Quarter</option>
-                <option value="this_year">This Year</option>
-                <option value="custom">Custom Date Range</option>
-              </select>
+          <div className="flex items-center gap-2">
+            <select
+              value={period}
+              onChange={(e) => setPeriod(e.target.value)}
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white"
+            >
+              <option value="this_month">This Month</option>
+              <option value="last_month">Last Month</option>
+              <option value="this_quarter">This Quarter</option>
+              <option value="this_year">This Year</option>
+              <option value="custom">Custom Date Range</option>
+            </select>
 
-              {period === 'custom' && (
-                <div className="flex items-center gap-1.5">
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
-                  />
-                  <span className="text-xs text-slate-400">to</span>
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
-                  />
-                </div>
-              )}
-            </div>
-          )}
+            {period === 'custom' && (
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                />
+                <span className="text-xs text-slate-400">to</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                />
+              </div>
+            )}
+          </div>
 
           <button
             type="button"
@@ -141,9 +133,6 @@ export function FinanceReportsView() {
           { id: 'BALANCE_SHEET', label: 'Balance Sheet', icon: Scale },
           { id: 'TRIAL_BALANCE', label: 'Trial Balance', icon: ShieldCheck },
           { id: 'CASH_FLOW', label: 'Cash Flow', icon: Landmark },
-          { id: 'RECEIVABLES', label: 'AR Aging', icon: TrendingUp },
-          { id: 'PAYABLES', label: 'AP Aging', icon: TrendingDown },
-          { id: 'TAX_VAT', label: 'Tax & VAT Filing', icon: Receipt },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -626,150 +615,6 @@ export function FinanceReportsView() {
                   <span className="font-mono">
                     {formatMoney(cfData.summary?.endingCashBalance || 0)}
                   </span>
-                </div>
-              </div>
-            </div>
-          ) : null}
-        </div>
-      )}
-
-      {/* ─── 5. ACCOUNTS RECEIVABLE (AR) AGING ───────────────────── */}
-      {activeTab === 'RECEIVABLES' && (
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
-          <div className="border-b border-slate-100 pb-4">
-            <h2 className="text-xl font-black text-slate-900">Accounts Receivable (AR) Aging Analysis</h2>
-            <p className="text-xs text-slate-500 font-medium">Customer invoice aging and outstanding collections</p>
-          </div>
-
-          {recLoading ? (
-            <div className="py-12 text-center text-slate-400">Loading AR Aging...</div>
-          ) : receivablesData ? (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                  <span className="text-[10px] font-bold uppercase text-slate-400">Current (0-30 Days)</span>
-                  <p className="text-base font-black text-slate-900 mt-1">
-                    {formatMoney(receivablesData.aging?.days1To30 || 0)}
-                  </p>
-                </div>
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                  <span className="text-[10px] font-bold uppercase text-slate-400">31-60 Days</span>
-                  <p className="text-base font-black text-amber-700 mt-1">
-                    {formatMoney(receivablesData.aging?.days31To60 || 0)}
-                  </p>
-                </div>
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                  <span className="text-[10px] font-bold uppercase text-slate-400">61-90 Days</span>
-                  <p className="text-base font-black text-rose-600 mt-1">
-                    {formatMoney(receivablesData.aging?.days61To90 || 0)}
-                  </p>
-                </div>
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                  <span className="text-[10px] font-bold uppercase text-slate-400">90+ Days Overdue</span>
-                  <p className="text-base font-black text-rose-800 mt-1">
-                    {formatMoney(receivablesData.aging?.over90Days || 0)}
-                  </p>
-                </div>
-                <div className="bg-blue-50 p-4 rounded-2xl border border-blue-200">
-                  <span className="text-[10px] font-bold uppercase text-blue-800">Total Receivables</span>
-                  <p className="text-base font-black text-blue-950 mt-1">
-                    {formatMoney(receivablesData.aging?.totalReceivables || 0)}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ) : null}
-        </div>
-      )}
-
-      {/* ─── 6. ACCOUNTS PAYABLE (AP) AGING ─────────────────────── */}
-      {activeTab === 'PAYABLES' && (
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
-          <div className="border-b border-slate-100 pb-4">
-            <h2 className="text-xl font-black text-slate-900">Accounts Payable (AP) Aging Analysis</h2>
-            <p className="text-xs text-slate-500 font-medium">Vendor bill aging and upcoming payment obligations</p>
-          </div>
-
-          {payLoading ? (
-            <div className="py-12 text-center text-slate-400">Loading AP Aging...</div>
-          ) : payablesData ? (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                  <span className="text-[10px] font-bold uppercase text-slate-400">Current (0-30 Days)</span>
-                  <p className="text-base font-black text-slate-900 mt-1">
-                    {formatMoney(payablesData.aging?.days1To30 || 0)}
-                  </p>
-                </div>
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                  <span className="text-[10px] font-bold uppercase text-slate-400">31-60 Days</span>
-                  <p className="text-base font-black text-amber-700 mt-1">
-                    {formatMoney(payablesData.aging?.days31To60 || 0)}
-                  </p>
-                </div>
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                  <span className="text-[10px] font-bold uppercase text-slate-400">61-90 Days</span>
-                  <p className="text-base font-black text-rose-600 mt-1">
-                    {formatMoney(payablesData.aging?.days61To90 || 0)}
-                  </p>
-                </div>
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                  <span className="text-[10px] font-bold uppercase text-slate-400">90+ Days Overdue</span>
-                  <p className="text-base font-black text-rose-800 mt-1">
-                    {formatMoney(payablesData.aging?.over90Days || 0)}
-                  </p>
-                </div>
-                <div className="bg-amber-50 p-4 rounded-2xl border border-amber-200">
-                  <span className="text-[10px] font-bold uppercase text-amber-800">Total Payables</span>
-                  <p className="text-base font-black text-amber-950 mt-1">
-                    {formatMoney(payablesData.aging?.totalPayables || 0)}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ) : null}
-        </div>
-      )}
-
-      {/* ─── 7. TAX / VAT REPORT ─────────────────────────────────── */}
-      {activeTab === 'TAX_VAT' && (
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
-          <div className="border-b border-slate-100 pb-4">
-            <h2 className="text-xl font-black text-slate-900">Tax & VAT Summary Filing Report</h2>
-            <p className="text-xs text-slate-500 font-medium">Output VAT collected vs Input VAT paid</p>
-          </div>
-
-          {taxLoading ? (
-            <div className="py-12 text-center text-slate-400">Loading Tax/VAT Report...</div>
-          ) : taxData ? (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-emerald-50 p-5 rounded-2xl border border-emerald-200">
-                  <span className="text-[11px] font-bold uppercase text-emerald-800">Output VAT Collected</span>
-                  <p className="text-2xl font-black text-emerald-950 mt-1">
-                    {formatMoney(taxData.summary?.outputVatCollected || 0)}
-                  </p>
-                  <span className="text-[10px] text-emerald-700 font-semibold">
-                    From ৳{(taxData.summary?.totalTaxableSales || 0).toLocaleString()} sales
-                  </span>
-                </div>
-
-                <div className="bg-blue-50 p-5 rounded-2xl border border-blue-200">
-                  <span className="text-[11px] font-bold uppercase text-blue-800">Input VAT Paid</span>
-                  <p className="text-2xl font-black text-blue-950 mt-1">
-                    {formatMoney(taxData.summary?.inputVatPaid || 0)}
-                  </p>
-                  <span className="text-[10px] text-blue-700 font-semibold">
-                    From ৳{(taxData.summary?.totalTaxablePurchases || 0).toLocaleString()} purchases
-                  </span>
-                </div>
-
-                <div className="bg-purple-50 p-5 rounded-2xl border border-purple-200">
-                  <span className="text-[11px] font-bold uppercase text-purple-800">Net VAT Payable</span>
-                  <p className="text-2xl font-black text-purple-950 mt-1">
-                    {formatMoney(taxData.summary?.netVatPayable || 0)}
-                  </p>
-                  <span className="text-[10px] text-purple-700 font-bold">Owed to Revenue Authority</span>
                 </div>
               </div>
             </div>
