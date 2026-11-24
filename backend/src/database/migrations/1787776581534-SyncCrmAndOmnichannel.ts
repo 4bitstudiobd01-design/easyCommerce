@@ -4,11 +4,11 @@ export class SyncCrmAndOmnichannel1787776581534 implements MigrationInterface {
     name = 'SyncCrmAndOmnichannel1787776581534'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`ALTER TABLE "customer_sessions" DROP CONSTRAINT "FK_customer_sessions_customerId"`);
-        await queryRunner.query(`DROP INDEX "public"."IDX_23d02cf6e67e4c73b59f1cdcbb"`);
-        await queryRunner.query(`DROP INDEX "public"."IDX_courier_integrations_webhook_secret"`);
-        await queryRunner.query(`DROP INDEX "public"."IDX_blog_posts_status_published"`);
-        await queryRunner.query(`DROP INDEX "public"."IDX_blog_posts_slug"`);
+        await queryRunner.query(`ALTER TABLE "customer_sessions" DROP CONSTRAINT IF EXISTS "FK_customer_sessions_customerId"`);
+        await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_23d02cf6e67e4c73b59f1cdcbb"`);
+        await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_courier_integrations_webhook_secret"`);
+        await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_blog_posts_status_published"`);
+        await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_blog_posts_slug"`);
         await queryRunner.query(`CREATE TABLE "omnichannel_messages" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "tenantId" uuid NOT NULL, "storeId" uuid, "platform" character varying(50) NOT NULL, "conversationId" character varying(255) NOT NULL, "externalMessageId" character varying(255), "senderId" character varying(255) NOT NULL, "senderName" character varying(255) NOT NULL, "senderAvatar" text, "recipientId" character varying(255), "text" text NOT NULL, "direction" character varying(20) NOT NULL DEFAULT 'INBOUND', "status" character varying(20) NOT NULL DEFAULT 'RECEIVED', "type" character varying(50) NOT NULL DEFAULT 'text', "rawMetadata" jsonb, "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_37191a3ce2aebb6a7faf6fe2eac" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE INDEX "IDX_d1d3edb75a9d5b9e52bab61728" ON "omnichannel_messages" ("tenantId") `);
         await queryRunner.query(`CREATE INDEX "IDX_803ca565ab1d0067bf6fed17e4" ON "omnichannel_messages" ("storeId") `);
@@ -35,9 +35,9 @@ export class SyncCrmAndOmnichannel1787776581534 implements MigrationInterface {
         await queryRunner.query(`CREATE TABLE "crm_leads" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "tenant_id" uuid NOT NULL, "store_id" uuid, "name" character varying(255) NOT NULL, "email" character varying(255), "phone" character varying(50) NOT NULL, "company_name" character varying(255), "source" "public"."crm_leads_source_enum" NOT NULL DEFAULT 'WEBSITE', "stage" "public"."crm_leads_stage_enum" NOT NULL DEFAULT 'NEW', "estimated_value" numeric(12,2) NOT NULL DEFAULT '0', "lead_score" integer NOT NULL DEFAULT '50', "assigned_staff_id" uuid, "assigned_staff_name" character varying(255), "notes" text, "tags" text array NOT NULL DEFAULT '{}', "converted_customer_id" uuid, "lost_reason" character varying(255), "next_follow_up_at" TIMESTAMP WITH TIME ZONE, "follow_up_note" text, "follow_up_status" character varying(50), "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_023c67e7150b04458c964631db3" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE INDEX "IDX_4e826890e3b1d041e7c035e308" ON "crm_leads" ("tenant_id", "created_at") `);
         await queryRunner.query(`CREATE INDEX "IDX_0e45f210d643b806b40181d171" ON "crm_leads" ("tenant_id", "stage") `);
-        await queryRunner.query(`ALTER TABLE "marketing_pixels" DROP COLUMN "pageRules"`);
-        await queryRunner.query(`ALTER TABLE "marketing_pixels" DROP COLUMN "name"`);
-        await queryRunner.query(`ALTER TABLE "courier_integrations" DROP COLUMN "webhookSecret"`);
+        await queryRunner.query(`ALTER TABLE "marketing_pixels" DROP COLUMN IF EXISTS "pageRules"`);
+        await queryRunner.query(`ALTER TABLE "marketing_pixels" DROP COLUMN IF EXISTS "name"`);
+        await queryRunner.query(`ALTER TABLE "courier_integrations" DROP COLUMN IF EXISTS "webhookSecret"`);
         await queryRunner.query(`ALTER TABLE "customers" ADD "user_id" uuid`);
         await queryRunner.query(`CREATE TYPE "public"."customers_accounttype_enum" AS ENUM('REGISTERED', 'GUEST')`);
         await queryRunner.query(`ALTER TABLE "customers" ADD "accountType" "public"."customers_accounttype_enum" DEFAULT 'GUEST'`);
@@ -46,7 +46,7 @@ export class SyncCrmAndOmnichannel1787776581534 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "marketing_pixels" ALTER COLUMN "provider" TYPE "public"."marketing_pixels_provider_enum" USING "provider"::"text"::"public"."marketing_pixels_provider_enum"`);
         await queryRunner.query(`DROP TYPE "public"."marketing_pixels_provider_enum_old"`);
         await queryRunner.query(`ALTER TABLE "consignments" ALTER COLUMN "parcelWeight" SET DEFAULT '0.5'`);
-        await queryRunner.query(`DROP INDEX "public"."IDX_625f16be36eec940b817fd6022"`);
+        await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_625f16be36eec940b817fd6022"`);
         await queryRunner.query(`ALTER TYPE "public"."customers_status_enum" RENAME TO "customers_status_enum_old"`);
         await queryRunner.query(`CREATE TYPE "public"."customers_status_enum" AS ENUM('ACTIVE', 'INACTIVE', 'BLOCKED', 'GUEST')`);
         await queryRunner.query(`ALTER TABLE "customers" ALTER COLUMN "status" DROP DEFAULT`);

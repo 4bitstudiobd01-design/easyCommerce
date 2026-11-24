@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString, MinLength, MaxLength, IsOptional, Matches, Length, Equals } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MinLength, MaxLength, IsOptional, Matches } from 'class-validator';
 
 export class RegisterMerchantDto {
   @ApiProperty({ example: 'owner@mystore.com', description: 'Merchant email' })

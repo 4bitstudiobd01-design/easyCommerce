@@ -10,7 +10,6 @@ import { Repository } from 'typeorm';
 import { OmnichannelAiConfigEntity, AiProviderType } from '../entities/omnichannel-ai-config.entity';
 import {
   OmnichannelConversationStateEntity,
-  AiPausedReason,
 } from '../entities/omnichannel-conversation-state.entity';
 import { OmnichannelAiLogEntity } from '../entities/omnichannel-ai-log.entity';
 import { OmnichannelMessageEntity } from '../entities/omnichannel-message.entity';
@@ -73,7 +72,7 @@ export class OmnichannelAiAutoReplyService {
    * Process inbound customer messages and trigger AI Auto-Reply if conditions are met.
    */
   async handleInboundMessage(ctx: InboundMessageAiContext): Promise<boolean> {
-    const { tenantId, conversationId, platform, senderId, senderName, text, storeId } = ctx;
+    const { tenantId, conversationId, platform, senderId, text, storeId } = ctx;
 
     // 1. Fetch Tenant AI Configuration
     const config = await this.configRepo.findOne({ where: { tenantId } });

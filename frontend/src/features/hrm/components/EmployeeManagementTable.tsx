@@ -204,7 +204,7 @@ export function EmployeeManagementTable() {
                     <Users className="w-10 h-10 mx-auto mb-2 text-slate-300" />
                     <p className="font-semibold text-slate-700">No employees found.</p>
                     <p className="text-xs text-slate-500 mt-1">
-                      Click "Add Employee" to start building your team roster.
+                      Click &quot;Add Employee&quot; to start building your team roster.
                     </p>
                   </td>
                 </tr>
@@ -347,7 +347,7 @@ export function EmployeeManagementTable() {
       >
         <div className="p-6 text-sm text-slate-600">
           Are you sure you want to terminate <strong>{terminatingEmployee?.fullName}</strong>? Their record is
-          kept for historical attendance and payroll, but they'll no longer count as an active employee.
+          kept for historical attendance and payroll, but they&apos;ll no longer count as an active employee.
         </div>
       </Modal>
 
@@ -369,8 +369,8 @@ export function EmployeeManagementTable() {
       >
         <div className="p-6 space-y-3">
           <p className="text-sm text-slate-600">
-            Share this link with the employee. They'll set a password, log in, and see only their own leave
-            requests and balance under "My Leave".
+            Share this link with the employee. They&apos;ll set a password, log in, and see only their own leave
+            requests and balance under &quot;My Leave&quot;.
           </p>
           <div className="flex items-center gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl">
             <code className="flex-1 text-xs text-slate-700 break-all">{inviteLink}</code>

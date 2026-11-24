@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, ConflictException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { CategoryEntity } from '../entities/category.entity';
 import { CreateCategoryService } from './create-category.service';
 import { UpdateCategoryService } from './update-category.service';

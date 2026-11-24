@@ -98,7 +98,7 @@ export function NoticeBoardView() {
         <div className="bg-white rounded-3xl border border-slate-200 shadow-sm px-6 py-16 text-center text-slate-400">
           <Megaphone className="w-10 h-10 mx-auto mb-2 text-slate-300" />
           <p className="font-semibold text-slate-700">No notices posted yet.</p>
-          <p className="text-xs text-slate-500 mt-1">Click "Post Notice" to announce something to the team.</p>
+          <p className="text-xs text-slate-500 mt-1">Click &quot;Post Notice&quot; to announce something to the team.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

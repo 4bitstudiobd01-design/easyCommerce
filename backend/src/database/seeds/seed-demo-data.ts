@@ -42,7 +42,6 @@ import { OrderStatusHistoryEntity } from '../../modules/order/entities/order-sta
 import { OrderNoteEntity } from '../../modules/order/entities/order-note.entity';
 import { ReturnEntity, ReturnStatusEnum } from '../../modules/order/entities/return.entity';
 import { ReturnItemEntity } from '../../modules/order/entities/return-item.entity';
-import { RefundEntity, RefundStatusEnum } from '../../modules/payment/entities/refund.entity';
 import { CustomerEntity, CustomerStatusEnum, CustomerSourceEnum } from '../../modules/customer/entities/customer.entity';
 import { AbandonedCartEntity } from '../../modules/order/entities/abandoned-cart.entity';
 
@@ -83,7 +82,6 @@ async function seed() {
   const noteRepo = AppDataSource.getRepository(OrderNoteEntity);
   const returnRepo = AppDataSource.getRepository(ReturnEntity);
   const returnItemRepo = AppDataSource.getRepository(ReturnItemEntity);
-  const refundRepo = AppDataSource.getRepository(RefundEntity);
   const customerRepo = AppDataSource.getRepository(CustomerEntity);
   const abandonedCartRepo = AppDataSource.getRepository(AbandonedCartEntity);
 
@@ -836,8 +834,6 @@ async function seed() {
   }
 
   const standardShipping = shippingProfileMap.get('Standard Courier Delivery');
-  const heavyShipping = shippingProfileMap.get('Heavy & Bulky Freight');
-  const fragileShipping = shippingProfileMap.get('Fragile / Express Care');
 
   const richProductDefs: SeedProductDef[] = [
     // --- 1. MEN'S FASHION (PHYSICAL WITH MULTI-OPTION VARIANTS) ---

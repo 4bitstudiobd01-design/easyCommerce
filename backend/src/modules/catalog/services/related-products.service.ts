@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository } from 'typeorm';
 import { ProductRelationEntity } from '../entities/product-relation.entity';
 import { ProductEntity } from '../entities/product.entity';
 import { ApiProperty } from '@nestjs/swagger';

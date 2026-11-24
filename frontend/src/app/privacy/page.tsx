@@ -152,8 +152,8 @@ export default function PrivacyPolicyPage() {
               <div className="text-sm text-slate-700 leading-relaxed">
                 <h3 className="font-bold text-slate-900 text-base mb-1">Our Privacy Commitment</h3>
                 <p>
-                  BitCommerce ("we", "our", "the Platform") never sells your or your customers' data to third-party advertisers. 
-                  Every merchant store's data is isolated with strict row-level multitenancy in our PostgreSQL database.
+                  BitCommerce (&quot;we&quot;, &quot;our&quot;, &quot;the Platform&quot;) never sells your or your customers&apos; data to third-party advertisers. 
+                  Every merchant store&apos;s data is isolated with strict row-level multitenancy in our PostgreSQL database.
                 </p>
               </div>
             </div>
@@ -244,7 +244,7 @@ export default function PrivacyPolicyPage() {
                 <h2 className="text-xl font-bold text-slate-900">4. Third-Party Integrations & Data Sharing</h2>
               </div>
               <p className="text-slate-600 text-sm leading-relaxed">
-                We only transmit data to third-party services when explicitly required to fulfill your store's operations:
+                We only transmit data to third-party services when explicitly required to fulfill your store&apos;s operations:
               </p>
               <ul className="space-y-2 text-sm text-slate-600 list-disc pl-5">
                 <li><strong>Payment Gateways:</strong> Order amounts and reference IDs are transmitted to SSLCommerz or Mobile Financial Services (bKash/Nagad) to verify payments.</li>

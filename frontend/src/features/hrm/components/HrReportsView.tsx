@@ -147,7 +147,7 @@ export function HrReportsView() {
 
         {/* Today's Attendance */}
         <div className="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col min-h-[320px]">
-          <h3 className="text-sm font-bold text-slate-900 mb-4">Today's Attendance</h3>
+          <h3 className="text-sm font-bold text-slate-900 mb-4">Today&apos;s Attendance</h3>
           <div className="flex-1">
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={attendanceChartData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>

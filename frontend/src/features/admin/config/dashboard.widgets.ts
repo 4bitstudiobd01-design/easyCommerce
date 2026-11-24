@@ -316,7 +316,8 @@ export const WIDGET_REGISTRY: Record<string, RegisteredWidget> = {
     ),
     requiredPermissions: ['admin.stores.manage'],
     visibility: 'visible',
-    isEnabled: true,
+    // Every shortcut in this widget is still a placeholder; re-enable once they are wired.
+    isEnabled: false,
     isPinned: false,
     isCollapsible: true,
     isResizable: false,

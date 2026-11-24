@@ -8,7 +8,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { ArrowLeft, Image as ImageIcon, Loader2, MapPin, ShieldCheck } from 'lucide-react';
 import { RootState } from '@/store';
 import { clearCart } from '@/features/storefront/slices/cartSlice';
-import { clearCheckoutDraft } from '@/features/storefront/slices/checkoutSlice';
+import { clearCheckoutDraft, CHECKOUT_PAYMENT_LABELS, toCheckoutPaymentMethod } from '@/features/storefront/slices/checkoutSlice';
 import { useCreatePublicOrderMutation, Order } from '@/features/order/api/orderApi';
 import { useInitiatePaymentMutation } from '@/features/payment/api/paymentApi';
 import { useGetPublicStoreProductsQuery } from '@/features/storefront/api/storefrontApi';
@@ -87,7 +87,7 @@ export function CheckoutReviewView({ storeSlugFromRoute }: { storeSlugFromRoute?
         storeSlug={storeSlug}
         primaryColor={primaryColor}
         shippingMethod={shippingMethod}
-        paymentMethod={draft?.paymentMethod ?? 'COD'}
+        paymentMethod={CHECKOUT_PAYMENT_LABELS[toCheckoutPaymentMethod(draft?.paymentMethod)]}
       />
     );
   }
@@ -264,7 +264,9 @@ export function CheckoutReviewView({ storeSlugFromRoute }: { storeSlugFromRoute?
           </div>
           <div className="flex items-center justify-between text-xs">
             <span className="text-slate-500">Payment method</span>
-            <span className="font-bold text-slate-900">{draft.paymentMethod}</span>
+            <span className="font-bold text-slate-900">
+              {CHECKOUT_PAYMENT_LABELS[toCheckoutPaymentMethod(draft.paymentMethod)]}
+            </span>
           </div>
         </section>
 

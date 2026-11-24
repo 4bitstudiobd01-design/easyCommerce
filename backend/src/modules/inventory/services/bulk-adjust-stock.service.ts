@@ -86,7 +86,6 @@ export class BulkAdjustStockService {
       }
 
       const itemResults: BulkAdjustStockItemResultDto[] = [];
-      const movementsToInsert: InventoryMovementEntity[] = [];
 
       for (const stock of stocks) {
         const product = stock.product;

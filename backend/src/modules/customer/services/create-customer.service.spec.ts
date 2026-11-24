@@ -1,6 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { ConflictException } from '@nestjs/common';
 import { CreateCustomerService } from './create-customer.service';
 import { CustomerEntity, CustomerStatusEnum, CustomerSourceEnum } from '../entities/customer.entity';
 

@@ -48,7 +48,7 @@ export class ChangePlanService {
       throw new NotFoundException('Invalid or inactive plan.');
     }
 
-    const { subscription, plan: currentPlan } = await this.getMySubscriptionService.execute(tenantId);
+    const { plan: currentPlan } = await this.getMySubscriptionService.execute(tenantId);
 
     if (currentPlan.id === targetPlan.id) {
       throw new BadRequestException(`You are already on the ${currentPlan.name}.`);

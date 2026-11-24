@@ -345,6 +345,7 @@ export class OmnichannelAiRagService {
   private async extractTextFromPdf(buffer: Buffer): Promise<string> {
     // 1. Primary extractor: pdf-parse
     try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires -- optional dependency, loaded lazily
       const pdfModule = require('pdf-parse');
       let text = '';
       if (typeof pdfModule === 'function') {

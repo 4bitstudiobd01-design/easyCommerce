@@ -65,15 +65,6 @@ describe('GetPaymentSummaryService', () => {
     service = module.get<GetPaymentSummaryService>(GetPaymentSummaryService);
   });
 
-  const primeAggregates = (current: any, previous: any, methods: any[] = []) => {
-    // Query order: [0] current, [1] previous, [2] top methods, [3] currency,
-    // [4] observed gateways fallback.
-    queryBuilders[0]?.getRawOne.mockResolvedValue(current);
-    queryBuilders[1]?.getRawOne.mockResolvedValue(previous);
-    queryBuilders[2]?.getRawMany.mockResolvedValue(methods);
-    queryBuilders[3]?.getRawOne.mockResolvedValue({ currency: 'BDT' });
-  };
-
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
@@ -260,9 +251,9 @@ describe('GetPaymentSummaryService', () => {
     gatewayRepo.find.mockResolvedValue([
       {
         id: 'gw-1',
-        code: PaymentGatewayEnum.BKASH,
-        name: 'bKash',
-        kind: 'Mobile Payment',
+        code: PaymentGatewayEnum.SSLCOMMERZ,
+        name: 'SSLCommerz',
+        kind: 'Payment Gateway',
         status: PaymentGatewayStatusEnum.CONNECTED,
         isEnabled: true,
       },
@@ -281,9 +272,9 @@ describe('GetPaymentSummaryService', () => {
     });
     expect(summary.gateways[0]).toEqual({
       id: 'gw-1',
-      code: PaymentGatewayEnum.BKASH,
-      name: 'bKash',
-      kind: 'Mobile Payment',
+      code: PaymentGatewayEnum.SSLCOMMERZ,
+      name: 'SSLCommerz',
+      kind: 'Payment Gateway',
       status: PaymentGatewayStatusEnum.CONNECTED,
       isEnabled: true,
     });

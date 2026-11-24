@@ -11,7 +11,6 @@ import {
   Droplets,
   Scale,
   BarChart3,
-  Target,
 } from 'lucide-react';
 import { useGetRequisitionStatsQuery } from '../api/financeApi';
 
@@ -22,12 +21,6 @@ const FINANCE_TABS = [
     exact: true,
     matchHref: ['/dashboard/finance/overview', '/dashboard/finance'],
     icon: LayoutDashboard,
-  },
-  {
-    name: 'Budget',
-    href: '/dashboard/finance/budget',
-    matchHref: ['/dashboard/finance/budget'],
-    icon: Target,
   },
   {
     name: 'Requisitions',

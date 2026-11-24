@@ -7,6 +7,21 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
  * the order — without the form losing its values across the navigation or a
  * page reload.
  */
+/**
+ * Buyer-facing payment choice. Every online method (bKash, Nagad, Rocket, cards) is
+ * processed by SSLCommerz, so the buyer picks the concrete method on its page.
+ */
+export type CheckoutPaymentMethod = 'COD' | 'ONLINE';
+
+export const CHECKOUT_PAYMENT_LABELS: Record<CheckoutPaymentMethod, string> = {
+  COD: 'Cash on Delivery',
+  ONLINE: 'Online Payment',
+};
+
+/** Normalises any stored value (incl. legacy 'BKASH' / 'NAGAD' / 'CARD' drafts) to the current choices. */
+export const toCheckoutPaymentMethod = (value: string | undefined): CheckoutPaymentMethod =>
+  value === undefined || value === 'COD' ? 'COD' : 'ONLINE';
+
 export interface CheckoutDraft {
   storeSlug: string;
   fullName: string;
@@ -22,7 +37,7 @@ export interface CheckoutDraft {
   orderNote: string;
   /** 'standard' = inside Dhaka, 'express' = outside Dhaka. */
   shippingMethod: 'standard' | 'express';
-  paymentMethod: 'COD' | 'BKASH' | 'NAGAD' | 'CARD';
+  paymentMethod: CheckoutPaymentMethod;
   appliedCoupon: { code: string; discountAmount: number } | null;
 }
 

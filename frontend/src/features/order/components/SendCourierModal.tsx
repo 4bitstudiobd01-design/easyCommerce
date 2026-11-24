@@ -307,7 +307,7 @@ export function SendCourierModal({ order, onClose }: SendCourierModalProps) {
                 ))}
               </select>
               <p className="text-[10px] text-slate-400 mt-1.5">
-                RedX requires the exact delivery area — pick the closest match to the customer's address.
+                RedX requires the exact delivery area — pick the closest match to the customer&apos;s address.
               </p>
             </div>
           )}

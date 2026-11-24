@@ -26,14 +26,14 @@ export class AddPaymentStatusToPurchaseOrders1788700000000 implements MigrationI
     await queryRunner.query(`
       UPDATE "pur_purchase_orders"
       SET "paymentStatus" = 'PAID'
-      WHERE "status" IN ('APPROVED', 'SENT', 'PARTIALLY_RECEIVED', 'FULLY_RECEIVED')
+      WHERE "status"::text IN ('APPROVED', 'SENT', 'PARTIALLY_RECEIVED', 'FULLY_RECEIVED')
     `);
 
     // Migrate any lingering 'APPROVED' status directly to 'SENT'
     await queryRunner.query(`
       UPDATE "pur_purchase_orders"
       SET "status" = 'SENT'
-      WHERE "status" = 'APPROVED'
+      WHERE "status"::text = 'APPROVED'
     `);
   }
 

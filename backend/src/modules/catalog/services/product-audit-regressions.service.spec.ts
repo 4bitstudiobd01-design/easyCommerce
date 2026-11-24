@@ -8,7 +8,6 @@ import { ProductVariantEntity } from '../entities/product-variant.entity';
 import { ProductImageEntity } from '../entities/product-image.entity';
 import { CollectionEntity } from '../entities/collection.entity';
 import { CategoryEntity } from '../entities/category.entity';
-import { BrandEntity } from '../entities/brand.entity';
 import { InventoryStockEntity } from '../../inventory/entities/inventory-stock.entity';
 import { InventoryMovementEntity } from '../../inventory/entities/inventory-movement.entity';
 import { WarehouseEntity } from '../../inventory/entities/warehouse.entity';

@@ -636,7 +636,7 @@ async function seedPurchaseAndFinanceData() {
     }
 
     // Update Purchase Counters
-    let poCounter = await counterRepo.findOne({ where: { storeId, kind: PurchaseCounterKindEnum.PO } });
+    const poCounter = await counterRepo.findOne({ where: { storeId, kind: PurchaseCounterKindEnum.PO } });
     if (!poCounter) {
       await counterRepo.save(
         counterRepo.create({
@@ -652,7 +652,7 @@ async function seedPurchaseAndFinanceData() {
       await counterRepo.save(poCounter);
     }
 
-    let billCounter = await counterRepo.findOne({ where: { storeId, kind: PurchaseCounterKindEnum.BILL } });
+    const billCounter = await counterRepo.findOne({ where: { storeId, kind: PurchaseCounterKindEnum.BILL } });
     if (!billCounter) {
       await counterRepo.save(
         counterRepo.create({
@@ -668,7 +668,7 @@ async function seedPurchaseAndFinanceData() {
       await counterRepo.save(billCounter);
     }
 
-    let paymentCounter = await counterRepo.findOne({ where: { storeId, kind: PurchaseCounterKindEnum.PAYMENT } });
+    const paymentCounter = await counterRepo.findOne({ where: { storeId, kind: PurchaseCounterKindEnum.PAYMENT } });
     if (!paymentCounter) {
       await counterRepo.save(
         counterRepo.create({

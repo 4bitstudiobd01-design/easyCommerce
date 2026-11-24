@@ -7,7 +7,7 @@ export class AddCardToFinanceAccountTypeEnum1788600000000 implements MigrationIn
     );
   }
 
-  public async down(queryRunner: QueryRunner): Promise<void> {
+  public async down(_queryRunner: QueryRunner): Promise<void> {
     // Enum values cannot be removed in PostgreSQL without dropping and recreating the type.
   }
 }

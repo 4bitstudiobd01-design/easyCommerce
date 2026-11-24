@@ -15,9 +15,14 @@ import { FinanceRequisitionEntity } from '../../finance/entities/finance-requisi
 import { FinanceRequisitionStatusEnum } from '../../finance/enums/finance.enums';
 
 /**
- * Edits a purchase order while it is still DRAFT or SENT and nothing has been received.
- * When `lines` is supplied it fully replaces the existing lines and header totals are
- * recomputed.
+ * Edits a purchase order while it is still DRAFT, PENDING_APPROVAL or SENT and nothing has
+ * been received. When `lines` is supplied it fully replaces the existing lines and header
+ * totals are recomputed.
+ *
+ * Status can only move between DRAFT and PENDING_APPROVAL here. SENT is reached solely
+ * through Finance approval (which also pays the supplier), and a SENT order's status can
+ * no longer be changed — otherwise an already-paid PO could be re-submitted for approval
+ * and paid twice.
  */
 @Injectable()
 export class UpdatePurchaseOrderService {
@@ -75,9 +80,12 @@ export class UpdatePurchaseOrderService {
     if (dto.expectedDate !== undefined) po.expectedDate = dto.expectedDate;
     if (dto.notes !== undefined) po.notes = dto.notes.trim();
     if (dto.status !== undefined) {
-      if (dto.status === 'SENT') {
-        po.status = PurchaseOrderStatusEnum.SENT;
-      } else if (dto.status === 'PENDING_APPROVAL') {
+      if (po.status === PurchaseOrderStatusEnum.SENT) {
+        throw new BadRequestException(
+          'This purchase order was already approved and paid by Finance; its status cannot be changed.',
+        );
+      }
+      if (dto.status === 'PENDING_APPROVAL') {
         po.status = PurchaseOrderStatusEnum.PENDING_APPROVAL;
       } else {
         po.status = PurchaseOrderStatusEnum.DRAFT;

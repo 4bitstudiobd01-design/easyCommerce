@@ -9,8 +9,6 @@ import { Type } from 'class-transformer';
 import {
   FinanceTransactionTypeEnum,
   FinanceTransactionStatusEnum,
-  FinanceInvoiceStatusEnum,
-  FinanceBillStatusEnum,
   FinanceSourceTypeEnum,
 } from '../enums/finance.enums';
 

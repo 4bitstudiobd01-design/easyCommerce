@@ -27,7 +27,7 @@ export function ProblemSolutionSection() {
         {/* LEFT COLUMN: TITLE & COMPARISON LISTS */}
         <div className="lg:col-span-7 space-y-8">
           <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight max-w-xl">
-            Running an online business shouldn't mean managing 10 different tools.
+            Running an online business shouldn&apos;t mean managing 10 different tools.
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">

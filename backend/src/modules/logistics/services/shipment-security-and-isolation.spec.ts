@@ -26,7 +26,6 @@ import { StoreEntity } from '../../tenant/entities/store.entity';
 import { ListShipmentsQueryDto } from '../dto/list-shipments-query.dto';
 
 const TENANT_A = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
-const TENANT_B = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 
 const makeQueryBuilder = (recorder: { where: any[][]; andWhere: any[][] }) => {
   const qb: any = {

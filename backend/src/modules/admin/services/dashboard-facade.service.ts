@@ -8,7 +8,6 @@ import {
   DashboardSummaryQueryDto,
   DashboardAnalyticsQueryDto,
   DashboardOperationsQueryDto,
-  DateRangePreset,
 } from '../dto/dashboard-query.dto';
 
 interface CacheEntry<T> {
@@ -200,7 +199,6 @@ export class DashboardFacadeService {
     if (cached) return cached;
 
     const stores = await this.storeRepository.find({ take: dto.limit });
-    const orders = await this.orderRepository.find({ take: dto.limit });
 
     const recentActivities = [
       {

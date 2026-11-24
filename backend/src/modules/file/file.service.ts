@@ -13,7 +13,6 @@ import {
   FileType,
 } from './entities/file.entity';
 import type { StorageDriver } from './interfaces/storage-driver.interface';
-import sharp from 'sharp';
 
 export const STORAGE_DRIVER = 'STORAGE_DRIVER';
 
@@ -44,6 +43,7 @@ export class FileService {
       );
       let sharpFn: any;
       try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires -- optional native dependency, loaded lazily
         const mod = require('sharp');
         sharpFn = typeof mod === 'function' ? mod : mod?.default;
       } catch {

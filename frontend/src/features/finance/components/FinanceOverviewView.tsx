@@ -63,6 +63,7 @@ import { CreateBillModal } from './CreateBillModal';
 import { CreateJournalEntryModal } from './CreateJournalEntryModal';
 import { IncomeDetailModal } from './IncomeDetailModal';
 import { ExpenseDetailModal } from './ExpenseDetailModal';
+import { recentYears } from '../utils/yearOptions';
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -199,9 +200,11 @@ export function FinanceOverviewView() {
               onChange={(e) => setSelectedYear(Number(e.target.value))}
               className="bg-transparent text-xs font-bold text-slate-800 focus:outline-hidden cursor-pointer"
             >
-              <option value={2026}>2026</option>
-              <option value={2025}>2025</option>
-              <option value={2024}>2024</option>
+              {recentYears().map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
             </select>
           </div>
 

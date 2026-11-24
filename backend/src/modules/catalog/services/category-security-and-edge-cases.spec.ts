@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { BadRequestException, NotFoundException, ConflictException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { CategoryEntity } from '../entities/category.entity';
 import { ProductEntity } from '../entities/product.entity';
@@ -27,7 +27,6 @@ describe('Category Module Security, Cross-Tenant Isolation & Edge Cases (Chunk 9
   let deleteService: DeleteCategoryService;
   let findByIdService: FindCategoryByIdService;
   let listService: ListCategoriesService;
-  let treeService: GetCategoryTreeService;
   let reorderService: ReorderCategoryService;
   let bulkMoveService: BulkMoveCategoriesService;
   let bulkDeleteService: BulkDeleteCategoriesService;
@@ -377,7 +376,6 @@ describe('Category Module Security, Cross-Tenant Isolation & Edge Cases (Chunk 9
     deleteService = module.get<DeleteCategoryService>(DeleteCategoryService);
     findByIdService = module.get<FindCategoryByIdService>(FindCategoryByIdService);
     listService = module.get<ListCategoriesService>(ListCategoriesService);
-    treeService = module.get<GetCategoryTreeService>(GetCategoryTreeService);
     reorderService = module.get<ReorderCategoryService>(ReorderCategoryService);
     bulkMoveService = module.get<BulkMoveCategoriesService>(BulkMoveCategoriesService);
     bulkDeleteService = module.get<BulkDeleteCategoriesService>(BulkDeleteCategoriesService);

@@ -7,7 +7,6 @@ import { FinanceTransactionEntity } from '../entities/finance-transaction.entity
 import { QueryFinancialReportDto } from '../dto/financial-reports.dto';
 import { resolveDateRange } from './get-profit-loss-report.service';
 import {
-  FinanceAccountClassEnum,
   FinanceLineTypeEnum,
   FinanceJournalStatusEnum,
   FinanceTransactionTypeEnum,

@@ -5,13 +5,11 @@ import { CustomerSegment } from '../../types/crm.types';
 import {
   Users,
   Plus,
-  Send,
   MoreVertical,
   Pencil,
   Trash2,
   ArrowRight,
 } from 'lucide-react';
-import { toast } from 'sonner';
 
 interface SegmentsOverviewProps {
   segments: CustomerSegment[];
@@ -91,10 +89,6 @@ export const SegmentsOverview: React.FC<SegmentsOverviewProps> = ({
   onEditSegment,
   onDeleteSegment,
 }) => {
-  const handleLaunchCampaign = () => {
-    toast('Targeted broadcast campaigns are coming soon for this segment.');
-  };
-
   return (
     <div className="space-y-6">
       {/* Top Banner Info */}
@@ -200,15 +194,6 @@ export const SegmentsOverview: React.FC<SegmentsOverviewProps> = ({
               >
                 <span>View Customers</span>
                 <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-
-              <button
-                onClick={handleLaunchCampaign}
-                title="Targeted SMS / WhatsApp broadcast campaigns are coming soon"
-                className="px-3 py-1.5 bg-slate-100 text-slate-400 text-[11px] font-bold rounded-xl flex items-center gap-1.5 cursor-not-allowed"
-              >
-                <Send className="w-3 h-3" />
-                <span>Broadcast (Coming Soon)</span>
               </button>
             </div>
           </div>

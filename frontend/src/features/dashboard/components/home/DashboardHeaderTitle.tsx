@@ -19,7 +19,7 @@ export function DashboardHeaderTitle() {
           Good morning, {firstName} 👋
         </h1>
         <p className="text-sm text-slate-500 mt-1">
-          Here's what's happening with your store today.
+          Here&apos;s what&apos;s happening with your store today.
         </p>
       </div>
 

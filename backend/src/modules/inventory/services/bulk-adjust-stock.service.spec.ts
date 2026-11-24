@@ -3,9 +3,9 @@ import { DataSource } from 'typeorm';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { BulkAdjustStockService } from './bulk-adjust-stock.service';
 import { InventoryDomainService } from './inventory-domain.service';
-import { InventoryStockEntity } from '../entities/inventory-stock.entity';
 import { InventoryMovementEntity } from '../entities/inventory-movement.entity';
-import { MovementType } from '../enums/inventory-movement-type.enum';
+import { ProductEntity } from '../../catalog/entities/product.entity';
+import { ProductVariantEntity } from '../../catalog/entities/product-variant.entity';
 import { StockStatus } from '../../catalog/enums/stock-status.enum';
 
 describe('BulkAdjustStockService', () => {
@@ -72,6 +72,20 @@ describe('BulkAdjustStockService', () => {
 
     transactionalEntityManager = {
       createQueryBuilder: jest.fn().mockReturnValue(qb),
+      // The service loads product/variant relations separately via find(Entity, { where: { id: In(ids), tenantId } }).
+      find: jest.fn().mockImplementation((entityClass, options) => {
+        const ids: string[] = options.where.id.value;
+        const tenantId: string = options.where.tenantId;
+        const rows =
+          entityClass === ProductEntity
+            ? mockStocks.map((s) => ({ ...s.product, tenantId: s.tenantId }))
+            : entityClass === ProductVariantEntity
+              ? mockStocks.filter((s) => s.variant).map((s) => ({ ...s.variant, tenantId: s.tenantId }))
+              : [];
+        return Promise.resolve(
+          JSON.parse(JSON.stringify(rows.filter((r) => ids.includes(r.id) && r.tenantId === tenantId))),
+        );
+      }),
       save: jest.fn().mockImplementation((entityClass, entity) => {
         if (entityClass === InventoryMovementEntity || entity instanceof InventoryMovementEntity || entity.type) {
           return Promise.resolve({ id: 'mov-' + Math.random().toString(36).substring(7), ...entity });

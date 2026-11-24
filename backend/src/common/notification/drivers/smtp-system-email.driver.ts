@@ -32,7 +32,7 @@ export class SmtpSystemEmailDriver implements NotificationDriver {
     to: string,
     subject: string,
     body: string,
-    data?: Record<string, any>,
+    _data?: Record<string, any>,
   ): Promise<void> {
     const fromName = process.env.MAIL_FROM_NAME || 'BitCommerce';
     const fromAddress = process.env.MAIL_FROM_ADDRESS || 'no-reply@bitcommerce.com';

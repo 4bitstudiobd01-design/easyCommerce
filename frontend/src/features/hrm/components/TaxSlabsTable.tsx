@@ -99,8 +99,8 @@ export function TaxSlabsTable() {
       <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-800">
         <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
         <p>
-          No slabs are pre-filled — Bangladesh's NBR tax brackets and rates change with each Finance Act. Enter your
-          store's current figures and confirm them with your accountant before relying on this for payroll.
+          No slabs are pre-filled — Bangladesh&apos;s NBR tax brackets and rates change with each Finance Act. Enter your
+          store&apos;s current figures and confirm them with your accountant before relying on this for payroll.
         </p>
       </div>
 

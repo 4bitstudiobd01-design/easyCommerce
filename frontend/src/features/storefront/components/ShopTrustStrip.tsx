@@ -66,7 +66,7 @@ export const ShopTrustStrip = ({ primaryColor = '#2563eb' }: ShopTrustStripProps
               </div>
               <div className="leading-tight">
                 <h4 className="font-extrabold text-xs text-slate-900">24/7 Support</h4>
-                <p className="text-[11px] text-slate-500 font-medium mt-0.5">We're here to help</p>
+                <p className="text-[11px] text-slate-500 font-medium mt-0.5">We&apos;re here to help</p>
               </div>
             </div>
 

@@ -16,13 +16,12 @@ import {
   FinanceTransactionStatusEnum,
   FinanceInvoiceStatusEnum,
   FinanceBillStatusEnum,
-  FinanceJournalStatusEnum,
-  FinanceAccountClassEnum,
   FinanceCategoryTypeEnum,
 } from '../enums/finance.enums';
 import { SeedDefaultChartOfAccountsService } from './seed-default-chart-of-accounts.service';
 import { SeedRealisticFinanceDataService } from './seed-realistic-finance-data.service';
 import { getMonthDateRange } from '../utils/finance-date.utils';
+import { isDemoDataEnabled } from '../../../common/utils/demo-data.util';
 
 export interface FinanceOverviewQueryDto {
   month?: number;
@@ -81,13 +80,15 @@ export class GetFinanceOverviewService {
   ) {}
 
   async execute(tenantId: string, storeId: string, query?: FinanceOverviewQueryDto) {
-    // 1. Ensure Default Chart of Accounts and Realistic 6-Month Dataset
+    // 1. Ensure the default Chart of Accounts; the sample dataset only in demo environments
     await this.seederService.execute(tenantId, storeId);
-    await this.realisticSeederService.execute(tenantId, storeId);
+    if (isDemoDataEnabled()) {
+      await this.realisticSeederService.execute(tenantId, storeId);
+    }
 
     const now = new Date();
-    const targetYear = query?.year ? Number(query.year) : 2026;
-    const targetMonth = query?.month ? Number(query.month) : 9; // Default to September 2026 for rich data
+    const targetYear = query?.year ? Number(query.year) : now.getFullYear();
+    const targetMonth = query?.month ? Number(query.month) : now.getMonth() + 1;
 
     let currentPeriodStart: string;
     let currentPeriodEnd: string;
@@ -121,7 +122,8 @@ export class GetFinanceOverviewService {
     const periodTxns = await this.transactionRepository
       .createQueryBuilder('txn')
       .leftJoinAndSelect('txn.category', 'category')
-      .where('txn.storeId = :storeId', { storeId })
+      .where('txn.tenantId = :tenantId', { tenantId })
+      .andWhere('txn.storeId = :storeId', { storeId })
       .andWhere('txn.status = :status', { status: FinanceTransactionStatusEnum.COMPLETED })
       .andWhere('txn.transactionDate >= :start', { start: currentPeriodStart })
       .andWhere('txn.transactionDate <= :end', { end: currentPeriodEnd })
@@ -145,7 +147,7 @@ export class GetFinanceOverviewService {
     const categoryMap = new Map<string, { code: string; name: string; color: string; amount: number }>();
 
     // Preload categories
-    const allCategories = await this.categoryRepository.find({ where: { storeId } });
+    const allCategories = await this.categoryRepository.find({ where: { tenantId, storeId } });
     for (const cat of allCategories) {
       if (cat.type === FinanceCategoryTypeEnum.EXPENSE) {
         categoryMap.set(cat.code, {
@@ -197,6 +199,7 @@ export class GetFinanceOverviewService {
     // 3. Fallback / Sync from HR Payroll runs if no transaction recorded yet
     const approvedPayrollRuns = await this.payrollRunRepository.find({
       where: {
+        tenantId,
         storeId,
         status: In([PayrollRunStatusEnum.FINALIZED, PayrollRunStatusEnum.PAID]),
       },
@@ -219,7 +222,8 @@ export class GetFinanceOverviewService {
     // 4. Previous Period Metrics for Growth % calculation
     const prevTxns = await this.transactionRepository
       .createQueryBuilder('txn')
-      .where('txn.storeId = :storeId', { storeId })
+      .where('txn.tenantId = :tenantId', { tenantId })
+      .andWhere('txn.storeId = :storeId', { storeId })
       .andWhere('txn.status = :status', { status: FinanceTransactionStatusEnum.COMPLETED })
       .andWhere('txn.transactionDate >= :start', { start: prevPeriodStart })
       .andWhere('txn.transactionDate <= :end', { end: prevPeriodEnd })
@@ -273,7 +277,8 @@ export class GetFinanceOverviewService {
     // 6. Receivables from Invoices
     const pendingInvoices = await this.invoiceRepository
       .createQueryBuilder('inv')
-      .where('inv.storeId = :storeId', { storeId })
+      .where('inv.tenantId = :tenantId', { tenantId })
+      .andWhere('inv.storeId = :storeId', { storeId })
       .andWhere('inv.status IN (:...statuses)', {
         statuses: [
           FinanceInvoiceStatusEnum.UNPAID,
@@ -291,7 +296,8 @@ export class GetFinanceOverviewService {
     // 7. Payables from Bills and Unpaid Payroll
     const pendingBills = await this.billRepository
       .createQueryBuilder('bill')
-      .where('bill.storeId = :storeId', { storeId })
+      .where('bill.tenantId = :tenantId', { tenantId })
+      .andWhere('bill.storeId = :storeId', { storeId })
       .andWhere('bill.status IN (:...statuses)', {
         statuses: [
           FinanceBillStatusEnum.UNPAID,
@@ -315,7 +321,7 @@ export class GetFinanceOverviewService {
 
     // 8. Cash and Bank Accounts
     const accounts = await this.accountRepository.find({
-      where: { storeId, isActive: true },
+      where: { tenantId, storeId, isActive: true },
       order: { isDefault: 'DESC', name: 'ASC' },
     });
 
@@ -325,7 +331,7 @@ export class GetFinanceOverviewService {
     );
 
     // 9. Inventory Valuation Asset Balance
-    let inventoryValuation = 540000;
+    let inventoryValuation = 0;
     try {
       const rawStockVal = await this.stockRepository
         .createQueryBuilder('stock')
@@ -348,7 +354,7 @@ export class GetFinanceOverviewService {
 
     // 10. Recent 10 Transactions
     const recentTransactions = await this.transactionRepository.find({
-      where: { storeId },
+      where: { tenantId, storeId },
       relations: ['account', 'category', 'createdByUser'],
       order: { transactionDate: 'DESC', createdAt: 'DESC' },
       take: 10,
@@ -356,7 +362,10 @@ export class GetFinanceOverviewService {
 
     // 11. Dynamic 6-Month Monthly Trend
     const monthlyTrendMap: Record<string, { month: string; revenue: number; expense: number; profit: number }> = {};
-    const refMonth = query?.month && query.month > 0 ? query.month : 9;
+    // Trend ends at the selected month; for a whole-year view, at the current month
+    // (this year) or December (any other year).
+    const refMonth =
+      query?.month && query.month > 0 ? targetMonth : targetYear === now.getFullYear() ? now.getMonth() + 1 : 12;
     const refYear = targetYear;
 
     for (let i = 5; i >= 0; i--) {
@@ -369,7 +378,8 @@ export class GetFinanceOverviewService {
     const firstTrendDate = Object.keys(monthlyTrendMap)[0] + '-01';
     const historicalTxns = await this.transactionRepository
       .createQueryBuilder('txn')
-      .where('txn.storeId = :storeId', { storeId })
+      .where('txn.tenantId = :tenantId', { tenantId })
+      .andWhere('txn.storeId = :storeId', { storeId })
       .andWhere('txn.status = :status', { status: FinanceTransactionStatusEnum.COMPLETED })
       .andWhere('txn.transactionDate >= :start', { start: firstTrendDate })
       .getMany();

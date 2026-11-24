@@ -61,7 +61,7 @@ export class CreateCategoryService {
       return `category-${Date.now().toString().slice(-6)}`;
     }
 
-    let slug = text
+    const slug = text
       .trim()
       .toLowerCase()
       .replace(/[^\p{L}\p{M}\p{N}\s-]/gu, '')

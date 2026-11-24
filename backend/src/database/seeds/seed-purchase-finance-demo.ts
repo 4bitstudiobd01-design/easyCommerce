@@ -264,7 +264,7 @@ async function run() {
       { docType: NumberingDocTypeEnum.CREDIT_NOTE, prefix: 'CN-', nextSeq: 5 },
     ];
     for (const r of docRules) {
-      let rule = await numberingRepo.findOne({ where: { storeId, docType: r.docType } });
+      const rule = await numberingRepo.findOne({ where: { storeId, docType: r.docType } });
       if (!rule) {
         await numberingRepo.save(
           numberingRepo.create({
@@ -300,7 +300,7 @@ async function run() {
     for (const m of defaultMappings) {
       const acc = accountByCode.get(m.code);
       if (acc) {
-        let existingMap = await accMappingRepo.findOne({ where: { storeId, event: m.event } });
+        const existingMap = await accMappingRepo.findOne({ where: { storeId, event: m.event } });
         if (!existingMap) {
           await accMappingRepo.save(
             accMappingRepo.create({

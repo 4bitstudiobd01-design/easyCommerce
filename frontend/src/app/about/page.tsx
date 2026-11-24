@@ -45,7 +45,7 @@ export default function AboutPage() {
             </div>
             <h3 className="text-xl font-bold text-slate-900">Your Store, Your Data</h3>
             <p className="text-xs text-slate-600 leading-relaxed font-medium">
-              Every store runs on isolated, tenant-scoped data in our multi-tenant architecture — other merchants can never see or touch your store's information.
+              Every store runs on isolated, tenant-scoped data in our multi-tenant architecture — other merchants can never see or touch your store&apos;s information.
             </p>
           </div>
 

@@ -103,6 +103,7 @@ import { GetHrOverviewReportService } from './services/get-hr-overview-report.se
 import { GetMyEmployeeService } from './services/get-my-employee.service';
 import { InviteEmployeeSelfServiceService } from './services/invite-employee-self-service.service';
 import { CreateMyLeaveRequestDto } from './dto/self-service.dto';
+import { assertDemoDataEnabled } from '../../common/utils/demo-data.util';
 
 @ApiTags('HR — Employees & Departments')
 @Controller('hr')
@@ -892,6 +893,7 @@ export class HrmController {
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') headerStoreId: string,
   ): Promise<SeedPayrollDemoDataResponseDto> {
+    assertDemoDataEnabled();
     const store = await this.getStoreContext(userId, headerStoreId);
     return this.seedPayrollDemoDataService.execute(store.tenantId, store.id, userId);
   }

@@ -4,7 +4,7 @@ import { Repository, In } from 'typeorm';
 import { ProductEntity } from '../entities/product.entity';
 import { AttributeDefinitionEntity } from '../entities/attribute-definition.entity';
 import { ProductAttributeValueEntity } from '../entities/product-attribute-value.entity';
-import { SetProductAttributeValuesDto, AttributeValueItemDto } from '../dto/set-product-attribute-values.dto';
+import { SetProductAttributeValuesDto } from '../dto/set-product-attribute-values.dto';
 import { AttributeType } from '../enums/attribute-type.enum';
 
 @Injectable()

@@ -336,7 +336,7 @@ export function ChartOfAccountsView() {
                   <Folder className="w-10 h-10 mx-auto mb-2 text-slate-300" />
                   <p className="font-semibold text-slate-700">No accounts yet.</p>
                   <p className="text-xs text-slate-500 mt-1">
-                    Click "New Account" to add your first account.
+                    Click &quot;New Account&quot; to add your first account.
                   </p>
                 </div>
               ) : (

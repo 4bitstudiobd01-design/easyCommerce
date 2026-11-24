@@ -168,11 +168,11 @@ export default function TermsOfServicePage() {
                 <h2 className="text-xl font-bold text-slate-900">1. Acceptance of Terms</h2>
               </div>
               <p className="text-slate-600 text-sm leading-relaxed">
-                These Terms of Service ("Terms") govern your access to and use of the BitCommerce platform, web applications,
-                APIs, documentation, and storefront services ("Platform").
+                These Terms of Service (&quot;Terms&quot;) govern your access to and use of the BitCommerce platform, web applications,
+                APIs, documentation, and storefront services (&quot;Platform&quot;).
               </p>
               <p className="text-slate-600 text-sm leading-relaxed">
-                By registering an account, clicking "Create Account", or utilizing any merchant or customer-facing features,
+                By registering an account, clicking &quot;Create Account&quot;, or utilizing any merchant or customer-facing features,
                 you agree to be bound by these Terms and our Privacy Policy. If you are registering on behalf of a company
                 or legal entity, you represent and warrant that you have the full legal authority to bind that entity.
               </p>
@@ -247,7 +247,7 @@ export default function TermsOfServicePage() {
               <ul className="space-y-2 text-sm text-slate-600 list-disc pl-5">
                 <li>Merchant transactions are settled directly via the payment gateway credentials configured in the merchant control panel.</li>
                 <li>BitCommerce does not hold or escrow your customer funds. All chargebacks, refunds, and disputes are between you, your payment processor, and your customer.</li>
-                <li>You agree to clearly publish your store's return and refund policies for your customers.</li>
+                <li>You agree to clearly publish your store&apos;s return and refund policies for your customers.</li>
               </ul>
             </section>
 
@@ -276,7 +276,7 @@ export default function TermsOfServicePage() {
                 <h2 className="text-xl font-bold text-slate-900">6. Data Isolation & Security</h2>
               </div>
               <p className="text-slate-600 text-sm leading-relaxed">
-                BitCommerce utilizes an enterprise-grade multi-tenant architecture. Every tenant's data (products, orders, customer records, payment settings) is strictly isolated using database-level tenancy constraints and role-based permissions.
+                BitCommerce utilizes an enterprise-grade multi-tenant architecture. Every tenant&apos;s data (products, orders, customer records, payment settings) is strictly isolated using database-level tenancy constraints and role-based permissions.
               </p>
               <p className="text-slate-600 text-sm leading-relaxed">
                 We employ industry-standard encryption in transit (HTTPS/TLS) and at rest to safeguard sensitive data.
@@ -331,7 +331,7 @@ export default function TermsOfServicePage() {
                 <h2 className="text-xl font-bold text-slate-900">10. Contact & Legal Inquiries</h2>
               </div>
               <p className="text-slate-600 text-sm leading-relaxed">
-                If you have questions regarding these Terms or need assistance with your store's legal compliance:
+                If you have questions regarding these Terms or need assistance with your store&apos;s legal compliance:
               </p>
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-700 space-y-1.5 font-medium">
                 <p><strong>Entity:</strong> BitCommerce Technologies Ltd.</p>

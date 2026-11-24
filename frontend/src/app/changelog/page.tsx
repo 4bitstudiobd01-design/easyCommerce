@@ -86,7 +86,7 @@ const UPDATES: UpdateItem[] = [
     title: 'Checkout Experience Improvements',
     description: (
       <div className="space-y-2">
-        <p>We've made the checkout faster, smoother, and more mobile-friendly for a better customer experience.</p>
+        <p>We&apos;ve made the checkout faster, smoother, and more mobile-friendly for a better customer experience.</p>
         <ul className="space-y-1.5 mt-3">
           {['Reduced checkout steps', 'Improved mobile layout', 'Better COD flow and validation'].map((item) => (
             <li key={item} className="flex items-center gap-2 text-sm">
@@ -255,14 +255,14 @@ export default function ChangelogPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-12 mb-16">
           <div className="max-w-xl">
             <div className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-bold mb-6">
-              What's New
+              What&apos;s New
             </div>
             <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 mb-4 leading-[1.1]">
               EasyCommerce <br />
               <span className="text-blue-600">Changelog</span>
             </h1>
             <p className="text-base text-slate-600 font-medium leading-relaxed max-w-md">
-              Stay up to date with our latest features, improvements, and fixes. We're always working to make EasyCommerce better for you.
+              Stay up to date with our latest features, improvements, and fixes. We&apos;re always working to make EasyCommerce better for you.
             </p>
           </div>
           
@@ -387,7 +387,7 @@ export default function ChangelogPage() {
              <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
                <h4 className="text-sm font-bold text-slate-900 mb-2">We build in public</h4>
                <p className="text-xs text-slate-500 leading-relaxed mb-4">
-                 Have feedback or a feature request? We'd love to hear from you.
+                 Have feedback or a feature request? We&apos;d love to hear from you.
                </p>
                <button className="w-full flex items-center justify-center gap-2 h-9 bg-white border border-blue-200 hover:border-blue-300 hover:bg-blue-50 text-blue-600 text-xs font-bold rounded-xl transition-colors">
                  Send Feedback <ArrowRight className="w-3.5 h-3.5" />

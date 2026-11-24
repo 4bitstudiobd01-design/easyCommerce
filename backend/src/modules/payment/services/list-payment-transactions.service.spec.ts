@@ -173,7 +173,7 @@ describe('ListPaymentTransactionsService', () => {
   it('applies status, gateway and method filters', async () => {
     await service.execute('tenant-a', {
       status: PaymentTransactionStatusEnum.COMPLETED,
-      gateway: PaymentGatewayEnum.BKASH,
+      gateway: PaymentGatewayEnum.SSLCOMMERZ,
       paymentMethod: PaymentMethodTypeEnum.BKASH,
     });
 

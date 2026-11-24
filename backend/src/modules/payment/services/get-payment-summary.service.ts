@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Brackets, SelectQueryBuilder } from 'typeorm';
 import {
   PaymentEntity,
-  PaymentTransactionStatusEnum,
 } from '../entities/payment.entity';
 import {
   PaymentGatewayEntity,

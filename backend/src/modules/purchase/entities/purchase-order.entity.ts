@@ -31,6 +31,7 @@ export enum PurchaseOrderPaymentStatusEnum {
  */
 @Entity('pur_purchase_orders')
 @Index('IDX_pur_purchase_orders_storeId_poNumber', ['storeId', 'poNumber'], { unique: true })
+@Index('IDX_pur_purchase_orders_storeId_paymentStatus', ['storeId', 'paymentStatus'])
 export class PurchaseOrderEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -74,7 +75,6 @@ export class PurchaseOrderEntity {
     enum: PurchaseOrderPaymentStatusEnum,
     default: PurchaseOrderPaymentStatusEnum.PENDING,
   })
-  @Index('IDX_pur_purchase_orders_storeId_paymentStatus')
   paymentStatus: PurchaseOrderPaymentStatusEnum;
 
   @Column({ type: 'numeric', precision: 18, scale: 2, default: 0 })

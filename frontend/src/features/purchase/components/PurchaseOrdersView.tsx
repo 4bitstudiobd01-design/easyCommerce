@@ -18,8 +18,6 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
-  Download,
-  Printer,
   Trash2,
   PackageCheck,
   Landmark,
@@ -569,29 +567,6 @@ export function PurchaseOrdersView({ activeTab = 'purchase-orders', onNavigateTa
 
                             {activeMenuId === o.id && (
                               <div className="absolute right-0 top-8 z-30 w-44 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 text-left text-xs font-semibold">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setActiveMenuId(null);
-                                    toast('PDF export coming soon.');
-                                  }}
-                                  className="w-full flex items-center gap-2 px-3.5 py-2 text-slate-700 hover:bg-slate-50"
-                                >
-                                  <Download className="w-3.5 h-3.5 text-slate-400" />
-                                  <span>Download PDF</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setActiveMenuId(null);
-                                    toast('Print coming soon.');
-                                  }}
-                                  className="w-full flex items-center gap-2 px-3.5 py-2 text-slate-700 hover:bg-slate-50"
-                                >
-                                  <Printer className="w-3.5 h-3.5 text-slate-400" />
-                                  <span>Print PO</span>
-                                </button>
-                                <div className="h-px bg-slate-100 my-1" />
                                 <button
                                   type="button"
                                   onClick={() => cancelPo(o.id)}

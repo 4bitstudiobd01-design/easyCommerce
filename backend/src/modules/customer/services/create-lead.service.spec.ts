@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { CreateLeadService } from './create-lead.service';
-import { LeadEntity, LeadStageEnum, LeadSourceEnum } from '../entities/lead.entity';
+import { LeadEntity, LeadSourceEnum } from '../entities/lead.entity';
 import { CustomerEntity, CustomerStatusEnum, CustomerAccountTypeEnum } from '../entities/customer.entity';
 
 describe('CreateLeadService', () => {

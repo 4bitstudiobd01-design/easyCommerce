@@ -436,7 +436,7 @@ export default function CrmLeadsPage() {
             <div className="bg-white/80 p-5 rounded-2xl border border-slate-200 text-center space-y-1">
               <p className="text-xs font-bold text-slate-700">No follow-ups match this filter</p>
               <p className="text-[11px] text-slate-500">
-                Switch back to "All" or pick another date to see scheduled reminders.
+                Switch back to &quot;All&quot; or pick another date to see scheduled reminders.
               </p>
             </div>
           ) : (

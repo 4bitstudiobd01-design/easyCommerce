@@ -13,13 +13,11 @@ import {
 } from '../entities/payment.entity';
 import { RefundEntity } from '../entities/refund.entity';
 import { PaymentEventEntity } from '../entities/payment-event.entity';
-import { PaymentGatewayEntity } from '../entities/payment-gateway.entity';
 import { OrderEntity } from '../../order/entities/order.entity';
 import { PaymentEventTypeEnum } from '../enums/payment-event-type.enum';
 import { PaymentGatewayEnum } from '../enums/payment-gateway.enum';
 import { PaymentMethodTypeEnum } from '../enums/payment-method.enum';
 import { PermissionsGuard } from '../../../common/guards/permissions.guard';
-import { PERMISSIONS_KEY } from '../../../common/decorators/require-permissions.decorator';
 
 describe('Payment security and edge cases', () => {
   describe('Tenant isolation — GetPaymentDetailsService', () => {

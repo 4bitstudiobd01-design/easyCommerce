@@ -1,8 +1,6 @@
 import { UpdateProductSeoService } from './update-product-seo.service';
 import {
   AddRelatedProductService,
-  RemoveRelatedProductService,
-  ListRelatedProductsService,
   ReorderRelatedProductsService,
 } from './related-products.service';
 

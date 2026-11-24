@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { CategoryEntity } from '../entities/category.entity';
 import { ProductEntity } from '../entities/product.entity';
@@ -160,7 +160,7 @@ describe('Category Bulk Actions & Import/Export (Chunk 8)', () => {
           addOrderBy: jest.fn().mockReturnThis(),
           getRawAndEntities: jest.fn().mockImplementation(async () => {
             const entities = mockCategories.filter((c) => c.tenantId === tenant);
-            const raw = entities.map((c) => ({ productsCount: '2' }));
+            const raw = entities.map(() => ({ productsCount: '2' }));
             return { entities, raw };
           }),
         };

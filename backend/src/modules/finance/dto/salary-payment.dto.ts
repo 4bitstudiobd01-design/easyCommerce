@@ -1,8 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsArray, IsEnum, IsInt, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
-import { SalaryPaymentMethodEnum, SalaryPaymentStatusEnum } from '../../hrm/entities/payslip.entity';
-import { PayrollPaymentStatusEnum } from '../../hrm/entities/payroll-run.entity';
+import { SalaryPaymentMethodEnum } from '../../hrm/entities/payslip.entity';
 
 export class DisburseSalaryPaymentDto {
   @ApiProperty({ description: 'The ID of the payslip to disburse payment for' })

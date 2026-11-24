@@ -224,7 +224,7 @@ export class OmnichannelAiConfigService {
     return this.getConfig(saved.tenantId);
   }
 
-  async testConnection(tenantId: string, dto: TestAiConnectionDto, storeId?: string): Promise<any> {
+  async testConnection(tenantId: string, dto: TestAiConnectionDto, _storeId?: string): Promise<any> {
     const providerType = (dto.provider || 'gemini') as AiProviderType;
     const model = dto.model || PROVIDER_DEFAULT_MODEL[providerType];
 

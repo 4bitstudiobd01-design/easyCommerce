@@ -258,7 +258,7 @@ export function ResetPasswordForm() {
       </form>
 
       <div className="mt-5 flex items-center gap-1.5 text-[12.5px] font-medium text-slate-500">
-        <span>Didn't get a code?</span>
+        <span>Didn&apos;t get a code?</span>
         <button
           type="button"
           onClick={handleResend}

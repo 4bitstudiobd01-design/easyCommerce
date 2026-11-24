@@ -75,7 +75,7 @@ import { GetSalaryPaymentSummaryService } from './services/get-salary-payment-su
 import { ListSalaryPaymentRunsService } from './services/list-salary-payment-runs.service';
 import { GetSalaryPaymentRunDetailService } from './services/get-salary-payment-run-detail.service';
 import { DisburseSalaryPaymentService } from './services/disburse-salary-payment.service';
-import { ExportFinanceDataService, ExportFinanceQueryDto } from './services/export-finance-data.service';
+import { ExportFinanceDataService } from './services/export-finance-data.service';
 
 import {
   CreateFinanceAccountDto,
@@ -106,7 +106,6 @@ import {
   ListTransactionsQueryDto,
   ListInvoicesQueryDto,
   ListBillsQueryDto,
-  FinanceReportQueryDto,
 } from './dto/finance-query.dto';
 import {
   CreateChartOfAccountDto,
@@ -143,8 +142,6 @@ import { CreateRequisitionService } from './services/create-requisition.service'
 import { ApproveRequisitionService } from './services/approve-requisition.service';
 import { RejectRequisitionService } from './services/reject-requisition.service';
 import {
-  FinanceInvoiceStatusEnum,
-  FinanceBillStatusEnum,
   FinanceCategoryTypeEnum,
 } from './enums/finance.enums';
 

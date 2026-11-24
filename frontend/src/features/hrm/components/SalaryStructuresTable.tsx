@@ -5,6 +5,7 @@ import { Wallet, RefreshCw, Edit2, AlertCircle, Sparkles, CheckCircle } from 'lu
 import { TableRowSkeleton } from '@/components/ui/Skeleton';
 import { Employee, SalaryStructure, useGetSalaryStructuresQuery, useSeedPayrollDemoDataMutation } from '../api/hrmApi';
 import { SalaryStructureModal } from './SalaryStructureModal';
+import { DEMO_DATA_ENABLED } from '@/config/demoData';
 
 function formatAmount(amount: string) {
   return `BDT ${Number(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -75,19 +76,21 @@ export function SalaryStructuresTable() {
           </div>
           <div>
             <h2 className="text-xl font-bold text-slate-900">Salary Structures</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Set each employee's pay before running payroll</p>
+            <p className="text-xs text-slate-500 mt-0.5">Set each employee&apos;s pay before running payroll</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={handleSeedDemoData}
-            disabled={isSeeding}
-            className="px-4 py-2.5 rounded-xl border border-blue-200 bg-blue-50/70 text-blue-700 hover:bg-blue-100 text-xs font-bold transition flex items-center gap-2 disabled:opacity-50"
-            title="Seed dummy demo employees and salary structures"
-          >
-            <Sparkles className={`w-4 h-4 ${isSeeding ? 'animate-spin' : 'text-blue-600'}`} />
-            {isSeeding ? 'Seeding...' : 'Seed Demo Data'}
-          </button>
+          {DEMO_DATA_ENABLED && (
+            <button
+              onClick={handleSeedDemoData}
+              disabled={isSeeding}
+              className="px-4 py-2.5 rounded-xl border border-blue-200 bg-blue-50/70 text-blue-700 hover:bg-blue-100 text-xs font-bold transition flex items-center gap-2 disabled:opacity-50"
+              title="Seed dummy demo employees and salary structures"
+            >
+              <Sparkles className={`w-4 h-4 ${isSeeding ? 'animate-spin' : 'text-blue-600'}`} />
+              {isSeeding ? 'Seeding...' : 'Seed Demo Data'}
+            </button>
+          )}
           <button
             onClick={() => refetch()}
             className="p-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition"

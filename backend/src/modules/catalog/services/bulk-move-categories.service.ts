@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, DataSource } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { CategoryEntity } from '../entities/category.entity';
 import { BulkMoveCategoriesDto } from '../dto/bulk-move-categories.dto';
 

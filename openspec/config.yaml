@@ -1,0 +1,60 @@
+schema: spec-driven
+
+context: |
+  Language: English
+  All artifacts must be written in English.
+  Keep OpenSpec structural headings and SHALL/MUST keywords in English.
+
+  Project: BitCommerce — multi-tenant eCommerce SaaS (Bangladesh first, global ready).
+  Modular Monolith with DDD principles.
+
+  Source of truth (read before proposing; if code and docs conflict, docs win — flag it):
+    - CLAUDE.md (root) — stack, commands, mandatory boundaries
+    - .agents/AGENTS.md and .agents/00_SYSTEM.md .. 04_CHECKLIST.md — workflow, architecture, DoD
+    - docs/README.md and docs/00_PROJECT_CONTEXT.md .. 09_ROADMAP.md — product, DB design, API spec
+
+  Tech stack (as installed — check package.json before assuming a dependency exists):
+    - Backend (backend/): NestJS 10, TypeORM 0.3, PostgreSQL, Redis (ioredis),
+      class-validator/class-transformer, Passport JWT, Swagger. API prefix /api/v1.
+    - Frontend (frontend/): Next.js 14 App Router, React 18, TypeScript strict,
+      Tailwind CSS, Redux Toolkit, Recharts, lucide-react.
+
+  Structure:
+    - Backend modules: backend/src/modules/<module>/ ; shared code in backend/src/common/, backend/src/config/
+    - Frontend features: frontend/src/features/<feature>/{api,components,slices,...} ; shared UI in frontend/src/components/ui/
+
+  Architecture rules:
+    - Vertical slice: every backend change ships with its Admin and/or Storefront UI in the same change.
+    - Single Responsibility Services: one service file = one use case.
+    - Decoupled Inventory: Catalog never manages stock; Inventory owns stock, referenced by ID.
+    - No cross-module DB joins or entity/repository imports — use ID references or domain events.
+    - No circular module dependencies; no business logic in controllers; no raw SQL in business layer.
+    - Every query filters by tenant_id (row-level multi-tenant isolation is mandatory).
+    - Validate input at the boundary (DTOs + class-validator; equivalent frontend validation).
+    - No new dependencies without explicit justification.
+
+rules:
+  proposal:
+    - State which backend module(s) and frontend feature(s) are touched, and what is out of scope.
+    - Write the "Why" for a non-technical reader (merchant/business impact first).
+    - Call out tenant-isolation, RBAC, and cross-module boundary impact explicitly.
+  design:
+    - Reference existing helpers/components to reuse before introducing new abstractions.
+    - Describe DB changes as TypeORM migrations; never edit existing migrations.
+    - Cross-module interaction must go through ID references or domain events (EventEmitter2/BullMQ).
+  specs:
+    - Include at least one scenario covering tenant isolation for any new/changed data access.
+    - API requirements must follow the response envelope in docs/07_API_SPECIFICATION.md.
+  tasks:
+    - Keep tasks small and incremental; pair each backend task with its frontend task.
+    - Final task group must cover verification (tsc --noEmit, lint, tests, tenant/RBAC checks).
+
+operations:
+  apply:
+    guidance:
+      - Never run `npm run build` (backend or frontend) without explicit user approval; verify with `npx tsc --noEmit` and lint.
+      - Do not commit unless the user asks.
+      - Remove unused imports/helpers left behind by the change.
+  archive:
+    guidance:
+      - Summarize which files changed and which verification checks ran, with results.

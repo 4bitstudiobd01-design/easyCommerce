@@ -281,7 +281,7 @@ export function WarehouseTransferModal() {
               ) : transfers.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="text-center py-10 text-slate-400 text-xs">
-                    No stock transfers yet. Click "Transfer Stock" to move inventory between warehouses or branches.
+                    No stock transfers yet. Click &quot;Transfer Stock&quot; to move inventory between warehouses or branches.
                   </td>
                 </tr>
               ) : (

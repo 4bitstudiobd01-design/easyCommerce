@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { EmployeeEntity, EmploymentStatusEnum } from '../entities/employee.entity';
 import { SalaryStructureEntity } from '../entities/salary-structure.entity';
 import { SeedPayrollDemoDataService } from './seed-payroll-demo-data.service';
+import { isDemoDataEnabled } from '../../../common/utils/demo-data.util';
 
 export interface SalaryStructureRow {
   employee: EmployeeEntity;
@@ -32,7 +33,7 @@ export class ListSalaryStructuresService {
 
     if (
       (employees.length === 0 || structures.length === 0) &&
-      process.env.NODE_ENV !== 'production' &&
+      isDemoDataEnabled() &&
       this.seedPayrollDemoDataService &&
       tenantId
     ) {

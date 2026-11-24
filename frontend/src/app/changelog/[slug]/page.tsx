@@ -96,7 +96,7 @@ export default function ChangelogDetailsPage() {
              
              {/* Section: What's New */}
              <section id="whats-new" className="scroll-mt-24">
-               <h2 className="text-2xl font-bold text-slate-900 mb-4">What's New</h2>
+               <h2 className="text-2xl font-bold text-slate-900 mb-4">What&apos;s New</h2>
                <p className="text-sm text-slate-600 leading-relaxed max-w-3xl mb-8">
                  Merchants can now identify abandoned carts and recover lost sales automatically. You can send personalized email or SMS reminders to encourage customers to complete their purchase.
                </p>

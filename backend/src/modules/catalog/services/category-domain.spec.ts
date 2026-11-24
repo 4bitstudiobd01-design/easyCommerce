@@ -179,7 +179,7 @@ describe('Category Domain & Database Foundation (Chunk 1)', () => {
     });
 
     it('should reject updating category to a slug already used in the same tenant', async () => {
-      const cat1 = await createService.execute(tenantA, { name: 'Books', slug: 'books' });
+      await createService.execute(tenantA, { name: 'Books', slug: 'books' });
       const cat2 = await createService.execute(tenantA, { name: 'Novels', slug: 'novels' });
 
       await expect(

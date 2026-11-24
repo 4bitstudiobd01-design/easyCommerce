@@ -96,7 +96,7 @@ describe('Courier integration security and tenant isolation', () => {
 
     it('refuses to decrypt tampered ciphertext instead of returning garbage', () => {
       const encrypted = crypto.encrypt({ apiKey: 'sk_live_abcd1234' })!;
-      const [prefix, iv, tag, body] = encrypted.split(':');
+      const [prefix, iv, tag] = encrypted.split(':');
       const tampered = [prefix, iv, tag, Buffer.from('evil').toString('base64')].join(':');
 
       expect(crypto.decrypt(tampered)).toEqual({});

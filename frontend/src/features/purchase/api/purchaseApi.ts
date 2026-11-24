@@ -140,7 +140,7 @@ export interface CreatePurchaseOrderRequest {
   supplierId: string;
   orderDate: string;
   expectedDate?: string;
-  status?: 'DRAFT' | 'PENDING_APPROVAL' | 'SENT';
+  status?: 'DRAFT' | 'PENDING_APPROVAL';
   notes?: string;
   lines: PurchaseOrderLineInput[];
 }

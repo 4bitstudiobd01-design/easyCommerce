@@ -12,7 +12,7 @@ import { useGetPublicStoreProductsQuery } from '@/features/storefront/api/storef
 import { CustomerAuthModal } from '@/features/storefront/components/CustomerAuthModal';
 import { ShopEaseNavbar } from '@/features/storefront/components/ShopEaseNavbar';
 import { CartDrawer } from '@/features/storefront/components/CartDrawer';
-import { setCheckoutDraft } from '@/features/storefront/slices/checkoutSlice';
+import { setCheckoutDraft, type CheckoutPaymentMethod, toCheckoutPaymentMethod } from '@/features/storefront/slices/checkoutSlice';
 import {
   ChevronDown,
   Truck,
@@ -59,8 +59,8 @@ export function CheckoutView({ storeSlugFromRoute }: { storeSlugFromRoute?: stri
   const [shippingMethod, setShippingMethod] = useState<'standard' | 'express'>(
     savedDraft?.shippingMethod ?? 'standard',
   );
-  const [paymentMethod, setPaymentMethod] = useState<'COD' | 'BKASH' | 'NAGAD' | 'CARD'>(
-    savedDraft?.paymentMethod ?? 'COD',
+  const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>(
+    toCheckoutPaymentMethod(savedDraft?.paymentMethod),
   );
 
   const [errorMsg, setErrorMsg] = useState('');
@@ -642,7 +642,7 @@ export function CheckoutView({ storeSlugFromRoute }: { storeSlugFromRoute?: stri
                 Payment Method
               </h2>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 {/* 1. Cash on Delivery */}
                 <div
                   onClick={() => setPaymentMethod('COD')}
@@ -661,51 +661,11 @@ export function CheckoutView({ storeSlugFromRoute }: { storeSlugFromRoute?: stri
                   </div>
                 </div>
 
-                {/* 2. bKash */}
+                {/* 2. Online payment — every non-COD option is processed by SSLCommerz */}
                 <div
-                  onClick={() => setPaymentMethod('BKASH')}
+                  onClick={() => setPaymentMethod('ONLINE')}
                   className={`p-3.5 rounded-2xl cursor-pointer transition-all flex items-start gap-2.5 ${
-                    paymentMethod === 'BKASH'
-                      ? 'border-2 [border-color:var(--brand)] bg-[color-mix(in_srgb,var(--brand)_8%,white)] shadow-2xs'
-                      : 'border border-slate-200 hover:border-slate-300 bg-white'
-                  }`}
-                >
-                  <div className="w-7 h-7 rounded-lg bg-pink-50 text-pink-600 flex items-center justify-center shrink-0 mt-0.5">
-                    <svg className="w-4 h-4 text-[#e2136e]" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 2L2 12l4 4 6-6 6 6 4-4L12 2zm0 8l-3 3 3 3 3-3-3-3z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h4 className="text-[11px] font-bold text-slate-900 leading-tight">bKash</h4>
-                    <p className="text-[10px] text-slate-400 font-medium mt-0.5 leading-snug">Pay with bKash</p>
-                  </div>
-                </div>
-
-                {/* 3. Nagad */}
-                <div
-                  onClick={() => setPaymentMethod('NAGAD')}
-                  className={`p-3.5 rounded-2xl cursor-pointer transition-all flex items-start gap-2.5 ${
-                    paymentMethod === 'NAGAD'
-                      ? 'border-2 [border-color:var(--brand)] bg-[color-mix(in_srgb,var(--brand)_8%,white)] shadow-2xs'
-                      : 'border border-slate-200 hover:border-slate-300 bg-white'
-                  }`}
-                >
-                  <div className="w-7 h-7 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center shrink-0 mt-0.5">
-                    <div className="w-4 h-4 rounded-full bg-[#f7941d] flex items-center justify-center text-[8px] text-white font-black">
-                      N
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="text-[11px] font-bold text-slate-900 leading-tight">Nagad</h4>
-                    <p className="text-[10px] text-slate-400 font-medium mt-0.5 leading-snug">Pay with Nagad</p>
-                  </div>
-                </div>
-
-                {/* 4. Card / Online */}
-                <div
-                  onClick={() => setPaymentMethod('CARD')}
-                  className={`p-3.5 rounded-2xl cursor-pointer transition-all flex items-start gap-2.5 ${
-                    paymentMethod === 'CARD'
+                    paymentMethod === 'ONLINE'
                       ? 'border-2 [border-color:var(--brand)] bg-[color-mix(in_srgb,var(--brand)_8%,white)] shadow-2xs'
                       : 'border border-slate-200 hover:border-slate-300 bg-white'
                   }`}
@@ -714,8 +674,8 @@ export function CheckoutView({ storeSlugFromRoute }: { storeSlugFromRoute?: stri
                     <CreditCard className="w-4 h-4" />
                   </div>
                   <div>
-                    <h4 className="text-[11px] font-bold text-slate-900 leading-tight">Card / Online</h4>
-                    <p className="text-[10px] text-slate-400 font-medium mt-0.5 leading-snug">Visa, MasterCard, etc.</p>
+                    <h4 className="text-[11px] font-bold text-slate-900 leading-tight">Pay Online</h4>
+                    <p className="text-[10px] text-slate-400 font-medium mt-0.5 leading-snug">bKash, Nagad, Rocket, Card</p>
                   </div>
                 </div>
               </div>

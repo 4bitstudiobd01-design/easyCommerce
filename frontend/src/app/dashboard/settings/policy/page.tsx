@@ -78,7 +78,7 @@ export default function PolicySettingsPage() {
             <h2 className="text-lg font-extrabold text-slate-900 tracking-tight">Shop Policies</h2>
           </div>
           <p className="text-xs text-slate-500">
-            Define your store's legal policies. These will be automatically linked in your store's footer.
+            Define your store&apos;s legal policies. These will be automatically linked in your store&apos;s footer.
           </p>
         </div>
 

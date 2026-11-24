@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 
 import { UpdateCategoryService } from './update-category.service';
 import { DeleteCategoryService } from './delete-category.service';
@@ -17,7 +17,6 @@ import { ProductEntity } from '../entities/product.entity';
 
 describe('Product Organization Services', () => {
   let updateCategoryService: UpdateCategoryService;
-  let deleteCategoryService: DeleteCategoryService;
   let createBrandService: CreateBrandService;
   let deleteBrandService: DeleteBrandService;
   let createCollectionService: CreateCollectionService;
@@ -78,7 +77,6 @@ describe('Product Organization Services', () => {
     }).compile();
 
     updateCategoryService = module.get<UpdateCategoryService>(UpdateCategoryService);
-    deleteCategoryService = module.get<DeleteCategoryService>(DeleteCategoryService);
     createBrandService = module.get<CreateBrandService>(CreateBrandService);
     deleteBrandService = module.get<DeleteBrandService>(DeleteBrandService);
     createCollectionService = module.get<CreateCollectionService>(CreateCollectionService);

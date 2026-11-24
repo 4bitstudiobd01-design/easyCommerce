@@ -1187,7 +1187,7 @@ export function CustomerDetailDrawer({
                   <span className="text-[11px] text-slate-400 font-medium">via FraudBD</span>
                 </div>
                 <p className="text-[11px] text-slate-500 leading-relaxed mb-4">
-                  Cross-courier delivery and cancellation history for this customer's phone number.
+                  Cross-courier delivery and cancellation history for this customer&apos;s phone number.
                 </p>
                 <FraudCheckPanel
                   data={fraudCheckData}

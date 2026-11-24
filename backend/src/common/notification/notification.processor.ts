@@ -47,7 +47,6 @@ export class NotificationProcessor extends WorkerHost {
       email,
       sms,
       type,
-      tenantId,
     } = job.data;
 
     this.logger.log(

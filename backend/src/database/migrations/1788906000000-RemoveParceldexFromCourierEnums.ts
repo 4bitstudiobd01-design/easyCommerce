@@ -17,10 +17,10 @@ export class RemoveParceldexFromCourierEnums1788906000000 implements MigrationIn
   public async up(queryRunner: QueryRunner): Promise<void> {
     // A value can only leave the enum once no row references it.
     await queryRunner.query(
-      `DELETE FROM "courier_integrations" WHERE "provider" = 'PARCELDEX'`,
+      `DELETE FROM "courier_integrations" WHERE "provider"::text = 'PARCELDEX'`,
     );
     await queryRunner.query(
-      `DELETE FROM "consignments" WHERE "courierProvider" = 'PARCELDEX'`,
+      `DELETE FROM "consignments" WHERE "courierProvider"::text = 'PARCELDEX'`,
     );
 
     // consignments.courierProvider (has a default of 'STEADFAST')

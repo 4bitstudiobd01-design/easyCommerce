@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { CategoryEntity } from '../entities/category.entity';
-import { ProductEntity } from '../entities/product.entity';
 import { ListCategoriesService } from './list-categories.service';
 import { GetCategoryKpisService } from './get-category-kpis.service';
 import { ListParentCategoriesService } from './list-parent-categories.service';
@@ -97,9 +96,9 @@ describe('Category List + KPI + Search + Filter (Chunk 2)', () => {
   beforeEach(async () => {
     // Mock QueryBuilder for TypeORM
     categoryRepo = {
-      createQueryBuilder: jest.fn().mockImplementation((alias) => {
+      createQueryBuilder: jest.fn().mockImplementation(() => {
         let tenantFilter = '';
-        let andWheres: Array<{ sql: string; params: any }> = [];
+        const andWheres: Array<{ sql: string; params: any }> = [];
         let skipVal = 0;
         let takeVal = 20;
         let orderBys: Array<{ col: string; dir: string }> = [];
@@ -155,7 +154,7 @@ describe('Category List + KPI + Search + Filter (Chunk 2)', () => {
             }).length;
           }),
           getRawAndEntities: jest.fn().mockImplementation(async () => {
-            let filtered = mockCategories.filter((c) => {
+            const filtered = mockCategories.filter((c) => {
               if (c.tenantId !== tenantFilter) return false;
               for (const w of andWheres) {
                 if (w.sql.includes('ILIKE')) {
@@ -181,8 +180,8 @@ describe('Category List + KPI + Search + Filter (Chunk 2)', () => {
             if (orderBys.length > 0) {
               const primary = orderBys[0];
               filtered.sort((a, b) => {
-                let valA = a[primary.col.replace(/c\./g, '').replace(/"/g, '')];
-                let valB = b[primary.col.replace(/c\./g, '').replace(/"/g, '')];
+                const valA = a[primary.col.replace(/c\./g, '').replace(/"/g, '')];
+                const valB = b[primary.col.replace(/c\./g, '').replace(/"/g, '')];
                 if (valA < valB) return primary.dir === 'DESC' ? 1 : -1;
                 if (valA > valB) return primary.dir === 'DESC' ? -1 : 1;
                 return 0;

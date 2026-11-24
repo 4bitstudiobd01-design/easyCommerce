@@ -181,7 +181,7 @@ export class DisburseSalaryPaymentService {
     // Enforce Admin check if this is a previous month
     await this.verifyAdminForPreviousMonth(userId, storeId, run.month, run.year);
 
-    let whereSlips: any = {
+    const whereSlips: any = {
       payrollRunId: dto.payrollRunId,
       storeId,
       paymentStatus: SalaryPaymentStatusEnum.UNPAID,
@@ -273,7 +273,6 @@ export class DisburseSalaryPaymentService {
       const paymentDate = paymentDateStr || new Date().toISOString().split('T')[0];
       const timestampNow = new Date();
       let totalDisbursedAmount = 0;
-      const payslipIds = payslips.map((p) => p.id);
 
       // Generate base transaction number
       const count = await queryRunner.manager.count(FinanceTransactionEntity, {

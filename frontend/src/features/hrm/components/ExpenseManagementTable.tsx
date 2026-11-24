@@ -195,7 +195,7 @@ export function ExpenseManagementTable() {
                   <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
                     <ReceiptText className="w-10 h-10 mx-auto mb-2 text-slate-300" />
                     <p className="font-semibold text-slate-700">No expense claims found.</p>
-                    <p className="text-xs text-slate-500 mt-1">Click "New Expense" to file one.</p>
+                    <p className="text-xs text-slate-500 mt-1">Click &quot;New Expense&quot; to file one.</p>
                   </td>
                 </tr>
               ) : (
@@ -335,7 +335,7 @@ export function ExpenseManagementTable() {
       >
         <div className="p-6 space-y-3">
           <p className="text-sm text-slate-600">
-            Rejecting <strong>{rejecting?.employee?.fullName}</strong>'s {rejecting && categoryLabel(rejecting.category).toLowerCase()}{' '}
+            Rejecting <strong>{rejecting?.employee?.fullName}</strong>&apos;s {rejecting && categoryLabel(rejecting.category).toLowerCase()}{' '}
             expense claim.
           </p>
           <textarea

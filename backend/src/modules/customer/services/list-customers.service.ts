@@ -1,4 +1,4 @@
-import { Injectable, Optional, Inject, forwardRef } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { CustomerEntity, CustomerStatusEnum, CustomerAccountTypeEnum } from '../entities/customer.entity';

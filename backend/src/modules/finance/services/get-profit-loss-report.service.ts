@@ -6,7 +6,6 @@ import { FinanceTransactionEntity } from '../entities/finance-transaction.entity
 import { QueryFinancialReportDto } from '../dto/financial-reports.dto';
 import {
   FinanceAccountClassEnum,
-  FinanceLineTypeEnum,
   FinanceJournalStatusEnum,
   FinanceTransactionTypeEnum,
   FinanceTransactionStatusEnum,

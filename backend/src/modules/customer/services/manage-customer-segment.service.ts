@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
-import { CustomerSegmentEntity, SegmentRuleGroup, SegmentRuleCondition } from '../entities/customer-segment.entity';
+import { CustomerSegmentEntity, SegmentRuleGroup } from '../entities/customer-segment.entity';
 import { CustomerEntity } from '../entities/customer.entity';
 import { CreateCustomerSegmentDto, UpdateCustomerSegmentDto } from '../dto/customer-segment.dto';
 

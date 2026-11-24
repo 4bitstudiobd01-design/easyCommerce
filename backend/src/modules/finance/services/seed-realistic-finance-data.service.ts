@@ -101,7 +101,7 @@ export class SeedRealisticFinanceDataService {
     private readonly seederService: SeedDefaultChartOfAccountsService,
   ) {}
 
-  async execute(tenantId: string, storeId: string, force = false): Promise<void> {
+  async execute(tenantId: string, storeId: string): Promise<void> {
     await this.seederService.execute(tenantId, storeId);
 
     this.logger.log(`Ensuring realistic 6-month Bangladesh finance dataset for store: ${storeId}`);

@@ -111,7 +111,7 @@ export class ListInvoicesService {
 
     const periodInvoices = await periodQb.getMany();
 
-    let totalCount = periodInvoices.length;
+    const totalCount = periodInvoices.length;
     let paidCount = 0;
     let unpaidCount = 0;
     let partiallyPaidCount = 0;

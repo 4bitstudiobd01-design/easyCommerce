@@ -207,7 +207,7 @@ export const StaffManagementTable: React.FC = () => {
                     <Users className="w-10 h-10 mx-auto mb-2 text-slate-300" />
                     <p className="font-semibold text-slate-700">No staff members found.</p>
                     <p className="text-xs text-slate-500 mt-1">
-                      Click "Invite Staff Member" to add team managers or fulfillment staff.
+                      Click &quot;Invite Staff Member&quot; to add team managers or fulfillment staff.
                     </p>
                   </td>
                 </tr>

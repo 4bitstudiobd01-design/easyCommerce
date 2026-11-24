@@ -104,8 +104,8 @@ export class S3StorageDriver implements StorageDriver {
     folder: string = '',
     tenantId: string = 'common',
   ): Promise<{ url: string; key: string }> {
-    let subpath = folder ? `${tenantId}/${folder}/${fileName}` : `${tenantId}/${fileName}`;
-    let key = this.rootPrefix ? `${this.rootPrefix}/${subpath}` : subpath;
+    const subpath = folder ? `${tenantId}/${folder}/${fileName}` : `${tenantId}/${fileName}`;
+    const key = this.rootPrefix ? `${this.rootPrefix}/${subpath}` : subpath;
 
     const command = new PutObjectCommand({
       Bucket: this.bucket,

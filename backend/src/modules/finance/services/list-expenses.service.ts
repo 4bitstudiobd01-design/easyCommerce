@@ -8,6 +8,7 @@ import {
   FinanceTransactionStatusEnum,
 } from '../enums/finance.enums';
 import { SeedRealisticFinanceDataService } from './seed-realistic-finance-data.service';
+import { isDemoDataEnabled } from '../../../common/utils/demo-data.util';
 
 @Injectable()
 export class ListExpensesService {
@@ -18,8 +19,9 @@ export class ListExpensesService {
   ) {}
 
   async execute(tenantId: string, storeId: string, query: ListTransactionsQueryDto) {
-    // Ensure realistic dataset is available
-    await this.realisticSeederService.execute(tenantId, storeId);
+    if (isDemoDataEnabled()) {
+      await this.realisticSeederService.execute(tenantId, storeId);
+    }
 
     const page = Math.max(1, query.page || 1);
     const limit = Math.max(1, Math.min(100, query.limit || 20));

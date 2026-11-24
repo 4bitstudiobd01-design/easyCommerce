@@ -24,7 +24,6 @@ describe('Product ↔ Category Integration (Chunk 7)', () => {
   let createProductService: CreateProductService;
   let updateProductService: UpdateProductService;
   let listProductsService: ListProductsService;
-  let findCategoryByIdService: FindCategoryByIdService;
 
   let mockCategories: any[] = [];
   let mockProducts: any[] = [];
@@ -270,7 +269,6 @@ describe('Product ↔ Category Integration (Chunk 7)', () => {
     createProductService = module.get<CreateProductService>(CreateProductService);
     updateProductService = module.get<UpdateProductService>(UpdateProductService);
     listProductsService = module.get<ListProductsService>(ListProductsService);
-    findCategoryByIdService = module.get<FindCategoryByIdService>(FindCategoryByIdService);
   });
 
   describe('1. Product → Category Assignment', () => {

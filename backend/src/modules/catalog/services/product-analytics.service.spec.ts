@@ -1,5 +1,4 @@
 import { GetProductAnalyticsService, DateRangePreset } from './product-analytics.service';
-import { OrderStatusEnum } from '../../order/entities/order.entity';
 
 describe('GetProductAnalyticsService (Chunk 13)', () => {
   it('should calculate revenue, units sold, orders count and AOV from qualifying order items', async () => {

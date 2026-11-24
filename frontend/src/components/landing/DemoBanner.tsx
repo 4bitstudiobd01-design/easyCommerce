@@ -60,7 +60,7 @@ export function DemoBanner() {
 
           <h2 className="text-3xl md:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
             Explore the Full Demo and <br className="hidden sm:inline" />
-            Discover What's Possible
+            Discover What&apos;s Possible
           </h2>
 
           <p className="text-slate-600 text-sm md:text-base font-normal max-w-xl mx-auto leading-relaxed">

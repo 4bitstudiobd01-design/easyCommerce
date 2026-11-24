@@ -61,7 +61,7 @@ export function MyLeaveView() {
     return (
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-16 text-center">
         <ShieldOff className="w-10 h-10 mx-auto mb-3 text-slate-300" />
-        <p className="font-bold text-slate-800">This account isn't linked to an employee record.</p>
+        <p className="font-bold text-slate-800">This account isn&apos;t linked to an employee record.</p>
         <p className="text-xs text-slate-500 mt-2 max-w-md mx-auto">
           {message || 'Ask your HR admin to invite you to self-service using the same email as your employee record, then reload this page.'}
         </p>
@@ -142,7 +142,7 @@ export function MyLeaveView() {
                   <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
                     <CalendarRange className="w-10 h-10 mx-auto mb-2 text-slate-300" />
                     <p className="font-semibold text-slate-700">No leave requests yet.</p>
-                    <p className="text-xs text-slate-500 mt-1">Click "New Leave Request" to file one.</p>
+                    <p className="text-xs text-slate-500 mt-1">Click &quot;New Leave Request&quot; to file one.</p>
                   </td>
                 </tr>
               ) : (

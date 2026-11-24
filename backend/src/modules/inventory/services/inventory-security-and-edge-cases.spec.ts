@@ -1,10 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 import { InventoryDomainService } from './inventory-domain.service';
-import { AdjustStockService } from './adjust-stock.service';
-import { BulkAdjustStockService } from './bulk-adjust-stock.service';
 import { GetInventorySettingsOverviewService } from './get-inventory-settings-overview.service';
 import { ProductEntity } from '../../catalog/entities/product.entity';
 import { ProductVariantEntity } from '../../catalog/entities/product-variant.entity';
@@ -85,7 +83,7 @@ describe('Inventory Security, Invariants & Edge Cases', () => {
     const mockDataSource = {
       transaction: jest.fn().mockImplementation(async (cb) => {
         const transactionalManager = {
-          findOne: jest.fn().mockImplementation((entityClass, opts) => {
+          findOne: jest.fn().mockImplementation((entityClass) => {
             if (entityClass === WarehouseEntity) return Promise.resolve({ id: 'wh-1', name: 'Main Warehouse' });
             return Promise.resolve(null);
           }),

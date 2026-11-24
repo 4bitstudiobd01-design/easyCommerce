@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Smartphone, CreditCard, Landmark, Truck } from 'lucide-react';
+import { CreditCard, Landmark, Truck } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import type { PaymentGatewayCode, PaymentGatewaySummary } from '../api/paymentApi';
 import { getBrandStyle } from '../utils/paymentFormatters';
@@ -13,8 +13,6 @@ interface PaymentGatewaysCardProps {
 }
 
 const GATEWAY_ICONS: Record<PaymentGatewayCode, React.ElementType> = {
-  BKASH: Smartphone,
-  NAGAD: Smartphone,
   SSLCOMMERZ: Landmark,
   STRIPE: CreditCard,
   PAYPAL: CreditCard,

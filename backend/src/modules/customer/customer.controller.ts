@@ -76,6 +76,7 @@ import { CreateCustomerSegmentDto, UpdateCustomerSegmentDto, SegmentRuleGroupDto
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadStageDto, UpdateLeadDetailsDto } from './dto/update-lead.dto';
 import { LeadQueryDto } from './dto/lead-query.dto';
+import { assertDemoDataEnabled } from '../../common/utils/demo-data.util';
 
 @ApiTags('Customers')
 @Controller('customers')
@@ -423,6 +424,7 @@ export class CustomerController {
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') storeId?: string,
   ) {
+    assertDemoDataEnabled();
     const ctx = await this.getMerchantTenantContext(userId, storeId);
     return this.seedLeadsService.execute(ctx.tenantId, ctx.storeId);
   }
@@ -781,6 +783,7 @@ export class CustomerController {
     @CurrentUser('sub') userId: string,
     @Headers('x-store-id') storeId?: string,
   ) {
+    assertDemoDataEnabled();
     const ctx = await this.getMerchantTenantContext(userId, storeId);
     return this.seedCustomersService.execute(ctx.tenantId, ctx.storeId);
   }

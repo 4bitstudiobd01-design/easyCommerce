@@ -16,7 +16,6 @@ describe('Product Media Services', () => {
   let setPrimaryService: SetPrimaryProductMediaService;
   let reorderService: ReorderProductMediaService;
   let deleteService: DeleteProductMediaService;
-  let listService: ListProductMediaService;
 
   let productRepo: any;
   let imageRepo: any;
@@ -65,7 +64,6 @@ describe('Product Media Services', () => {
     setPrimaryService = module.get<SetPrimaryProductMediaService>(SetPrimaryProductMediaService);
     reorderService = module.get<ReorderProductMediaService>(ReorderProductMediaService);
     deleteService = module.get<DeleteProductMediaService>(DeleteProductMediaService);
-    listService = module.get<ListProductMediaService>(ListProductMediaService);
   });
 
   describe('AddProductMediaService', () => {

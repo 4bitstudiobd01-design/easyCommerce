@@ -6,6 +6,7 @@ import { TableRowSkeleton } from '@/components/ui/Skeleton';
 import { PayrollRunStatus, useGetPayrollRunsQuery, useSeedPayrollDemoDataMutation } from '../api/hrmApi';
 import { GeneratePayrollRunModal } from './GeneratePayrollRunModal';
 import { PayrollRunDetailModal } from './PayrollRunDetailModal';
+import { DEMO_DATA_ENABLED } from '@/config/demoData';
 
 const STATUS_BADGE: Record<PayrollRunStatus, string> = {
   DRAFT: 'bg-amber-100 text-amber-800',
@@ -87,15 +88,17 @@ export function PayrollRunsTable() {
           </div>
         </div>
         <div className="flex items-center flex-wrap gap-3">
-          <button
-            onClick={handleSeedDemoData}
-            disabled={isSeeding}
-            className="px-4 py-2.5 rounded-xl border border-indigo-200 bg-indigo-50/70 text-indigo-700 hover:bg-indigo-100 text-xs font-bold transition flex items-center gap-2 disabled:opacity-50"
-            title="Seed dummy demo payroll runs and payslips"
-          >
-            <Sparkles className={`w-4 h-4 ${isSeeding ? 'animate-spin' : 'text-indigo-600'}`} />
-            {isSeeding ? 'Seeding...' : 'Seed Demo Payroll'}
-          </button>
+          {DEMO_DATA_ENABLED && (
+            <button
+              onClick={handleSeedDemoData}
+              disabled={isSeeding}
+              className="px-4 py-2.5 rounded-xl border border-indigo-200 bg-indigo-50/70 text-indigo-700 hover:bg-indigo-100 text-xs font-bold transition flex items-center gap-2 disabled:opacity-50"
+              title="Seed dummy demo payroll runs and payslips"
+            >
+              <Sparkles className={`w-4 h-4 ${isSeeding ? 'animate-spin' : 'text-indigo-600'}`} />
+              {isSeeding ? 'Seeding...' : 'Seed Demo Payroll'}
+            </button>
+          )}
           <button
             onClick={() => refetch()}
             className="p-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition"
@@ -136,17 +139,21 @@ export function PayrollRunsTable() {
                   <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
                     <FileSpreadsheet className="w-10 h-10 mx-auto mb-2 text-slate-300" />
                     <p className="font-semibold text-slate-700">No payroll runs yet.</p>
-                    <p className="text-xs text-slate-500 mt-1">Generate a run or seed demo records to explore.</p>
-                    <div className="mt-4 flex items-center justify-center gap-3">
-                      <button
-                        onClick={handleSeedDemoData}
-                        disabled={isSeeding}
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition inline-flex items-center gap-2"
-                      >
-                        <Sparkles className="w-4 h-4" />
-                        {isSeeding ? 'Seeding Demo Data...' : 'Seed Demo Data'}
-                      </button>
-                    </div>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {DEMO_DATA_ENABLED ? 'Generate a run or seed demo records to explore.' : 'Generate a payroll run to get started.'}
+                    </p>
+                    {DEMO_DATA_ENABLED && (
+                      <div className="mt-4 flex items-center justify-center gap-3">
+                        <button
+                          onClick={handleSeedDemoData}
+                          disabled={isSeeding}
+                          className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition inline-flex items-center gap-2"
+                        >
+                          <Sparkles className="w-4 h-4" />
+                          {isSeeding ? 'Seeding Demo Data...' : 'Seed Demo Data'}
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ) : (

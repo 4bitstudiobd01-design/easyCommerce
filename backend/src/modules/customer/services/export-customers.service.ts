@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
-import { CustomerEntity, CustomerStatusEnum } from '../entities/customer.entity';
+import { CustomerEntity } from '../entities/customer.entity';
 import { CustomerListDto, ALLOWED_CUSTOMER_SORT_FIELDS } from '../dto/customer-list.dto';
 import { roundMoney } from '../utils/money.util';
 import * as stream from 'stream';

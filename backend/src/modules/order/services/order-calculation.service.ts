@@ -1,5 +1,4 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { OrderItemEntity } from '../entities/order-item.entity';
 
 export interface OrderCalculationInput {
   items: Array<{

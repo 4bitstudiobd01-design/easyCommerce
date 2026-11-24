@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { PayrollRunEntity } from '../entities/payroll-run.entity';
 import { ListPayrollRunsQueryDto } from '../dto/payroll.dto';
 import { SeedPayrollDemoDataService } from './seed-payroll-demo-data.service';
+import { isDemoDataEnabled } from '../../../common/utils/demo-data.util';
 
 @Injectable()
 export class ListPayrollRunsService {
@@ -25,7 +26,7 @@ export class ListPayrollRunsService {
       order: { year: 'DESC', month: 'DESC' },
     });
 
-    if (runs.length === 0 && process.env.NODE_ENV !== 'production' && this.seedPayrollDemoDataService && tenantId) {
+    if (runs.length === 0 && isDemoDataEnabled() && this.seedPayrollDemoDataService && tenantId) {
       try {
         await this.seedPayrollDemoDataService.execute(tenantId, storeId, userId);
         runs = await this.payrollRunRepository.find({

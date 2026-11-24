@@ -1,12 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, Not, In } from 'typeorm';
+import { Repository } from 'typeorm';
 import { ProductEntity } from '../entities/product.entity';
 import { ProductVariantEntity } from '../entities/product-variant.entity';
 import { OrderItemEntity } from '../../order/entities/order-item.entity';
 import { OrderEntity, OrderStatusEnum } from '../../order/entities/order.entity';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsEnum, IsString, IsDateString } from 'class-validator';
+import { IsOptional, IsEnum, IsDateString } from 'class-validator';
 
 export enum DateRangePreset {
   TODAY = 'TODAY',

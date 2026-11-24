@@ -181,7 +181,7 @@ export function CreateOrderPage() {
             </div>
             <div className="p-5 space-y-4">
               {hydratedItems.length === 0 && (
-                <p className="text-sm text-slate-400 text-center py-6">No items added yet. Click "Add Item" below to get started.</p>
+                <p className="text-sm text-slate-400 text-center py-6">No items added yet. Click &quot;Add Item&quot; below to get started.</p>
               )}
               {hydratedItems.map((item, index) => (
                 <div key={`${item.productId ?? 'custom'}-${index}`} className="flex items-center gap-4 p-4 rounded-xl border border-slate-100 bg-slate-50/50">

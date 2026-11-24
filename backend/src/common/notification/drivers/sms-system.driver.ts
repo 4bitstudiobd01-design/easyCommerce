@@ -20,7 +20,7 @@ export class SmsSystemDriver implements NotificationDriver {
     to: string,
     subject: string,
     body: string,
-    data?: Record<string, any>,
+    _data?: Record<string, any>,
   ): Promise<void> {
     const apiKey = process.env.SMS_API_KEY;
     const senderId = process.env.SMS_SENDER_ID || 'BitCommerce';

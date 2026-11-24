@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RefundEntity, RefundStatusEnum } from '../entities/refund.entity';
 import { PaymentEntity, PaymentTransactionStatusEnum } from '../entities/payment.entity';
-import { OrderEntity, PaymentMethodEnum, PaymentStatusEnum } from '../../order/entities/order.entity';
+import { OrderEntity, PaymentStatusEnum } from '../../order/entities/order.entity';
 import { CreateRefundDto } from '../dto/create-refund.dto';
 
 @Injectable()

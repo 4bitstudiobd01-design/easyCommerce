@@ -71,7 +71,7 @@ describe('UpdateProductService', () => {
       .mockResolvedValueOnce(existingProduct)
       .mockResolvedValueOnce({ ...existingProduct, name: 'Updated Product Name', slug: 'updated-product-name' });
 
-    const result = await service.execute(mockProductId, mockTenantId, { name: 'Updated Product Name' });
+    await service.execute(mockProductId, mockTenantId, { name: 'Updated Product Name' });
 
     expect(slugService.generateSlug).toHaveBeenCalledWith('Updated Product Name', mockTenantId, mockProductId);
     expect(productRepo.save).toHaveBeenCalledWith(

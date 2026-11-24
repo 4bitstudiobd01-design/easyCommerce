@@ -2,7 +2,6 @@ import {
   Injectable,
   Logger,
   NotFoundException,
-  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -95,7 +94,7 @@ export class OmnichannelCredentialsService {
     dto: UpsertCredentialDto,
     storeId?: string,
   ): Promise<OmnichannelCredentialEntity> {
-    let existing = await this.credentialRepo.findOne({
+    const existing = await this.credentialRepo.findOne({
       where: { tenantId, platform: dto.platform },
     });
 
@@ -311,10 +310,10 @@ export class OmnichannelCredentialsService {
             };
           }
 
-          let response = await fetch(
+          const response = await fetch(
             `https://graph.facebook.com/v19.0/me?fields=id,name&access_token=${encodeURIComponent(token.trim())}`,
           );
-          let data = await response.json();
+          const data = await response.json();
 
           if (!response.ok || data.error) {
             if (token.startsWith('EAA') && pageId) {

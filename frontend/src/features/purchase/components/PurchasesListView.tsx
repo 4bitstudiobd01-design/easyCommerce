@@ -18,8 +18,6 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
-  Upload,
-  Download,
   Receipt,
   Trash2,
   Building2,
@@ -315,14 +313,6 @@ export function PurchasesListView({ activeTab = 'purchases', onNavigateTab }: Pu
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => toast('CSV import is coming soon.')}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white border border-slate-200 hover:border-slate-300 text-slate-700 rounded-xl text-xs font-bold transition shadow-2xs"
-          >
-            <Upload className="w-4 h-4 text-slate-500" />
-            <span>Import</span>
-          </button>
-          <button
-            type="button"
             onClick={() => setIsRecordOpen(true)}
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition shadow-xs shadow-blue-500/20"
           >
@@ -579,17 +569,6 @@ export function PurchasesListView({ activeTab = 'purchases', onNavigateTab }: Pu
                               >
                                 <Receipt className="w-3.5 h-3.5 text-slate-400" />
                                 <span>Record Payment</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setActiveMenuId(null);
-                                  toast('Invoice download is coming soon.');
-                                }}
-                                className="w-full flex items-center gap-2 px-3.5 py-2 text-slate-700 hover:bg-slate-50"
-                              >
-                                <Download className="w-3.5 h-3.5 text-slate-400" />
-                                <span>Download Invoice</span>
                               </button>
                               <div className="h-px bg-slate-100 my-1" />
                               <button

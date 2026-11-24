@@ -48,9 +48,13 @@ export class CreatePurchaseOrderDto {
   @IsDateString()
   expectedDate?: string;
 
+  /**
+   * Only DRAFT or PENDING_APPROVAL can be requested. A PO moves to SENT exclusively when
+   * Finance approves (and pays) its requisition — see ApproveRequisitionService.
+   */
   @IsOptional()
-  @IsIn(['DRAFT', 'SENT', 'PENDING_APPROVAL', 'APPROVED'])
-  status?: 'DRAFT' | 'SENT' | 'PENDING_APPROVAL' | 'APPROVED';
+  @IsIn(['DRAFT', 'PENDING_APPROVAL'])
+  status?: 'DRAFT' | 'PENDING_APPROVAL';
 
   @IsOptional()
   @IsString()
@@ -77,9 +81,13 @@ export class UpdatePurchaseOrderDto {
   @IsDateString()
   expectedDate?: string;
 
+  /**
+   * Only DRAFT or PENDING_APPROVAL can be requested. A PO moves to SENT exclusively when
+   * Finance approves (and pays) its requisition — see ApproveRequisitionService.
+   */
   @IsOptional()
-  @IsIn(['DRAFT', 'SENT', 'PENDING_APPROVAL'])
-  status?: 'DRAFT' | 'SENT' | 'PENDING_APPROVAL';
+  @IsIn(['DRAFT', 'PENDING_APPROVAL'])
+  status?: 'DRAFT' | 'PENDING_APPROVAL';
 
   @IsOptional()
   @IsString()

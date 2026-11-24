@@ -93,7 +93,7 @@ export default function StorefrontPage() {
           </div>
           <h2 className="text-xl font-extrabold text-slate-900">Store Not Found</h2>
           <p className="text-xs text-slate-500 mt-2">
-            The storefront <span className="font-mono text-blue-600 font-bold">"{slug}"</span> does not exist or has been deactivated.
+            The storefront <span className="font-mono text-blue-600 font-bold">&quot;{slug}&quot;</span> does not exist or has been deactivated.
           </p>
         </div>
       </div>

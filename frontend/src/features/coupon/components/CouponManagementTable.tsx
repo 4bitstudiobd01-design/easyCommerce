@@ -65,7 +65,7 @@ export function CouponManagementTable() {
             ) : isError || coupons.length === 0 ? (
               <tr>
                 <td colSpan={6} className="text-center py-12 text-slate-400">
-                  No promo coupons created yet. Click "Create Promo Code" to add discount codes!
+                  No promo coupons created yet. Click &quot;Create Promo Code&quot; to add discount codes!
                 </td>
               </tr>
             ) : (

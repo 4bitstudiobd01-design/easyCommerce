@@ -17,8 +17,6 @@ export type PaymentTransactionStatus =
 
 export type PaymentGatewayCode =
   | 'SSLCOMMERZ'
-  | 'BKASH'
-  | 'NAGAD'
   | 'STRIPE'
   | 'PAYPAL'
   | 'COD'

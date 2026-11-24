@@ -24,6 +24,7 @@ import {
   useGetSalaryPaymentSummaryQuery,
 } from '../api/financeApi';
 import { SalaryPaymentMonthDetail } from './SalaryPaymentMonthDetail';
+import { recentYears } from '../utils/yearOptions';
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -31,7 +32,7 @@ const MONTH_NAMES = [
 ];
 
 export function SalaryPaymentsView() {
-  const [selectedYear, setSelectedYear] = useState<number>(2026);
+  const [selectedYear, setSelectedYear] = useState<number>(() => new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState<number>(0); // 0 = All Months
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
@@ -119,9 +120,11 @@ export function SalaryPaymentsView() {
               onChange={(e) => setSelectedYear(Number(e.target.value))}
               className="bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500 cursor-pointer"
             >
-              <option value={2026}>2026</option>
-              <option value={2025}>2025</option>
-              <option value={2024}>2024</option>
+              {recentYears().map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
             </select>
           </div>
         </div>

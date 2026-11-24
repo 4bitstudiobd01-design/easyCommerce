@@ -186,7 +186,7 @@ export function LeaveRequestsManagementTable() {
                   <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
                     <CalendarRange className="w-10 h-10 mx-auto mb-2 text-slate-300" />
                     <p className="font-semibold text-slate-700">No leave requests found.</p>
-                    <p className="text-xs text-slate-500 mt-1">Click "New Leave Request" to file one.</p>
+                    <p className="text-xs text-slate-500 mt-1">Click &quot;New Leave Request&quot; to file one.</p>
                   </td>
                 </tr>
               ) : (
@@ -320,7 +320,7 @@ export function LeaveRequestsManagementTable() {
       >
         <div className="p-6 space-y-3">
           <p className="text-sm text-slate-600">
-            Rejecting <strong>{rejecting?.employee?.fullName}</strong>'s {rejecting?.leaveType.toLowerCase()} leave request.
+            Rejecting <strong>{rejecting?.employee?.fullName}</strong>&apos;s {rejecting?.leaveType.toLowerCase()} leave request.
           </p>
           <textarea
             className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 resize-none"
